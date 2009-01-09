@@ -42,16 +42,67 @@ package com.sgweb.svg.utils {
         //third 6 bits 0x3f00;
         //fourth 6 bits 0xfc0000;
     
-		/* static public function encode(value:ByteArray):String {
-			//3 bytes => 4 ascii characters
-			//
-			//Place three bytes in a 24bit holder
-			//Read 6 bits at at time
-			//Use "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" as a lookup table to build string
-			//Repeat process
-			//zero pad the end if bytes not a multiple of 3	
-			//Add a "=" at the end for each padded byte
-		} */
+        //3 bytes => 4 ascii characters
+        //
+        //Place three bytes in a 24bit holder
+        //Read 6 bits at at time
+        //Use "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/" as a lookup table to build string
+        //Repeat process
+        //zero pad the end if bytes not a multiple of 3 
+        //Add a "=" at the end for each padded byte
+            
+		static public function encode(value:ByteArray):String {
+			var data:String = "";
+			var count:uint = 0;
+			var charCount:uint = 0;
+			
+			for (var i:uint = 0; i < value.length; i++) {
+				var byte:uint;
+				count++;
+				charCount++;
+				
+				if (count == 1) {
+					byte = value[i] >> 2;
+					data += lookupTable[byte];
+					
+					byte = (value[i] & 0x03) << 4;
+				}
+				else if (count == 2) {
+					byte = byte | (value[i] >> 4);
+					data += lookupTable[byte];
+					
+					byte = (value[i] & 0x0f) << 2;
+				}
+				
+				else if (count == 3) {
+                    byte = byte | (value[i] >> 6);
+                    data += lookupTable[byte];
+                    
+                    byte = value[i] & 0x3f;
+                    data += lookupTable[byte];
+                    
+                    count = 0;
+                }
+                
+                if (charCount == 64) {
+                	data += "\n";
+                	charCount = 0;
+                }
+                
+			}
+			
+			if (count == 1) {
+				data += lookupTable[byte];
+				data += "==";
+			}
+			else if (count == 2) {
+				data += lookupTable[byte];
+                data += "=";
+			}
+			
+			
+			return data;
+		}
 		
 		static public function decode(value:String):ByteArray {
 			//4 ascii characters => 3 bytes
@@ -72,7 +123,7 @@ package com.sgweb.svg.utils {
 				
 				if (char == "=") {
 				    data.length--;
-				    continue;
+				    break;
 				}	
 				
 				if (!reverseLookupTable.hasOwnProperty(char)) {
@@ -103,6 +154,8 @@ package com.sgweb.svg.utils {
                     count = 0;                                           
                 }
 			}
+			
+			data.position = 0;
 			
 			return data;
 			

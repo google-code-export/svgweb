@@ -24,36 +24,36 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 package com.sgweb.svg.nodes {
-	import flash.events.MouseEvent;
-	import flash.net.URLRequest;	
-	
-	public class SVGANode extends SVGNode {
-		
-		public var url:String; 
-		public var target:String;
-		
-		public function SVGANode(svgRoot:SVGRoot, xml:XML = null) {
-			super(svgRoot, xml);
-		}
-		
-		override protected function generateGraphicsCommands():void {
-			url = this._xml.@xlink::href;
-			target = this._xml.@target;
-			if (!target) {
-				target = '_self';
-			}
-		}
-		
-		override protected function draw():void {
-			if (this.parent is SVGNode) {
-				SVGNode(this.parent).addEventListener(MouseEvent.CLICK, onParentMouseClick);
-			}
-		}
-		
-		private function onParentMouseClick(event:MouseEvent):void {
-			var urlRequest:URLRequest = new URLRequest(url);
-			flash.net.navigateToURL(urlRequest, target);
-		}
-		
-	}
+    import flash.events.MouseEvent;
+    import flash.net.URLRequest;    
+    
+    public class SVGANode extends SVGNode {
+        
+        public var url:String; 
+        public var target:String;
+        
+        public function SVGANode(svgRoot:SVGRoot, xml:XML = null) {
+            super(svgRoot, xml);
+        }
+        
+        override protected function generateGraphicsCommands():void {
+            url = this._xml.@xlink::href;
+            target = this._xml.@target;
+            if (!target) {
+                target = '_self';
+            }
+        }
+        
+        override protected function draw():void {
+            if (this.parent is SVGNode) {
+                SVGNode(this.parent).addEventListener(MouseEvent.CLICK, onParentMouseClick);
+            }
+        }
+        
+        private function onParentMouseClick(event:MouseEvent):void {
+            var urlRequest:URLRequest = new URLRequest(url);
+            flash.net.navigateToURL(urlRequest, target);
+        }
+        
+    }
 }
