@@ -26,18 +26,16 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.utils.Base64;
+    
     import flash.display.Bitmap;
     import flash.display.BitmapData;
     import flash.display.DisplayObject;
     import flash.display.Loader;
     import flash.display.LoaderInfo;
-    import flash.display.Shape;
     import flash.events.Event;
-    import flash.geom.Matrix;
-    import flash.utils.*;
     import flash.net.URLRequest;
-    
-    import mx.utils.Base64Decoder;
+    import flash.utils.*;
     
     public class SVGImageNode extends SVGNode
     {        
@@ -70,18 +68,12 @@ package com.sgweb.svg.nodes
 
             // For data: href, decode the base 64 image and load it
             if (imageHref.match(/^data:[a-z\/]*;base64,/)) {
-                /*  xxx: base64decoder adds about 8.5K to swf file
-                    Which is why the following lines are commented out
-                var decoder:Base64Decoder = new Base64Decoder();
-                var byteArray:ByteArray;
-
                 var base64String:String = imageHref.replace(/^data:[a-z\/]*;base64,/, '');
                 
-                decoder.decode( base64String );
-                byteArray = decoder.flush();
+                var byteArray:ByteArray = Base64.decode(base64String);
                 
                 loadBytes(byteArray);
-                */
+                
             }
 
         }
@@ -94,17 +86,19 @@ package com.sgweb.svg.nodes
         /**
          * Load image byte array
          * Used to support data: href.
+         **/
         private function loadBytes(byteArray:ByteArray):void {
             
             var loader:Loader = new Loader();
             loader.contentLoaderInfo.addEventListener( Event.COMPLETE, onBytesLoaded );            
             loader.loadBytes( byteArray );                
         }
-         **/
+         
         
         /**
          * Display image bitmap once bytes have loaded 
          * Used to support data: href.
+         **/
         private function onBytesLoaded( event:Event ) :void
         {
             var content:DisplayObject = LoaderInfo( event.target ).content;
@@ -117,6 +111,6 @@ package com.sgweb.svg.nodes
 
             
         }                
-         **/
+         
     }
 }

@@ -970,6 +970,9 @@ package com.sgweb.svg.nodes
             nodeName = nodeName.toLowerCase();
 
             switch(nodeName) {
+            	case "a":
+					childNode = new SVGANode(this.svgRoot, childXML);
+					break;
                 case "animate":
                     childNode = new SVGAnimateNode(this.svgRoot, childXML);
                     break;    

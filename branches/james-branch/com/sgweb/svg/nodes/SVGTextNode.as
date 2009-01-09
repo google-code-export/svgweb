@@ -27,9 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 package com.sgweb.svg.nodes
 {
     import com.sgweb.svg.data.SVGColors;
+    import com.sgweb.svg.data.SVGUnits;
     
-    import flash.display.Bitmap;
-    import flash.display.BitmapData;
     import flash.text.TextField;
     import flash.text.TextFieldAutoSize;
     import flash.text.TextFormat;
@@ -98,6 +97,8 @@ package com.sgweb.svg.nodes
                 var fontFamily:String = this.getStyle('font-family');                
                 var fontSize:String = this.getStyle('font-size');
                 var fill:String = this.getStyle('fill');
+                var fontWeight:String = this.getStyle('font-weight');
+				var textAnchor:String = this.getStyle('text-anchor');
                 
                 var textFormat:TextFormat = this._textField.getTextFormat();
                 
@@ -105,31 +106,85 @@ package com.sgweb.svg.nodes
                     fontFamily = fontFamily.replace("'", '');
                     textFormat.font = fontFamily;
                 }
-                if (fontSize != null) {
+                
+               /*  if (fontSize != null) {
                     textFormat.size = SVGColors.cleanNumber(fontSize);
-                }            
+                }  */    
+                
+                if (fontSize != null) {
+					//Handle floating point font size
+					var fontSizeNum:Number = SVGUnits.cleanNumber(fontSize);
+					
+					//Font size can be in user units, pixels (px), or points (pt); if no
+                    //measurement type given defaults to user units
+					if (SVGUnits.getType(fontSize) == SVGUnits.PT) {
+						fontSizeNum = SVGUnits.pointsToPixels(fontSizeNum);
+					}
+					
+					var fontScale:Number = Math.floor(fontSizeNum);
+					textFormat.size = fontScale;
+					
+					fontScale = fontSizeNum / fontScale;
+					
+					_textField.scaleX = fontScale;
+					_textField.scaleY = fontScale;
+					
+				}
+				      
                 if (fill != null) {
                     textFormat.color = SVGColors.getColor(fill);
                 }
+                
+                // only bold/no bold supported for now (SVG has many levels of bold)
+				currentNode = this;
+				while (fontWeight == 'inherit') {					
+					if (currentNode.parent is SVGNode) {
+						currentNode = SVGNode(currentNode.parent);
+						fontWeight = currentNode.getStyle('font-weight');
+					}
+					else {
+						fontWeight = null;
+					}
+				}					
+				if (fontWeight != null && fontWeight != 'normal') {
+					textFormat.bold = true;
+				}
                                 
                 this._textField.text = this._text;
                 this._textField.setTextFormat(textFormat);
- /*               
-                var bitmapData:BitmapData = new BitmapData(this._textField.width, this._textField.height, true, 0x000000);
-                
-                bitmapData.draw(this._textField);
-                
-                if (this._textBitmap != null) {
-                    this.removeChild(this._textBitmap);
-                }                
-                
-                this._textBitmap = new Bitmap(bitmapData);
-                this._textBitmap.smoothing = true;
                 
                 var textLineMetrics:TextLineMetrics = this._textField.getLineMetrics(0);
-                this._textBitmap.x = -textLineMetrics.x - 2; //account for 2px gutter
-                this._textBitmap.y =  -textLineMetrics.ascent - 2; //account for 2px gutter
- */               
+				
+				var currentNode:SVGNode = this;
+				while (textAnchor == 'inherit') {					
+					if (currentNode.parent is SVGNode) {
+						currentNode = SVGNode(currentNode.parent);
+						textAnchor = currentNode.getStyle('text-anchor');
+					}
+					else {
+						textAnchor = null;
+					}
+				}	
+				
+				//Handle text-anchor attribute
+				switch (textAnchor) {					
+					case 'middle':
+						this._textField.x = textLineMetrics.x - 2 - Math.floor(textLineMetrics.width / 2);
+						break;
+					case 'end':
+						this._textField.x = textLineMetrics.x - 2 - textLineMetrics.width;
+						break;
+					default: //'start'
+						// 2 pixel gutter
+						this._textField.x = -2;
+						break;
+				}
+				
+				//SVG Text elements position y attribute as baseline of text, not the
+				//top
+				this._textField.y = 0 - textLineMetrics.ascent - 2;	
+				this._textField.x = -2;
+               
             }
         }    
         
