@@ -169,6 +169,7 @@ package com.sgweb.svg.nodes
                 //this.x = this.x - this.parent.x;
                 //this.y = this.y - this.parent.y;
             }
+            
             this.loadAttribute('rotate', 'rotation');
             
             this.loadStyle('opacity', 'alpha');
@@ -337,11 +338,11 @@ package com.sgweb.svg.nodes
             // Get original Matrix
             var newMatrix:Matrix;
             var undoViewBoxMatrix:Matrix = new Matrix();
-            if (this._origMatrix == null) {
+            /* if (this._origMatrix == null) {
                 this._origMatrix = this.transform.matrix.clone();
             }
-            newMatrix = this._origMatrix.clone();
-
+            newMatrix = this._origMatrix.clone(); */
+            newMatrix = this.transform.matrix.clone();
 
             // <svg> and <image> nodes get an implicit mask of their height and width
             if (this is SVGRoot || this is SVGSVGNode || this is SVGImageNode) {
@@ -677,6 +678,7 @@ package com.sgweb.svg.nodes
                 field = name;
             }
             var tmp:String = this.getStyle(name);
+           
             if (tmp != null) {
                 this[field] = tmp;
             }
@@ -1236,6 +1238,8 @@ package com.sgweb.svg.nodes
                         this.setupFilters();
                     }
                 }
+                
+                
                 
                 this.removeEventListener(Event.ENTER_FRAME, redrawNode);
 
