@@ -34,6 +34,7 @@ package com.sgweb.svg.nodes
     import flash.display.Loader;
     import flash.display.LoaderInfo;
     import flash.events.Event;
+    import flash.events.IOErrorEvent;
     import flash.net.URLRequest;
     import flash.utils.*;
     
@@ -57,26 +58,30 @@ package com.sgweb.svg.nodes
                 return;
             }
 
-            if (imageHref.match(/^http:/) && this._xml.@width && this._xml.@height) {
+            // For data: href, decode the base 64 image and load it
+            if (imageHref.match(/^data:[a-z\/]*;base64,/)) {
+                var base64String:String = imageHref.replace(/^data:[a-z\/]*;base64,/, '');                
+                var byteArray:ByteArray = Base64.decode(base64String);                
+                loadBytes(byteArray);    
+                return;            
+            }
+            
+            //Url doesn't have to have http:
+            if (this._xml.@width && this._xml.@height) {
                 var loader:Loader = new Loader();
                 var urlReq:URLRequest = new URLRequest(imageHref);
                 loader.load(urlReq);
                 loader.contentLoaderInfo.addEventListener( Event.COMPLETE, onImageLoaded );
+                loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);                
                 this.addChild(loader);
                 return;
             }
-
-            // For data: href, decode the base 64 image and load it
-            if (imageHref.match(/^data:[a-z\/]*;base64,/)) {
-                var base64String:String = imageHref.replace(/^data:[a-z\/]*;base64,/, '');
-                
-                var byteArray:ByteArray = Base64.decode(base64String);
-                
-                loadBytes(byteArray);
-                
-            }
-
         }
+        
+        private function onError(event:IOErrorEvent):void {
+        	this.dbg("IOError: " + event.text);
+        }
+        
         private function onImageLoaded( event:Event ):void {
             this.imageWidth = event.target.width;
             this.imageHeight = event.target.height;
