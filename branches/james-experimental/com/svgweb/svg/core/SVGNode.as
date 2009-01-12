@@ -374,6 +374,8 @@ package com.svgweb.svg.core {
                     }
                     newMatrix.concat(matrix);
                 } 
+                
+                return newMatrix;
             }
             return null;
         }
