@@ -141,7 +141,7 @@ package com.svgweb.svg.core {
 		                    childNode = new SVGPathNode(this.svgRoot, childXML);
 		                    break;
 		                case "radialgradient": 
-		                    //childNode = new SVGRadialGradient(this.svgRoot, childXML, isClone);
+		                    childNode = new SVGRadialGradient(this.svgRoot, childXML);
 		                    break;    
 		                case "rect":
 		                    childNode = new SVGRectNode(this.svgRoot, childXML);
