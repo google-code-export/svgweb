@@ -662,6 +662,10 @@ package com.svgweb.svg.core {
             	return value;
             }
             
+            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
+                return defaultValue;        
+            }
+            
             if (inherit && (this.parent is SVGNode)) {
             	return SVGNode(this.parent).getAttribute(name, defaultValue);
             }
@@ -697,10 +701,6 @@ package com.svgweb.svg.core {
                      
             if (_styles.hasOwnProperty(name)) {
                 return (_styles[name]);
-            }
-              
-            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
-                return defaultValue;        
             }
             
             return defaultValue;
