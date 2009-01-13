@@ -26,11 +26,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 
 package com.sgweb.svg.nodes.mask
 {
-    import com.sgweb.svg.nodes.SVGClipPathNode;
     import com.sgweb.svg.nodes.SVGNode;
     import com.sgweb.svg.nodes.SVGRoot;
-    import com.sgweb.svg.nodes.mask.SVGMask;
-    import com.sgweb.svg.nodes.SVGFilterNode;
     
     import flash.events.Event;
     import flash.geom.Matrix;
@@ -54,12 +51,15 @@ package com.sgweb.svg.nodes.mask
             var clipList:XMLList;
             var childNode:SVGNode;
             var clipPathXML:XML;
+            
+            var isMask:Boolean = false;
 
             if (this._childToMaskXML.attribute('clip-path').length() > 0) {
                 clipList = this._childToMaskXML.attribute('clip-path');
             }
             else {
                 clipList = this._childToMaskXML.attribute('mask');
+                isMask = true;
             }
             var clipPath:String= clipList[0].toString();
             clipPath = clipPath.replace(/url\(#(.*?)\)/si,"$1");
@@ -81,6 +81,12 @@ package com.sgweb.svg.nodes.mask
                 svgMask = new SVGMask(this.svgRoot, stubClipPathXML);
                 this.addChild(svgMask);
                 this.mask = svgMask;
+                
+                if (isMask) { //Only Masks support alpha
+                    this.cacheAsBitmap = true;
+                    svgMask.cacheAsBitmap = true;
+                    this.parent.cacheAsBitmap = true;
+                }
 
                 var childNodeXML:XML = this._childToMaskXML.copy();
                 delete childNodeXML.@['clip-path'];

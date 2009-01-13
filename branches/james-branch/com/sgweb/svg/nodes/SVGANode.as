@@ -39,7 +39,7 @@ package com.sgweb.svg.nodes {
         override protected function generateGraphicsCommands():void {
             url = this._xml.@xlink::href;
             target = this._xml.@target;
-            if (!target) {
+            if (!target || (target == "")) {
                 target = '_self';
             }
         }

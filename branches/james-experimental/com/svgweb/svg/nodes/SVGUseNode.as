@@ -38,7 +38,7 @@ package com.svgweb.svg.nodes
             this.removeEventListener(Event.ENTER_FRAME, drawNode);    
             this._invalidDisplay = false;
             
-            var name:String = this._xml.@xlink::href;
+            var name:String = this.getAttribute('href');
             if (name) {
                 name = name.substr(1);              
                 var node:SVGNode = this.svgRoot.getNode(name);

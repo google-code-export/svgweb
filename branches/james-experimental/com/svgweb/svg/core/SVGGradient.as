@@ -63,6 +63,40 @@ package com.svgweb.svg.core
                 matrix.createGradientBox(width, height, 0, 0);
             }
             
+            var x1:Number = this.getAttribute('x1', 0, false);
+            var y1:Number = this.getAttribute('y1', 0, false);
+            
+            var x2:Number = this.getAttribute('x2', 0, false);
+            var y2:Number = this.getAttribute('y2', 0, false);            
+
+            //x & y should already be set
+            var objectX:Number = node.x; 
+            var objectY:Number = node.y;            
+
+            var dx:Number = x2 - x1;
+            var dy:Number = y2 - y1;
+            var angle:Number = Math.atan2(dy, dx);
+            
+            // Disabled because i am currently doing the object adjustment at the
+            // end, which seems to be necessary for radial gradients, but it is not
+            // clear what the difference is. I will do it the same as radials to
+            // be consistent, and on the hunch that it is correct.
+            //var tx:Number = (x1 + x2) / 2 - objectX;
+            //var ty:Number = (y1 + y2) / 2 - objectY;
+            var tx:Number = (x1 + x2) / 2;
+            var ty:Number = (y1 + y2) / 2;
+
+            var gradientWidth:Number = Math.abs(x2 - x1);
+            var gradientHeight:Number = Math.abs(y2 - y1);
+            var sx:Number = Math.sqrt(gradientWidth*gradientWidth+gradientHeight*gradientHeight) / 1638.4;
+            var sy:Number = 1;
+
+            //matrix.scale(sx, sy);
+            matrix.rotate(angle);
+            matrix.translate(tx, ty);            
+
+            matrix.translate(-objectX, -objectY);
+            
             return matrix;
         }
         

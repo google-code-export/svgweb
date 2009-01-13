@@ -51,10 +51,8 @@ package com.svgweb.svg.nodes
         }    
         
         protected override function draw():void {
-            var imageHref:String = this._xml.@href;
-            if (!imageHref) {
-                imageHref = this._xml.@xlink::href;
-            }
+            var imageHref:String = this.getAttribute('href');
+            
             if (!imageHref) {
                 return;
             }

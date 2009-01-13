@@ -25,11 +25,16 @@ package com.svgweb.svg
 		}
 		
 		public function onMouseClick(event:MouseEvent):void {
-			
-			if (stage.displayState == StageDisplayState.NORMAL) {
-                this.stage.displayState = StageDisplayState.FULL_SCREEN;
-			} else { 
-                this.stage.displayState = StageDisplayState.NORMAL;
+			try {
+				if (stage.displayState == StageDisplayState.NORMAL) {
+	                this.stage.displayState = StageDisplayState.FULL_SCREEN;
+				} else { 
+	                this.stage.displayState = StageDisplayState.NORMAL;
+				}
+			}
+			catch (error:Error) {
+				trace("Could not initiate full screen. Make sure it is enabled in the HTML Flash parameters.");
+				trace(error.message);
 			}
 			
 		}

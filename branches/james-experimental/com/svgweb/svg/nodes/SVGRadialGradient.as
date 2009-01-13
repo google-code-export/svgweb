@@ -45,36 +45,17 @@ package com.svgweb.svg.nodes
             var stopData:Object = this.getStopData();     
             var spreadMethod:String = this.getSpreadMethod();
             
-            var cx:Number = 0;
-            if (this.xml.@cx != null) {
-                cx = Number(this.xml.@cx);
-            }
-            var cy:Number = 0;
-            if (this.xml.@cy != null) {
-                cy = Number(this.xml.@cy);
-            }
-            var fx:Number = 0;
-            if (this.xml.@fx != null) {
-                fx = Number(this.xml.@fx);
-            }
-            var fy:Number = 0;
-            if (this.xml.@fy != null) {
-                fy = Number(this.xml.@fy);
-            }
-            var r:Number = 0;
-            if (this.xml.@r != null) {
-                r = Number(this.xml.@r);
-            }
+            var cx:Number = this.getAttribute('cx', 0, false);            
+            var cy:Number = this.getAttribute('cy', 0, false);
+           
+            var fx:Number = this.getAttribute('fx', 0, false);
+            var fy:Number = this.getAttribute('fy', 0, false);
+            
+            var r:Number = this.getAttribute('r', 0, false);
 
-            var objectX:Number = 0;
-            if (node.getAttribute('x') != null) {
-                objectX = Math.round(Number(node.getAttribute('x')));
-            }
-            var objectY:Number = 0;
-            if (node.getAttribute('y') != null) {
-                objectY = Math.round(Number(node.getAttribute('y')));
-            }
-
+            var objectX:Number = node.getAttribute('x', 0);
+            var objectY:Number = node.getAttribute('y', 0);            
+            
             var tx:Number = cx;
             var ty:Number = cy;
 
@@ -93,35 +74,16 @@ package com.svgweb.svg.nodes
             var stopData:Object = this.getStopData();     
             var spreadMethod:String = this.getSpreadMethod();
             
-            var cx:Number = 0;
-            if (this.xml.@cx != null) {
-                cx = Number(this.xml.@cx);
-            }
-            var cy:Number = 0;
-            if (this.xml.@cy != null) {
-                cy = Number(this.xml.@cy);
-            }
-            var fx:Number = 0;
-            if (this.xml.@fx != null) {
-                fx = Number(this.xml.@fx);
-            }
-            var fy:Number = 0;
-            if (this.xml.@fy != null) {
-                fy = Number(this.xml.@fy);
-            }
-            var r:Number = 0;
-            if (this.xml.@r != null) {
-                r = Number(this.xml.@r);
-            }
+            var cx:Number = this.getAttribute('cx', 0, false);            
+            var cy:Number = this.getAttribute('cy', 0, false);
+           
+            var fx:Number = this.getAttribute('fx', 0, false);
+            var fy:Number = this.getAttribute('fy', 0, false);
+            
+            var r:Number = this.getAttribute('r', 0, false);
 
-            var objectX:Number = 0;
-            if (node.getAttribute('x') != null) {
-                objectX = Math.round(Number(node.getAttribute('x')));
-            }
-            var objectY:Number = 0;
-            if (node.getAttribute('y') != null) {
-                objectY = Math.round(Number(node.getAttribute('y')));
-            }
+            var objectX:Number = node.getAttribute('x', 0);
+            var objectY:Number = node.getAttribute('y', 0);
 
             var tx:Number = cx;
             var ty:Number = cy;

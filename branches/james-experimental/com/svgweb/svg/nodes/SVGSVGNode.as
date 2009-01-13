@@ -1,5 +1,6 @@
 package com.svgweb.svg.nodes {
-	import com.svgweb.svg.core.SVGNode;	
+	import com.svgweb.svg.core.SVGNode;
+	
 	import flash.events.Event;
 	
 	public class SVGSVGNode extends SVGNode {
@@ -14,6 +15,20 @@ package com.svgweb.svg.nodes {
 		override public function drawNode(event:Event = null):void {            
             this.removeEventListener(Event.ENTER_FRAME, drawNode);    
             this._invalidDisplay = false;
+            
+            this.setAttributes();
+            this.transformNode();
+            
+            this.createViewBox();
+        }
+        
+        protected function createViewBox():void {
+        	var attr:String = this.getAttribute('viewBox');
+        	
+        	if (attr) {
+        		
+        	}
+        	
         }
 				
 		public function registerNode(node:SVGNode):void {
@@ -89,6 +104,11 @@ package com.svgweb.svg.nodes {
             
             if (name == 'stroke') {
                 return 'none';
+            }
+            
+            var value:String = this._getAttribute(name, defaultValue);
+            if (value) {
+            	return value;
             }
             
         	return defaultValue;
