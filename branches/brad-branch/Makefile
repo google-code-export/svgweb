@@ -6,7 +6,7 @@ SVGSRV='codinginparadise.org:~/codinginparadise.org/html/projects/svg-web/'
 # Whether to compress JavaScript
 COMPRESS=1
 
-all: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/svg.htc
+all: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/svg.htc com/sgweb/svg/build/transform.*
 	cp html/*.html com/sgweb/svg/build/
 	cp samples/*.svg com/sgweb/svg/build/
 
@@ -41,6 +41,9 @@ else
 com/sgweb/svg/build/svg.htc: html/svg.htc
 	cp html/svg.htc com/sgweb/svg/build/
 endif
+
+com/sgweb/svg/build/transform.*: utils/transform.html utils/transform.xml
+	cp utils/transform.* com/sgweb/svg/build/
 
 size: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/svg.htc
 	# Determines file sizes to help with size optimization

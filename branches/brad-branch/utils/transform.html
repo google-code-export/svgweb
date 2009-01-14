@@ -1,0 +1,180 @@
+<html>
+  <head>
+    
+    <style type="text/css">
+      #transform {
+        display: block;
+        margin-bottom: 1em;
+        margin-top: 1em;
+      }
+    
+      textarea {
+        width: 100%;
+        height: 20em;
+      }
+    </style>
+    
+    <script>
+      var XSLT_FILENAME = 'transform.xml';
+      var errorOut = (typeof console != 'undefined') ? console.log : alert;
+      
+      window.onload = function() {
+        var t = document.getElementById('transform');
+        t.onclick = transform;
+      }
+      
+      function transform() {
+        var content = document.getElementById('transformMe').value;
+        if (/^<\?xml/.test(content) == false) {
+          content = '<?xml version="1.0" encoding="UTF-8"?>\n' + content;
+        }
+        
+        fetchXSLT(function(xslt) {
+          var doc = parse(content);
+          var results = runXSLT(xslt, doc);
+          
+          document.getElementById('output').value = results;
+          
+          // IE closure memory leaks
+          content = null;
+        });
+      }
+      
+      function parse(str) {
+        var parser, doc;
+        
+        try {
+          if (typeof DOMParser != 'undefined') {
+            parser = new DOMParser();
+            doc = parser.parseFromString(str, 'text/xml');
+          } else {
+            doc = new ActiveXObject('Microsoft.XMLDOM');
+            doc.async = 'false';
+            doc.loadXML(str);
+          }
+        } catch (e) {
+          errorOut('Browser does not support XML parsing');
+        }
+        
+        return doc;
+      }
+      
+      function runXSLT(xslt, xml) {
+        var results;
+        
+        try {
+          if (typeof XSLTProcessor != 'undefined') {
+            var processor = new XSLTProcessor();
+            processor.importStylesheet(xslt);
+            results = processor.transformToDocument(xml);
+            results = (new XMLSerializer()).serializeToString(results);
+          } else {
+            results = xml.transformNode(xslt);
+          }
+        } catch (e) {
+          errorOut('Unable to transform document: ' + (e.message || e));
+          throw e;
+        }
+        
+        // remove the extra space between > and < elements that we
+        // added to force empty elements to expand
+        results = results.replace(/> </gm, '><');
+        results = results.replace(/> /gm, '>');
+        
+        // it's hard to force XSLT to write out namespaces to the root
+        // node -- fix this
+        results = cleanNamespaces(results);
+        
+        return results;
+      }
+      
+      function getXHR() {
+        var xhr = null;
+        if (typeof XMLHttpRequest != 'undefined') {
+          xhr = new XMLHttpRequest();
+        } else {
+          var ACTIVEX_ID = ['Msxml2.XMLHTTP.6.0', 'Msxml2.XMLHTTP.3.0', 
+                              'Msxml2.XMLHTTP', 'Microsoft.XMLHTTP'];
+                              
+          for (var i = 0; i < ACTIVEX_ID.length && xhr == null; i++) {
+            try {
+              xhr = new ActiveXObject(ACTIVEX_ID[i]);
+            } catch (e) { }
+          }       
+        }
+        
+        if (!xhr) {
+          throw 'Browser does not support XMLHttpRequest';
+        }
+        
+        return xhr;
+      }
+      
+      function fetchXSLT(callback) {
+        var xhr = getXHR();
+        xhr.open('GET', XSLT_FILENAME, true);
+        
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState == 4 && xhr.status == 200) {
+            callback(xhr.responseXML);
+          } else if (xhr.readyState == 4) {
+            errorOut('Unable to fetch XSLT file: ' + xhr.statusText);
+          }
+        }
+        
+        xhr.send(null);
+      }
+      
+      function cleanNamespaces(doc) {
+        // unfortunately XSLT 1.0 doesn't make it straightforward to force
+        // all namespace declarations onto the root node, which is cleaner,
+        // so we have to do it post-XSLT transformation
+        
+        // assemble a list of all our namespaces first
+        var namespaces = doc.match(/xmlns:?\w*="[^"]*"/gm);
+        namespaces.sort();
+        var results = [];
+        var lastNS = null;
+        for (var i = 0; i < namespaces.length; i++) {
+            if (namespaces[i] != lastNS) {
+                results.push(namespaces[i]);
+                lastNS = namespaces[i];
+            }
+        }
+        namespaces = results;
+
+        // strip out namespaces littered throughout our document
+        doc = doc.replace(/\s?xmlns:?\w*="[^"]*"/gm, '');
+        
+        // add all declarations to the root now
+        var nsString = '<svg:svg';
+        for (var i = 0; i < namespaces.length; i++) {
+            nsString += ' ' + namespaces[i];
+        }
+        doc = doc.replace(/<svg:svg/, nsString); 
+
+        return doc;
+      }
+    </script>
+  </head>
+  
+  <body>
+    <h1>SVG Transformer</h1>
+    
+    <p>This page will take SVG and prepare it for being embedded into regular
+      non-XML HTML. For example, it will ensure that empty tags like 
+      &lt;circle/&gt; are turned into &lt;circle&gt;&lt;/circle&gt;;
+      will namespace all the tags as 'svg', such as &lt;svg:circle&gt;; and
+      more.</p>
+      
+    <p>Paste SVG here:</p>
+    
+    <button id="transform">Transform</button>
+    
+    <textarea id="transformMe"></textarea>
+    
+    <p>Results:</p>
+    
+    <textarea id="output"></textarea>
+  </body>
+</html>
