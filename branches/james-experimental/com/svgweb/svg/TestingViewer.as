@@ -21,7 +21,7 @@ package com.svgweb.svg
 			svg = new SVGSVGNode();
 			this.addChild(svg);
 			this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
-			this.addEventListener(MouseEvent.CLICK, onMouseClick);
+			this.addEventListener(MouseEvent.CLICK, onMouseClick);			
 		}
 		
 		public function onMouseClick(event:MouseEvent):void {

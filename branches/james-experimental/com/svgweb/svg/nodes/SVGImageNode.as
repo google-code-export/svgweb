@@ -48,9 +48,16 @@ package com.svgweb.svg.nodes
                    
         public function SVGImageNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
             super(svgRoot, xml, original);
-        }    
+        }  
         
-        protected override function draw():void {
+        override public function drawNode(event:Event = null):void {  
+        	super.drawNode(event);
+        	if (!this.mask) {
+        	   this.createMask();
+        	}
+        }   
+        
+        override protected function draw():void {
             var imageHref:String = this.getAttribute('href');
             
             if (!imageHref) {

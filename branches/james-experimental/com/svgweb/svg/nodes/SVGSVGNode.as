@@ -8,6 +8,8 @@ package com.svgweb.svg.nodes {
 		private var _nodeLookup:Object = new Object();		
 		private var _renderCount:int;
 		
+		protected var parentSVGRoot:SVGSVGNode = null;
+		
 		public function SVGSVGNode(xml:XML = null, original:SVGNode = null) {			
 			super(this, xml, original);
 		}
@@ -19,16 +21,8 @@ package com.svgweb.svg.nodes {
             this.setAttributes();
             this.transformNode();
             
-            this.createViewBox();
-        }
-        
-        protected function createViewBox():void {
-        	var attr:String = this.getAttribute('viewBox');
-        	
-        	if (attr) {
-        		
-        	}
-        	
+            this.createMask();
+            this.applyViewBox();            
         }
 				
 		public function registerNode(node:SVGNode):void {
@@ -48,9 +42,9 @@ package com.svgweb.svg.nodes {
 		
 		public function startRendering():void {
 			if (this._renderCount == 0) {
-				if (this.parent is SVGNode) {
+				if (parentSVGRoot) {
 					//If we are a nested SVG we need to increment our parent SVG
-					SVGNode(this.parent).svgRoot.startRendering();
+					parentSVGRoot.startRendering();
 				}
 			}
 			this._renderCount++;
@@ -60,8 +54,8 @@ package com.svgweb.svg.nodes {
 			this._renderCount--;
 			if (this._renderCount == 0) {
 				//Done Redering
-				if (this.parent is SVGNode) {
-					SVGNode(this.parent).svgRoot.doneRendering();
+				if (parentSVGRoot) {
+					parentSVGRoot.doneRendering();
 				}
 				else {
 					//Top level SVG
@@ -79,14 +73,27 @@ package com.svgweb.svg.nodes {
 		 * We don't want to register the main node so override this function
 		 **/
 		override protected function registerID():void {
-			
+			if (this._xml) {
+				super.registerID();
+				if (!this.isClone) {
+					if (this.parent is SVGNode) {
+						parentSVGRoot = SVGNode(this.parent).svgRoot; 
+		                parentSVGRoot.registerNode(this);		
+					}
+				}
+			}			
 		}
 		
 		/**
          * We don't want to register the main node so override this function
          **/
 		override protected function unregisterID():void {
+			super.unregisterID();
 			
+            if (parentSVGRoot) {
+                parentSVGRoot.unregisterNode(this);        
+                parentSVGRoot = null;
+            }
         }
         
         override public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {

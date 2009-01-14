@@ -7,6 +7,7 @@ package com.svgweb.svg.core {
 	import flash.display.DisplayObject;
 	import flash.display.JointStyle;
 	import flash.display.LineScaleMode;
+	import flash.display.Shape;
 	import flash.display.Sprite;
 	import flash.events.Event;
 	import flash.geom.Matrix;
@@ -20,8 +21,8 @@ package com.svgweb.svg.core {
                                          'fill', 'fill-opacity', 'opacity', 'stop-color', 'stop-opacity',
                                          'font-family', 'font-size', 'letter-spacing', 'filter', 'visibility'];
                                          
-        public static const ATTRIBUTES_NOT_INHERITED:Array = ['x', 'y', 'width', 'height', 'rotate', 'transform', 
-                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target'];
+        public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
+                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
                                                  
                                          
 		public namespace xlink = 'http://www.w3.org/1999/xlink';
@@ -200,7 +201,9 @@ package com.svgweb.svg.core {
             this.transformNode();
             this.generateGraphicsCommands();
             this.draw();
-            this.maskNode();
+            
+            this.applyViewBox();
+            this.maskNode(); 
             
             this.svgRoot.doneRendering();
         }
@@ -210,12 +213,18 @@ package com.svgweb.svg.core {
         	var match:Array;
         	var node:SVGNode;
         	var matrix:Matrix;
+        	var isMask:Boolean = true;
         	
         	if (this.mask) { //Hide any old masks
         	   this.mask.visible = false;
+        	   this.mask = null;
         	}
         	
         	attr = this.getAttribute('mask');
+        	if (!attr) {
+        		isMask = false;
+        		attr = this.getAttribute('clip-path');
+        	}
         	        	
         	if (attr) {
         	   match = attr.match(/url\(\s*#(.*?)\s*\)/si);	        	   
@@ -223,31 +232,188 @@ package com.svgweb.svg.core {
         	       attr = match[1];
         	       node = this.svgRoot.getNode(attr);
         	       if (node) {
-        	           this.mask = node;        	           
+                       this.mask = node;        	           
         	           node.visible = true;
-        	           
-        	           //Enable mask transparencies
-        	           this.cacheAsBitmap = true; 
-        	           node.cacheAsBitmap = true;
+        	           if (isMask) {
+	        	           //Enable mask transparencies
+	        	           this.cacheAsBitmap = true; 
+	        	           node.cacheAsBitmap = true;
+                       }
         	       }
         	   }
-        	}
-        	
-        	attr = this.getAttribute('clip-path');
-                        
-            if (attr) {
-               match = attr.match(/url\(\s*#(.*?)\s*\)/si);                
-               if (match.length == 2) {
-                   attr = match[1];
-                   node = this.svgRoot.getNode(attr);
-                   if (node) {
-                       this.mask = node;                       
-                       node.visible = true;
-                                              
-                       //DO NOT enable mask transparencies
-                   }
-               }
+        	}        	
+        }
+        
+        //Used by SVGSVGNode and SVGImageNode
+        protected function createMask():void {          
+            if (this.mask) {
+                this.mask.parent.removeChild(this.mask);
+                this.mask = null;
             }
+            
+            var maskWidth:String = this.getAttribute('width');
+            var maskHeight:String = this.getAttribute('height');
+            
+            if (maskWidth && maskHeight) {
+                var shape:Shape = new Shape();
+                shape.graphics.beginFill(0x000000);
+                shape.graphics.drawRect(0, 0, this.getWidth(), this.getHeight());
+                shape.graphics.endFill();
+                this.mask = shape;
+            }
+        }
+        
+        protected function applyViewBox():void {
+            
+            var viewBox:String = this.getAttribute('viewBox');          
+            if (viewBox 
+               && !this.getAttribute('preserveAspectRatio', null, false) 
+               && this.getAttribute('width')
+               && this.getAttribute('height')) {
+                
+                var newMatrix:Matrix = this.transform.matrix.clone();
+                var undoViewBoxMatrix:Matrix = new Matrix();
+                
+                /**
+                 * Canvas, the viewport
+                 **/
+                var canvasWidth:Number = this.getWidth(); //2048.0;
+                var canvasHeight:Number = this.getHeight(); //1024.0;
+                
+                /**
+                 * Viewbox
+                 **/ 
+                var viewX:Number;
+                var viewY:Number;
+                var viewWidth:Number;
+                var viewHeight:Number;
+                if (viewBox != null) {
+                    var points:Array = viewBox.split(/\s+/);
+                    viewX = SVGUnits.cleanNumber(points[0]);
+                    viewY = SVGUnits.cleanNumber(points[1]);
+                    viewWidth = SVGUnits.cleanNumber(points[2]);
+                    viewHeight = SVGUnits.cleanNumber(points[3]);
+                }
+                else {
+                    viewX = 0;
+                    viewY = 0;
+                    viewWidth = canvasWidth;
+                    viewHeight = canvasHeight;
+                    if (this is SVGImageNode) {
+                        if (SVGImageNode(this).imageWidth > 0) {
+                            viewWidth = SVGImageNode(this).imageWidth;
+                        }
+                        if (SVGImageNode(this).imageHeight > 0) {
+                            viewHeight = SVGImageNode(this).imageHeight;
+                        }
+                    }
+                }
+
+
+                var oldAspectRes:Number = viewWidth / viewHeight;
+                var newAspectRes:Number = canvasWidth /  canvasHeight;
+                var cropWidth:Number;
+                var cropHeight:Number;
+
+                var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet', false);;               
+                var alignMode:String = preserveAspectRatio.substr(0,8);
+                
+                var meetOrSlice:String = 'meet';
+                if (preserveAspectRatio.indexOf('slice') != -1) {
+                    meetOrSlice = 'slice';
+                }
+
+                /**
+                 * Handle Scaling
+                 **/
+                if (alignMode == 'none') {
+                    // stretch to fit viewport width and height
+
+                    cropWidth = canvasWidth;
+                    cropHeight = canvasHeight;
+                }
+                else {
+                    if (meetOrSlice == 'meet') {
+                        // shrink to fit inside viewport
+
+                        if (newAspectRes > oldAspectRes) {
+                            cropWidth = canvasHeight * oldAspectRes;
+                            cropHeight = canvasHeight;
+                        }
+                        else {
+                            cropWidth = canvasWidth;
+                            cropHeight = canvasWidth / oldAspectRes;
+                        }
+    
+                    }
+                    else {
+                        // meetOrSlice == 'slice'
+                        // Expand to cover viewport.
+
+                        if (newAspectRes > oldAspectRes) {
+                            cropWidth = canvasWidth;
+                            cropHeight = canvasWidth / oldAspectRes;
+                        }
+                        else {
+                            cropWidth = canvasHeight * oldAspectRes;
+                            cropHeight = canvasHeight;
+                        }
+    
+                    }
+                }
+                var scaleX:Number = cropWidth / viewWidth;
+                var scaleY:Number = cropHeight / viewHeight;
+                newMatrix.translate(-viewX, -viewY);
+                undoViewBoxMatrix.translate(viewX, viewY);
+                newMatrix.scale(scaleX, scaleY);
+                undoViewBoxMatrix.scale(1/scaleX, 1/scaleY);
+
+
+                /**
+                 * Handle Alignment
+                 **/
+                var borderX:Number;
+                var borderY:Number;
+                var translateX:Number;
+                var translateY:Number;
+                if (alignMode != 'none') {
+                    translateX=0;
+                    translateY=0;
+                    var xAlignMode:String = alignMode.substr(0,4);
+                    switch (xAlignMode) {
+                        case 'xMin':
+                            break;
+                        case 'xMax':
+                            translateX = canvasWidth - cropWidth;
+                            break;
+                        case 'xMid':
+                        default:
+                            borderX = canvasWidth - cropWidth;
+                            translateX = borderX / 2.0;
+                            break;
+                    }
+                    var yAlignMode:String = alignMode.substr(4,4);
+                    switch (yAlignMode) {
+                        case 'YMin':
+                            break;
+                        case 'YMax':
+                            translateY = canvasHeight - cropHeight;
+                            break;
+                        case 'YMid':
+                        default:
+                            borderY = canvasHeight - cropHeight;
+                            translateY = borderY / 2.0;
+                            break;
+                    }
+                    newMatrix.translate(translateX, translateY);
+                    undoViewBoxMatrix.translate(-translateX/scaleX, -translateY/scaleY);
+                    undoViewBoxMatrix.translate(translateX, translateY);
+                }   
+                
+                this.transform.matrix = newMatrix;              
+                
+            }
+            
         }
         
         /**
@@ -605,7 +771,7 @@ package com.svgweb.svg.core {
 				return;
 			}
 			
-			var id:String = this._xml.@id;
+			var id:String = this.getAttribute('id');
             
             if (id == _id) {
             	return;
@@ -615,7 +781,7 @@ package com.svgweb.svg.core {
             	this.svgRoot.unregisterNode(this);
             }
             
-            if (id != "") {
+            if (id && id != "") {
                 _id = id;                
                 this.svgRoot.registerNode(this);                
             }
@@ -823,6 +989,60 @@ package com.svgweb.svg.core {
             }
         }
 		
+		
+		public function getWidth():Number {
+			var widthStr:String = this.getAttribute('width');
+			
+            if (widthStr) {
+            	var num:Number = SVGUnits.cleanNumber(widthStr);            	
+                if (widthStr.match(/%/)) {
+                    num = num / 100;                   
+                    if (this.parent is SVGNode) {
+                        return SVGNode(this.parent).getWidth() * num;
+                    }
+                    else if (this.parent) { //DisplayObject
+                        return this.parent.width * num;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
+                else {
+                    return num;
+                }
+            }
+            else {
+                return SVGNode(this.parent).getWidth();
+            } 
+        }
+
+
+        public function getHeight():Number {
+            var widthStr:String = this.getAttribute('height');
+            
+            if (widthStr) {
+                var num:Number = SVGUnits.cleanNumber(widthStr);                
+                if (widthStr.match(/%/)) {
+                    num = num / 100;                 
+                    if (this.parent is SVGNode) {
+                        return SVGNode(this.parent).getHeight() * num;
+                    }
+                    else if (this.parent) { //DisplayObject
+                        return this.parent.height * num;
+                    }
+                    else {
+                        return 0;
+                    }
+                }
+                else {
+                    return num;
+                }
+            }
+            else {
+                return SVGNode(this.parent).getHeight();
+            }
+        }
+        
 		/*
 		 * Getter / Setters
 		 */
@@ -835,9 +1055,7 @@ package com.svgweb.svg.core {
 			
 			if (_xml) {	
 				this.parseStyle();		
-				if (!this.original) {	
-                    this.parseNodes();
-                }
+                this.parseNodes();
                 this.invalidateDisplay();
             }
             
