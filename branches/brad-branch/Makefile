@@ -8,6 +8,7 @@ COMPRESS=1
 
 all: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/svg.htc com/sgweb/svg/build/transform.*
 	cp html/*.html com/sgweb/svg/build/
+	cp html/*.svg com/sgweb/svg/build/
 	cp samples/*.svg com/sgweb/svg/build/
 
 com/sgweb/svg/build/svg.swf: com/sgweb/svg/SVGViewer.as com/sgweb/svg/data/*.as com/sgweb/svg/nodes/*.as com/sgweb/svg/utils/*.as com/sgweb/svg/nodes/mask/*.as
