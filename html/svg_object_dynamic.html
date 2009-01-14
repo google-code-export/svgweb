@@ -9,7 +9,7 @@
    <script>
      window.onload = function() {
        console.log('Developers window.onload');
-       var svgNS = 'http://www.w3.org/2000/svg';
+       var SVGNS = 'http://www.w3.org/2000/svg';
        
        var doc = document.getElementById('mySVG').contentDocument;
        
@@ -27,7 +27,6 @@
        // use some JavaScript to animate the rectangles over and over
        window._counter = 1;
        window.setInterval(function() {
-         var doc = document.getElementById('mySVG').contentDocument;
          var rect = doc.getElementById('myRect');
          var fill;
          if (window._counter % 2 == 0) {
@@ -35,16 +34,14 @@
          } else {
            fill = 'green';
          }
-
          rect.setAttribute('fill', fill);
-         var svg = document.getElementsByTagNameNS(svgNS, 'svg')[1];
-         rect = svg.childNodes[0];
+         
+         rect = doc.getElementsByTagNameNS(SVGNS, 'rect')[0];
          if (window._counter % 2 == 0) {
            fill = 'blue';
          } else {
            fill = 'brown';
          }
-
          rect.setAttribute('fill', fill);
 
          window._counter++;
@@ -59,7 +56,7 @@
         JavaScript</h1>
 
    <object id="mySVG" data="rectangles.svg" type="image/svg+xml"
-           width="200" height="200">
+           width="300" height="300">
    </object>
 
  </body>
