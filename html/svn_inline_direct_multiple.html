@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+  <!--
+    Tests directly embedding multiple SVG blocks into a page.
+    Also tests have XHTML declaration at top of page, as well as having
+    direct SVG blocks both inline and block level displayed, as well as
+    absolutely positioning and using both inline styles and CSS style rules.
+  -->
+
+  <head>
+
+    <!--<script src="svg.js"></script>-->
+    
+    <style type="text/css">
+      #inlineSVG {
+        display: inline;
+      }
+      
+      #absoluteSVG {
+        position: absolute; 
+        right: 5px; 
+        bottom: 5px; 
+        border: 5px solid red;
+      }
+    </style>
+    
+  </head>
+  
+  <body>
+    
+    <h1>Tests directly embedding multiple SVG blocks into a page.
+    Also tests have XHTML declaration at top of page, as well as having
+    direct SVG blocks both inline and block level displayed, as well as
+    absolutely positioning and using both inline styles and CSS style rules.</h1>
+    
+    <h1>First</h1>
+
+    <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+            width="200" height="200" 
+            version="1.1" baseProfile="full">
+        <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+        <svg:rect x="25" y="25" 
+                  id="myRect" 
+                  rx="0.6" ry="0.6" 
+                  width="150" height="150" 
+                  fill="green" 
+                  stroke="yellow" stroke-width="8"></svg:rect>
+    </svg:svg>
+
+    <h1>Second</h1>
+  
+    <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+            width="200" height="200" 
+            version="1.1" baseProfile="full">
+        <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+        <svg:rect x="25" y="25" 
+                  id="myRect" 
+                  rx="0.6" ry="0.6" 
+                  width="150" height="150" 
+                  fill="green" 
+                  stroke="yellow" stroke-width="8"></svg:rect>
+    </svg:svg>
+  
+    <h1>Third</h1>
+  
+    <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+            width="200" height="200" 
+            version="1.1" baseProfile="full">
+        <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+        <svg:rect x="25" y="25" 
+                  id="myRect" 
+                  rx="0.6" ry="0.6" 
+                  width="150" height="150" 
+                  fill="green" 
+                  stroke="yellow" stroke-width="8"></svg:rect>
+    </svg:svg>
+  
+    <h1>Fourth, should run inline using inline style rule:
+      <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+              width="200" height="200"
+              style="display: inline;" 
+              version="1.1" baseProfile="full">
+          <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+          <svg:rect x="25" y="25" 
+                    id="myRect" 
+                    rx="0.6" ry="0.6" 
+                    width="150" height="150" 
+                    fill="green" 
+                    stroke="yellow" stroke-width="8"></svg:rect>
+      </svg:svg>
+    </h1>
+  
+    <h1>Fifth, should run inline using CSS style rule:
+      <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+              width="200" height="200"
+              id="inlineSVG"
+              version="1.1" baseProfile="full">
+          <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+          <svg:rect x="25" y="25" 
+                    id="myRect" 
+                    rx="0.6" ry="0.6" 
+                    width="150" height="150" 
+                    fill="green" 
+                    stroke="yellow" stroke-width="8"></svg:rect>
+      </svg:svg>
+    </h1>
+  
+    <h1>Sixth, should be absolutely positioned near bottom right corner of 
+        page with red border using CSS style rule:
+      <svg:svg xmlns:svg="http://www.w3.org/2000/svg" 
+              width="200" height="200"
+              id="absoluteSVG"
+              version="1.1" baseProfile="full">
+          <svg:rect x="0" y="0" width="60" height="60" style="stroke: green;"></svg:rect>
+          <svg:rect x="25" y="25" 
+                    id="myRect" 
+                    rx="0.6" ry="0.6" 
+                    width="150" height="150" 
+                    fill="green" 
+                    stroke="yellow" stroke-width="8"></svg:rect>
+      </svg:svg>
+    </h1>
+  
+  </body>
+</html>
+  
+  
