@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+                xmlns:svg="http://www.w3.org/2000/svg"
+                xmlns:xlink="http://www.w3.org/1999/xlink">
+                
+  <xsl:output method="xml" 
+              indent="yes" 
+              omit-xml-declaration="yes" />
+                         
+  <xsl:template match="svg:*">
+    <xsl:element name="svg:{local-name(  )}"> <!-- Add svg: to all elements -->
+      <xsl:copy-of select="@*"/> <!-- Copy over all attributes -->
+      <xsl:text> </xsl:text> <!-- Expand empty tags -->
+      <xsl:apply-templates/>
+    </xsl:element>
+  </xsl:template>
+  
+  <xsl:template match="//comment()">
+    <xsl:copy-of select="."/>
+  </xsl:template>
+
+</xsl:stylesheet>
