@@ -1,0 +1,80 @@
+<html>
+  <!-- 
+    Tests having multiple SVG OBJECTs on the page at the same time,
+    as well as making SVG objects have different display and position
+    attributes set both through inline styles as well as CSS style
+    rules. 
+  -->
+    
+  <head>
+    <!--<script src="svg.js"></script>-->
+    
+    <style type="text/css">
+      #blockSVG {
+        display: block;
+      }
+      
+      #inlineSVG {
+        display: inline;
+      }
+      
+      #absoluteSVG {
+        position: absolute; 
+        right: 5px; 
+        bottom: 5px; 
+        border: 5px solid red;
+      }
+    </style>
+  </head>
+  
+  <body>
+    <h1>Tests having multiple SVG OBJECTs on the page at the same time,
+        as well as making SVG objects have different display and position
+        attributes set both through inline styles as well as CSS style
+        rules.</h1>
+    
+    <h1>A block-level SVG object using implicit width and height set with
+        inline style rule:</h1>
+    
+    <object data="scimitar.svg" type="image/svg+xml"
+            style="display: block;"
+            id="testSVG1">
+    </object>
+    
+    <h1>A block-level SVG object using implicit width and height set using
+        CSS rule:</h1>
+    
+    <object data="scimitar.svg" type="image/svg+xml"
+            id="blockSVG">
+    </object>
+    
+    <h1>An inline-level SVG object set using an inline style rule:
+    
+          <object data="scimitar.svg" type="image/svg+xml" 
+                  id="testSVG2" width="100" height="100"
+                  style="display: inline;"
+                  preserveAspectRatio="true">
+          </object>
+    
+          Some more text following the object.
+    </h1>
+          
+    <h1>An inline-level SVG object set using a CSS style rule:
+
+          <object data="scimitar.svg" type="image/svg+xml" 
+                  id="inlineSVG" width="100" height="100"
+                  preserveAspectRatio="true">
+          </object>
+
+          Some more text following the object.</h1>
+          
+    <h1>An absolutely positioned SVG object (should be at bottom right corner 
+        of page, with a thick red border):</h1>
+        
+    <object data="scimitar.svg" type="image/svg+xml" 
+            id="absoluteSVG" width="300" height="300"
+            preserveAspectRatio="true">
+    </object>
+        
+  </body>
+</html>
