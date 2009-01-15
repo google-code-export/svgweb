@@ -197,12 +197,14 @@ package com.svgweb.svg.core {
             this._firstX = true;
             this._firstY = true;
             
+            this.transform.matrix = new Matrix();
+            
             this.setAttributes();
             this.transformNode();
             this.generateGraphicsCommands();
             this.draw();
             
-            this.applyViewBox();
+            //this.applyViewBox();
             this.maskNode(); 
             
             this.svgRoot.doneRendering();
@@ -264,7 +266,7 @@ package com.svgweb.svg.core {
         }
         
         protected function applyViewBox():void {
-            
+            return;
             var viewBox:String = this.getAttribute('viewBox');          
             if (viewBox 
                && !this.getAttribute('preserveAspectRatio', null, false) 
@@ -287,14 +289,14 @@ package com.svgweb.svg.core {
                 var viewY:Number;
                 var viewWidth:Number;
                 var viewHeight:Number;
-                if (viewBox != null) {
+                //if (viewBox != null) {
                     var points:Array = viewBox.split(/\s+/);
                     viewX = SVGUnits.cleanNumber(points[0]);
                     viewY = SVGUnits.cleanNumber(points[1]);
                     viewWidth = SVGUnits.cleanNumber(points[2]);
                     viewHeight = SVGUnits.cleanNumber(points[3]);
-                }
-                else {
+                //}
+                /* else {
                     viewX = 0;
                     viewY = 0;
                     viewWidth = canvasWidth;
@@ -307,7 +309,7 @@ package com.svgweb.svg.core {
                             viewHeight = SVGImageNode(this).imageHeight;
                         }
                     }
-                }
+                } */
 
 
                 var oldAspectRes:Number = viewWidth / viewHeight;
@@ -445,17 +447,17 @@ package com.svgweb.svg.core {
         	
         	attr = this.getAttribute('x');
         	if (attr) {
-        		this.x = SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
+        		this.x += SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
         	}
         	
         	attr = this.getAttribute('y');
             if (attr) {
-                this.y = SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
+                this.y += SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
             }
             
             attr = this.getAttribute('rotate');
             if (attr) {
-                this.rotation = SVGUnits.cleanNumber(attr);
+                this.rotation += SVGUnits.cleanNumber(attr);
             }
             
             attr = this.getAttribute('opacity');
@@ -469,81 +471,83 @@ package com.svgweb.svg.core {
         	var transform:String = this.getAttribute('transform');
             
             if (transform) {
-            	var matrix:Matrix = this.transform.matrix.clone();            	
-            	matrix.concat(this.parseTransform(transform));
-            	this.transform.matrix = matrix;                
-            }
+            	this.transform.matrix = this.parseTransform(transform, this.transform.matrix.clone());              
+            }  
         }
         
-        public function parseTransform(trans:String):Matrix {
+        public function parseTransform(trans:String, baseMatrix:Matrix = null):Matrix {
+            if (!baseMatrix) {
+            	baseMatrix = new Matrix();
+            }
+            
             if (trans != null) {
-                
-                var newMatrix:Matrix = new Matrix();               
-                
                 var transArray:Array = trans.match(/\S+\(.*?\)/sg);
+                transArray.reverse();
                 for each(var tran:String in transArray) {
-                    var matrix:Matrix = new Matrix();
                     var tranArray:Array = tran.split('(',2);
                     if (tranArray.length == 2)
                     {
                         var command:String = String(tranArray[0]);
                         var args:String = String(tranArray[1]);
                         args = args.replace(')','');
-                        args = args.replace(/\s/g, '');
-                        var argsArray:Array = args.split(',');
-                        
+                        args = args.replace(/ /g, '');
+                        var argsArray:Array = args.split(/[, ]/);
+
+                        var nodeMatrix:Matrix = new Matrix();
                         switch (command) {
                             case "matrix":
                                 if (argsArray.length == 6) {
-                                    matrix.a = argsArray[0];
-                                    matrix.b = argsArray[1];
-                                    matrix.c = argsArray[2];
-                                    matrix.d = argsArray[3];
-                                    matrix.tx = argsArray[4];
-                                    matrix.ty = argsArray[5];
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.b = argsArray[1];
+                                    nodeMatrix.c = argsArray[2];
+                                    nodeMatrix.d = argsArray[3];
+                                    nodeMatrix.tx = argsArray[4];
+                                    nodeMatrix.ty = argsArray[5];
                                 }
                                 break;
-                                
-                            case "translate":                                                            
+
+                            case "translate":
                                 if (argsArray.length == 1) {
-                                   matrix.translate(argsArray[0], 0);                                   
+                                    nodeMatrix.tx = argsArray[0]; 
                                 }
                                 else if (argsArray.length == 2) {
-                                	matrix.translate(SVGUnits.cleanNumber(argsArray[0]), SVGUnits.cleanNumber(argsArray[1]));                                    
+                                    nodeMatrix.tx = argsArray[0]; 
+                                    nodeMatrix.ty = argsArray[1]; 
                                 }
                                 break;
-                                
+
                             case "scale":
                                 if (argsArray.length == 1) {
-                                	matrix.scale(SVGUnits.cleanNumber(argsArray[0]), SVGUnits.cleanNumber(argsArray[0]));
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.d = argsArray[0];
                                 }
                                 else if (argsArray.length == 2) {
-                                    matrix.scale(SVGUnits.cleanNumber(argsArray[0]), SVGUnits.cleanNumber(argsArray[1]));
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.d = argsArray[1];
                                 }
                                 break;
                                 
                             case "skewX":
-                                matrix.a = argsArray[0];
+                                nodeMatrix.c = Math.tan(argsArray[0] * Math.PI / 180.0);
                                 break;
                                 
                             case "skewY":
-                                matrix.d = argsArray[0];
+                                nodeMatrix.b = Math.tan(argsArray[0] * Math.PI / 180.0);
                                 break;
                                 
                             case "rotate":
-                                matrix.rotate(Number(argsArray[0])* Math.PI / 180.0); 
+                                nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0); 
                                 break;
                                 
                             default:
-                                trace('Unknown Transformation: ' + command);
+                                //this.dbg('Unknown Transformation: ' + command);
                         }
+                        baseMatrix.concat(nodeMatrix);
                     }
-                    newMatrix.concat(matrix);
-                } 
-                
-                return newMatrix;
+                }
             }
-            return null;
+            
+            return baseMatrix;
         }
         
         protected function generateGraphicsCommands():void {
@@ -1000,11 +1004,11 @@ package com.svgweb.svg.core {
                     if (this.parent is SVGNode) {
                         return SVGNode(this.parent).getWidth() * num;
                     }
-                    else if (this.parent) { //DisplayObject
+                    /* else if (this.parent) { //DisplayObject
                         return this.parent.width * num;
-                    }
+                    } */
                     else {
-                        return 0;
+                        return this.stage.width; //0;
                     }
                 }
                 else {
@@ -1027,11 +1031,11 @@ package com.svgweb.svg.core {
                     if (this.parent is SVGNode) {
                         return SVGNode(this.parent).getHeight() * num;
                     }
-                    else if (this.parent) { //DisplayObject
+                    /* else if (this.parent) { //DisplayObject
                         return this.parent.height * num;
-                    }
+                    } */
                     else {
-                        return 0;
+                        return this.stage.height; //0;
                     }
                 }
                 else {

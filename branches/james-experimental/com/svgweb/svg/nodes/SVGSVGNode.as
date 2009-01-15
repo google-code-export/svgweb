@@ -22,7 +22,7 @@ package com.svgweb.svg.nodes {
             this.transformNode();
             
             this.createMask();
-            this.applyViewBox();            
+           //this.applyViewBox();            
         }
 				
 		public function registerNode(node:SVGNode):void {
