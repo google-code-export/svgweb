@@ -77,7 +77,7 @@ package com.sgweb.svg
         protected var sourceTypeParam:String = "";
         protected var svgURLParam:String = "";
         protected var svgIdParam:String = "";
-        protected var debugEnabled:Boolean = false;
+        protected var debugEnabled:Boolean = true;
         protected var scriptSentToJS:Boolean = false;
 
         public function SVGViewer():void {
@@ -99,6 +99,8 @@ package com.sgweb.svg
             this._svgRoot.handleOnLoad = this.handleOnLoad;
             this._svgRoot.svgRoot = this._svgRoot;
             this.addChild(this._svgRoot);
+
+            this.debug('SVGViewer constructor');
 
             this.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
 
@@ -124,7 +126,7 @@ package com.sgweb.svg
             }
             try {
                 ExternalInterface.call("receiveFromFlash", { type: 'event',
-                                                             eventType: "onLoad",
+                                                             eventType: "onRenderingFinished",
                                                              width: this._svgRoot.getWidth(),
                                                              height: this._svgRoot.getHeight(),
                                                              uniqueId: this.js_uniqueId,
@@ -372,7 +374,7 @@ package com.sgweb.svg
                 // notify browser javascript that we are started and ready
                 try {
                     var result:Object = ExternalInterface.call("receiveFromFlash",
-                        { type: 'event', eventType: 'onStartup', uniqueId: this.js_uniqueId } );
+                        { type: 'event', eventType: 'onFlashLoaded', uniqueId: this.js_uniqueId } );
                 }
                 catch(error:SecurityError) {
                     debugstr = "Security Error on ExternalInterface.call(...). ";
