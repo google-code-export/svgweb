@@ -85,7 +85,7 @@ TODO: Figure out the licensing and copyright verbiage up here.
   // process embedded SVG for non-IE browsers that natively support SVG
   // TODO: Test this code on Opera  
   function NativeSVG() {
-    console.log('NativeSVG constructor');
+    //console.log('NativeSVG constructor');
     // data structure representing SVG we can work with for _processSVG()
     this._SVG = {
       // SVG 1.1 + id + class + opacity + offset + style + some of 
@@ -184,7 +184,7 @@ TODO: Figure out the licensing and copyright verbiage up here.
     // adapted from Dean Edwards/Matthias Miller/John Resig/others
     // onDOMContentLoaded work
     // quit if this function has already been called
-    console.log('domContentLoaded');
+    //console.log('domContentLoaded');
     if (arguments.callee.done) {
       return;
     }
@@ -225,7 +225,7 @@ TODO: Figure out the licensing and copyright verbiage up here.
   // Safari as well as modified to have the embedded SVG work in a 
   // way that operates in Internet Explorer
   NativeSVG.prototype._processSVG = function() {
-    console.log('processSVG');
+    //console.log('processSVG');
     // copy modules into their appropriate namespaces
     var modules = [this._SVG];
     var i, j;
@@ -412,7 +412,7 @@ TODO: Figure out the licensing and copyright verbiage up here.
   }
   
   FlashSVG.prototype._onMessage = function(flashMsg) {
-    console.log('onMessage, flashMsg='+flashMsg);
+    console.log('onMessage, flashMsg='+this._debugFlashMsg(flashMsg));
     if (flashMsg.type == 'event') {
       this._onEvent(flashMsg);
       return;
@@ -452,7 +452,6 @@ TODO: Figure out the licensing and copyright verbiage up here.
     console.log('_onFlashLoaded');
     
     var svgID = flashMsg.uniqueId;
-    console.log('svgID='+svgID);
     
     // on IE getting the SVG element by ID sometimes doesn't work based on 
     // caching wierdness (IE has lots of cache bugs). A setTimeout of 1 ms 
@@ -465,7 +464,6 @@ TODO: Figure out the licensing and copyright verbiage up here.
     var self = this;
     window.setTimeout(function() {   
       var svg = document.getElementById(svgID);
-      console.log('svg='+svg);
       if (svgID != '__svg__hiddenSVG') {
         svg.processSVG();
       } else {
@@ -508,7 +506,6 @@ TODO: Figure out the licensing and copyright verbiage up here.
     console.log('_onRenderingFinished');
     
     var svgID = flashMsg.uniqueId;
-    console.log('svgID='+svgID);
     
     if (!this._pageLoadFinished) { // are we still loading the page itself?
       this._svgLoaded++; // bump the number of SVG objects that are loaded
@@ -563,7 +560,7 @@ TODO: Figure out the licensing and copyright verbiage up here.
   }
   
   FlashSVG.prototype._receiveFromFlash = function(flashMsg) {
-    console.log('receiveFromFlash, flashMsg='+flashMsg);
+    console.log('receiveFromFlash, flashMsg='+this._debugFlashMsg(flashMsg));
     this._onMessage(flashMsg);
   }
 
@@ -667,7 +664,6 @@ TODO: Figure out the licensing and copyright verbiage up here.
     
     // no embedded SVG?
     var svg = document.getElementsByTagName('svg');
-    console.log('svg='+svg);
     if (svg.length === 0) {
       // insert an SVG element into the page to force the 
       // HTC behavior to load
@@ -717,6 +713,19 @@ TODO: Figure out the licensing and copyright verbiage up here.
         onload();
       }
     }
+  }
+  
+  FlashSVG.prototype._debugFlashMsg = function(flashMsg) {
+    // stringify the flashMsg to help with debugging
+    // TODO: Create a way to disable this if we are not debugging for
+    // performance reasons
+    var result = [];
+    for (var i in flashMsg) {
+      result.push(i + ': ' + flashMsg[i]);
+    }
+    result = result.join(', ');
+    
+    return '{' + result + '}';
   }
 
   var viewer = null;

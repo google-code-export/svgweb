@@ -180,8 +180,6 @@
             + (transparent ? '<param name="wmode" value="transparent"></param>\n ' : '')
             + '<param name="AllowScriptAccess" value="always"></param>\n '
           + '</object>';
-          
-        console.log('objectHTML='+objectHTML);
 
         // We use the Behavior ViewLink trick to 'hide' this shadow content from 
         // the external page, so that we don't see the Flash object in the 
@@ -218,9 +216,7 @@
         // tricks from Dojo Flash. More details on these
         // hidden Flash methods here:
         // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
-        console.log('viewer='+getViewer().outerHTML);
         getViewer().sendToFlash = getFlashFunction('sendToFlash');
-        console.log('next');
         
         // make our visibility hidden until we are done to prevent flashing
         // TODO: Get this working again
@@ -267,7 +263,6 @@
                               svgString: data});
           }, 1);
         } else {
-          console.log('SOMEWHERE WHERE I SHOULDNT BE YET!!!');
           var parentId = this.parentNode.id;
           // TODO: Do an appendChild operation using Rick's Flash backend
           /*this.sendToFlash({type: 'invoke', method: 'appendChild',
@@ -560,7 +555,7 @@
       // override some DOM methods to have our own behavior
       
       function getAttribute(attr) {
-        console.log('getAttribute, attr='+attr);
+        //console.log('getAttribute, attr='+attr);
         if (this.isAttached()) {
           var result = this.sendToFlash({type: 'invoke', 
                                         method: 'getAttribute',
@@ -573,7 +568,7 @@
       }
     
       function setAttribute(attrName, attrValue) {
-        console.log('setAttribute, attrName='+attrName);    
+        //console.log('setAttribute, attrName='+attrName);    
         if (this.isAttached()) {
           this.sendToFlash({type: 'invoke', method: 'setAttribute',
                             elementId: element.id,
