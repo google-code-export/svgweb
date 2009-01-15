@@ -38,6 +38,7 @@
   </public:component>
 
   <script type="text/javascript">
+      /** Get the Flash object that is embedding the SVG viewer. */
       function getViewer() {
         //console.log('getViewer');
         
@@ -70,8 +71,9 @@
         return this._flashElement;
       }
 
-      // watch to see when anyone changes a 'style' property so we
-      // can mirror it in the Flash control
+      /** Watch to see when anyone changes a 'style' property so we
+          can mirror it in the Flash control. Not implemented
+          yet. */
       function propertyChange() {
         //console.log('onpropertychange');
         // TODO: Implement
@@ -82,6 +84,8 @@
         }
       }
     
+      /** Called when the content is ready for some SVG tag in the HTML
+          page. This method is called for each individual SVG tag. */
       function contentReady() {
         // We are a dynamically created DOM node and are now live
         if (!this.isAttached() && ownerDocument.readyState == 'complete') {
@@ -132,14 +136,25 @@
         console.log('width='+width);
         console.log('height='+height);
         
-        // have the Flash object either be transparent or drawn so
-        // it can have z-ordering
-        var wmode = 'opaque';
+        var transparent = '';
+        var bgcolor = '';
         if (this.currentStyle.backgroundColor == 'transparent') {
           // no background color specified
-          wmode = 'transparent';
+          transparent = ' wmode="transparent" ';
+        } else {
+          bgcolor = ' bgcolor="' + this.currentStyle.backgroundColor + '"';
         }
-      
+        
+        var flashVars = '"'
+            + 'uniqueId=' + this.id
+            + '&sourceType=string'
+            + '&scaleMode=showAll_svg' // FIXME: is this the right scaleMode?
+            + '&debug=true';
+        if (typeof(element.id) != "undefined") {
+            flashVars = flashVars  + '&svgId=' + this.id;
+        }
+        flashVars = flashVars  + '"';
+        
         // IE is extremely sensitive to how we embed the Flash control into
         // the page; if we do it the wrong way, it will either fail to display
         // or aspects of ExternalInterface will not work. Don't change the
@@ -161,10 +176,12 @@
             + 'width="' + width + '"\n '
             + 'height="' + height + '">\n '
             + '<param name="Movie" value="' + this.libraryPath + 'svg.swf"></param>\n '
-            + '<param name="wmode" value="' + wmode + '"></param>\n '
+            + '<param name="FlashVars" value=' + flashVars + '></param>\n '
+            + (transparent ? '<param name="wmode" value="transparent"></param>\n ' : '')
             + '<param name="AllowScriptAccess" value="always"></param>\n '
-            + '<param name="FlashVars" value="svgID=' + this.id + '"></param>\n '
           + '</object>';
+          
+        console.log('objectHTML='+objectHTML);
 
         // We use the Behavior ViewLink trick to 'hide' this shadow content from 
         // the external page, so that we don't see the Flash object in the 
@@ -201,17 +218,21 @@
         // tricks from Dojo Flash. More details on these
         // hidden Flash methods here:
         // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
-        var viewer = getViewer();
-        viewer.parseBrowserSVG = getFlashFunction('parseBrowserSVG');
-        viewer.__svg__getAttribute = getFlashFunction('__svg__getAttribute');
-        viewer.__svg__setAttribute = getFlashFunction('__svg__setAttribute');
-        viewer.__svg__appendChild = getFlashFunction('__svg__appendChild');
+        console.log('viewer='+getViewer().outerHTML);
+        getViewer().sendToFlash = getFlashFunction('sendToFlash');
+        console.log('next');
         
         // make our visibility hidden until we are done to prevent flashing
         // TODO: Get this working again
         //this.style.visibility = 'hidden';
       }
       
+      /** A function that makes it possible to call Flash functions
+          exposed through ExternalInterface. We need to do some magic
+          to call Flash functions even though we are embedded inside
+          of a Microsoft Behavior. This function encapsulates this magic.
+          This function actually returns a function which is then suitable
+          for calling. */
       function getFlashFunction(method) {
         return function() {
           return eval(this.CallFunction(
@@ -220,8 +241,10 @@
         }
       }
     
+      /** Called when we are ready to process some SVG and pass it into
+          the Flash viewer. */
       function processSVG() {
-        //console.log('processSVG');
+        console.log('processSVG');
         
         // every SVG node needs an ID so we can do registration
         // between our shadow DOM and the one in Flash
@@ -232,15 +255,24 @@
         //console.log('data='+data);
 
         // now pass our SVG into the Flash viewer to render
-        var viewer = this.getViewer();
         if (this.nodeName.toUpperCase() == 'SVG') {
-          console.log('calling parseBrowserSVG');
           var self = this;
+          // FIXME: Document and test why need this setTimeout here;
+          // I believe I needed it to get around a caching bug in IE but
+          // I should have documented it; I probably accidentally left it
+          // in during testing
           window.setTimeout(function() {
-            viewer.parseBrowserSVG(data, self.id);
-          }, 1000);
+            self.sendToFlash({type: 'load', 
+                              sourceType: 'string',
+                              svgString: data});
+          }, 1);
         } else {
+          console.log('SOMEWHERE WHERE I SHOULDNT BE YET!!!');
           var parentId = this.parentNode.id;
+          // TODO: Do an appendChild operation using Rick's Flash backend
+          /*this.sendToFlash({type: 'invoke', method: 'appendChild',
+                            elementId: this.id,
+                            childId: childNode.elementId});*/                            
           viewer.__svg__appendChild(data, parentId);
         }
         
@@ -253,6 +285,10 @@
         //this.style.visibility = 'visible';
       }
       
+      /** Walks the SVG DOM, adding automatic generated IDs to those
+          elements which don't have them. We need IDs on all elements
+          in order to be able to 'shadow' values between them and
+          the SVG DOM inside the Flash viewer. */
       function addIDs() {
         // every SVG node needs an ID so we can do registration
         // between our shadow DOM and the one in Flash
@@ -290,6 +326,8 @@
         }
       }
       
+      /** Gets the SVG markup from the page and cleans it up, making it
+          ready to pass into the Flash SVG viewer. */
       function getSVG() {
         // get the SVG markup and clean it up
         var data = this.outerHTML;
@@ -395,6 +433,14 @@
         return data;
       }
       
+      /** 
+          Generates a random ID, making sure there are no collisions.
+      
+          @param prefix An optional string to put in front of the random ID
+                        number.
+          @param postfix An optional string to place after the random ID
+                        number.
+        */
       function generateID(prefix, postfix) {
         // generate an ID for this element
         if (!postfix) {
@@ -414,16 +460,40 @@
         return newID;
       }
       
+      /** Determines whether this node has been attached to an actual SVG
+          DOM yet. Needed to differentiate usecases like the following:
+          
+          var node = document.createElementNS(svgns, 'rect');
+          // node is not attached to the Flash viewer yet
+          node.setAttribute('fill', 'red');
+          var svgRoot = document.getElementsByTagNameNS(svgns, 'svg')[0];
+          svgRoot.appendChild(node); // now we are attached
+        
+          Before we are attached we have to queue up any changes, since we
+          can't pass them into the Flash SVG viewer yet until we are
+          attached to a node that is actually present in the viewer.
+        */
       function isAttached() {
         // HTC 'Properties' are initially returned as strings, even
         // if they are boolean
         return this._attached == 'true' || this._attached == true ? true : false;
       }
       
+      /** Makes it possible to indicate whether a node is now attached
+          or not (see isAttached() for details on what it means to be attached).
+          
+          @param attach:Boolean - whether we are now attached
+          @param recursive:Boolean - used internally do recursion to
+          set all child nodes to the same attached state.
+        */
       function setAttached(attach, recursive) {
         // we use a method (setAttached) to set this property
         // rather than use a public:property setter so that we
         // can have a second argument, 'recursive'.
+        
+        if (typeof recursive == "undefined") {
+          recursive = false;
+        }
         
         if (!recursive) {
           this._attached = attach;
@@ -464,53 +534,90 @@
         }
       }
       
-      function getListeners(eventName) {
-        if (!this._listeners) {
+      /** Get any listeners for some event type, such as SVGLoad. */
+      function getListeners(type) {
+        if (!this._eventHandlers) {
           return [];
-        } else if (!this._listeners[eventName]) {
+        } else if (!this._eventHandlers[type]) {
           return [];
         } else {
-          return this._listeners[eventName];
+          return this._eventHandlers[type];
+        }
+      }
+      
+      /** Send a message to the Flash viewer.
+          TODO: document the flashMsg payload format. */
+      function sendToFlash(flashMsg) {
+        flashMsg.uniqueId = element.id;
+        try {
+          return getViewer().sendToFlash(flashMsg);
+        }
+        catch(e) {
+          return null;
         }
       }
       
       // override some DOM methods to have our own behavior
       
       function getAttribute(attr) {
-        //console.log('getAttribute, attr='+attr);
+        console.log('getAttribute, attr='+attr);
         if (this.isAttached()) {
-          return getViewer().__svg__getAttribute(element.id, attr);
+          var result = this.sendToFlash({type: 'invoke', 
+                                        method: 'getAttribute',
+                                        elementId: element.id,
+                                        attrName: attr});
+          return (!result) ? null : result.attrValue;
         } else {
           return this[attr];
         }
       }
     
       function setAttribute(attrName, attrValue) {
-        //console.log('setAttribute, attrName='+attrName);
-        // TODO: Should this return the _original_ value? Look at the spec
+        console.log('setAttribute, attrName='+attrName);    
         if (this.isAttached()) {
-          return getViewer().__svg__setAttribute(element.id, attrName, attrValue);
+          this.sendToFlash({type: 'invoke', method: 'setAttribute',
+                            elementId: element.id,
+                            attrName: attrName, attrValue: attrValue});
         } else {
           this[attrName] = attrValue;
-          return this[attrName];
-        }
-      }
-      
-      function addEventListener(eventName, callMe, capture) {
-        if (!this._listeners) {
-          this._listeners = new Object();
         }
         
-        // TODO: Make more generic for other SVG event types
-        // as well as capturing
-        if (eventName == 'SVGLoad') {
-          var onloadListeners = this._listeners[eventName];
-          if (onloadListeners == undefined) {
-            onloadListeners = [];
-          }
-          onloadListeners.push(callMe);
-          this._listeners[eventName] = onloadListeners;
+        if (attrName == 'id') {
+          this.id = attrValue;
         }
+        
+        // FIXME: Does the setAttribute spec require me to return a value?
+      }
+      
+      function addEventListener(type, listener, capture) {
+        if (typeof this._eventHandlers == 'undefined') {
+          this._eventHandlers = {};
+        }
+        
+        // TODO: Integrate Rick's keydown handling code below
+        /*if (type == 'keydown') {
+             svgviewer.addEvent(window.document, type, 
+                                (function(myListener) {
+                                    return function(myEvent) {
+                                        if (!myEvent.preventDefault) {
+                                            myEvent.preventDefault=function() { this.returnValue=false;};
+                                        }
+                                        myListener(myEvent);
+                                    }
+                                })(listener) );
+             return;
+         }*/
+
+         if (typeof this._eventHandlers[type] == 'undefined') {
+             this._eventHandlers[type] = [listener];
+         }
+         else {
+             this._eventHandlers[type].push(listener);
+         }
+         
+         this.sendToFlash({type: 'invoke', method: 'addEventListener',
+                           elementId: element.id,
+                           eventType: type});
       }
   </script>
 </head>

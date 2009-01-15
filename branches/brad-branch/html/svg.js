@@ -1,48 +1,17 @@
 /*
-Copyright (c) 2008 Richard R. Masters
-
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+TODO: Figure out the licensing and copyright verbiage up here.
 */
 
-/*------------------------------------------------------------*\
-  svgviewer is the global namespace that represents the
-  entry point for creating svg objects and looking them up.
-
-  An SVGFlashHandler is the class which is used to create
-  the flash object html and handles communication with
-  the flash object.
-
-  An SVGNode represents an instance of a sprite.
-
-\*------------------------------------------------------------*/
-
-var SVGNS = 'http://www.w3.org/2000/svg';
+(function(){ // hide everything externally to avoid name collisions
   
-// browser detection adapted from Dojo
-
-var isOpera = false, isSafari = false, isMoz = false, isIE = false, 
-    isAIR = false, isKhtml = false, isFF = false;
+  var SVGNS = 'http://www.w3.org/2000/svg';
   
-function _detectBrowsers() {
+  // browser detection adapted from Dojo
+  
+  var isOpera = false, isSafari = false, isMoz = false, isIE = false, 
+      isAIR = false, isKhtml = false, isFF = false;
+      
+  function _detectBrowsers() {
     var n = navigator,
         dua = n.userAgent,
         dav = n.appVersion,
@@ -54,478 +23,535 @@ function _detectBrowsers() {
     //    http://developer.apple.com/internet/safari/uamatrix.html
     var index = Math.max(dav.indexOf('WebKit'), dav.indexOf('Safari'), 0);
     if (index) {
-        // try to grab the explicit Safari version first. If we don't get
-        // one, look for 419.3+ as the indication that we're on something
-        // "Safari 3-ish". Lastly, default to "Safari 2" handling.
-        isSafari = parseFloat(dav.split('Version/')[1]) ||
-            (parseFloat(dav.substr(index + 7)) > 419.3) ? 3 : 2;
+      // try to grab the explicit Safari version first. If we don't get
+      // one, look for 419.3+ as the indication that we're on something
+      // "Safari 3-ish". Lastly, default to "Safari 2" handling.
+      isSafari = parseFloat(dav.split('Version/')[1]) ||
+        (parseFloat(dav.substr(index + 7)) > 419.3) ? 3 : 2;
     }
     if (dua.indexOf('AdobeAIR') >= 0) { isAIR = 1; }
     if (dav.indexOf('Konqueror') >= 0 || isSafari) { isKhtml =  tv; }
     if (dua.indexOf('Gecko') >= 0 && !isKhtml) { isMoz = tv; }
     if (isMoz) {
-        isFF = parseFloat(dua.split('Firefox/')[1]) || undefined;
+      isFF = parseFloat(dua.split('Firefox/')[1]) || undefined;
     }
     if (document.all && !isOpera) {
-        isIE = parseFloat(dav.split('MSIE ')[1]) || undefined;
+      isIE = parseFloat(dav.split('MSIE ')[1]) || undefined;
     }
-}
-
-_detectBrowsers();
+  }
   
-// end browser detection
-
-// be able to have debug output when there is no Firebug
-if (typeof console == 'undefined' || !console.debug || !console.log) {
+  _detectBrowsers();
+  
+  // end browser detection
+  
+  
+  // be able to have debug output when there is no Firebug
+  if (typeof console == 'undefined' || !console.debug || !console.log) {
     var queue = [];
     console = {};
-    console.debug = console.log = console.error = function(msg) {
-        var body = null;
-        // IE can sometimes throw an exception if document.body is accessed
-        // before the document is fully loaded
-        try {
-            body = document.body;
-        } catch (exp) {
-            body = null;
-        }
+    console.debug = console.log = function(msg) {
+      var body = null;
+      // IE can sometimes throw an exception if document.body is accessed
+      // before the document is fully loaded
+      try {
+        body = document.body;
+      } catch (exp) {
+        body = null;
+      }
 
-        if (!body) {
-            queue.push(msg);
-            return;
-        }
-      
-        var p;
-        while (queue.length) {
-            var oldMsg = queue.shift();
-            p = document.createElement('p');
-            p.appendChild(document.createTextNode(oldMsg));
-            document.getElementsByTagName('body')[0].appendChild(p);
-        }
-    
-        // display new message now
+      if (!body) {
+        queue.push(msg);
+        return;
+      }
+        
+      var p;
+      while (queue.length) {
+        var oldMsg = queue.shift();
         p = document.createElement('p');
-        p.className = 'debug-message';
-        p.appendChild(document.createTextNode(msg));
+        p.appendChild(document.createTextNode(oldMsg));
         document.getElementsByTagName('body')[0].appendChild(p);
+      }
+      
+      // display new message now
+      p = document.createElement('p');
+      p.className = 'debug-message';
+      p.appendChild(document.createTextNode(msg));
+      document.getElementsByTagName('body')[0].appendChild(p);
     };
-}
-// end debug output methods
-
-var svgviewer = {};
-svgviewer.svgHandlers = {};
-
-svgviewer.createSVG = function ( params ) {
-    if (typeof(params.parentId) == "undefined") {
-        console.error('svg.js: createSVG: no parentId');
-        return;
-    }
-    if (typeof(params.sourceType) == "undefined") {
-        console.error('svg.js: createSVG: no sourceType');
-        return;
-    }
-    if (typeof(params.svgURL) == "undefined") {
-        console.error('svg.js: createSVG: no svgURL');
-        return;
-    }
-    if (params.sourceType == "inline_script" && 
-        typeof(params.svgId) == "undefined") {
-        console.error('svg.js: createSVG: no svgId');
-        return;
-    }
-    if (params.sourceType == "url_script" && 
-        typeof(params.svgId) == "undefined") {
-        console.error('svg.js: createSVG: no svgId');
-        return;
-    }
-
-    var svgHandler = new SVGFlashHandler(params);
-    svgviewer.svgHandlers[svgHandler.uniqueId] = svgHandler;
-
-    svgHandler.createSVGHTML();
-    return svgHandler;
-}
-svgviewer.clientWidth=function() {
-    return (window.innerWidth > 0) ? window.innerWidth :
-            ((document.documentElement && (document.documentElement.clientWidth > 0)) ? document.documentElement.clientWidth :
-             document.body.clientWidth);
-}
-svgviewer.clientHeight=function() {
-    return (window.innerHeight > 0) ? window.innerHeight :
-            ((document.documentElement && (document.documentElement.clientHeight > 0)) ? document.documentElement.clientHeight :
-             document.body.clientHeight);
-}
-
-svgviewer.addEvent = function( obj, type, fn )
-{
-    if (obj.addEventListener)
-        obj.addEventListener( type, fn, false );
-    else if (obj.attachEvent)
-    {
-        obj["e"+type+fn] = fn;
-        obj[type+fn] = function() { obj["e"+type+fn]( window.event ); }
-        obj.attachEvent( "on"+type, obj[type+fn] );
-    }
-}
-
-svgviewer.removeEvent = function ( obj, type, fn )
-{
-    if (obj.removeEventListener)
-        obj.removeEventListener( type, fn, false );
-    else if (obj.detachEvent)
-    {
-        obj.detachEvent( "on"+type, obj[type+fn] );
-        obj[type+fn] = null;
-        obj["e"+type+fn] = null;
-    }
-}
-
-function receiveFromFlash(flashMsg) {
-    var svgHandler = svgviewer.svgHandlers[flashMsg.uniqueId];
-    if (svgHandler) {
-        svgHandler.onMessage(flashMsg);
-    }
-}
-
-/* end svgviewer global functions */
+  }
+  // end debug output methods
 
 
+  // process embedded SVG for non-IE browsers that natively support SVG
+  // TODO: Test this code on Opera  
+  function NativeSVG() {
+    console.log('NativeSVG constructor');
+    // data structure representing SVG we can work with for _processSVG()
+    this._SVG = {
+      // SVG 1.1 + id + class + opacity + offset + style + some of 
+      // Mark Ruby's original list
+      prefix: 'svg',
+      root: 'svg:svg',
+      ns: SVGNS,
+      elements: ['a', 'altGlyph', 'altGlyphDef', 'altGlyphItem', 'animate', 
+          'animateColor', 'animateMotion', 'animateTransform', 'circle', 
+          'clipPath', 'color-profile', 'cursor', 'definition-src', 'defs', 
+          'desc', 'ellipse', 'feBlend', 'feColorMatrix', 'feComponentTransfer', 
+          'feComposite', 'feConvolveMatrix', 'feDiffuseLighting', 
+          'feDisplacementMap', 'feDistantLight', 'feFlood', 'feFuncA', 
+          'feFuncB', 'feFuncG', 'feFuncR', 'feGaussianBlur', 'feImage', 
+          'feMerge', 'feMergeNode', 'feMorphology', 'feOffset', 'fePointLight', 
+          'feSpecularLighting', 'feSpotLight', 'feTile', 'feTurbulence', 
+          'filter', 'font', 'font-face', 'font-face-format', 'font-face-name', 
+          'font-face-src', 'font-face-uri', 'foreignObject', 'g', 'glyph', 
+          'glyphRef', 'hkern', 'image', 'line', 'linearGradient', 'marker', 
+          'mask', 'metadata', 'missing-glyph', 'mpath', 'path', 'pattern', 
+          'polygon', 'polyline', 'radialGradient', 'rect', 'script', 'set', 
+          'stop', 'style', 'switch', 'symbol', 'text', 'textPath', 'title', 
+          'tref', 'tspan', 'use', 'view', 'vkern'],
+      attributes: ['accent-height', 'accumulate', 'additive', 
+          'alignment-baseline', 'alphabetic', 'amplitude', 'animate', 
+          'arabic-form', 'ascent', 'attributeName', 'attributeType', 
+          'azimuth', 'baseFrequency', 'baseline-shift', 'baseProfile', 
+          'bbox', 'begin', 'bias', 'by', 'calcMode', 'cap-height', 'class', 
+          'clip', 'clip-path', 'clip-rule', 'clipPathUnits', 'color', 
+          'color-interpolation', 'color-interpolation-filters', 
+          'color-profile', 'color-rendering', 'content', 'contentScriptType', 
+          'contentStyleType', 'cursor', 'cx', 'cy', 'd', 'descent', 
+          'diffuseConstant', 'direction', 'display', 'divisor', 
+          'dominant-baseline', 'dur', 'dx', 'dy', 'edgeMode', 'elevation', 
+          'enable-background', 'end', 'exponent', 'externalResourcesRequired', 
+          'feColorMatrix', 'feComposite', 'feGaussianBlur', 'feMorphology', 
+          'feTile', 'fill', 'fill-opacity', 'fill-rule', 'filter', 'filterRes', 
+          'filterUnits', 'flood-color', 'flood-opacity', 'font-family', 
+          'font-size', 'font-size-adjust', 'font-stretch', 'font-style', 
+          'font-variant', 'font-weight', 'format', 'from', 'fx', 'fy', 'g1', 
+          'g2', 'glyph-name', 'glyph-orientation-horizontal', 
+          'glyph-orientation-vertical', 'glyphRef', 'gradientTransform', 
+          'gradientUnits', 'hanging', 'height', 'horiz-adv-x', 
+          'horiz-origin-x', 'horiz-origin-y', 'id', 'ideographic', 
+          'image-rendering', 'in', 'in2', 'intercept', 'k', 'k1', 'k2', 'k3', 
+          'k4', 'kernelMatrix', 'kernelUnitLength', 'kerning', 'keyPoints', 
+          'keySplines', 'keyTimes', 'lang', 'lengthAdjust', 'letter-spacing', 
+          'lighting-color', 'limitingConeAngle', 'local', 'marker-end', 
+          'marker-mid', 'marker-start', 'markerHeight', 'markerUnits', 
+          'markerWidth', 'mask', 'maskContentUnits', 'maskUnits', 
+          'mathematical', 'max', 'media', 'method', 'min', 'mode', 
+          'name', 'numOctaves', 'offset', 'onabort', 'onactivate', 'onbegin', 
+          'onclick', 'onend', 'onerror', 'onfocusin', 'onfocusout', 'onload', 
+          'onmousedown', 'onmousemove', 'onmouseout', 'onmouseover', 
+          'onmouseup', 'onrepeat', 'onresize', 'onscroll', 'onunload', 
+          'onzoom', 'opacity', 'opacity', 'operator', 'order', 'orient', 
+          'orientation', 'origin', 'overflow', 'overline-position', 
+          'overline-thickness', 'panose-1', 'path', 'pathLength', 
+          'patternContentUnits', 'patternTransform', 'patternUnits', 
+          'pointer-events', 'points', 'pointsAtX', 'pointsAtY', 'pointsAtZ', 
+          'preserveAlpha', 'preserveAspectRatio', 'primitiveUnits', 'r', 
+          'radius', 'refX', 'refY', 'rendering-intent', 'repeatCount', 
+          'repeatDur', 'requiredExtensions', 'requiredFeatures', 'restart', 
+          'result', 'rotate', 'rx', 'ry', 'scale', 'seed', 'shape-rendering', 
+          'slope', 'spacing', 'specularConstant', 'specularExponent', 
+          'spreadMethod', 'startOffset', 'stdDeviation', 'stemh', 'stemv', 
+          'stitchTiles', 'stop-color', 'stop-opacity', 'strikethrough-position', 
+          'strikethrough-thickness', 'stroke', 'stroke-dasharray', 
+          'stroke-dashoffset', 'stroke-linecap', 'stroke-linejoin', 
+          'stroke-miterlimit', 'stroke-opacity', 'stroke-width', 'style', 
+          'surfaceScale', 'systemLanguage', 'tableValues', 'target', 'targetX', 
+          'targetY', 'text-anchor', 'text-decoration', 'text-rendering', 
+          'textLength', 'title', 'to', 'transform', 'type', 'u1', 'u2', 
+          'underline-position', 'underline-thickness', 'unicode', 
+          'unicode-bidi', 'unicode-range', 'units-per-em', 'v-alphabetic', 
+          'v-hanging', 'v-ideographic', 'v-mathematical', 'values', 
+          'version', 'vert-adv-y', 'vert-origin-x', 'vert-origin-y', 
+          'viewBox', 'viewTarget', 'visibility', 'width', 'widths', 
+          'word-spacing', 'writing-mode', 'x', 'x-height', 'x1', 'x2', 
+          'xChannelSelector', 'y', 'y1', 'y2', 'yChannelSelector', 'z', 
+          'zoomAndPan']
+    };
+  
+    // we want to intercept any window.onload or body.onload handlers that
+    // were set by developers to ensure they are called _after_ the SVG
+    // is finished loading
+    this._origOnLoad = null;
+    var self = this;
+    // DOMContentLoaded supported on Opera 9/Mozilla/Safari 3
+    document.addEventListener('DOMContentLoaded', function() {
+      self._domContentLoaded();
+    }, false);
+  }
 
-/*
- *  Class SVGFlashHandler
- */
-
-function SVGFlashHandler(params) {
-    console.log('SVGFlashHandler, params='+params);
-    this.svgScript = '';
-    this.parentId = params.parentId;
-    this.sourceType = params.sourceType;
-    this.svgURL = params.svgURL;
-    this.svgNodes = {};
-
-    // debug
-    if (typeof(params.debug) != "undefined") {
-        this.debug = params.debug;
-    }
-    else {
-        this.debug = false;
+  NativeSVG.prototype._domContentLoaded = function() { 
+    // adapted from Dean Edwards/Matthias Miller/John Resig/others
+    // onDOMContentLoaded work
+    // quit if this function has already been called
+    console.log('domContentLoaded');
+    if (arguments.callee.done) {
+      return;
     }
 
-    if (typeof(params.sizeToSVG) != "undefined") {
-        this.sizeToSVG = params.sizeToSVG;
+    // flag this function so we don't do the same thing twice
+    arguments.callee.done = true;
+    
+    // listen for dynamically created SVG roots
+    this._handleDynamicSVG();
+    
+    // do we even have any SVG? if not then we are done.
+    // At this point the SVG tags aren't 'recognized' as being in the
+    // SVG namespace, so we have to use getElementsByTagName and
+    // not getElementsByTagNameNS
+    var svg = document.getElementsByTagName('svg:svg');
+    if (!svg.length) {
+      return;
     }
-    else {
-        this.sizeToSVG = false;
-    }
-
-    if (   (typeof(params.width) == "undefined")
-        || (typeof(params.height) == "undefined") ) {
-        this.width= 2048;
-        this.height= 1024;
-        this.sizeToSVG = true;
-    }
-    else {
-        this.width = params.width ;
-        this.height = params.height ;
-    }
-
-    if (typeof(params.scaleMode) != "undefined") {
-        this.scaleMode = params.scaleMode;
-    }
-    else {
-        this.scaleMode = "showAll_svg";
-    }
-    // uniqueId
-    if (typeof(params.uniqueId) != "undefined") {
-        this.uniqueId = params.uniqueId;
-    }
-    else {
-        this.uniqueId = 'rand' + Math.random();
-    }
-    this.objectId = params.uniqueId + 'Obj';
-
-    if (typeof(params.svgId) != "undefined") {
-        this.svgId = params.svgId;
+    
+    // save a reference to the original window.onload or body.onload
+    if (window.onload) {
+      this._origOnLoad = window.onload;
+      window.onload = null;
+    } else {
+      var body = document.body;
+      var f = body.getAttribute('onload');
+      if (f !== null && f !== undefined) {
+        this._origOnLoad = function() { eval(f); };
+        body.onload = null;
+      }
     }
 
-    if (typeof(params.renderer) != "undefined") {
-        var renderers = params.renderer.split(/\s*,\s*/)
-        var currentIndex=0;
-        while (currentIndex < renderers.length && !this.renderer) {
-            switch (renderers[currentIndex]) {
-                case 'native':
-                    if (!isIE) {
-                        this.renderer=renderers[currentIndex];
-                    }
-                    break;
-                case 'svgviewer':
-                    this.renderer=renderers[currentIndex];
-                    break;
-                default:
-                    break;
+    this._processSVG();
+  }
+
+  // Functions to embed SVG into normal text/html rather than
+  // XHTML, originally created by Sam Ruby and further adapted for 
+  // Safari as well as modified to have the embedded SVG work in a 
+  // way that operates in Internet Explorer
+  NativeSVG.prototype._processSVG = function() {
+    console.log('processSVG');
+    // copy modules into their appropriate namespaces
+    var modules = [this._SVG];
+    var i, j;
+    var handle = [];
+    
+    for (i = 0; i < modules.length; i++) {
+      var module = modules[i];
+      var roots = document.getElementsByTagName(module.root);
+      for (j = 0; j < roots.length; j++) {
+        handle.push(roots[j]);
+      }
+      for (j = 0; j < handle.length; j++) {
+        var source = handle[j];
+        var proto = source.__proto__
+        if (document.createElementNS) {
+          // detect if this is an HTML element; if so, move on
+          if (typeof HTMLUnknownElement != 'undefined') { // FF
+            if (proto != HTMLUnknownElement.prototype) {
+              continue;
             }
-            currentIndex++;
+          } else if (typeof proto) { // Safari
+            // as far as I can tell, all HTML elements subclass HTMLElementPrototype
+            // (such as H1, which is HTMLHeadingElementPrototype); SVG tags
+            // just have the top-level class.
+            // TODO: Test this more to ensure its always true.
+            if (proto && String(proto).indexOf('HTMLElementPrototype') == -1) {
+              continue;
+            }
+          }
+      
+          var dest = document.createElementNS(module.ns, module.root);
+          
+          this._deepcopy(module, source, dest, {});
+          source.parentNode.insertBefore(dest, source);
+          source.parentNode.removeChild(source);
         }
-        if (!this.renderer) {
-            this.renderer = 'svgviewer';
+      } 
+    } // end iterating through modules
+    
+    // fire that we are done loading
+    if (this._origOnLoad) { // window.onload and body.onload
+      this._origOnLoad();
+    }
+    
+    // any event listeners registered with addEventListener will get
+    // called automatically, but not on Safari
+    if (isSafari) {
+      var rootNodes = document.getElementsByTagNameNS(SVGNS, 'svg');
+      for (i = 0; i < rootNodes.length; i++) {
+        // doesn't work unfortunately
+        //var evt = document.createEvent('SVGEvents');
+        //evt.initEvent('SVGLoad', false, false);
+        //rootNodes[i].dispatchEvent(evt);
+        if (rootNodes[i].getAttribute('onload')) {
+          eval(rootNodes[i].getAttribute('onload'));
         }
+      }
     }
-    else {
-        this.renderer = "svgviewer";
-    }
+  }
 
-    if (this.debug) {
-        console.log('svg.js: renderer is: ' + this.renderer);
-    }
+  // clone a DOM subtree
+  NativeSVG.prototype._deepcopy = function(module, source, dest, nsmap) {
+    var i, j;
+ 
+    // copy attributes
+    for (i = 0; i < source.attributes.length; i++) {
+      var oldattr = source.attributes[i];
+      var colon = oldattr.name.indexOf(':');
+      if (colon == -1) {
+        for (j = 0; j < module.attributes.length; j++) {
+          if (module.attributes[j].toLowerCase() != oldattr.name) {
+            continue;
+          }
+          dest.setAttribute(module.attributes[j], oldattr.value);
+          break;
+        }
+      } else { // namespace prefixed attribute
+        var prefix = oldattr.name.slice(0, colon);
+        var name = oldattr.name.slice(colon + 1);
+        if (prefix == 'xmlns') {
+          // TODO: FIXME: Nested namespace declarations in child nodes
+          // will improperly be exposed to parent nodes
+          nsmap[name] = oldattr.value;
+        } else {
+          for (ns in nsmap) {
+            if (ns == prefix) {
+              dest.setAttributeNS(nsmap[prefix], name, oldattr.value);
+            }
+          }
+        }
+      }
+    } // end for()
 
-    // scaleX
-    if (typeof(params.scaleX) != "undefined") {
-        this.scaleX= params.scaleX;
+    // copy children
+    var newchild;
+    for (i = 0; i < source.childNodes.length; i++) {
+      var oldchild = source.childNodes[i];
+      if (oldchild.nodeType == 1) { // element
+        for (j = 0; j < module.elements.length; j++) {
+          var oldName = oldchild.nodeName.toUpperCase();
+          if (oldName.indexOf(module.prefix.toUpperCase()) == -1) {
+            continue;
+          }
+          oldName = oldName.replace(module.prefix.toUpperCase() + ':', '');
+          if (module.elements[j].toUpperCase() != oldName) {
+            continue;
+          }
+          newchild = document.createElementNS(module.ns, 
+                                              module.elements[j]);
+          this._deepcopy(module, oldchild, newchild, nsmap);
+          dest.appendChild(newchild);
+          break;
+        }
+      } else if (oldchild.nodeType == 3) { // text
+        // trim empty text nodes so that the DOMs on FF/Safari and
+        // Internet Explorer are more similar
+        if (/^\s*$/.test(oldchild.nodeValue)) {
+          continue;
+        }
+        newchild = document.createTextNode(oldchild.nodeValue);
+        dest.appendChild(newchild);
+      }
     }
-    else {
-        this.scaleX=1.0;
-    }
-
-    // scaleY
-    if (typeof(params.scaleY) != "undefined") {
-        this.scaleY= params.scaleY;
-    }
-    else {
-        this.scaleY=1.0;
-    }
-
-    // translateX
-    if (typeof(params.translateX) != "undefined") {
-        this.translateX= params.translateX;
-    }
-    else {
-        this.translateX=0;
-    }
-
-    // translateY
-    if (typeof(params.translateY) != "undefined") {
-        this.translateY= params.translateY;
-    }
-    else {
-        this.translateY=0;
-    }
-
-    // bgcolor
-    if (typeof(params.bgcolor) != "undefined") {
-        this.bgcolor = params.bgcolor;
-    }
-    else {
-        this.bgcolor = '';
-    }
-
-    // transparent
-    if (typeof(params.transparent) != "undefined") {
-        this.transparent = params.transparent;
-    }
-    else {
-        this.transparent = false;
-    }
-
-    if (typeof(params.onLoad) == "function") {
-        this.onLoadCallback = params.onLoad;
-    }
-
-}
-
-SVGFlashHandler.prototype.createSVGHTML = function() {
-    if (this.renderer == 'native') {
-        return this.createNativeHTML();
-    }
-    return this.createFlashHTML();
-}
-
-SVGFlashHandler.prototype.createNativeHTML = function() {
-    var svgObject = document.createElement('object');
-    svgObject.setAttribute('type', 'image/svg+xml');
-    svgObject.setAttribute('data', this.svgURL);
-    svgObject.setAttribute('style', 'overflow:hidden');
-    svgObject.setAttribute('width', this.width);
-    svgObject.setAttribute('height', this.height);
-    var parentNode = document.getElementById(this.parentId);
-    parentNode.appendChild(svgObject);
-}
-
-SVGFlashHandler.prototype.createFlashHTML = function() {
-    var bgcolor ='';
-    if (this.bgcolor != '') {
-        bgcolor = ' bgcolor="' + this.bgcolor + '"';
-    }
-    var transparent ='';
-    if (this.transparent) {
-        transparent = ' wmode="transparent" ';
-    }
-
-    var flashVars = '"' +
-        'uniqueId=' + this.uniqueId +
-        '&sourceType=' + this.sourceType +
-        '&svgURL=' + this.svgURL +
-        '&scaleMode=' + this.scaleMode +
-        '&translateX=' + this.translateX + 
-        '&translateY=' + this.translateY + 
-        '&scaleX=' + this.scaleX +
-        '&scaleY=' + this.scaleY +
-        '&debug=' + this.debug;
-    if (typeof(this.svgId) != "undefined") {
-        flashVars = flashVars  + '&svgId=' + this.svgId;
-    }
-    flashVars = flashVars  + '"';
-
-    var html='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" ' +
-        '        codebase="" id="' + this.objectId + '" ' + 
-        '        width="' + this.width + '" height="' + this.height + '" style="float: left;"> ' +
-        '    <param name="AllowScriptAccess" value="always"/> ' +
-        '    <param name="movie" value="svg.swf"/> ' +
-        '    <param name="FlashVars" value=' + flashVars + '/> ' +
-        (this.transparent ? '    <param name="wmode" value="transparent"/> ' : '') +
-        '    <embed  name="' + this.objectId + '" play="false" ' +
-        '            swliveconnect="true" AllowScriptAccess="always" ' +
-        '            src="svg.swf" quality="high" ' + transparent + bgcolor +
-        '            width="' + this.width + '" height="' + this.height + '"' +
-        '            type="application/x-shockwave-flash" ' +
-        '            FlashVars=' + flashVars + '> ' +
-        '    </embed> ' +
-        '</object> ';
-
-    var node = document.getElementById(this.parentId);
-    if (node) {
-        node.innerHTML = html;
-    }
-}
-
-SVGFlashHandler.prototype.sendToFlash = function(flashMsg) {
-   flashMsg.uniqueId = this.uniqueId;
-   if (typeof(this.flashObj) == "undefined") {
-      this.flashObj = this.getFlashObject();
-   }
-   var retval = null;
-   try {
-       retval = this.flashObj.sendToFlash(flashMsg);
-   }
-   catch(e) {
-   }
-   return retval;
-}
-
-SVGFlashHandler.prototype.onMessage = function(flashMsg) {
-    if (flashMsg.type == 'event') {
-        this.onEvent(flashMsg);
+  } // end function deepcopy
+  
+  NativeSVG.prototype._handleDynamicSVG = function() {
+    var body = document.getElementsByTagName('body')[0];
+    body.addEventListener('DOMNodeInserted', function(evt) {
+      var node = evt.relatedNode;
+      if (!node._onloadFired
+            && node.nodeType == 1 
+            && node.namespaceURI == 'http://www.w3.org/2000/svg'
+            && node.nodeName == 'svg') {
+        evt = document.createEvent('SVGEvents');
+        evt.initEvent('SVGLoad', false, false);
+        node.dispatchEvent(evt);
         return;
+      }
+      
+      var rootNodes = node.getElementsByTagNameNS(SVGNS, 'svg');
+      for (var i = 0; i < rootNodes.length; i++) {
+        if (rootNodes[i]._onloadFired) {
+          continue;
+        }
+        
+        evt = document.createEvent('SVGEvents');
+        evt.initEvent('SVGLoad', false, false);
+        rootNodes[i]._onloadFired = true;
+        rootNodes[i].dispatchEvent(evt);
+      }
+    }, false);
+  }
+
+
+  // handle IE by using a Flash renderer
+  function FlashSVG() {
+    console.log('FlashSVG constructor');
+    this._svgLoaded = 0;
+    this._pageLoadFinished = false;
+    this._origOnLoad = function(){};
+    
+    // determine the path to our HTC and Flash files
+    this._libraryPath = './';
+    var scripts = document.getElementsByTagName('script');
+    for (var i = 0; i < scripts.length; i++) {
+      if (scripts[i].src.indexOf('svg.js') != -1 
+          && scripts[i].getAttribute('data-path')) {
+        this._libraryPath = scripts[i].getAttribute('data-path');
+        break;
+      }
+    }
+    if (this._libraryPath.charAt(this._libraryPath.length - 1) != '/') {
+      this._libraryPath += '/';
+    }
+    // in some cases due to caching behavior the HTC file will load 
+    // before we can set the libraryPath on it; expose this on the window 
+    // object so the HTC file can access it
+    window.__svg__libraryPath = this._libraryPath;
+
+    this._patchIE();
+    this._exportFlashMethods();
+    this._prepareBehavior();
+    this._initDomContentLoaded();
+  }
+  
+  FlashSVG.prototype._onMessage = function(flashMsg) {
+    console.log('onMessage, flashMsg='+flashMsg);
+    if (flashMsg.type == 'event') {
+      this._onEvent(flashMsg);
+      return;
     }
     if (flashMsg.type == 'log') {
-        this.onLog(flashMsg);
-        return;
+      this._onLog(flashMsg);
+      return;
     }
+    // TODO: Bring onScript over from Rick's fork
     if (flashMsg.type == 'script') {
-        this.onScript(flashMsg);
-        return;
+      this._onScript(flashMsg);
+      return;
     }
-}
-
-SVGFlashHandler.prototype.onLog = function(flashMsg) {
+  }
+  
+  FlashSVG.prototype._onLog = function(flashMsg) {
     console.log('FLASH: ' + flashMsg.logString);
-}
+  }
+  
+  FlashSVG.prototype._onEvent = function(flashMsg) {
+      if (flashMsg.eventType == 'onRenderingFinished') {
+          this._onRenderingFinished(flashMsg);
+          return;
+      }
+      if (flashMsg.eventType == 'onFlashLoaded') {
+          this._onFlashLoaded(flashMsg);
+          return;
+      }
+      if (flashMsg.eventType.substr(0,5) == 'mouse') {
+          this._onMouseEvent(flashMsg);
+          return;
+      }
+  }
 
+  FlashSVG.prototype._onFlashLoaded = function(flashMsg) {
+    // the Flash object is done loading
+    console.log('_onFlashLoaded');
+    
+    var svgID = flashMsg.uniqueId;
+    console.log('svgID='+svgID);
+    
+    // on IE getting the SVG element by ID sometimes doesn't work based on 
+    // caching wierdness (IE has lots of cache bugs). A setTimeout of 1 ms 
+    // fixes the issue.
+    
+    // To reproduce bug: Reload the page to prime the cache. Then, use the
+    // enter key on the URL field to reload the page again rather than clicking
+    // the reload button. The bug only appears on bouncing.html, which uses
+    // a dynamically created SVG root element.
+    var self = this;
+    window.setTimeout(function() {   
+      var svg = document.getElementById(svgID);
+      console.log('svg='+svg);
+      if (svgID != '__svg__hiddenSVG') {
+        svg.processSVG();
+      } else {
+        // we insert an SVG element into the page in
+        // _embedHiddenSVG() if there was no 
+        // embedded SVG in the page; this is to force the HTC
+        // to be cached and loaded
+        var container = document.getElementById('__svg__hiddenSVG_container');
+        container.parentNode.removeChild(container);
+        self._pageLoadFinished = true;
+        self._origOnLoad();
+      }
+    }, 1);
+  }
+  
+  FlashSVG.prototype._onMouseEvent = function(flashMsg) {
+      var element = this.getElementById(flashMsg.elementId);
+      // xxx need to compute proper coordinates
+      var myEvent = { target: element, 
+                      clientX: flashMsg.screenX,
+                      clientY: flashMsg.screenY,
+                      screenX: flashMsg.screenX,
+                      screenY: flashMsg.screenY,
+                      preventDefault: function() { this.returnValue=false; }
+                    };
 
-SVGFlashHandler.prototype.onEvent = function(flashMsg) {
-    if (flashMsg.eventType == 'onLoad') {
-        this.onLoad(flashMsg);
-        return;
-    }
-    if (flashMsg.eventType == 'onStartup') {
-        this.onStartup(flashMsg);
-        return;
-    }
-    if (flashMsg.eventType.substr(0,5) == 'mouse') {
-        this.onMouseEvent(flashMsg);
-        return;
-    }
-}
+      var handlers;
+      // TODO: Eliminate having the Flash send over a parentId
+      var listeners = element.getListeners(flashMsg.eventType);
 
-SVGFlashHandler.prototype.onMouseEvent = function(flashMsg) {
-    var element = this.getElementById(flashMsg.elementId);
-    // xxx need to compute proper coordinates
-    var myEvent = { target: element, 
-                    clientX: flashMsg.screenX,
-                    clientY: flashMsg.screenY,
-                    screenX: flashMsg.screenX,
-                    screenY: flashMsg.screenY,
-                    preventDefault: function() { this.returnValue=false; }
-                  };
+      for (var i in listeners) {
+        var l = listeners[i];
+        l(myEvent);
+      }
+  }
 
-    var handlers;
-    if (flashMsg.parentId) {
-        var parentElem = this.getElementById(flashMsg.parentId);
-        handlers = parentElem.eventHandlers[flashMsg.eventType];
-    }
-    else {
-        handlers = element.eventHandlers[flashMsg.eventType];
-    }
-    for (var i in handlers) {
-        var handler = handlers[i];
-        handler(myEvent);
-    }
-}
-
-
-
-/*
- * 
- * The flash control actionscript calls this on startup.
- * We use this to know the flash control is ready for activity.
- * 
- */
-
-SVGFlashHandler.prototype.onStartup = function(flashMsg) {
-    console.log('SVGFlashHandler, flashMsg='+flashMsg);
-    // Recording the flash object was deferred until it actually exists!
-    this.flashObj = this.getFlashObject();
-
-    /**
-     If the type is inline_script, that means that the SVG is available
-     in the local DOM within a script tag. Also, since this message is being received,
-     the javascript interface is available. Therefore, an optimzation can be performed.
-     In this case, the flash control leaves control to the browser (this code)
-     and we pull the SVG directly from the DOM and pass it to flash through the available
-     javascript interface. This avoids having the flash control pulling the data using
-     a URLRequest which is, theoretically, much more expensive.
-
-     Note that this provides a simple example of how to load SVG on the fly from a string.
-    **/
-    if (this.sourceType == 'inline_script') {
-        var svgText = document.getElementById(this.svgId).innerHTML;
-        this.sendToFlash({type: 'load', sourceType: 'string', svgString: svgText});
-    }
-
-}
-
-SVGFlashHandler.prototype.onLoad = function(flashMsg) {
-    var getRootMsg = this.sendToFlash({type: 'invoke', method: 'getRoot'});
-    this.documentElement = new SVGNode(this);
-    this.documentElement.elementId = getRootMsg.elementId;
-    this.rootElement = this.documentElement;
-
-    // resize to the <svg> width
-    console.log("svg w,h=" + flashMsg.width + "," + flashMsg.height);
-    if (this.sizeToSVG) {
-        if (   (this.flashObj.width != flashMsg.width)
-            || (this.flashObj.height != flashMsg.height) ) {
-            this.flashObj.parentNode.style.visibility='hidden';
-            this.flashObj.width = flashMsg.width;
-            this.flashObj.height = flashMsg.height;
-            this.width = flashMsg.width;
-            this.height = flashMsg.height;
-            setTimeout('svgviewer.svgHandlers["' + this.uniqueId + '"].flashObj.parentNode.setStyleAttribute("visibility","visible");', 10);
+  /** The Flash is finished rendering. */
+  FlashSVG.prototype._onRenderingFinished = function(flashMsg) {
+    // the Flash object has finished rendering our embedded SVG
+    console.log('_onRenderingFinished');
+    
+    var svgID = flashMsg.uniqueId;
+    console.log('svgID='+svgID);
+    
+    if (!this._pageLoadFinished) { // are we still loading the page itself?
+      this._svgLoaded++; // bump the number of SVG objects that are loaded
+      if (this._svgLoaded == document.getElementsByTagName('svg').length) {
+        // we were embedded SVG -- we are now 'attached' and can be 
+        // manipulated
+        if (!this._pageLoadFinished) {
+          var svgElems = document.getElementsByTagName('svg');
+          for (var i = 0; i < svgElems.length; i++) {
+            svgElems[i].setAttached(true, true);
+          }
         }
+        
+        this._pageLoadFinished = true;
+        
+        // TODO: Integrate Rick's SVG resizing code
+        // resize to the <svg> width
+        /*console.log("svg w,h=" + flashMsg.width + "," + flashMsg.height);
+        if (this.sizeToSVG) {
+            if (   (this.flashObj.width != flashMsg.width)
+                || (this.flashObj.height != flashMsg.height) ) {
+                this.flashObj.parentNode.style.visibility='hidden';
+                this.flashObj.width = flashMsg.width;
+                this.flashObj.height = flashMsg.height;
+                this.width = flashMsg.width;
+                this.height = flashMsg.height;
+                setTimeout('svgviewer.svgHandlers["' + this.uniqueId + '"].flashObj.parentNode.setStyleAttribute("visibility","visible");', 10);
+            }
+        }*/
+        
+        // fire any original window onload listeners that might have been
+        // registered
+        this._origOnLoad();
+        
+        // fire any onload listeners that might be on this SVG element itself
+        this._fireSVGLoad(svgID);
+      }
+    } else { // page already loaded; this must be dynamically created SVG
+      this._fireSVGLoad(svgID);
     }
-
-    if (this.onLoadCallback) {
-        this.onLoadCallback(flashMsg);
-    }
-
+    
+    // TODO: Integrate executing any script tags from Ricks fork
+    /*
     this.svgScript = this.svgScript + flashMsg.onLoad;
 
     if (isIE) {
@@ -533,275 +559,172 @@ SVGFlashHandler.prototype.onLoad = function(flashMsg) {
     }
     else {
         setTimeout('eval(window.svgviewer.svgHandlers["' + this.uniqueId + '"].svgScript);', 100);
+    }*/
+  }
+  
+  FlashSVG.prototype._receiveFromFlash = function(flashMsg) {
+    console.log('receiveFromFlash, flashMsg='+flashMsg);
+    this._onMessage(flashMsg);
+  }
+
+  FlashSVG.prototype._patchIE = function() {
+    console.log('patchIE');
+    // patch IE to have more standards compliant DOM methods, as well
+    // so that we can pass through certain methods into the Flash
+    // renderer
+    document.createElementNS = function(ns, tagName) {   
+      // FIXME: Should I raise an exception if the namespace is not known?
+      if (ns == SVGNS) {
+        tagName = 'svg:' + tagName;
+      }
+      
+      var node = document.createElement(tagName);
+      if (tagName == 'svg:svg') {
+        node.libraryPath = this._libraryPath;
+      }
+      
+      return node;
+    };
+  
+    document.getElementsByTagNameNS = function(ns, tagName) {
+      // FIXME: Should I raise an exception if the namespace is not known?
+      return document.getElementsByTagName(tagName);
+    };
+  }
+
+  FlashSVG.prototype._exportFlashMethods = function() {
+    // expose methods that Flash's ExternalInterface can call; these
+    // must be global
+    var self = this;
+    window.receiveFromFlash = function(flashMsg) {
+      self._receiveFromFlash(flashMsg);
     }
-}
+  }
 
-SVGFlashHandler.prototype.getSVGDocument = function() {
-    if (this.renderer == 'svgviewer') {
-        return this;
+  FlashSVG.prototype._prepareBehavior = function() {
+    // Adapted from Mark Finkle's SVG using VML project
+
+    // add the SVG namespace to the page in a way IE can use
+    var ns = null;
+    for (var i = 0; i < document.namespaces.length; i++) {
+      if (document.namespaces.item(i).name == 'svg') {
+        ns = document.namespaces.item(i);
+        break;
+      }
     }
-    if (this.renderer == 'native') {
-        return document.getElementById(this.parentId).childNodes[0].contentDocument;
+    if (ns === null) {
+      ns = document.namespaces.add('svg', SVGNS);
     }
-}
-
-SVGFlashHandler.prototype.getXML = function() {
-    var getXMLMsg = this.sendToFlash({type: 'invoke', method: 'getXML'});
-    return getXMLMsg.xmlString.split(';_SVGNL_;').join('\\n');
-}
-
-/*
- * onScript
- *
- */
-SVGFlashHandler.prototype.scriptReplacements = [
-      { pattern: ';_SVGNL_;', replacement: '\\n' },
-      { pattern: 'document.createElementNS',
-        replacement: 'svgviewer.svgHandlers["_SVG_UNIQ_ID_"].createElementNS' },
-      { pattern: 'document.documentElement',
-        replacement: 'svgviewer.svgHandlers["_SVG_UNIQ_ID_"].documentElement' },
-      { pattern: 'document.getElementById',
-        replacement: 'svgviewer.svgHandlers["_SVG_UNIQ_ID_"].getElementById' },
-      { pattern: 'document.createTextNode',
-        replacement: 'svgviewer.svgHandlers["_SVG_UNIQ_ID_"].createTextNode' } 
-      ];
-
-
-SVGFlashHandler.prototype.onScript = function(flashMsg) {
-    var svgScript = flashMsg.script;
-    for (var i in this.scriptReplacements) {
-        var repObj = this.scriptReplacements[i];
-        var replaceStr = repObj.replacement.split('_SVG_UNIQ_ID_').join(flashMsg.uniqueId);
-        svgScript = svgScript.split(repObj.pattern).join(replaceStr);
-    }
-    svgScript=svgScript.replace(/const(\s*\S+\s*=)/g, 'var$1');
-    // xxx should use new getter/setter syntax if this is ie8 or higher.
-    // This is unreliable until then.
-    if (isIE) {
-        svgScript=svgScript.replace(/([\S]*).style.visibility\s*=\s*(\S+);/g, '$1.setStyleAttribute("visibility",$2);');
-        svgScript=svgScript.replace(/([\S]*).style.opacity\s*=\s*(\S+);/g, '$1.setStyleAttribute("opacity",$2);');
-        svgScript=svgScript.replace(/([\S]*).style.stroke\s*=\s*(\S+);/g, '$1.setStyleAttribute("stroke",$2);');
-        svgScript=svgScript.replace(/([\S]*).style.fill\s*=\s*(\S+);/g, '$1.setStyleAttribute("fill",$2);');
     
-        svgScript=svgScript.replace(/.style.visibility/g, '.getStyleAttribute("visibility")');
-        svgScript=svgScript.replace(/.style.opacity/g, '.getStyleAttribute("opacity")');
-        svgScript=svgScript.replace(/.style.stroke/g, '.getStyleAttribute("stroke")');
-        svgScript=svgScript.replace(/.style.fill/g, '.getStyleAttribute("fill")');
+    // attach SVG behavior to the page
+    ns.doImport(this._libraryPath + 'svg.htc');
+  }
+
+  FlashSVG.prototype._initDomContentLoaded = function() {
+    console.log('initDomContentLoaded');
+    // onDOMContentLoaded code adapted from Dean Edwards/Matthias Miller/
+    // John Resig/others
+  
+    // id is set to be __ie__svg__onload rather than __ie_onload so
+    // we don't have name collisions with other scripts using this
+    // code as well
+    document.write('<script id=__ie__svg__onload defer '
+                    + 'src=javascript:void(0)><\/script>');
+    var script = document.getElementById('__ie__svg__onload');
+    var self = this;
+    script.onreadystatechange = function() {
+      // changed from 'complete' -- we want to be called _before_ any
+      // window.onload is called
+      if (this.readyState == 'loaded') { 
+        self._domContentLoaded(); // call the onload handler
+      }
+    };
+  }
+
+  FlashSVG.prototype._domContentLoaded = function() {
+    console.log('FlashSVG._domContentLoaded');
+    // quit if this function has already been called
+    if (arguments.callee.done) {
+      return;
     }
-    this.svgScript = this.svgScript + svgScript;
-}
-
-
-// Used by onLoad
-SVGFlashHandler.prototype.getFlashObject = function() {
-    if (window.document[this.objectId]) {
-        if (document[this.objectId].length != undefined) {
-            return document[this.objectId][1];
-        }
-        return document[this.objectId];
+    
+    // flag this function so we don't do the same thing twice
+    arguments.callee.done = true;
+    
+    this._origOnLoad = function() {};
+    // save a reference to the original window.onload 
+    if (window.onload) {
+      this._origOnLoad = window.onload;
+      window.onload = null;
+    } else if (document.body) { // inline onload handler on BODY tag?
+      var body = document.body;
+      var f = body.getAttribute('onload');  
+      if (f !== null && f !== undefined) {
+        this._origOnLoad = function() { eval(f); };
+        body.onload = null;
+      }
     }
-    if (navigator.appName.indexOf("Microsoft Internet")==-1) {
-        if (document.embeds && document.embeds[this.objectId]) {
-            return document.embeds[this.objectId]; 
-        }
+    
+    // no embedded SVG?
+    var svg = document.getElementsByTagName('svg');
+    console.log('svg='+svg);
+    if (svg.length === 0) {
+      // insert an SVG element into the page to force the 
+      // HTC behavior to load
+      this._embedHiddenSVG();
+    } else {
+      for (var i = 0; i < svg.length; i++) {
+        svg[i].libraryPath = this._libraryPath;
+      }
     }
-    else {
-        return document.getElementById(this.objectId);
+  }
+  
+  FlashSVG.prototype._embedHiddenSVG = function() {
+    console.log('embedHiddenSVG');
+    // container to hide the SVG offscreen
+    var div = document.createElement('div');
+    div.setAttribute('id', '__svg__hiddenSVG_container');
+    div.style.position = 'absolute';
+    div.style.top = '-1000px';
+    div.style.left = '-1000px';
+    
+    var svg = document.createElement('svg:svg');
+    svg.setAttribute('width', 1);
+    svg.setAttribute('height', 1);
+    svg.setAttribute('id', '__svg__hiddenSVG');
+    svg.libraryPath = this._libraryPath;
+    div.appendChild(svg);
+    
+    var body = document.getElementsByTagName('body')[0];
+    body.appendChild(div);
+  }
+  
+  FlashSVG.prototype._fireSVGLoad = function(svgID) {  
+    var svg = document.getElementById(svgID);
+    // have we already called onload for this element before?
+    if (svg._onloadFired) {
+      return;
     }
-}
-
-SVGFlashHandler.prototype.getElementById = function(elementId) {
-   // We may have a local copy if we have created the object from
-   // script or if we have looked up the object before.
-   if (typeof(this.svgNodes[elementId]) != "undefined") {
-       // XXX should refresh attributes from the flash version
-       // (animations could change getter/setter values)
-       return this.svgNodes[elementId];
-   }
-
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'getElementById',
-                                      elementId: elementId
-                                    });
-   if (!returnMsg) {
-       return null;
-   }
-   // This is the first time we have looked up the object, so cache the object
-   // XXX should refresh from flash (animations could change getter/setter values)
-   var svgNode = new SVGNode(this);
-   svgNode.elementId = returnMsg.elementId;
-   svgNode.id = returnMsg.elementId;
-   this.svgNodes[elementId] = svgNode;
-   return svgNode;
-}
-
-
-SVGFlashHandler.prototype.setTransform = function(transformParam) {
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'setTransform',
-                                      transform: transformParam
-                                    });
-}
-
-SVGFlashHandler.prototype.createElementNS = function(elementNS, elementType) {
-   var svgNode = new SVGNode(this);
-   svgNode.elementId = 'rand' + Math.random();
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'createElementNS',
-                                      elementType: elementType, 
-                                      elementId: svgNode.elementId
-                                    });
-
-   this.svgNodes[svgNode.elementId] = svgNode;
-   return svgNode;
-}
-
-SVGFlashHandler.prototype.createTextNode = function(elementText) {
-   var svgNode = new SVGNode(this);
-   svgNode.elementId = 'rand' + Math.random();
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'createTextNode',
-                                      elementId: svgNode.elementId,
-                                      text: elementText
-                                    });
-   return svgNode;
-
-}
-/*
- *  Class SVGNode
- *
- */
-function SVGNode(svgHandler) {
-    this.svgHandler = svgHandler;
-    this.eventHandlers = {};
-    this.childNodes = [];
-    this.childNodes.item = function(i) { return this[i]; };
-    var svgNode=this;
-    this.style = { node: svgNode };
-    if (!isIE) {
-        this.style.__defineGetter__("opacity", function(){
-            return this.node.getAttribute('opacity');
-        });
-        this.style.__defineSetter__("opacity", function(newOpacity){
-            this.node.setAttribute('opacity', newOpacity);
-        });
-        this.style.__defineGetter__("visibility", function(){
-            return this.node.getAttribute('visibility');
-        });
-        this.style.__defineSetter__("visibility", function(newVisibility){
-            this.node.setAttribute('style', 'visibility:' + newVisibility);
-        });
+    
+    var listeners = svg.getListeners('SVGLoad');
+    svg._onloadFired = true;
+    for (var i = 0; i < listeners.length; i++) {
+      var onload = listeners[i];
+      
+      if (typeof onload == 'string') {
+        eval(onload);
+      } else {
+        onload();
+      }
     }
+  }
 
-}
+  var viewer = null;
+  if (!isIE) { // Firefox 3/Safari 3/Opera 9
+    viewer = new NativeSVG();
+  } else { // Internet Explorer
+    viewer = new FlashSVG();
+  }
 
-SVGNode.prototype.sendToFlash = function(flashMsg) {
-    return this.svgHandler.sendToFlash(flashMsg);
-}
-
-SVGNode.prototype.createElementNS = function(elementNS, elementType) {
-    return this.svgHandler.createElementNS(elementNS, elementType);
-}
-
-SVGNode.prototype.getElementById = function(elementId) {
-    return this.svgHandler.getElementById(elementId);
-}
-
-SVGNode.prototype.createTextNode = function(elementText) {
-    return this.svgHandler.createTextNode(elementText);
-}
-
-SVGNode.prototype.setAttribute = function(attrName, attrValue) {
-    this.sendToFlash({ type: 'invoke', method: 'setAttribute',
-                       elementId: this.elementId,
-                       attrName: attrName, attrValue: attrValue });
-    if (attrName == 'id') {
-        this.elementId = attrValue;
-        this.id = attrValue;
-        this.svgHandler.svgNodes[attrValue] = this;
-    }
-}
-SVGNode.prototype.setStyleAttribute = function(attrName, attrValue) {
-    this.sendToFlash({ type: 'invoke', method: 'setAttribute',
-                       elementId: this.elementId,
-                       applyToStyle: true,
-                       attrName: attrName, attrValue: attrValue });
-    if (attrName == 'id') {
-        this.elementId = attrValue;
-        this.id = attrValue;
-        this.svgHandler.svgNodes[attrValue] = this;
-    }
-}
-SVGNode.prototype.setAttributeNS = function(NS, attrName, attrValue) {
-    this.setAttribute(attrName, attrValue);
-}
-
-SVGNode.prototype.getStyleAttribute = function(attrName) {
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'getAttribute',
-                                      elementId: this.elementId,
-                                      getFromStyle: true,
-                                      attrName: attrName });
-   if (!returnMsg) {
-       return null;
-   }
-   return returnMsg.attrValue;
-}
-
-SVGNode.prototype.getAttribute = function(attrName) {
-   var returnMsg = this.sendToFlash({ type: 'invoke', method: 'getAttribute',
-                                      elementId: this.elementId,
-                                      attrName: attrName });
-   if (!returnMsg) {
-       return null;
-   }
-   return returnMsg.attrValue;
-}
-
-SVGNode.prototype.addEventListener = function(eventTypeParam, eventListener, captureFlag) {
-   if (eventTypeParam == 'keydown') {
-       svgviewer.addEvent(window.document, eventTypeParam, 
-                          (function(myListener) {
-                              return function(myEvent) {
-                                  if (!myEvent.preventDefault) {
-                                      myEvent.preventDefault=function() { this.returnValue=false;};
-                                  }
-                                  myListener(myEvent);
-                              }
-                          })(eventListener) );
-       return;
-   }
-
-   if (typeof(this.eventHandlers[eventTypeParam]) == 'undefined') {
-       this.eventHandlers[eventTypeParam] = [ eventListener ];
-   }
-   else {
-       this.eventHandlers[eventTypeParam].push(eventListener);
-   }
-   this.sendToFlash({ type: 'invoke', method: 'addEventListener',
-                      elementId: this.elementId,
-                      eventType: eventTypeParam });
-}
-
-SVGNode.prototype.unsuspendRedraw = function(dummy) {
-}
-
-SVGNode.prototype.suspendRedraw = function(dummy) {
-}
-
-SVGNode.prototype.appendChild = function(childNode) {
-   childNode.parentNode = this;
-   this.sendToFlash({ type: 'invoke', method: 'appendChild',
-                      elementId: this.elementId,
-                      childId: childNode.elementId });
-   this.childNodes.push(childNode);
-}
-
-SVGNode.prototype.removeChild = function(childNode) {
-   // xxx not implemented
-   this.sendToFlash({ type: 'invoke', method: 'removeChild',
-                      elementId: this.elementId,
-                      childId: childNode.elementId });
-   for (i in this.childNodes) {
-       if (childNode == this.childNodes[i]) {
-           this.childNodes.splice(i, 1);
-           return;
-       }
-   }
-}
-
+// hide internal implementation details inside of a closure
+})();
