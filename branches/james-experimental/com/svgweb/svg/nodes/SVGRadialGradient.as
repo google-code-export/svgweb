@@ -66,7 +66,9 @@ package com.svgweb.svg.nodes
             matrix.translate(tx, ty);
             matrix.translate(-objectX, -objectY);
             
-            node.graphics.beginGradientFill(GradientType.RADIAL, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);            
+            if (stopData.colors.length > 0) {
+                node.graphics.beginGradientFill(GradientType.RADIAL, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);        
+            }    
         }
         
         override public function lineGradientStyle(node:SVGNode):void {            
@@ -95,7 +97,9 @@ package com.svgweb.svg.nodes
             matrix.translate(tx, ty);
             matrix.translate(-objectX, -objectY);
 
-            node.graphics.lineGradientStyle(GradientType.RADIAL, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
+            if (stopData.colors.length > 0) {
+                node.graphics.lineGradientStyle(GradientType.RADIAL, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
+            }
         }
         
         

@@ -45,7 +45,7 @@ package com.svgweb.svg.nodes
             this.removeEventListener(Event.ENTER_FRAME, drawNode);      
             this._invalidDisplay = false;    
             this.visible = false;  
-            
+                        
             this.svgRoot.doneRendering();
         }
         

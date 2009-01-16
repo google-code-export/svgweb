@@ -27,8 +27,8 @@ OTHER DEALINGS IN THE SOFTWARE.
 package com.svgweb.svg.nodes {
 	
 	import com.svgweb.svg.core.SVGNode;
-    import com.svgweb.svg.utils.EllipticalArc;
-    import com.svgweb.svg.utils.SVGColors;
+	import com.svgweb.svg.utils.EllipticalArc;
+	import com.svgweb.svg.utils.SVGColors;
     
     public class SVGPathNode extends SVGNode {
     	        
@@ -88,7 +88,8 @@ package com.svgweb.svg.nodes {
             var szSegs:Array = pathData.split(',');
             
             this._graphicsCommands.push(['SF']);
-                        
+             
+            var firstMove:Boolean = true;
             for(var pos:int = 0; pos < szSegs.length; ) {
                 var command:String = szSegs[pos++];                
                                         
@@ -98,7 +99,11 @@ package com.svgweb.svg.nodes {
                     case "M":
                         isAbs = true;
                     case "m":
-                        this.moveTo(szSegs[pos++],szSegs[pos++]); // Move is always absolute                
+                        if (firstMove) { //If first move is 'm' treate is as absolute
+                        	isAbs = true;
+                        	firstMove = false;
+                        }
+                        this.moveTo(szSegs[pos++],szSegs[pos++], isAbs); // Move is always absolute                
                         while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
                             this.line(szSegs[pos++], szSegs[pos++], isAbs);
                         } 
@@ -163,13 +168,13 @@ package com.svgweb.svg.nodes {
                         break;
                     case "Z":
                     case "z":
-                        this.closePath();
+                        this.closePath();                        
                         break;            
                                 
                     default:
                         trace("Unknown Segment Type: " + command);
                         break;
-                }            
+                }         
             }        
             this._graphicsCommands.push(['EF']);    
         }
@@ -178,7 +183,12 @@ package com.svgweb.svg.nodes {
             this._graphicsCommands.push(['Z']);
         }
         
-        private function moveTo(x:Number, y:Number):void {
+        private function moveTo(x:Number, y:Number, isAbs:Boolean):void {
+        	if (!isAbs) {
+                x += this.currentX;
+                y += this.currentY;
+            }
+            
             this._graphicsCommands.push(['M', x, y]);
             this.currentX = x;
             this.currentY = y;

@@ -45,15 +45,19 @@ package com.svgweb.svg.nodes
             var stopData:Object = this.getStopData();     
             var spreadMethod:String = this.getSpreadMethod();
             
-            node.graphics.beginGradientFill(GradientType.LINEAR, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);            
+            //Don't fill if there are no stops
+            if (stopData.colors.length > 0) {
+                node.graphics.beginGradientFill(GradientType.LINEAR, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
+            }            
         }
         
         override public function lineGradientStyle(node:SVGNode):void {            
             var matrix:Matrix = this.getMatrix(node);            
             var stopData:Object = this.getStopData();     
             var spreadMethod:String = this.getSpreadMethod();
-
-            node.graphics.lineGradientStyle(GradientType.LINEAR, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
+            if (stopData.colors.length > 0) {
+                node.graphics.lineGradientStyle(GradientType.LINEAR, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
+            }
         }
         
         

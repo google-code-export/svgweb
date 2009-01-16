@@ -1,5 +1,6 @@
 package com.svgweb.svg.core {
 	import com.svgweb.svg.nodes.*;
+	
 	import com.svgweb.svg.utils.SVGColors;
 	import com.svgweb.svg.utils.SVGUnits;
 	
@@ -127,7 +128,7 @@ package com.svgweb.svg.core {
 		                    childNode = new SVGMaskNode(this.svgRoot, childXML);
 		                    break;                        
 		                case "metadata":
-		                    //Do Nothing
+		                    childNode = new SVGMetadataNode(this.svgRoot, childXML);
 		                    break;
 		                case "namedview":
 		                    //Add Handling 
@@ -197,6 +198,8 @@ package com.svgweb.svg.core {
             this._firstX = true;
             this._firstY = true;
             
+            this.mask = null;
+            
             this.transform.matrix = new Matrix();
             
             this.setAttributes();
@@ -216,12 +219,7 @@ package com.svgweb.svg.core {
         	var node:SVGNode;
         	var matrix:Matrix;
         	var isMask:Boolean = true;
-        	
-        	if (this.mask) { //Hide any old masks
-        	   this.mask.visible = false;
-        	   this.mask = null;
-        	}
-        	
+        	        	
         	attr = this.getAttribute('mask');
         	if (!attr) {
         		isMask = false;
@@ -247,24 +245,21 @@ package com.svgweb.svg.core {
         }
         
         //Used by SVGSVGNode and SVGImageNode
-        protected function createMask():void {          
-            if (this.mask) {
-                this.mask.parent.removeChild(this.mask);
-                this.mask = null;
-            }
-            
-            var maskWidth:String = this.getAttribute('width');
-            var maskHeight:String = this.getAttribute('height');
-            
-            if (maskWidth && maskHeight) {
-                var shape:Shape = new Shape();
-                shape.graphics.beginFill(0x000000);
-                shape.graphics.drawRect(0, 0, this.getWidth(), this.getHeight());
-                shape.graphics.endFill();
-                this.mask = shape;
+        protected function createMask():void {             
+            if (!this.mask) {
+            	var maskWidth:String = this.getAttribute('width');
+                var maskHeight:String = this.getAttribute('height');
+                if (maskWidth && maskHeight) {
+                	var shape:Shape = new Shape();
+	                shape.graphics.beginFill(0x000000);
+	                shape.graphics.drawRect(0, 0, this.getWidth(), this.getHeight());
+	                shape.graphics.endFill();
+	                this.mask = shape;
+	                this.mask.transform.matrix = this.transform.concatenatedMatrix.clone();
+	            }
             }
         }
-        
+                
         protected function applyViewBox():void {
             return;
             var viewBox:String = this.getAttribute('viewBox');          
@@ -295,7 +290,7 @@ package com.svgweb.svg.core {
                     viewY = SVGUnits.cleanNumber(points[1]);
                     viewWidth = SVGUnits.cleanNumber(points[2]);
                     viewHeight = SVGUnits.cleanNumber(points[3]);
-                //}
+                //}nv   
                 /* else {
                     viewX = 0;
                     viewY = 0;

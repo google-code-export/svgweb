@@ -52,9 +52,7 @@ package com.svgweb.svg.nodes
         
         override public function drawNode(event:Event = null):void {  
         	super.drawNode(event);
-        	if (!this.mask) {
-        	   this.createMask();
-        	}
+        	this.createMask();
         }   
         
         override protected function draw():void {
