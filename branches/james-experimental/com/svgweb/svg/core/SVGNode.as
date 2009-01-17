@@ -1,6 +1,6 @@
 package com.svgweb.svg.core {
+	import com.svgweb.svg.SVGViewer;
 	import com.svgweb.svg.nodes.*;
-	
 	import com.svgweb.svg.utils.SVGColors;
 	import com.svgweb.svg.utils.SVGUnits;
 	
@@ -36,6 +36,11 @@ package com.svgweb.svg.core {
 		public var xMax:Number;		
 		public var yMin:Number;
         public var yMax:Number;
+        
+        public var viewX:Number;
+        public var viewY:Number;
+        public var viewWidth:Number;
+        public var viewHeight:Number;
         
         protected var _firstX:Boolean;
         protected var _firstY:Boolean;
@@ -207,8 +212,8 @@ package com.svgweb.svg.core {
             this.generateGraphicsCommands();
             this.draw();
             
-            //this.applyViewBox();
-            this.maskNode(); 
+            this.applyViewBox();
+            this.maskNode();
             
             this.svgRoot.doneRendering();
         }
@@ -247,12 +252,13 @@ package com.svgweb.svg.core {
         //Used by SVGSVGNode and SVGImageNode
         protected function createMask():void {             
             if (!this.mask) {
-            	var maskWidth:String = this.getAttribute('width');
-                var maskHeight:String = this.getAttribute('height');
-                if (maskWidth && maskHeight) {
+            	var maskWidth:Number = this.getWidth();
+                var maskHeight:Number = this.getHeight();
+                if ((maskWidth > 0) 
+                    && (maskHeight > 0)) {
                 	var shape:Shape = new Shape();
 	                shape.graphics.beginFill(0x000000);
-	                shape.graphics.drawRect(0, 0, this.getWidth(), this.getHeight());
+	                shape.graphics.drawRect(0, 0, maskWidth, maskHeight);
 	                shape.graphics.endFill();
 	                this.mask = shape;
 	                this.mask.transform.matrix = this.transform.concatenatedMatrix.clone();
@@ -261,156 +267,128 @@ package com.svgweb.svg.core {
         }
                 
         protected function applyViewBox():void {
-            return;
+            
             var viewBox:String = this.getAttribute('viewBox');          
-            if (viewBox 
-               && !this.getAttribute('preserveAspectRatio', null, false) 
-               && this.getAttribute('width')
-               && this.getAttribute('height')) {
+            if (viewBox) {
+            	var points:Array = viewBox.split(/\s+/);
+                viewX = SVGUnits.cleanNumber(points[0]);
+                viewY = SVGUnits.cleanNumber(points[1]);
+                viewWidth = SVGUnits.cleanNumber(points[2]);
+                viewHeight = SVGUnits.cleanNumber(points[3]);
+                
+                var canvasWidth:Number = this.getWidth(); //2048.0;
+                var canvasHeight:Number = this.getHeight(); //1024.0;
+                
+                var cropWidth:Number;
+                var cropHeight:Number;
                 
                 var newMatrix:Matrix = this.transform.matrix.clone();
                 var undoViewBoxMatrix:Matrix = new Matrix();
                 
-                /**
-                 * Canvas, the viewport
-                 **/
-                var canvasWidth:Number = this.getWidth(); //2048.0;
-                var canvasHeight:Number = this.getHeight(); //1024.0;
-                
-                /**
-                 * Viewbox
-                 **/ 
-                var viewX:Number;
-                var viewY:Number;
-                var viewWidth:Number;
-                var viewHeight:Number;
-                //if (viewBox != null) {
-                    var points:Array = viewBox.split(/\s+/);
-                    viewX = SVGUnits.cleanNumber(points[0]);
-                    viewY = SVGUnits.cleanNumber(points[1]);
-                    viewWidth = SVGUnits.cleanNumber(points[2]);
-                    viewHeight = SVGUnits.cleanNumber(points[3]);
-                //}nv   
-                /* else {
-                    viewX = 0;
-                    viewY = 0;
-                    viewWidth = canvasWidth;
-                    viewHeight = canvasHeight;
-                    if (this is SVGImageNode) {
-                        if (SVGImageNode(this).imageWidth > 0) {
-                            viewWidth = SVGImageNode(this).imageWidth;
-                        }
-                        if (SVGImageNode(this).imageHeight > 0) {
-                            viewHeight = SVGImageNode(this).imageHeight;
-                        }
-                    }
-                } */
-
-
-                var oldAspectRes:Number = viewWidth / viewHeight;
-                var newAspectRes:Number = canvasWidth /  canvasHeight;
-                var cropWidth:Number;
-                var cropHeight:Number;
-
-                var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet', false);;               
-                var alignMode:String = preserveAspectRatio.substr(0,8);
-                
-                var meetOrSlice:String = 'meet';
-                if (preserveAspectRatio.indexOf('slice') != -1) {
-                    meetOrSlice = 'slice';
-                }
-
-                /**
-                 * Handle Scaling
-                 **/
-                if (alignMode == 'none') {
-                    // stretch to fit viewport width and height
-
-                    cropWidth = canvasWidth;
-                    cropHeight = canvasHeight;
-                }
-                else {
-                    if (meetOrSlice == 'meet') {
-                        // shrink to fit inside viewport
-
-                        if (newAspectRes > oldAspectRes) {
-                            cropWidth = canvasHeight * oldAspectRes;
-                            cropHeight = canvasHeight;
-                        }
-                        else {
-                            cropWidth = canvasWidth;
-                            cropHeight = canvasWidth / oldAspectRes;
-                        }
-    
-                    }
-                    else {
-                        // meetOrSlice == 'slice'
-                        // Expand to cover viewport.
-
-                        if (newAspectRes > oldAspectRes) {
-                            cropWidth = canvasWidth;
-                            cropHeight = canvasWidth / oldAspectRes;
-                        }
-                        else {
-                            cropWidth = canvasHeight * oldAspectRes;
-                            cropHeight = canvasHeight;
-                        }
-    
-                    }
-                }
-                var scaleX:Number = cropWidth / viewWidth;
-                var scaleY:Number = cropHeight / viewHeight;
-                newMatrix.translate(-viewX, -viewY);
-                undoViewBoxMatrix.translate(viewX, viewY);
-                newMatrix.scale(scaleX, scaleY);
-                undoViewBoxMatrix.scale(1/scaleX, 1/scaleY);
-
-
-                /**
-                 * Handle Alignment
-                 **/
-                var borderX:Number;
-                var borderY:Number;
-                var translateX:Number;
-                var translateY:Number;
-                if (alignMode != 'none') {
-                    translateX=0;
-                    translateY=0;
-                    var xAlignMode:String = alignMode.substr(0,4);
-                    switch (xAlignMode) {
-                        case 'xMin':
-                            break;
-                        case 'xMax':
-                            translateX = canvasWidth - cropWidth;
-                            break;
-                        case 'xMid':
-                        default:
-                            borderX = canvasWidth - cropWidth;
-                            translateX = borderX / 2.0;
-                            break;
-                    }
-                    var yAlignMode:String = alignMode.substr(4,4);
-                    switch (yAlignMode) {
-                        case 'YMin':
-                            break;
-                        case 'YMax':
-                            translateY = canvasHeight - cropHeight;
-                            break;
-                        case 'YMid':
-                        default:
-                            borderY = canvasHeight - cropHeight;
-                            translateY = borderY / 2.0;
-                            break;
-                    }
-                    newMatrix.translate(translateX, translateY);
-                    undoViewBoxMatrix.translate(-translateX/scaleX, -translateY/scaleY);
-                    undoViewBoxMatrix.translate(translateX, translateY);
-                }   
-                
-                this.transform.matrix = newMatrix;              
-                
-            }
-            
+                if ((canvasWidth > 0)
+                    && (canvasHeight > 0)) {
+                    	
+                    var oldAspectRes:Number = viewWidth / viewHeight;
+                    var newAspectRes:Number = canvasWidth /  canvasHeight;
+                    
+                    var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet', false);;               
+	                var alignMode:String = preserveAspectRatio.substr(0,8);
+	                
+	                var meetOrSlice:String = 'meet';
+	                if (preserveAspectRatio.indexOf('slice') != -1) {
+	                    meetOrSlice = 'slice';
+	                }
+	                
+	                /**
+	                 * Handle Scaling
+	                 **/
+	                if (alignMode == 'none') {
+	                    // stretch to fit viewport width and height
+	
+	                    cropWidth = canvasWidth;
+	                    cropHeight = canvasHeight;
+	                }
+	                else {
+	                    if (meetOrSlice == 'meet') {
+	                        // shrink to fit inside viewport
+	
+	                        if (newAspectRes > oldAspectRes) {
+	                            cropWidth = canvasHeight * oldAspectRes;
+	                            cropHeight = canvasHeight;
+	                        }
+	                        else {
+	                            cropWidth = canvasWidth;
+	                            cropHeight = canvasWidth / oldAspectRes;
+	                        }
+	    
+	                    }
+	                    else {
+	                        // meetOrSlice == 'slice'
+	                        // Expand to cover viewport.
+	
+	                        if (newAspectRes > oldAspectRes) {
+	                            cropWidth = canvasWidth;
+	                            cropHeight = canvasWidth / oldAspectRes;
+	                        }
+	                        else {
+	                            cropWidth = canvasHeight * oldAspectRes;
+	                            cropHeight = canvasHeight;
+	                        }
+	    
+	                    }
+	                }
+	                var scaleX:Number = cropWidth / viewWidth;
+	                var scaleY:Number = cropHeight / viewHeight;
+	                newMatrix.translate(-viewX, -viewY);
+	                undoViewBoxMatrix.translate(viewX, viewY);
+	                newMatrix.scale(scaleX, scaleY);
+	                undoViewBoxMatrix.scale(1/scaleX, 1/scaleY);
+	
+	
+	                /**
+	                 * Handle Alignment
+	                 **/
+	                var borderX:Number;
+	                var borderY:Number;
+	                var translateX:Number;
+	                var translateY:Number;
+	                if (alignMode != 'none') {
+	                    translateX=0;
+	                    translateY=0;
+	                    var xAlignMode:String = alignMode.substr(0,4);
+	                    switch (xAlignMode) {
+	                        case 'xMin':
+	                            break;
+	                        case 'xMax':
+	                            translateX = canvasWidth - cropWidth;
+	                            break;
+	                        case 'xMid':
+	                        default:
+	                            borderX = canvasWidth - cropWidth;
+	                            translateX = borderX / 2.0;
+	                            break;
+	                    }
+	                    var yAlignMode:String = alignMode.substr(4,4);
+	                    switch (yAlignMode) {
+	                        case 'YMin':
+	                            break;
+	                        case 'YMax':
+	                            translateY = canvasHeight - cropHeight;
+	                            break;
+	                        case 'YMid':
+	                        default:
+	                            borderY = canvasHeight - cropHeight;
+	                            translateY = borderY / 2.0;
+	                            break;
+	                    }
+	                    newMatrix.translate(translateX, translateY);
+	                    undoViewBoxMatrix.translate(-translateX/scaleX, -translateY/scaleY);
+	                    undoViewBoxMatrix.translate(translateX, translateY);
+	                }   
+	                
+	                this.transform.matrix = newMatrix;                    	
+                }            	
+            }             
         }
         
         /**
@@ -807,7 +785,7 @@ package com.svgweb.svg.core {
          * @return Returns the value of defaultValue
          **/
         public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {        	
-            var value:String = this._getAttribute(name, defaultValue);
+            var value:String = this._getAttribute(name);
             
             if (value == "inherit") {
             	value = null;
@@ -838,7 +816,7 @@ package com.svgweb.svg.core {
             return defaultValue;            
         }
         
-        protected function _getAttribute(name:String, defaultValue:String = null):String {
+        protected function _getAttribute(name:String):String {
         	var value:String;
         	
         	if (this.original && (this.parent is SVGNode)) {
@@ -868,7 +846,7 @@ package com.svgweb.svg.core {
                 return (_styles[name]);
             }
             
-            return defaultValue;
+            return null;
         }
         
         public function setAttribute(name:String, value:String):void {
@@ -991,55 +969,78 @@ package com.svgweb.svg.core {
 		
 		public function getWidth():Number {
 			var widthStr:String = this.getAttribute('width');
+			var tmp:Number;
 			
             if (widthStr) {
             	var num:Number = SVGUnits.cleanNumber(widthStr);            	
-                if (widthStr.match(/%/)) {
-                    num = num / 100;                   
+                if (widthStr.match(/%/)) {            
                     if (this.parent is SVGNode) {
-                        return SVGNode(this.parent).getWidth() * num;
+                    	tmp = SVGNode(this.parent).getWidth();
+                    	if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
-                    /* else if (this.parent) { //DisplayObject
-                        return this.parent.width * num;
-                    } */
-                    else {
-                        return this.stage.width; //0;
+                    else if (this.parent is SVGViewer) {
+                    	tmp = SVGViewer(this.parent).getWidth();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
                 }
                 else {
                     return num;
                 }
             }
-            else {
-                return SVGNode(this.parent).getWidth();
-            } 
+            
+            if (this.viewWidth > 0) {
+                return this.viewWidth;
+            }
+            
+            /* num = this.xMax - this.xMin;
+            if (num > 0) {
+            	return num;
+            } */
+            
+            return 0;
+            
         }
 
 
         public function getHeight():Number {
-            var widthStr:String = this.getAttribute('height');
+            var heightStr:String = this.getAttribute('height');
+            var tmp:Number;
             
-            if (widthStr) {
-                var num:Number = SVGUnits.cleanNumber(widthStr);                
-                if (widthStr.match(/%/)) {
-                    num = num / 100;                 
+            if (heightStr) {
+                var num:Number = SVGUnits.cleanNumber(heightStr);                
+                if (heightStr.match(/%/)) {            
                     if (this.parent is SVGNode) {
-                        return SVGNode(this.parent).getHeight() * num;
+                        tmp = SVGNode(this.parent).getHeight();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
-                    /* else if (this.parent) { //DisplayObject
-                        return this.parent.height * num;
-                    } */
-                    else {
-                        return this.stage.height; //0;
+                    else if (this.parent is SVGViewer) {
+                        tmp = SVGViewer(this.parent).getHeight();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
                 }
                 else {
                     return num;
                 }
             }
-            else {
-                return SVGNode(this.parent).getHeight();
+            
+            if (this.viewHeight > 0) {
+                return this.viewHeight;
             }
+            
+            /* num = this.yMax - this.yMin;
+            if (num > 0) {
+                return num;
+            } */
+                        
+            return 0;
         }
         
 		/*

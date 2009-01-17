@@ -23,8 +23,8 @@ package com.svgweb.svg.nodes {
             this.setAttributes();
             this.transformNode();
             
-            this.createMask();
-           //this.applyViewBox();            
+            this.applyViewBox();
+            this.createMask();                        
         }
 				
 		public function registerNode(node:SVGNode):void {
@@ -115,7 +115,7 @@ package com.svgweb.svg.nodes {
                 return 'none';
             }
             
-            var value:String = this._getAttribute(name, defaultValue);
+            var value:String = this._getAttribute(name);
             if (value) {
             	return value;
             }
