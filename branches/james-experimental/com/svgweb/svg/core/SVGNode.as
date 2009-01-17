@@ -39,8 +39,8 @@ package com.svgweb.svg.core {
         
         public var viewX:Number;
         public var viewY:Number;
-        public var viewWidth:Number;
-        public var viewHeight:Number;
+        public var viewWidth:Number = 0;
+        public var viewHeight:Number = 0;
         
         protected var _firstX:Boolean;
         protected var _firstY:Boolean;
@@ -203,7 +203,7 @@ package com.svgweb.svg.core {
             this._firstX = true;
             this._firstY = true;
             
-            this.mask = null;
+            this.clearMask();
             
             this.transform.matrix = new Matrix();
             
@@ -250,20 +250,46 @@ package com.svgweb.svg.core {
         }
         
         //Used by SVGSVGNode and SVGImageNode
-        protected function createMask():void {             
+        protected function createMask():void {
             if (!this.mask) {
-            	var maskWidth:Number = this.getWidth();
-                var maskHeight:Number = this.getHeight();
-                if ((maskWidth > 0) 
-                    && (maskHeight > 0)) {
+            	var w:Number = 0;
+            	var h:Number = 0;
+            	
+            	var maskWidth:String = this.getAttribute('width');
+            	if (maskWidth && !maskWidth.match(/%/)){
+            		w = SVGUnits.cleanNumber(maskWidth);
+            	}
+            	else if (this.viewWidth > 0){
+            		w = this.viewWidth;
+            	}
+            	
+            	var maskHeight:String = this.getAttribute('height');
+                if (maskHeight && !maskHeight.match(/%/)){
+                    h = SVGUnits.cleanNumber(maskHeight);
+                }
+                else if (this.viewHeight > 0){
+                    h = this.viewHeight;
+                }
+            	
+                if ((w > 0) 
+                    && (h > 0)) {
                 	var shape:Shape = new Shape();
 	                shape.graphics.beginFill(0x000000);
-	                shape.graphics.drawRect(0, 0, maskWidth, maskHeight);
+	                shape.graphics.drawRect(0, 0, w, h);
 	                shape.graphics.endFill();
+	                this.addChild(shape);
 	                this.mask = shape;
-	                this.mask.transform.matrix = this.transform.concatenatedMatrix.clone();
 	            }
             }
+        }
+        
+        protected function clearMask():void {
+        	if (this.mask) {
+        		if ((this.mask is Shape) && this.contains(this.mask)) {
+        			this.removeChild(this.mask);        			
+        		}
+        		this.mask = null;
+        	}
         }
                 
         protected function applyViewBox():void {

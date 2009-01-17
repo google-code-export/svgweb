@@ -2,7 +2,6 @@ package com.svgweb.svg
 {
 	import com.svgweb.svg.nodes.SVGSVGNode;
 	
-	import flash.display.Sprite;
 	import flash.display.StageDisplayState;
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
@@ -10,7 +9,8 @@ package com.svgweb.svg
 	import flash.net.URLLoader;
 	import flash.net.URLRequest;
 
-	public class TestingViewer extends Sprite
+    [SWF(frameRate="24", width="2048", height="1024")]
+	public class TestingViewer extends SVGViewer
 	{
 		public var svg:SVGSVGNode;
 		private var loader:URLLoader;

@@ -18,7 +18,7 @@ package com.svgweb.svg.nodes {
             this.removeEventListener(Event.ENTER_FRAME, drawNode);    
             this._invalidDisplay = false;
             
-            this.mask = null;
+            this.clearMask();
             
             this.setAttributes();
             this.transformNode();
