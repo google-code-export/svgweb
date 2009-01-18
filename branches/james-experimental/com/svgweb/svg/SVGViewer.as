@@ -4,8 +4,7 @@ package com.svgweb.svg
 
 	public class SVGViewer extends Sprite
 	{
-		public function SVGViewer()
-		{
+		public function SVGViewer() {
 			super();
 		}
 		

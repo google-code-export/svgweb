@@ -27,33 +27,65 @@ OTHER DEALINGS IN THE SOFTWARE.
 package com.svgweb.svg.nodes
 {
 	import com.svgweb.svg.core.SVGNode;
-    import com.svgweb.svg.utils.Base64;
-    
-    import flash.display.Bitmap;
-    import flash.display.BitmapData;
-    import flash.display.DisplayObject;
-    import flash.display.Loader;
-    import flash.display.LoaderInfo;
-    import flash.events.Event;
-    import flash.events.IOErrorEvent;
-    import flash.net.URLRequest;
-    import flash.utils.*;
+	import com.svgweb.svg.utils.Base64;
+	
+	import flash.display.Bitmap;
+	import flash.display.BitmapData;
+	import flash.display.DisplayObject;
+	import flash.display.Loader;
+	import flash.display.LoaderInfo;
+	import flash.events.Event;
+	import flash.events.IOErrorEvent;
+	import flash.events.SecurityErrorEvent;
+	import flash.geom.Matrix;
+	import flash.net.URLLoader;
+	import flash.net.URLLoaderDataFormat;
+	import flash.net.URLRequest;
+	import flash.utils.*;
     
     public class SVGImageNode extends SVGNode
     {        
         private var bitmap:Bitmap;
-        private var orignalBitmap:Bitmap;
+        private var urlLoader:URLLoader;
+        
         public var imageWidth:Number = 0;
         public var imageHeight:Number = 0;
                    
         public function SVGImageNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
             super(svgRoot, xml, original);
         }  
+         
         
-        override public function drawNode(event:Event = null):void {  
-        	super.drawNode(event);
-        	this.createMask();
-        }   
+        override public function drawNode(event:Event=null):void {
+        	this.removeEventListener(Event.ENTER_FRAME, drawNode); 
+            
+            this._firstX = true;
+            this._firstY = true;
+            
+            this.clearMask();
+            
+            this.transform.matrix = new Matrix();
+            
+            this.setAttributes();
+            this.transformNode();
+            this.generateGraphicsCommands();
+            this.draw();
+            
+            //The rest is handled after image is loaded
+            /* this.applyViewBox();
+            this.maskNode();
+            
+            this.svgRoot.doneRendering(); */
+        }
+        
+        private function finishDrawNode():void {
+        	this.applyViewBox();
+            this.maskNode();
+            this.createMask();            
+            
+            this._invalidDisplay = false;
+            this.svgRoot.doneRendering(); 
+        }
         
         override protected function draw():void {
             var imageHref:String = this.getAttribute('href');
@@ -71,25 +103,131 @@ package com.svgweb.svg.nodes
             }
             
             //Url doesn't have to have http:
+            //it could be relative
             if (this._xml.@width && this._xml.@height) {
-                var loader:Loader = new Loader();
-                var urlReq:URLRequest = new URLRequest(imageHref);
-                loader.load(urlReq);
-                loader.contentLoaderInfo.addEventListener( Event.COMPLETE, onImageLoaded );
-                loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, onError);                
-                this.addChild(loader);
-                return;
+                urlLoader = new URLLoader();
+                urlLoader.dataFormat = URLLoaderDataFormat.BINARY;
+                
+                urlLoader.addEventListener(Event.COMPLETE, onURLLoaderComplete);
+                
+                urlLoader.addEventListener(IOErrorEvent.IO_ERROR, onError);
+                urlLoader.addEventListener(SecurityErrorEvent.SECURITY_ERROR, onError);
+                
+                urlLoader.load(new URLRequest(imageHref));
             }
         }
         
-        private function onError(event:IOErrorEvent):void {
-        	//this.dbg("IOError: " + event.text);
+        override protected function applyViewBox():void {
+        	       
+            var canvasWidth:Number = this.getWidth();
+            var canvasHeight:Number = this.getHeight();                
+            
+            if ((canvasWidth > 0)
+                && (canvasHeight > 0)) { 
+                	
+                var cropWidth:Number;
+                var cropHeight:Number;   
+                	                
+                var oldAspectRes:Number = this.imageWidth / this.imageHeight;   
+                var newAspectRes:Number = canvasWidth /  canvasHeight;             
+                
+                var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet', false);;               
+                var alignMode:String = preserveAspectRatio.substr(0,8);
+                
+                var meetOrSlice:String = 'meet';
+                if (preserveAspectRatio.indexOf('slice') != -1) {
+                    meetOrSlice = 'slice';
+                }
+                
+                if (alignMode == 'none') {
+                    // stretch to fit viewport width and height
+                    cropWidth = canvasWidth;
+                    cropHeight = canvasHeight;
+                }
+                else {
+                    if (meetOrSlice == 'meet') {
+                        // shrink to fit inside viewport
+
+                        if (newAspectRes > oldAspectRes) {
+                            cropWidth = canvasHeight * oldAspectRes;
+                            cropHeight = canvasHeight;
+                        }
+                        else {
+                            cropWidth = canvasWidth;
+                            cropHeight = canvasWidth / oldAspectRes;
+                        }
+    
+                    }
+                    else {
+                        // meetOrSlice == 'slice'
+                        // Expand to cover viewport.
+
+                        if (newAspectRes > oldAspectRes) {
+                            cropWidth = canvasWidth;
+                            cropHeight = canvasWidth / oldAspectRes;
+                        }
+                        else {
+                            cropWidth = canvasHeight * oldAspectRes;
+                            cropHeight = canvasHeight;
+                        }
+    
+                    }
+                }
+                
+                this.bitmap.scaleX = cropWidth / this.imageWidth;
+                this.bitmap.scaleY = cropHeight / this.imageHeight;
+                
+
+                var borderX:Number;
+                var borderY:Number;
+                var translateX:Number;
+                var translateY:Number;
+                if (alignMode != 'none') {
+                    translateX=0;
+                    translateY=0;
+                    var xAlignMode:String = alignMode.substr(0,4);
+                    switch (xAlignMode) {
+                        case 'xMin':
+                            break;
+                        case 'xMax':
+                            translateX = canvasWidth - cropWidth;
+                            break;
+                        case 'xMid':
+                        default:
+                            borderX = canvasWidth - cropWidth;
+                            translateX = borderX / 2.0;
+                            break;
+                    }
+                    var yAlignMode:String = alignMode.substr(4,4);
+                    switch (yAlignMode) {
+                        case 'YMin':
+                            break;
+                        case 'YMax':
+                            translateY = canvasHeight - cropHeight;
+                            break;
+                        case 'YMid':
+                        default:
+                            borderY = canvasHeight - cropHeight;
+                            translateY = borderY / 2.0;
+                            break;
+                    }
+                    this.bitmap.x = translateX;
+                    this.bitmap.y = translateY;
+                } 
+                                  
+            }               
+        
         }
         
-        private function onImageLoaded( event:Event ):void {
-            this.imageWidth = event.target.width;
-            this.imageHeight = event.target.height;
-            this.transformNode();
+        private function onError(event:Event):void {
+        	//this.dbg("IOError: " + event.text);
+        	this.finishDrawNode();
+        	urlLoader = null;
+        }        
+        
+        private function onURLLoaderComplete( event:Event ):void {
+            this.loadBytes(ByteArray(urlLoader.data));
+            urlLoader = null;
         }
         
         /**
@@ -113,10 +251,15 @@ package com.svgweb.svg.nodes
             var bitmapData:BitmapData = new BitmapData( content.width, content.height, true, 0x00000000 );
             bitmapData.draw( content );
             
+            
+            this.imageWidth = bitmapData.width;
+            this.imageHeight = bitmapData.height;
+            
             bitmap = new Bitmap( bitmapData );
             bitmap.opaqueBackground = null;
             this.addChild(bitmap);            
 
+            this.finishDrawNode();
             
         }                
          

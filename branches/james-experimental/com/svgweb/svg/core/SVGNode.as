@@ -160,7 +160,7 @@ package com.svgweb.svg.core {
 		                    childNode = new SVGStopNode(this.svgRoot, childXML);            
 		                    break;
 		                case "svg":
-		                    childNode = new SVGSVGNode(childXML);
+		                    childNode = new SVGSVGNode(this.svgRoot, childXML);
 		                    break;                        
 		                case "symbol":
 		                    childNode = new SVGSymbolNode(this.svgRoot, childXML);
@@ -252,34 +252,40 @@ package com.svgweb.svg.core {
         //Used by SVGSVGNode and SVGImageNode
         protected function createMask():void {
             if (!this.mask) {
+            	var shape:Shape;
             	var w:Number = 0;
-            	var h:Number = 0;
-            	
-            	var maskWidth:String = this.getAttribute('width');
-            	if (maskWidth && !maskWidth.match(/%/)){
-            		w = SVGUnits.cleanNumber(maskWidth);
+                var h:Number = 0;
+                
+            	if ((this.viewWidth > 0) &&(this.viewHeight > 0)) {
+            		shape = new Shape();
+                    shape.graphics.beginFill(0x000000);
+                    shape.graphics.drawRect(this.viewX, this.viewY, this.viewWidth, this.viewHeight);
+                    shape.graphics.endFill();
+                    this.addChild(shape);
+                    this.mask = shape;
+            	} 
+            	else {	            	
+	            	var maskWidth:String = this.getAttribute('width');
+	            	if (maskWidth && !maskWidth.match(/%/)){
+	            		w = SVGUnits.cleanNumber(maskWidth);
+	            	}
+	            	
+	            	var maskHeight:String = this.getAttribute('height');
+	                if (maskHeight && !maskHeight.match(/%/)){
+	                    h = SVGUnits.cleanNumber(maskHeight);
+	                }
             	}
-            	else if (this.viewWidth > 0){
-            		w = this.viewWidth;
-            	}
-            	
-            	var maskHeight:String = this.getAttribute('height');
-                if (maskHeight && !maskHeight.match(/%/)){
-                    h = SVGUnits.cleanNumber(maskHeight);
-                }
-                else if (this.viewHeight > 0){
-                    h = this.viewHeight;
-                }
             	
                 if ((w > 0) 
                     && (h > 0)) {
-                	var shape:Shape = new Shape();
+                	shape = new Shape();
 	                shape.graphics.beginFill(0x000000);
 	                shape.graphics.drawRect(0, 0, w, h);
 	                shape.graphics.endFill();
 	                this.addChild(shape);
 	                this.mask = shape;
 	            }
+                
             }
         }
         
@@ -301,18 +307,17 @@ package com.svgweb.svg.core {
                 viewY = SVGUnits.cleanNumber(points[1]);
                 viewWidth = SVGUnits.cleanNumber(points[2]);
                 viewHeight = SVGUnits.cleanNumber(points[3]);
-                
+           
                 var canvasWidth:Number = this.getWidth(); //2048.0;
-                var canvasHeight:Number = this.getHeight(); //1024.0;
-                
-                var cropWidth:Number;
-                var cropHeight:Number;
-                
-                var newMatrix:Matrix = this.transform.matrix.clone();
-                var undoViewBoxMatrix:Matrix = new Matrix();
+                var canvasHeight:Number = this.getHeight(); //1024.0;                
                 
                 if ((canvasWidth > 0)
-                    && (canvasHeight > 0)) {
+                    && (canvasHeight > 0)) {                    
+                    
+                    var cropWidth:Number;
+                    var cropHeight:Number;
+                              
+		            var newMatrix:Matrix = this.transform.matrix.clone();
                     	
                     var oldAspectRes:Number = viewWidth / viewHeight;
                     var newAspectRes:Number = canvasWidth /  canvasHeight;
@@ -366,9 +371,7 @@ package com.svgweb.svg.core {
 	                var scaleX:Number = cropWidth / viewWidth;
 	                var scaleY:Number = cropHeight / viewHeight;
 	                newMatrix.translate(-viewX, -viewY);
-	                undoViewBoxMatrix.translate(viewX, viewY);
 	                newMatrix.scale(scaleX, scaleY);
-	                undoViewBoxMatrix.scale(1/scaleX, 1/scaleY);
 	
 	
 	                /**
@@ -408,13 +411,11 @@ package com.svgweb.svg.core {
 	                            break;
 	                    }
 	                    newMatrix.translate(translateX, translateY);
-	                    undoViewBoxMatrix.translate(-translateX/scaleX, -translateY/scaleY);
-	                    undoViewBoxMatrix.translate(translateX, translateY);
 	                }   
 	                
 	                this.transform.matrix = newMatrix;                    	
                 }            	
-            }             
+            }     
         }
         
         /**

@@ -10,7 +10,10 @@ package com.svgweb.svg.nodes {
 		
 		protected var parentSVGRoot:SVGSVGNode = null;
 		
-		public function SVGSVGNode(xml:XML = null, original:SVGNode = null) {			
+		public function SVGSVGNode(svgRoot:SVGSVGNode = null, xml:XML = null, original:SVGNode = null) {
+			if (svgRoot) {
+				this.parentSVGRoot = svgRoot;
+			}			
 			super(this, xml, original);
 		}
 		
@@ -77,11 +80,8 @@ package com.svgweb.svg.nodes {
 		override protected function registerID():void {
 			if (this._xml) {
 				super.registerID();
-				if (!this.isClone) {
-					if (this.parent is SVGNode) {
-						parentSVGRoot = SVGNode(this.parent).svgRoot; 
-		                parentSVGRoot.registerNode(this);		
-					}
+				if (parentSVGRoot) {
+		            parentSVGRoot.registerNode(this);
 				}
 			}			
 		}
@@ -100,6 +100,19 @@ package com.svgweb.svg.nodes {
         
         override public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {
         	
+        	var value:String = this._getAttribute(name);
+            if (value) {
+                return value;
+            }
+            
+            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {
+            	return defaultValue;
+            }
+            
+        	if (inherit && (this.parent is SVGNode)) {
+        		return SVGNode(this.parent).getAttribute(name, defaultValue, inherit);
+        	}
+        	
         	if ((name == 'opacity') 
                 || (name == 'fill-opacity')
                 || (name == 'stroke-opacity')
@@ -113,11 +126,6 @@ package com.svgweb.svg.nodes {
             
             if (name == 'stroke') {
                 return 'none';
-            }
-            
-            var value:String = this._getAttribute(name);
-            if (value) {
-            	return value;
             }
             
         	return defaultValue;

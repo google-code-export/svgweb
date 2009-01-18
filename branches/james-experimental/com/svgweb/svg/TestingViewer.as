@@ -2,7 +2,9 @@ package com.svgweb.svg
 {
 	import com.svgweb.svg.nodes.SVGSVGNode;
 	
+	import flash.display.StageAlign;
 	import flash.display.StageDisplayState;
+	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
 	import flash.events.MouseEvent;
@@ -21,7 +23,9 @@ package com.svgweb.svg
 			svg = new SVGSVGNode();
 			this.addChild(svg);
 			this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
-			this.addEventListener(MouseEvent.CLICK, onMouseClick);			
+			this.addEventListener(MouseEvent.CLICK, onMouseClick);	
+			
+			 
 		}
 		
 		public function onMouseClick(event:MouseEvent):void {
@@ -40,7 +44,11 @@ package com.svgweb.svg
 		}
 		
 		public function onAddedToStage(event:Event):void {
-			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);		
+			
+			this.removeEventListener(Event.ADDED_TO_STAGE, onAddedToStage);  
+			
+            this.stage.align = StageAlign.TOP_LEFT;
+			this.stage.scaleMode = StageScaleMode.NO_SCALE;	
 				 
             if ((this.svg.xml == null) && this.root.loaderInfo.parameters.hasOwnProperty('svgURL')) {
                 loadURL(this.root.loaderInfo.parameters.svgURL);
