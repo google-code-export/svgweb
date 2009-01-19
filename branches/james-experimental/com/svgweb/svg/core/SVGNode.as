@@ -1,5 +1,5 @@
 package com.svgweb.svg.core {
-	import com.svgweb.svg.SVGViewer;
+	
 	import com.svgweb.svg.nodes.*;
 	import com.svgweb.svg.utils.SVGColors;
 	import com.svgweb.svg.utils.SVGUnits;
@@ -153,6 +153,9 @@ package com.svgweb.svg.core {
 		                case "rect":
 		                    childNode = new SVGRectNode(this.svgRoot, childXML);
 		                    break;
+		                case "script":
+                            childNode = new SVGScriptNode(this.svgRoot, childXML);
+                            break;
 		                case "set":
 		                    //childNode = new SVGSetNode(this.svgRoot, childXML, isClone);
 		                    break;

@@ -1,5 +1,6 @@
 package com.svgweb.svg.nodes {
 	import com.svgweb.svg.core.SVGNode;
+	import com.svgweb.svg.core.SVGViewer;
 	
 	import flash.events.Event;
 	
@@ -141,6 +142,33 @@ package com.svgweb.svg.nodes {
 	        }
 	        
 	        super.xml = value;
+        }
+        
+        public function handleScript(script:String):void {
+        	if (this.parentSVGRoot) {
+        		this.parentSVGRoot.handleScript(script);
+        	}
+        	else if (this.parent is SVGViewer) {
+        		SVGViewer(this.parent).handleScript(script);
+        	}        	
+        }
+        
+        public function addActionListener(eventType:String, target:SVGNode):void {
+        	if (this.parentSVGRoot) {
+                this.parentSVGRoot.addActionListener(eventType, target);
+            }
+            else if (this.parent is SVGViewer) {
+                SVGViewer(this.parent).addActionListener(eventType, target);
+            } 
+        }
+        
+        public function removeActionListener(eventType:String, target:SVGNode):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.removeActionListener(eventType, target);
+            }
+            else if (this.parent is SVGViewer) {
+                SVGViewer(this.parent).removeActionListener(eventType, target);
+            } 
         }
 		
 	}
