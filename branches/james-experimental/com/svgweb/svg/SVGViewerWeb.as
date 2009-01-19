@@ -36,13 +36,14 @@ package com.svgweb.svg
             target.removeEventListener(eventType, handleAction);
         }
         
-        protected function handleAction(event:Event):void {
-            var target:SVGNode = SVGNode(event.target);
+        private function handleAction(event:Event):void {
+            /* var target:SVGNode = SVGNode(event.target);
             switch(event.type) {
             	case MouseEvent.CLICK:
-                            	   
-            }
+                               	   
+            } */
         }
+        
         
         override public function getWidth():Number {
             return this.stage.stageWidth;
