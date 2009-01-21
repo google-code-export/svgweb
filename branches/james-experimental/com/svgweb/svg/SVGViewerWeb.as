@@ -7,6 +7,7 @@ package com.svgweb.svg
 	import flash.display.StageScaleMode;
 	import flash.events.Event;
 	import flash.events.MouseEvent;
+	import flash.external.ExternalInterface;
 	
     [SWF(frameRate="24", width="2048", height="1024")]
 	public class SVGViewerWeb extends SVGViewer {
@@ -36,12 +37,47 @@ package com.svgweb.svg
             target.removeEventListener(eventType, handleAction);
         }
         
-        private function handleAction(event:Event):void {
-            /* var target:SVGNode = SVGNode(event.target);
+        private function handleAction(event:Event):void {        	
+            var target:SVGNode = SVGNode(event.target);
+            if (!target.id) 
+            	return;
+                        
             switch(event.type) {
             	case MouseEvent.CLICK:
-                               	   
-            } */
+            	case MouseEvent.MOUSE_DOWN:
+            	case MouseEvent.MOUSE_MOVE:
+            	case MouseEvent.MOUSE_OUT:
+            	case MouseEvent.MOUSE_OVER:
+            	case MouseEvent.MOUSE_UP:
+                    js_sendMouseEvent(MouseEvent(event));
+                    break;  
+                    
+                default:
+                    trace("handleAction: Event not found");                 	   
+            }
+        }
+        
+        private static function js_sendMouseEvent(event:MouseEvent):void {
+            try {
+            	var parentID:String = "";
+            	if (SVGNode(event.target).parent is SVGNode) {
+            		parentID = SVGNode(SVGNode(event.target).parent).id; 
+            	} 
+                ExternalInterface.call("receiveFromFlash",
+                                         { type: 'event',
+                                           uniqueId: SVGNode(event.target).id,
+                                           parentId: parentID,
+                                           elementId: SVGNode(event.target).id,
+                                           eventType: event.type.toLowerCase(),
+                                           clientX: event.localX,
+                                           clientY: event.localY,
+                                           screenX: event.stageX,
+                                           screenY: event.stageY
+                                         } ); 
+            }
+            catch(error:SecurityError) {
+            	
+            }
         }
         
         

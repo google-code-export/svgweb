@@ -1,6 +1,7 @@
 package com.svgweb.svg.nodes {
 	import com.svgweb.svg.core.SVGNode;
 	import com.svgweb.svg.core.SVGViewer;
+	import com.svgweb.svg.events.SVGEvent;
 	
 	import flash.events.Event;
 	
@@ -22,13 +23,17 @@ package com.svgweb.svg.nodes {
             this.removeEventListener(Event.ENTER_FRAME, drawNode);    
             this._invalidDisplay = false;
             
+            
             this.clearMask();
+            this.transform.matrix = new Matrix();
             
             this.setAttributes();
             this.transformNode();
             
             this.applyViewBox();
-            this.createMask();                        
+            this.createMask();     
+            
+            this.attachEventListeners();                   
         }
 				
 		public function registerNode(node:SVGNode):void {
@@ -46,32 +51,31 @@ package com.svgweb.svg.nodes {
 			return null;
 		}
 		
-		public function startRendering():void {
-			if (this._renderCount == 0) {
-				if (parentSVGRoot) {
-					//If we are a nested SVG we need to increment our parent SVG
-					parentSVGRoot.startRendering();
-				}
+		public function startRendering():void {			
+			if (parentSVGRoot) {
+				//If we are a nested SVG we need to increment our parent SVG
+				parentSVGRoot.startRendering();
 			}
-			this._renderCount++;
+			else {
+				this._renderCount++;
+			}
 		}
 		
-		public function doneRendering():void {
-			this._renderCount--;
-			if (this._renderCount == 0) {
-				//Done Redering
-				if (parentSVGRoot) {
-					parentSVGRoot.doneRendering();
-				}
-				else {
-					//Top level SVG
-					//Do Done Rendering Event
-					trace ("Done Rendering");
-				}
+		public function doneRendering():void {			
+			if (parentSVGRoot) {
+				parentSVGRoot.doneRendering();
 			}
+			else {
+				this._renderCount--;
+				
+                if (this._renderCount == 0) {
+                	var svgEvent:SVGEvent = new SVGEvent(SVGEvent.LOADED);
+                	this.dispatchEvent(svgEvent);
+                }
 			
-			if (this._renderCount < 0) {
-				trace ("Render count is negative! " + this._renderCount);
+				if (this._renderCount < 0) {
+					trace ("Render count is negative! " + this._renderCount);
+				}
 			}
 		}		
 		

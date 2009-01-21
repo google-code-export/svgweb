@@ -11,6 +11,7 @@ package com.svgweb.svg.core {
 	import flash.display.Shape;
 	import flash.display.Sprite;
 	import flash.events.Event;
+	import flash.events.MouseEvent;
 	import flash.geom.Matrix;
 	import flash.utils.getDefinitionByName;
 	import flash.utils.getQualifiedClassName;
@@ -218,7 +219,38 @@ package com.svgweb.svg.core {
             this.applyViewBox();
             this.maskNode();
             
+            this.attachEventListeners();
+            
             this.svgRoot.doneRendering();
+        }
+        
+        protected function attachEventListeners():void {
+        	var action:String;
+        	
+        	action = this.getAttribute("onclick", null, false);
+        	if (action) 
+        		this.svgRoot.addActionListener(MouseEvent.CLICK, this);
+        		
+        	action = this.getAttribute("onmousedown", null, false);
+            if (action) 
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_DOWN, this);
+                
+            action = this.getAttribute("onmouseup", null, false);
+            if (action) 
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_UP, this);
+                
+            action = this.getAttribute("onmousemove", null, false);
+            if (action) 
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_MOVE, this);
+                
+            action = this.getAttribute("onmouseover", null, false);
+            if (action) 
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_OVER, this);
+                
+            action = this.getAttribute("onmouseout", null, false);
+            if (action) 
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_OUT, this);
+        	
         }
         
         protected function maskNode():void {
