@@ -33,7 +33,10 @@ package com.sgweb.svg.nodes
     import flash.events.Event;
     import flash.geom.Matrix;
     import flash.geom.Point;
-    import flash.utils.*;
+    //import flash.utils.*;
+    
+    import flash.utils.getDefinitionByName;
+    import flash.utils.getQualifiedClassName;
 
     /** Base node extended by all other SVG Nodes **/
     public class SVGNode extends Sprite
@@ -90,6 +93,11 @@ package com.sgweb.svg.nodes
         
 
         public var _initialRenderDone:Boolean = false;
+        
+        //Clone vars
+        public var original:SVGNode;    
+        protected var _isClone:Boolean = false;        
+        protected var _clones:Array = new Array();
 
         /**
          * Constructor
@@ -98,9 +106,14 @@ package com.sgweb.svg.nodes
          *
          * @return void.
          */
-        public function SVGNode(svgRoot:SVGRoot, xml:XML = null):void {
+        public function SVGNode(svgRoot:SVGRoot, xml:XML = null, original:SVGNode = null):void {
             this.svgRoot = svgRoot;
-            this.xml = xml;
+            this.xml = xml;            
+            if (original) {
+                this.original = original;
+                _isClone = true;
+            }
+            
             this.addEventListener(Event.ADDED, registerId);
         }
 
@@ -1576,6 +1589,18 @@ package com.sgweb.svg.nodes
 
         public function dbg(debugString:String):void {
             this.svgRoot.debug(debugString);
+        }
+        
+        /*
+         * Functions from experimental
+         */
+        public function clone():SVGNode {
+            var nodeClass:Class = getDefinitionByName(getQualifiedClassName(this)) as Class;
+            var newXML:XML = this._xml.copy();
+            
+            var node:SVGNode = new nodeClass(this.svgRoot, newXML, this) as SVGNode;
+            
+            return node;
         }
 
     }
