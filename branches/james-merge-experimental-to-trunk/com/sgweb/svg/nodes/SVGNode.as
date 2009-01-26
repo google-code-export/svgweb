@@ -45,6 +45,9 @@ package com.sgweb.svg.nodes
                                          'stroke-opacity', 'stroke-linecap', 'stroke-linejoin',
                                          'fill', 'fill-opacity', 'opacity', 'stop-color', 'stop-opacity',
                                          'font-family', 'font-size', 'letter-spacing', 'filter', 'visibility'];
+                                         
+        public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
+                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
 
 
         public namespace xlink = 'http://www.w3.org/1999/xlink';
@@ -82,7 +85,7 @@ package com.sgweb.svg.nodes
          * Set by setAttributes()
          * Used by getStyle()
          **/
-        protected var _style:Object;
+        protected var _styles:Object;
 
         /**
          * If true, redraw sprite graphics
@@ -131,13 +134,13 @@ package com.sgweb.svg.nodes
         protected function setAttributes():void {
             
             var xmlList:XMLList;
-            this._style = new Object();
+            this._styles = new Object();
 
             // Get styling from XML attribute list
             for each (var attribute:String in SVGNode.attributeList) {
                 xmlList = this._xml.attribute(attribute);
                 if (xmlList.length() > 0) {
-                    this._style[attribute] = xmlList[0].toString();
+                    this._styles[attribute] = xmlList[0].toString();
                 }
             }
             
@@ -154,7 +157,7 @@ package com.sgweb.svg.nodes
                         // Trim leading whitespace.
                         attrName = attrName.replace(/^\s+/, '');
                         attrValue = attrValue.replace(/^\s+/, '');
-                        this._style[attrName] = attrValue;
+                        this._styles[attrName] = attrValue;
                     }
                 }
             }
@@ -1136,8 +1139,8 @@ package com.sgweb.svg.nodes
                 }
             }
 
-            if (this._style.hasOwnProperty(name)) {
-                return this._style[name];
+            if (this._styles.hasOwnProperty(name)) {
+                return this._styles[name];
             }
             
             var attribute:String = this.getAttribute(name);
@@ -1184,17 +1187,75 @@ package com.sgweb.svg.nodes
         /**
          * @param attribute Attribute to retrieve from SVG XML
          * 
-         * @param defaultValue to return if attribute is not found
+         * @param defaultValue Value to return if attribute is not found
+         * 
+         * @param inherit If attribute is not set in this node try to retrieve it from the parent node
          * 
          * @return Returns the value of defaultValue
          **/
-        protected function getAttribute(attribute:*, defaultValue:* = null):* {
-            var xmlList:XMLList = this._xml.attribute(attribute);
+        public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {            
+            var value:String = this._getAttribute(name);
+            
+            if (value == "inherit") {
+                value = null;
+            }
+            
+            if (value == "currentColor") {
+                value = this.getAttribute('color', null, false);
+                if (!value || (value == "currentColor")) {
+                    if (this.parent is SVGNode) {
+                        value = SVGNode(this.parent).getAttribute('color');
+                    }
+                }
+            }
+            
+                
+            if (value) {
+                return value;
+            }
+            
+            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
+                return defaultValue;        
+            }
+            
+            if (inherit && (this.parent is SVGNode)) {
+                return SVGNode(this.parent).getAttribute(name, defaultValue);
+            }
+            
+            return defaultValue;            
+        }
+        
+        protected function _getAttribute(name:String):String {
+            var value:String;
+            
+            if (this.original && (this.parent is SVGNode)) {
+                //Node is the top level of a clone
+                //Check for an override value from the parent
+                value = SVGNode(this.parent).getAttribute(name, null, false);
+                if (value) {
+                    return value;
+                }
+            }
+            
+            if (name == "href") {
+                //this._xml@href handled normally
+                value = this._xml.@xlink::href;                             
+                if (value && (value != "")) {
+                    return value;
+                }
+            }
+            
+            var xmlList:XMLList = this._xml.attribute(name);
+            
             if (xmlList.length() > 0) {
                 return xmlList[0].toString();
-            }            
-            return defaultValue;
+            }   
+                     
+            if (_styles.hasOwnProperty(name)) {
+                return (_styles[name]);
+            }
             
+            return null;
         }
 
 
@@ -1489,19 +1550,19 @@ package com.sgweb.svg.nodes
          * @param value New value for style
          **/ 
         private function updateStyleString(name:String, value:String):void {
-            if (this._style[name] == value) {
+            if (this._styles[name] == value) {
                 return;
             }
             
-            this._style[name] = value;
+            this._styles[name] = value;
             
             var newStyleString:String = '';
             
-            for (var key:String in this._style) {
+            for (var key:String in this._styles) {
                 if (newStyleString.length > 0) {
                     newStyleString += ';';
                 }
-                newStyleString += key + ':' + this._style[key];
+                newStyleString += key + ':' + this._styles[key];
             }
             
             this._xml.@style = newStyleString;        
