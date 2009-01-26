@@ -706,7 +706,7 @@ package com.sgweb.svg.nodes
             if (field == null) {
                 field = name;
             }
-            var tmp:String = this.getStyle(name);
+            var tmp:String = this.getAttribute(name);
             if (tmp != null) {
                 this[field] = tmp;
             }
@@ -734,8 +734,8 @@ package com.sgweb.svg.nodes
             var fill_alpha:Number = 0;
             var node_alpha:Number = 0;
 
-            var fill:String = this.getStyle('fill');
-            if ( (fill != 'none') && (fill != '') && (this.getStyle('visibility') != 'hidden') ) {
+            var fill:String = this.getAttribute('fill');
+            if ( (fill != 'none') && (fill != '') && (this.getAttribute('visibility') != 'hidden') ) {
                 var matches:Array = fill.match(/url\(#([^\)]+)\)/si);
                 if (matches != null && matches.length > 0) {
                     var fillName:String = matches[1];
@@ -756,9 +756,9 @@ package com.sgweb.svg.nodes
                     color_and_alpha = SVGColors.getColorAndAlpha(fill);
                     color_core = color_and_alpha[0];
                     color_alpha = color_and_alpha[1];
-                    node_alpha = Number(this.getStyle('opacity'));
+                    node_alpha = Number(this.getAttribute('opacity'));
 
-                    fill_alpha = SVGColors.cleanNumber( this.getStyle('fill-opacity') ) * color_alpha;
+                    fill_alpha = SVGColors.cleanNumber( this.getAttribute('fill-opacity') ) * color_alpha;
                     this.graphics.beginFill(color_core, fill_alpha);
                 }
             }
@@ -768,19 +768,19 @@ package com.sgweb.svg.nodes
             var line_alpha:Number;
             var line_width:Number;
 
-            var stroke:String = this.getStyle('stroke');
-            if ( (stroke == 'none') || (stroke == '') || (this.getStyle('visibility') == 'hidden') ) {
+            var stroke:String = this.getAttribute('stroke');
+            if ( (stroke == 'none') || (stroke == '') || (this.getAttribute('visibility') == 'hidden') ) {
                 line_alpha = 0;
                 line_color = 0;
                 line_width = 0;
             }
             else {
                 line_color = SVGColors.cleanNumber(SVGColors.getColor(stroke));
-                line_alpha = SVGColors.cleanNumber(this.getStyle('stroke-opacity'));
-                line_width = SVGColors.cleanNumber(this.getStyle('stroke-width'));
+                line_alpha = SVGColors.cleanNumber(this.getAttribute('stroke-opacity'));
+                line_width = SVGColors.cleanNumber(this.getAttribute('stroke-width'));
             }
 
-            var capsStyle:String = this.getStyle('stroke-linecap');
+            var capsStyle:String = this.getAttribute('stroke-linecap');
             if (capsStyle == 'round'){
                 capsStyle = CapsStyle.ROUND;
             }
@@ -791,7 +791,7 @@ package com.sgweb.svg.nodes
                 capsStyle = CapsStyle.NONE;
             }
             
-            var jointStyle:String = this.getStyle('stroke-linejoin');
+            var jointStyle:String = this.getAttribute('stroke-linejoin');
             if (jointStyle == 'round'){
                 jointStyle = JointStyle.ROUND;
             }
@@ -802,7 +802,7 @@ package com.sgweb.svg.nodes
                 jointStyle = JointStyle.MITER;
             }
             
-            var miterLimit:String = this.getStyle('stroke-miterlimit');
+            var miterLimit:String = this.getAttribute('stroke-miterlimit');
             if (miterLimit == null) {
                 miterLimit = '4';
             }
@@ -810,7 +810,7 @@ package com.sgweb.svg.nodes
             this.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
                                     capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
 
-            if ( (stroke != 'none') && (stroke != '')  && (this.getStyle('visibility') != 'hidden') ) {
+            if ( (stroke != 'none') && (stroke != '')  && (this.getAttribute('visibility') != 'hidden') ) {
                 var strokeMatches:Array = stroke.match(/url\(#([^\)]+)\)/si);
                 if (strokeMatches != null && strokeMatches.length > 0) {
                     var strokeName:String = strokeMatches[1];
@@ -957,7 +957,7 @@ package com.sgweb.svg.nodes
                     newChildNode.refreshHref();
                     newChildNode.setAttributes();
 
-                    var filterStr:String = newChildNode.getStyle('filter');
+                    var filterStr:String = newChildNode.getAttribute('filter');
 
                     // Objects with a gaussian filter need to be 
                     // masked by their own shape to mask any gaussian blurs
@@ -1102,62 +1102,6 @@ package com.sgweb.svg.nodes
             }
             return childNode;
         }
-
-        
-        /**
-         * Get a node style (ex: fill, stroke, etc..)
-         * Also checks parent nodes for the value if it is not set in the current node.
-         *
-         * @param name Name of style to retreive
-         * 
-         * @return Value of style or null if it is not found
-         **/
-        public function getStyle(name:String):String {
-
-            if (this.getSVGMaskAncestor() != null 
-                 || (this is SVGClipMaskParent)
-                 || (this is SVGBlurMaskParent)) {
-
-                if (  (name == 'opacity')
-                    || (name == 'fill-opacity')
-                    || (name == 'stroke-width')
-                    || (name == 'stroke-opacity') ) {
-                    return '1';
-                }
-
-                if (name == 'fill') {
-                    return 'black';
-                }
-
-                if (name == 'stroke') {
-                    return 'none';
-                    //return 'black';
-                }
-
-                if (name == 'filter') {
-                    return null;
-                }
-            }
-
-            if (this._styles.hasOwnProperty(name)) {
-                return this._styles[name];
-            }
-            
-            var attribute:String = this.getAttribute(name);
-            if (attribute) {
-                return attribute;
-            }
-            
-            //Opacity should not be inherited
-            else if (name == 'opacity') {
-                return '1';
-            }
-            else if (this.parent is SVGNode) {
-                return SVGNode(this.parent).getStyle(name);
-            }
-            return null;
-        }
-
 
         public function parseStyle(styleAttr:String):String {
             if (!this._xml.@style)
@@ -1396,7 +1340,7 @@ package com.sgweb.svg.nodes
          * Add any assigned filters to node
          **/
         protected function setupFilters():void {
-            var filterName:String = this.getStyle('filter');
+            var filterName:String = this.getAttribute('filter');
             if ((filterName != null)
                 && (filterName != '')) {
                 var matches:Array = filterName.match(/url\(#([^\)]+)\)/si);
@@ -1432,12 +1376,12 @@ package com.sgweb.svg.nodes
          **/ 
         public function isDisplayNone():Boolean {
             var node:DisplayObject = this;
-            if (this.getStyle('display') == 'none') {
+            if (this.getAttribute('display') == 'none') {
                 return true;
             }
             while (node && !(node is SVGRoot)) {
                 node=node.parent;
-                if (node && node is SVGNode && SVGNode(node).getStyle('display') == 'none') {
+                if (node && node is SVGNode && SVGNode(node).getAttribute('display') == 'none') {
                     return true;
                 }
             }

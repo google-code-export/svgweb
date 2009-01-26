@@ -138,7 +138,7 @@ package com.sgweb.svg.nodes
         /**
          * Support default SVG style values
          **/
-        override public function getStyle(name:String):String {
+        /* override public function getStyle(name:String):String {
             var style:String = super.getStyle(name);
             
             //Return default values if a style is not set
@@ -165,7 +165,7 @@ package com.sgweb.svg.nodes
             
             return style;            
                     
-        }
+        } */
 
         override public function getWidth():Number {
             var canvasWidth:Number = 2048.0;

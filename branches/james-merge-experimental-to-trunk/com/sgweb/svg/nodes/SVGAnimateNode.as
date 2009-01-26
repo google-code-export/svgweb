@@ -116,7 +116,7 @@ package com.sgweb.svg.nodes
                         
             if (this._state == this.STATE_BEGIN) {        
                                 
-                this._fromVal = (this._fromValString) ? SVGColors.cleanNumber(this._fromValString) : SVGColors.cleanNumber(SVGNode(this.parent).getStyle(this._field));
+                this._fromVal = (this._fromValString) ? SVGColors.cleanNumber(this._fromValString) : SVGColors.cleanNumber(SVGNode(this.parent).getAttribute(this._field));
                 this._toVal = (this._byValString) ? this._fromVal + SVGColors.cleanNumber(this._byValString) : this._toVal = SVGColors.cleanNumber(this._toValString);
                 this._valSpan = this._toVal - this._fromVal;
                 
