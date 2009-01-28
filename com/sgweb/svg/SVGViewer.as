@@ -112,7 +112,7 @@ package com.sgweb.svg
         public function debug(debugMessage:String):void {
             if (this.debugEnabled) {            
                 try {
-                    ExternalInterface.call(this.js_handler + 'receiveFromFlash', 
+                    ExternalInterface.call(this.js_handler + 'onMessage', 
                                            { type: 'log',
                                              uniqueId: this.js_uniqueId,
                                              logString: debugMessage
@@ -128,7 +128,7 @@ package com.sgweb.svg
                 onLoadHandler = this._svgRoot.xml.@onload;
             }
             try {
-                ExternalInterface.call(this.js_handler + "receiveFromFlash", 
+                ExternalInterface.call(this.js_handler + "onMessage", 
                                                            { type: 'event',
                                                              eventType: "onRenderingFinished",
                                                              width: this._svgRoot.getWidth(),
@@ -142,7 +142,7 @@ package com.sgweb.svg
         public function handleScript(script:String):void {
             if (!this.scriptSentToJS) {           
                 try {
-                    ExternalInterface.call(this.js_handler + "receiveFromFlash", 
+                    ExternalInterface.call(this.js_handler + "onMessage", 
                                                                { type: 'script',
                                                                  uniqueId: this.js_uniqueId,
                                                                  script: script } );
@@ -206,7 +206,7 @@ package com.sgweb.svg
             // notify browser javascript that we are loaded
             try {
                 var result:Object = ExternalInterface.call(
-                    this.js_handler + "receiveFromFlash",
+                    this.js_handler + "onMessage",
                     { type: 'event', eventType: 'onLoad', uniqueId: this.js_uniqueId } );
             }
             catch(error:SecurityError) {
@@ -283,8 +283,6 @@ package com.sgweb.svg
                         }
                     }
                 }
-                
-                debug('test');
 
                 // register interface functions for browser javascript engine
                 function js_receiveFromBrowser(jsMsg:Object):Object {
@@ -382,7 +380,7 @@ package com.sgweb.svg
                 // notify browser javascript that we are started and ready
                 try {
                     var result:Object = ExternalInterface.call(
-                        this.js_handler + "receiveFromFlash",
+                        this.js_handler + "onMessage",
                         { type: 'event', eventType: 'onFlashLoaded', uniqueId: this.js_uniqueId } );
                 }
                 catch(error:SecurityError) {
@@ -431,7 +429,7 @@ package com.sgweb.svg
 
         public static function js_sendMouseEvent(js_handler:String, myUniqueId:String, myElem:SVGNode, event:MouseEvent, eventType:String):void {
             try {
-                ExternalInterface.call(js_handler + "receiveFromFlash",
+                ExternalInterface.call(js_handler + "onMessage",
                                          { type: 'event',
                                            uniqueId: myUniqueId,
                                            elementId: myElem.xml.@id.toString(),
@@ -449,7 +447,7 @@ package com.sgweb.svg
         public static function js_sendChildMouseEvent(js_handler:String, myUniqueId:String, parentNode:SVGNode, childNode:SVGNode,
                                                       event:MouseEvent, eventType:String):void {
             try {
-                ExternalInterface.call(js_handler + "receiveFromFlash",
+                ExternalInterface.call(js_handler + "onMessage",
                                          { type: 'event',
                                            uniqueId: myUniqueId,
                                            parentId: parentNode.xml.@id.toString(),

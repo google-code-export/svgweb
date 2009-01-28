@@ -30,8 +30,16 @@ but only on root node
       /** Called when the content is ready for some SVG tag in the HTML
           page. This method is called for each individual SVG tag. */
       function contentReady() {
+        // the FlashHandler we are associated with
         this._handler = svgweb.handlers[element.id];
-        this._handler.document.documentElement._htcLoaded(element.document, this);
+      
+        // indicate that we are now loaded
+        var msg = { type: 'event', 
+                    eventType: 'onHTCLoaded',
+                    uniqueId: element.id, 
+                    elemDoc: element.document,
+                    htcNode: this };
+        this._handler.onMessage(msg);
       }
       
       /** Does some magic to have the Flash object show up in our SVG 
@@ -71,6 +79,11 @@ but only on root node
         html.appendChild(body);
         defaults.viewLink = html.document; // ViewLink magic
         this._doc = html.document;
+      }
+      
+      this.test = function() {
+        console.log('inside!');
+        console.log('this._proxyNode='+this._proxyNode);
       }
   </script>
 </head>

@@ -1439,60 +1439,71 @@ extend(FlashHandler, {
   fireOnLoad: function() {
   },
   
+  /**
+    Stringifies the msg object sent back from the Flash SVG renderer or 
+    from the HTC file to help with debugging.
+  */
+  debugMsg: function(msg) {
+    // TODO: Create a way to disable this if we are not debugging for
+    // performance reasons
+    var result = [];
+    for (var i in msg) {
+      result.push(i + ': ' + msg[i]);
+    }
+    result = result.join(', ');
+    
+    return '{' + result + '}';
+  },
+  
+  onMessage: function(msg) {
+    console.log('onMessage, msg='+this.debugMsg(msg));
+    if (msg.type == 'event') {
+      this._onEvent(msg);
+      return;
+    } else if (msg.type == 'log') {
+      this._onLog(msg);
+      return;
+    } else if (msg.type == 'script') {
+      // TODO: Bring onScript over from Rick's fork
+      this._onScript(msg);
+      return;
+    }
+  },
+  
   _handleScript: function() {
     console.log('handleScript');
 
     // create proxy objects representing the Document and SVG root
     this.document = new _Document(this);
     this.document.documentElement = 
-          new _SVGSVGElement(this._parsedSVG.documentElement, this._scriptNode);
+          new _SVGSVGElement(this._parsedSVG.documentElement, this._scriptNode,
+                             this);
   },
   
   _handleObject: function() {
     // TODO:
   },
   
-  /** Called by the Flash object in order to return results.
-  
-      @param flashMsg TODO: Document the Flash message object format. */
-  receiveFromFlash: function(flashMsg) {
-    console.log('receiveFromFlash, flashMsg='+this._debugFlashMsg(flashMsg));
-    this._onMessage(flashMsg);
+  _onLog: function(msg) {
+    console.log('FLASH: ' + msg.logString);
   },
   
-  _onMessage: function(flashMsg) {
-    console.log('onMessage, flashMsg='+this._debugFlashMsg(flashMsg));
-    if (flashMsg.type == 'event') {
-      this._onEvent(flashMsg);
+  _onEvent: function(msg) {
+    if (msg.eventType == 'onRenderingFinished') {
+      this._onRenderingFinished(msg);
       return;
-    } else if (flashMsg.type == 'log') {
-      this._onLog(flashMsg);
+    } else if (msg.eventType == 'onFlashLoaded') {
+      this._onFlashLoaded(msg);
       return;
-    } else if (flashMsg.type == 'script') {
-      // TODO: Bring onScript over from Rick's fork
-      this._onScript(flashMsg);
+    } else if (msg.eventType.substr(0,5) == 'mouse') {
+      this._onMouseEvent(msg);
       return;
+    } else if (msg.eventType == 'onHTCLoaded') {
+      this.document.documentElement._onHTCLoaded(msg);
     }
   },
   
-  _onLog: function(flashMsg) {
-    console.log('FLASH: ' + flashMsg.logString);
-  },
-  
-  _onEvent: function(flashMsg) {
-      if (flashMsg.eventType == 'onRenderingFinished') {
-        this._onRenderingFinished(flashMsg);
-        return;
-      } else if (flashMsg.eventType == 'onFlashLoaded') {
-        this._onFlashLoaded(flashMsg);
-        return;
-      } else if (flashMsg.eventType.substr(0,5) == 'mouse') {
-        this._onMouseEvent(flashMsg);
-        return;
-      }
-  },
-  
-  _onFlashLoaded: function(flashMsg) {
+  _onFlashLoaded: function(msg) {
     // the Flash object is done loading
     console.log('_onFlashLoaded');
     
@@ -1500,7 +1511,7 @@ extend(FlashHandler, {
     // IE caching issue using a setTimeout, as well as some special handling
     // for dynamic SVG on IE; I might need these if I run into issues
     
-    var svgID = flashMsg.uniqueId;
+    var svgID = msg.uniqueId;
     
     // send the SVG over to Flash now
     this._flashObj.sendToFlash({type: 'load', sourceType: 'string',
@@ -1508,24 +1519,8 @@ extend(FlashHandler, {
   },
   
   /** The Flash is finished rendering. */
-  _onRenderingFinished: function(flashMsg) {
-    
-  },
-  
-  /**
-    Stringifies the flashMsg object sent back from the Flash SVG renderer to
-    help with debugging.
-  */
-  _debugFlashMsg: function(flashMsg) {
-    // TODO: Create a way to disable this if we are not debugging for
-    // performance reasons
-    var result = [];
-    for (var i in flashMsg) {
-      result.push(i + ': ' + flashMsg[i]);
-    }
-    result = result.join(', ');
-    
-    return '{' + result + '}';
+  _onRenderingFinished: function(msg) {
+    // TODO: implement
   }
 });  
 
@@ -1945,12 +1940,14 @@ extend(_Style, {
 /** SVG Root element.
 
     @param rootNode A parsed XML object that is the SVG root node.
-    @param scriptNode The script node that contains this SVG. */
-function _SVGSVGElement(rootNode, scriptNode) {
+    @param scriptNode The script node that contains this SVG. 
+    @param handler The FlashHandler that we are a part of. */
+function _SVGSVGElement(rootNode, scriptNode, handler) {
   console.log('SVGSVGElement created');
   // superclass constructor
   _Element.call('svg', _Node.ELEMENT_NODE);
   
+  this._handler = handler;
   this._xml = rootNode;
   this._scriptNode = scriptNode;
   
@@ -1977,19 +1974,26 @@ _SVGSVGElement.prototype = new _Element;
 extend(_SVGSVGElement, {
   /** Called when the Microsoft Behavior HTC file is loaded; called for
       each HTC node element (which will correspond with each SVG element
-      in the document).
+      in the document). The message object is a literal with two values:
       
-      @param htcNode A reference to the HTC node itself.
-      @param elemDoc The element.document of the HTC file. */
-  _htcLoaded: function(elemDoc, htcNode) {
-    console.log('htcLoaded, htcNode='+htcNode+', elemDoc='+elemDoc);
+      htcNode A reference to the HTC node itself.
+      elemDoc The element.document of the HTC file. */
+  _onHTCLoaded: function(msg) {
+    console.log('onHTCLoaded, msg=' + this._handler.debugMsg(msg));
+    var elemDoc = msg.elemDoc;
+    var htcNode = msg.htcNode;
+    
     // TODO: We are not handling dynamically created nodes yet
     
     if (htcNode.nodeName.toUpperCase() == 'SVG') {
+      // store a reference to ourselves in the HTC node, so that we
+      // can do all the real work behind the HTC
+      this._htcNode = htcNode;
+      this._htcNode._proxyNode = this;
+      
+      // now insert out Flash
       this._insertFlash(elemDoc, htcNode);
     }
-    
-    // TODO: patch in our _Element methods into the HTC
   },
   
   _insertFlash: function(doc, htcNode) {
