@@ -7,7 +7,7 @@
    <script src="svg.js"></script>
    
    <script>
-     window.onload = function() {
+     svgweb.addOnLoad(function() {
        console.log('Developers window.onload');
        var SVGNS = 'http://www.w3.org/2000/svg';
        
@@ -46,7 +46,7 @@
 
          window._counter++;
        }, 100);
-     }
+     });
    </script>
  </head>
 
