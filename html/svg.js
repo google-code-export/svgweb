@@ -782,6 +782,7 @@ extend(SVGWeb, {
     }
     
     // setup which renderer we will use
+    console.log('this.config.use='+this.config.use);
     this._renderer;
     if (this.config.use == 'flash') {
       this._renderer = FlashHandler;
@@ -897,13 +898,19 @@ extend(SVGWeb, {
   
   /** Patches the document object to also use the Flash backend. */
   _patchDocumentObject: function() {
+    console.log('patchDocumentObject');
     var self = this;
     
+    // We don't capture the original document functions as a closure, 
+    // as Firefox doesn't like this and will fail to run the original. 
+    // Instead, we capture the original versions on the document object
+    // itself but with a _ prefix.
+    
     // getElementById
-    var _getElementById = document.getElementById;
+    document._getElementById = document.getElementById;
     document.getElementById = function(id) {
-      var result = _getElementById(id);
-      if (result) {
+      var result = document._getElementById(id);
+      if (result != null) { // Firefox doesn't like 'if (result)'
         return result;
       }
       
@@ -918,14 +925,14 @@ extend(SVGWeb, {
     }
     
     // getElementsByTagNameNS
-    var _getElementsByTagNameNS = document.getElementsByTagNameNS;
+    document._getElementsByTagNameNS = document.getElementsByTagNameNS;
     document.getElementsByTagNameNS = function(ns, tagName) {
       var result;
-      if (_getElementsByTagNameNS) {
+      if (document._getElementsByTagNameNS) {
         result = _getElementsByTagNameNS(ns, tagName);
       }
       
-      if (result) {
+      if (result != null) { // Firefox doesn't like 'if (result)'
         return result;
       }
       
@@ -997,8 +1004,10 @@ extend(SVGWeb, {
     }
     
     // add missing IDs to all elements and get the root SVG elements ID
+    console.log('adding IDs');
     var parsedSVG = this._addIDs(svg);
     var rootID = parsedSVG.documentElement.getAttribute('id');
+    console.log('rootID='+rootID);
     
     // create the correct handler
     var self = this;
@@ -1009,6 +1018,7 @@ extend(SVGWeb, {
 
       self._handleDone(id);
     }
+    console.log('creating renderer');
     this.handlers[rootID] = new this._renderer(
                                             {type: 'script', 
                                             svgID: rootID,
@@ -1053,6 +1063,7 @@ extend(SVGWeb, {
       @returns Parsed DOM XML Document of the SVG with all elements having 
       an ID. */
   _addIDs: function(svg) {
+    console.log('addIDs');
     // parse the SVG
     var xmlDoc, root;
     if (typeof DOMParser != 'undefined') {
@@ -1063,6 +1074,7 @@ extend(SVGWeb, {
       } catch (e) {
         throw e;
       }
+      
       root = xmlDoc.documentElement;
       if (root.nodeName == 'parsererror') {
         throw 'There is a bug in your SVG: '
@@ -1084,16 +1096,16 @@ extend(SVGWeb, {
     // now walk the parsed DOM
     var current = root;
     while (current) {
-      if (!current.getAttribute('id') && current.nodeType == 1) {
+      if (current.nodeType == 1 && !current.getAttribute('id')) {
         current.setAttribute('id', this._generateID('__svg__random__', null));
       }
-
+      
       var next = current.firstChild;
       if (next) {
         current = next;
         continue;
       }
-
+      
       while (current) {
         if (current != root) {
           next = current.nextSibling;
@@ -1102,7 +1114,6 @@ extend(SVGWeb, {
             break;
           }
         }
-
         if (current == root) {
           current = null;
         } else {
