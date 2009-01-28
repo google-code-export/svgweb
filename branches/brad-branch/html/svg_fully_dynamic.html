@@ -68,9 +68,7 @@
         }
       }
 
-      // TODO: Change this to be an addEventListener to test that way of
-      // adding onload listeners as well
-      window.onload = function() {
+      svgweb.addOnLoad(function() {
         console.log('developers window.onload called');
         root = document.createElementNS(svgns, 'svg');
         root.setAttribute('width', width);
@@ -84,7 +82,7 @@
           setInterval(loop, 10);
         }, false);
         document.body.appendChild(root);
-      }
+      });
     </script>
   
     <style>
