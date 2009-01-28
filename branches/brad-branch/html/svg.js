@@ -696,8 +696,8 @@ extend(SVGWeb, {
     // John Resig/others
   
     var self = this;
+    // FIXME: Test to make sure this works on Safari 2
     if (document.addEventListener) {
-      // FIXME: I believe this will fail on Safari 2
       // DOMContentLoaded supported on Opera 9/Mozilla/Safari 3
       document.addEventListener('DOMContentLoaded', function() {
         self._onDOMContentLoaded();
@@ -757,6 +757,7 @@ extend(SVGWeb, {
     // extract any SVG SCRIPTs or OBJECTs
     this._svgScripts = this._getSVGScripts();
     this._svgObjects = this._getSVGObjects();
+    
     this.totalSVG = this._svgScripts.length + this._svgObjects.length;
     
     // no SVG - we're done
@@ -794,7 +795,7 @@ extend(SVGWeb, {
       this._patchDocumentObject();
     }
     
-    // now process each of the SVG SCRIPT and SVG OBJECTs
+    // now process each of the SVG SCRIPTs and SVG OBJECTs
     this.totalLoaded = 0;
     this.handlers = [];
     var self = this;
@@ -857,8 +858,8 @@ extend(SVGWeb, {
     // SCRIPTs; if none present, write out our reason
     for (var i = 0; i < this._svgScripts.length; i++) {
       var script = this._svgScripts[i];
-      var noscript = document.createElement('span');
-      noscript.className = 'svg-noscript';
+      var output = document.createElement('span');
+      output.className = 'svg-noscript';
       
       var sibling = script.nextSibling;
       // jump past everything until we hit our first Element
@@ -867,16 +868,17 @@ extend(SVGWeb, {
       }
       
       if (sibling && sibling.nodeName.toLowerCase() == 'noscript') {
-        noscript.innerHTML = sibling.innerHTML;
+        var noscript = sibling;
+        output.innerHTML = noscript.innerHTML;
       } else {
-        noscript.appendChild(document.createTextNode(reason));
+        output.appendChild(document.createTextNode(reason));
       }
       
-      script.parentNode.insertBefore(noscript, script);
+      script.parentNode.insertBefore(output, script);
     }
   },
   
-  /** Fires any Window onLoad listeners that were registered by a developer. */
+  /** Fires any addOnLoad() listeners that were registered by a developer. */
   _fireOnLoad: function() {
     this.pageLoaded = true;
     
@@ -970,8 +972,8 @@ extend(SVGWeb, {
   },
   
   /** Extracts SVG from the script, cleans it up, adds missing IDs to
-      all elements, and then creates the correct
-      Flash or Native handler to do the hard work. 
+      all elements, and then creates the correct Flash or Native handler to do 
+      the hard work. 
       
       @param script DOM node of the SVG SCRIPT element. */
   _processSVGScript: function(script) {
@@ -982,7 +984,8 @@ extend(SVGWeb, {
     if (/\<\?xml/m.test(svg) == false) { // XML declaration
       svg = '<?xml version="1.0"?>\n' + svg;
     }
-    // short circuit if there is a custom prefix for svg namespace
+    // add SVG namespace declaration; don't however if there is a custom 
+    // prefix for SVG namespace
     if (/\<[^\:]+\:svg/m.test(svg) == false) {
       if (/xmlns\=['"]http:\/\/www\.w3\.org\/2000\/svg['"]/.test(svg) == false) {
         svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
@@ -994,9 +997,7 @@ extend(SVGWeb, {
     }
     
     // add missing IDs to all elements and get the root SVG elements ID
-    console.log('trying to add IDs');
     var parsedSVG = this._addIDs(svg);
-    console.log('IDs added');
     var rootID = parsedSVG.documentElement.getAttribute('id');
     
     // create the correct handler
@@ -1008,9 +1009,9 @@ extend(SVGWeb, {
 
       self._handleDone(id);
     }
-    console.log('rootID='+rootID);
     this.handlers[rootID] = new this._renderer(
-                                            {type: 'script', svgID: rootID,
+                                            {type: 'script', 
+                                            svgID: rootID,
                                             parsedSVG: parsedSVG, 
                                             svgString: svg,
                                             scriptNode: script,
@@ -1069,6 +1070,8 @@ extend(SVGWeb, {
       }
     } else {
        try {
+         // TODO: I believe we might need to loop here to try instantiating 
+         // different versions of the ActiveX XML Parser
          xmlDoc = new ActiveXObject('Microsoft.XMLDOM');
          xmlDoc.async = 'false';
          xmlDoc.loadXML(svg);
@@ -1082,9 +1085,7 @@ extend(SVGWeb, {
     var current = root;
     while (current) {
       if (!current.getAttribute('id') && current.nodeType == 1) {
-        console.log('generating random ID for ' + current.nodeName);
         current.setAttribute('id', this._generateID('__svg__random__', null));
-        console.log('generated ID='+current.getAttribute('id'));
       }
 
       var next = current.firstChild;
@@ -1120,6 +1121,8 @@ extend(SVGWeb, {
   /** Extracts or autogenerates an ID for the object and then creates the
       correct Flash or Native handler to do the hard work. */
   _processSVGObject: function(obj) {
+    // TODO: Implement
+    
     // extract an ID from the OBJECT tag
     
     // if there is none, generate a random ID
@@ -1219,7 +1222,7 @@ extend(RenderConfig, {
     return false;
   },
   
-  /** Determines whether this browser support native SVG. */
+  /** Determines whether this browser supports native SVG. */
   _hasNativeSVG: function() {
     if (document.implementation && document.implementation.hasFeature) {
       return document.implementation.hasFeature(
@@ -1230,8 +1233,8 @@ extend(RenderConfig, {
   }
 });
 
-// adapted from Dojo Flash dojox.flash.Info
 
+// adapted from Dojo Flash dojox.flash.Info
 function FlashInfo(){
 	// summary: A class that helps us determine whether Flash is available.
 	// description:
@@ -1427,7 +1430,7 @@ extend(FlashHandler, {
     this.document.documentElement = 
           new _SVGSVGElement(this._parsedSVG.documentElement, this._scriptNode);
     
-    // for IE, wait for the HTC file to load for the root element; for
+    // for IE, wait for the HTC file to load for the SVG root element; for
     // other browsers immediately proceed to insert the Flash object
     if (!isIE) {
       this._insertFlash(document);
@@ -1448,17 +1451,14 @@ extend(FlashHandler, {
     console.log('htcLoaded, htcNode='+htcNode+', elemDoc='+elemDoc);
     // TODO: We are not handling dynamically created nodes yet
     if (htcNode.nodeName.toUpperCase() == 'SVG') {
-      // TODO: Make sure having the Flash object even if its from
-      // an HTC doesn't create a memory leak that lasts past page
-      // reloads
-      this._flashObj = htcNode.flashObj;
-      this._processSVG(elemDoc);
+      this._insertFlash(elemDoc);
     }
     
     // patch in our _Element methods
   },
   
   _insertFlash: function(doc) {
+    console.log('insertFlash, doc='+doc);
     // determine a width and height
     
     // determine bgcolor and transparency
@@ -1778,9 +1778,11 @@ extend(_Node, {
   _getPreviousSibling: function() { /* readonly; returns _Node */ },
   _getNextSibling: function() { /* readonly; returns _Node */ }
   
-  // Note: 'attributes' property not supported
+  // Note: 'attributes' property not supported since we don't support
+  // Attribute DOM Node types
   
   // TODO: It would be nice to support the ElementTraversal spec here as well
+  // since it cuts down on code size:
   // http://www.w3.org/TR/ElementTraversal/
 });
 
@@ -1790,6 +1792,7 @@ function _Element(tagName) {
   _Node.call(tagName, _Node.ELEMENT_NODE);
   
   this.tagName = tagName;
+  // track .style changes
   this.style = new _Style();
 }
 
@@ -1858,18 +1861,18 @@ extend(_Element, {
   
   // Note: getPresentationAttribute not supported
   
-  // SVGTransformable
+  // SVGTransformable; takes an _SVGTransform
   _setTransform: function(transform) {
   },
   
-  // Note: we return a JS Array instead of an SVGAnimatedTransformList
-  // as dictated by the SVG 1.1 standard
+  // Note: we return a JS Array of _SVGTransforms instead of an 
+  // SVGAnimatedTransformList as dictated by the SVG 1.1 standard
   _getTransform: function() /* readonly; returns Array */ {},
   
   // SVGFitToViewBox
   // Note: only supported for root SVG element for now
   _getViewBox: function() { /* readonly; SVGRect */
-    // Note: We return an SVGRect instead of an SVGAnimatedRect as dictated
+    // Note: We return an _SVGRect instead of an SVGAnimatedRect as dictated
     // by the SVG 1.1 standard
   },
   
@@ -1916,7 +1919,7 @@ extend(_Element, {
   },
   
   // SVGLocatable, SVGTests, SVGLangSpace, SVGExternalResourcesRequired
-  // not yet supported
+  // not supported
   
   // copies the attributes from the XML DOM node into ourself
   _importAttributes: function(xmlDOMNode) {
@@ -1929,7 +1932,7 @@ extend(_Element, {
 });
 
 
-// not an official DOM interface, used so that we can track changes to
+// not an official DOM interface; used so that we can track changes to
 // the CSS style property of an Element
 function _Style() {
   this._setup();
@@ -1938,7 +1941,7 @@ function _Style() {
 // we use this array to build up getters and setters to watch any changes for
 // any of these styles. Note: Technically we shouldn't have all of these for
 // every element, since some SVG elements won't have specific kinds of
-// style properties, like the DESC element have a font-size.
+// style properties, like the DESC element having a font-size.
 // TODO: Gauge the performance impact of making this dynamic
 _Style._allStyles = [
   'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -1989,7 +1992,6 @@ function _SVGSVGElement(rootNode, scriptNode) {
     // that we can kick off the HTC running so that it can insert our Flash
     // as a shadow DOM
     var svgDOM = document.createElement('svg:svg');
-    console.log('id before='+rootNode.getAttribute('id'));
     svgDOM.id = rootNode.getAttribute('id');
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
   }
@@ -2139,12 +2141,12 @@ function createSVGPoint(x /* Number */, y /* Number */) {
 // end SVG DOM interfaces
 
 /* 
-  Other DOM interfaces specified by SVG 1.2:
+  Other DOM interfaces specified by SVG 1.1:
   
   * SVG 1.1 spec requires DOM 2 Views support, which we do not implement:
     http://www.w3.org/TR/DOM-Level-2-Views/
 
-  * SVG 1.1 spec has the DOM traversal and range APIs are optional; these are
+  * SVG 1.1 spec has the DOM traversal and range APIs as optional; these are
     not supported
 
   * Technically we need to support certain DOM Level 2 CSS interfaces:
