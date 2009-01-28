@@ -26,6 +26,9 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
+// TODO: Move a majority of the comment below into the SVG Web documentation
+// and out of here.
+
 /**
 The SVG Web library makes it possible to use SVG across all of the major 
 browsers, including Internet Explorer. Where native SVG support is not 
@@ -362,7 +365,7 @@ library files faster.
 Width and Height
 ----------------
 
-For the Flash renderer, you must set the width and height of your SVG, 
+For the Flash renderer, you should set the width and height of your SVG, 
 either on the root SVG element inside of an SVG SCRIPT block or on an SVG 
 OBJECT tag. The following different ways are supported to set this width and 
 height for the Flash renderer:
@@ -387,9 +390,12 @@ or
 * Leaving the width and height off the SVG OBJECT tag but having it set inside
 of the SVG file itself either with a width and height attribute
 
-Percentage values for the width and height for the SVG are not
-currently supported. The 'auto' keyword for CSS widths and heights is also
-not currently supported.
+* If no width and height is specified, then we default to 100% for both.
+
+Percentage values for the width and height for the SVG are supported, including
+the 'auto' keyword. We do not currently handle a width and height of 0
+(FIXME: I believe according to the spec a width and height of 0 should have
+the SVG have a visibility of 'none').
 
 CSS Support
 -----------
@@ -1462,39 +1468,159 @@ extend(FlashHandler, {
     console.log('htcLoaded, htcNode='+htcNode+', elemDoc='+elemDoc);
     // TODO: We are not handling dynamically created nodes yet
     if (htcNode.nodeName.toUpperCase() == 'SVG') {
-      this._insertFlash(elemDoc);
+      this._insertFlash(elemDoc, htcNode);
     }
     
     // patch in our _Element methods
   },
   
-  _insertFlash: function(doc) {
+  _insertFlash: function(doc, htcNode) {
     console.log('insertFlash, doc='+doc);
-    // determine a width and height
     
-    // determine bgcolor and transparency
+    // get the size and background color information
+    var size = this._determineSize();  
+    var background = this._determineBackground();
     
-    // get a Flash object
-    
-    // insert it into our document
-    
+    // get a Flash object and insert it into our document
+    var flash = this._createFlash(size, background, doc);
+    if (isIE) {
+      htcNode._insertFlashForIE(flash);
+    } else {
+      this._scriptNode.parentNode.replaceChild(flash, this._scriptNode);
+    }
+    console.log('flash inserted');
     // wait for the Flash file to finish loading
   },
   
+  /** Determines a width and height for the parsedSVG. Returns an
+      object literal with two values, width and height. */
+  _determineSize: function() {
+    var root = this._parsedSVG.documentElement;
+    var width = '100%', height = '100%';
+    
+    // explicit width and height set
+    if (root.getAttribute('width')) {
+      width = root.getAttribute('width');
+    }
+    
+    if (root.getAttribute('height')) {
+      height = root.getAttribute('height');
+    }
+    
+    // both explicit width and height set; we are done
+    if (root.getAttribute('width') && root.getAttribute('height')) {
+      return {width: width, height: height};
+    }
+    
+    // viewBox
+    if (root.getAttribute('viewBox')) {
+      var viewBox = root.getAttribute('viewBox').split(/\s+|,/);
+      var boxX = viewBox[0];
+      var boxY = viewBox[1];
+      var boxWidth = viewBox[2];
+      var boxHeight = viewBox[3];
+      width = boxWidth - boxX;
+      height = boxHeight - boxY;
+    }
+    
+    return {width: width, height: height};      
+  },
+  
+  /** Determines the background coloring. Returns an object literal with
+      two values, 'color' with a color or null and 'transparent' with a 
+      boolean. */
+  _determineBackground: function() {
+    var root = this._parsedSVG.documentElement;
+    var transparent = false;
+    var color = null;
+    
+    // NOTE: CSS 2.1 spec says background does not get inherited, and we don't
+    // support external CSS style rules for now; we also only support
+    // 'background-color' property and not 'background' CSS property for
+    // setting the background color.
+    var style = root.getAttribute('style');
+    if (style && style.indexOf('background-color') != -1) {
+      var m = style.match(/background\-color:\s*([^;]*)/);
+      if (m) {
+        color = m[1];
+      }
+    }
+
+    if (color === null) {
+      // no background color specified
+      transparent = true;
+    }
+    
+    return {color: color, transparent: transparent};
+  },
+  
   /** Creates a Flash object that embeds the Flash SVG Viewer.
+
+      @param size Object literal with width and height.
+      @param background Object literal with background color and 
+      transparent boolean.
+      @param doc Either 'document' or element.document if being called
+      from the Microsoft Behavior HTC. 
       
-      @param svgID The ID of the root SVG element.
-      @param width and height Width and height of the SVG image
-      @param libraryPath Path to the SWF file.
-      @param transparent Boolean on whether the Flash object should
-      be transparent.
-      @param bgColor Background color of SVG root element to copy into
-      Flash object.
-      @param doc Either 'document' or element.ownerDocument if being called
-      from the Microsoft Behavior HTC. */ 
-  _getFlashObj: function(svgID, width, height, libraryPath, transparent, 
-                         bgColor, doc) {
-    // For IE we will experiment with returning a real OBJECT instead of HTML 
+      @returns Flash DOM OBJECT/EMBED ready to be inserted into document. */ 
+  _createFlash: function(size, background, doc) {
+    var flashVars = 
+          'uniqueId=' + encodeURIComponent(this.id)
+        + '&sourceType=string'
+        + '&scaleMode=showAll_svg' // FIXME: is this the right scaleMode?
+        + '&debug=true'
+        + '&svgId=' + encodeURIComponent(this.id);
+    
+    var src = svgweb.libraryPath + 'svg.swf';
+    var protocol = window.location.protocol;
+    if (protocol.charAt(protocol.length - 1) == ':') {
+      protocol = protocol.substring(0, protocol.length - 1);
+    }
+    this._flashID = this.id + '_flash';
+    
+    // adapted from Dojo Flash
+    var flash =
+          '<object\n '
+            + 'classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"\n '
+            + 'codebase="'
+            + protocol
+            + '://fpdownload.macromedia.com/pub/shockwave/cabs/flash/'
+            + 'swflash.cab#version=9,0,0,0"\n '
+            + 'width="' + size.width + '"\n '
+            + 'height="' + size.height + '"\n '
+            + 'id="' + this._flashID + '"\n '
+            + 'name="' + this._flashID + '">\n '
+            + '<param name="allowScriptAccess" value="always"></param>\n '
+            + '<param name="movie" value="' + src + '"></param>\n '
+            + '<param name="quality" value="high"></param>\n '
+            + '<param name="FlashVars" value="' + flashVars + '"></param>\n '
+            + (background.color ? '<param name="bgcolor" value="' + background.color + '"></param>\n ' : '')
+            + (background.transparent ? '<param name="wmode" value="transparent"></param>\n ' : '')
+            + '<embed src="' + src + '" '
+              + 'quality="high" '
+              + (background.color ? 'bgcolor="' + background.color + '" \n' : '')
+              + (background.transparent ? 'wmode="transparent" \n' : '')
+              + 'width="' + size.width + '" '
+              + 'height="' + size.height + '" '
+              + 'id="' + this._flashID + '" '
+              + 'name="' + this._flashID + '" '
+              + 'swLiveConnect="true" '
+              + 'allowScriptAccess="always" '
+              + 'type="application/x-shockwave-flash" '
+              + 'FlashVars="' + flashVars + '" '
+              + 'pluginspage="'
+              + protocol
+              +'://www.macromedia.com/go/getflashplayer" '
+              + '></embed>'
+          + '</object>';
+    
+    // do a trick to turn the Flash HTML string into an actual DOM object
+    var div = doc.createElement('div');
+    div.innerHTML = flash;
+    var flash = div.childNodes[0];
+    flash = div.removeChild(flash);
+    
+    return flash;
   },
   
   /** Called by the Flash object in order to return results. */
