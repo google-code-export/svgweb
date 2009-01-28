@@ -30,7 +30,8 @@ but only on root node
       /** Called when the content is ready for some SVG tag in the HTML
           page. This method is called for each individual SVG tag. */
       function contentReady() {
-        svgweb.handlers[element.id]._htcLoaded(this, element.document);
+        this._handler = svgweb.handlers[element.id];
+        this._handler.document.documentElement._htcLoaded(element.document, this);
       }
       
       /** Does some magic to have the Flash object show up in our SVG 
@@ -56,7 +57,7 @@ but only on root node
           
           As a trick, we 'convert' ourselves into having a shadow DOM
           just for the SVG root tag by manually creating an HTML document below,
-          then storing this document in this.doc for later retrieval.
+          then storing this document in this._doc for later retrieval.
           For the trick to work we also have to set some public:defaults
           above at the top of this file.
           
@@ -69,7 +70,7 @@ but only on root node
         body.appendChild(flash);
         html.appendChild(body);
         defaults.viewLink = html.document; // ViewLink magic
-        this.doc = html.document;
+        this._doc = html.document;
       }
   </script>
 </head>
