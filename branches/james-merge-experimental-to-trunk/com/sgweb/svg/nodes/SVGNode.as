@@ -20,6 +20,7 @@
 package com.sgweb.svg.nodes
 {
     import com.sgweb.svg.data.SVGColors;
+    import com.sgweb.svg.data.SVGUnits;
     import com.sgweb.svg.nodes.mask.SVGBlurMaskParent;
     import com.sgweb.svg.nodes.mask.SVGClipMaskParent;
     import com.sgweb.svg.nodes.mask.SVGMask;
@@ -33,8 +34,6 @@ package com.sgweb.svg.nodes
     import flash.events.Event;
     import flash.geom.Matrix;
     import flash.geom.Point;
-    //import flash.utils.*;
-    
     import flash.utils.getDefinitionByName;
     import flash.utils.getQualifiedClassName;
 
@@ -133,36 +132,27 @@ package com.sgweb.svg.nodes
          **/
         protected function setAttributes():void {
             
-            var xmlList:XMLList;
-            this._styles = new Object();
-
-            // Get styling from XML attribute list
-            for each (var attribute:String in SVGNode.attributeList) {
-                xmlList = this._xml.attribute(attribute);
-                if (xmlList.length() > 0) {
-                    this._styles[attribute] = xmlList[0].toString();
-                }
+            var attr:String;
+            
+            attr = this.getAttribute('x');
+            if (attr) {
+                this.x += SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
             }
             
-            // Get styling from XML attribute 'style'
-            xmlList = this._xml.attribute('style');
-            if (xmlList.length() > 0) {
-                var styleString:String = xmlList[0].toString();
-                var styles:Array = styleString.split(';');
-                for each(var style:String in styles) {
-                    var styleSet:Array = style.split(':');
-                    if (styleSet.length == 2) {
-                        var attrName:String = styleSet[0];
-                        var attrValue:String = styleSet[1];
-                        // Trim leading whitespace.
-                        attrName = attrName.replace(/^\s+/, '');
-                        attrValue = attrValue.replace(/^\s+/, '');
-                        this._styles[attrName] = attrValue;
-                    }
-                }
+            attr = this.getAttribute('y');
+            if (attr) {
+                this.y += SVGUnits.cleanNumber(SVGColors.trim(attr).split(' ')[0]);
             }
             
-            this.loadStyle('opacity', 'alpha');
+            attr = this.getAttribute('rotate');
+            if (attr) {
+                this.rotation += SVGUnits.cleanNumber(attr);
+            }
+            
+            attr = this.getAttribute('opacity');
+            if (attr) {
+                this.alpha = SVGUnits.cleanNumber(attr);
+            }
 
         }
 
@@ -695,23 +685,6 @@ package com.sgweb.svg.nodes
                 this[field] = SVGColors.cleanNumber(tmp);
             }
         } 
-
-        /**
-         * Load an SVG style into the current node
-         * 
-         * @param name Name of the SVG style to load
-         * @param field Name of the node field to set. If null, the value of name will be used as the field attribute.
-         **/ 
-        protected function loadStyle(name:String, field:String = null):void {
-            if (field == null) {
-                field = name;
-            }
-            var tmp:String = this.getAttribute(name);
-            if (tmp != null) {
-                this[field] = tmp;
-            }
-        }
-
 
         /** 
          * Clear current graphics and call runGraphicsCommands to render SVG element 
