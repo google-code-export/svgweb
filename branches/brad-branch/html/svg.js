@@ -1623,8 +1623,10 @@ extend(FlashHandler, {
     return flash;
   },
   
-  /** Called by the Flash object in order to return results. */
-  _receiveFromFlash: function(flashMsg) {
+  /** Called by the Flash object in order to return results.
+  
+      @param flashMsg TODO: Document the Flash message object format. */
+  receiveFromFlash: function(flashMsg) {
     console.log('receiveFromFlash, flashMsg='+this._debugFlashMsg(flashMsg));
     this._onMessage(flashMsg);
   },
