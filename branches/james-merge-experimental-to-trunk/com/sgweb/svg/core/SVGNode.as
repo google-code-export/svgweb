@@ -1040,30 +1040,7 @@ package com.sgweb.svg.core
             }
         }
         
-                
-        /**
-         * Force a redraw of a node
-         **/
-        public function invalidateDisplay():void {
-            if (this._invalidDisplay == false) {
-                this._invalidDisplay = true;
-                this.addEventListener(Event.ENTER_FRAME, redrawNode);                
-            }            
-        }
-
-        /**
-         * Force a redraw of a node and its children
-         **/
-        public function invalidateDisplayTree():void {
-            this.invalidateDisplay();
-            for(var i:Number=0; i < this.numChildren; i++) {
-                if (this.getChildAt(i) is SVGNode) {
-                    SVGNode(this.getChildAt(i)).invalidateDisplayTree();
-                }
-            }
-        }
-
-
+        
         /**
          * This method is called when the caller has changed an xml attribute
          * and wants the element to be updated. Based on which attribute
@@ -1092,73 +1069,8 @@ package com.sgweb.svg.core
                     }
                     break;
             }
-        }
-       
-        /**
-         *
-         **/
-        override public function addChild(child:DisplayObject):DisplayObject {
-            if (child is SVGNode) {
-                this.svgRoot.renderStart(SVGNode(child));
-            }
-            super.addChild(child);
-            return child;
-        }
-        
-        
-        /**
-         * Add any assigned filters to node
-         **/
-        protected function setupFilters():void {
-            var filterName:String = this.getAttribute('filter');
-            if ((filterName != null)
-                && (filterName != '')) {
-                var matches:Array = filterName.match(/url\(#([^\)]+)\)/si);
-                if (matches.length > 0) {
-                    filterName = matches[1];
-                    var filterNode:SVGFilterNode = this.svgRoot.getElement(filterName);
-                    if (filterNode) {
-                        this.filters = filterNode.getFilters(this);
-                    }
-                    else {
-                        //this.dbg("filter " + filterName + " not (yet?) available for " + this.xml.@id);
-                        // xxx add reference
-                    }
-                }
-            }
-        }
+        } 
                 
-        
-        /**
-         * @return is child of definition? they are not drawn.
-         **/ 
-        public function isChildOfDef():Boolean {
-            var node:SVGNode = this;
-            while (node && !(node is SVGRoot)) {
-                node=SVGNode(node.parent);
-                if (node is SVGDefsNode)
-                    return true;
-            }
-            return false;
-        }
-        /**
-         * Has style 'display: none' or child of parent with same? they are not drawn.
-         **/ 
-        public function isDisplayNone():Boolean {
-            var node:DisplayObject = this;
-            if (this.getAttribute('display') == 'none') {
-                return true;
-            }
-            while (node && !(node is SVGRoot)) {
-                node=node.parent;
-                if (node && node is SVGNode && SVGNode(node).getAttribute('display') == 'none') {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-
         public function invalidateDisplay():void {
             if (this._invalidDisplay == false) {    
                 this._invalidDisplay = true;
