@@ -245,6 +245,33 @@ package com.sgweb.svg.core
             }
         }
         
+        /*
+         * Drawing functions
+         */ 
+        
+        public function drawNode(event:Event = null):void {
+            this.removeEventListener(Event.ENTER_FRAME, drawNode); 
+            this._invalidDisplay = false;
+            
+            this._firstX = true;
+            this._firstY = true;
+            
+            this.clearMask();
+            
+            this.transform.matrix = new Matrix();
+            
+            this.setAttributes();
+            this.transformNode();
+            this.generateGraphicsCommands();
+            this.draw();
+            
+            this.applyViewBox();
+            this.maskNode();
+            
+            this.attachEventListeners();
+            
+            this.svgRoot.doneRendering();
+        }
         
         /*
          * Node registration triggered by stage add / remove
@@ -1279,65 +1306,7 @@ package com.sgweb.svg.core
                     break;
             }
         }
-
-
-        public function doRedrawNow():void {
-            this.redrawNode(null);
-        }
-
-        /**
-         * Triggers on ENTER_FRAME event
-         * Redraws node graphics if _invalidDisplay == true
-         **/
-        protected function redrawNode(event:Event):void {
-
-            if ( (this.parent != null) && (this._invalidDisplay) ) {
-                this._invalidDisplay = false;
-                //this.dbg("redrawNode: " + this.xml.@id + " type " + describeType(this).@name);
-                if (this._xml != null) {
-                
-                    this.graphics.clear();
-                    
-                    if (!this._parsedChildren) {
-                        this.parse();
-                        this._parsedChildren = true;
-                    }
-                    this.x = 0;
-                    this.y = 0;
-                    this.setAttributes();
-
-                    if (!this.isChildOfDef() && !this.isDisplayNone()) {
-                        this.generateGraphicsCommands();
-                        this.transformNode();
-                        this.draw();
-                        this.setupFilters();
-                    }
-                }
-                
-                this.removeEventListener(Event.ENTER_FRAME, redrawNode);
-
-                if (this.xml.@id)  {
-                    this.svgRoot.invalidateReferers(this.xml.@id);
-                }
-
-/*
-                if ((this.getSVGMaskAncestor() == null) && !(this is SVGClipMaskParent)) {
-                    var blurMask:SVGBlurMaskParent = this.getSVGBlurMaskAncestor();
-                    if (blurMask) {
-                        this.dbg("updating self blur mask transform " + describeType(this).@name);
-                        setTimeout(function():void { blurMask.updateBlurMaskTransform() }, 10);
-                    }
-                }
-*/
-
-                //this.dbg("done drawing " + this.xml.@id + " type " + describeType(this).@name);
-            }
-            if (!(this._initialRenderDone)) {
-                this._initialRenderDone = true;
-                this.svgRoot.renderDone(this);
-            }
-        }
-        
+       
         /**
          *
          **/
