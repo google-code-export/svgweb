@@ -942,12 +942,16 @@ package com.sgweb.svg.core
             }
             
             switch(name) {
-            	case 'x':      	           	   
+            	case 'x':      	   
+            	   this.x = SVGUnits.cleanNumber(value);
+            	   break;        	   
             	case 'y':
-            	case 'rotate': 
-            	   this.setAttributes();
-            	   break;    	   
-            	           	   
+            	    this.x = SVGUnits.cleanNumber(value);
+                    break;
+            	case 'rotate':
+            	   this.rotation = SVGUnits.cleanNumber(value);
+                   break;
+                    	   
                 case 'transform':
                 case 'viewBox':
                     this.transform.matrix = new Matrix();
