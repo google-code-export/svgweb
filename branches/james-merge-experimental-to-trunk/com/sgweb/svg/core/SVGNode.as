@@ -1158,42 +1158,6 @@ package com.sgweb.svg.core
             return false;
         }
 
-        public function getSVGMaskAncestor():SVGMask {
-            var node:DisplayObject = this;
-            if (node is SVGMask)
-                return SVGMask(node);
-            while (node && !(node is SVGRoot)) {
-                node=node.parent;
-                if (node && (node is SVGMask))
-                    return SVGMask(node);
-            }
-            return null;
-        }
-
-        public function getSVGClipMaskAncestor():SVGClipMaskParent {
-            var node:DisplayObject = this;
-            while (node && !(node is SVGRoot)) {
-                node=node.parent;
-                if (node && (node is SVGClipMaskParent)) {
-                    return SVGClipMaskParent(node);
-                }
-            }
-            return null;
-        }
-
-
-        public function getSVGBlurMaskAncestor():SVGBlurMaskParent {
-            var node:SVGNode = this;
-            while (node && !(node is SVGRoot)) {
-                node=SVGNode(node.parent);
-                if (node && (node is SVGBlurMaskParent)) {
-                    return SVGBlurMaskParent(node);
-                }
-            }
-            return null;
-        }
-
-
 
         public function get invalidDisplay():Boolean {
             return this._invalidDisplay;
