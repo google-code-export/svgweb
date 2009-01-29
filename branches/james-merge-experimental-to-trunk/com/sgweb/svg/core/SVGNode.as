@@ -23,7 +23,7 @@ package com.sgweb.svg.core
 	import com.sgweb.svg.nodes.mask.SVGBlurMaskParent;
 	import com.sgweb.svg.nodes.mask.SVGClipMaskParent;
 	import com.sgweb.svg.nodes.mask.SVGMask;
-	import com.svgweb.svg.nodes.SVGSVGNode;
+	import com.sgweb.svg.nodes.SVGSVGNode;
 	
 	import flash.display.CapsStyle;
 	import flash.display.DisplayObject;
@@ -120,7 +120,130 @@ package com.sgweb.svg.core
             this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
         }
         
-        
+        protected function parseNodes():void {
+            
+            var childNode:SVGNode;
+            var nodeName:String;
+            
+            for each (var childXML:XML in this._xml.children()) {
+                if (childXML.nodeKind() == 'element') {
+                    childNode = null;
+                    
+                    nodeName = childXML.localName().toString().toLowerCase();                
+                    switch(nodeName) {
+                        case "a":
+                            childNode = new SVGANode(this.svgRoot, childXML);
+                            break;
+                        case "animate":
+                            //childNode = new SVGAnimateNode(this.svgRoot, childXML);
+                            break;    
+                        case "animatemotion":
+                            //childNode = new SVGAnimateMotionNode(this.svgRoot, childXML);
+                            break;    
+                        case "animatecolor":
+                            //childNode = new SVGAnimateColorNode(this.svgRoot, childXML);
+                            break;    
+                        case "animatetransform":
+                            //childNode = new SVGAnimateTransformNode(this.svgRoot, childXML);
+                            break;    
+                        case "circle":
+                            childNode = new SVGCircleNode(this.svgRoot, childXML);
+                            break;        
+                        case "clippath":
+                            childNode = new SVGClipPathNode(this.svgRoot, childXML);
+                            break;
+                        case "desc":
+                            //Do Nothing
+                            break;
+                        case "defs":
+                            childNode = new SVGDefsNode(this.svgRoot, childXML);
+                            break;
+                        case "ellipse":
+                            childNode = new SVGEllipseNode(this.svgRoot, childXML);
+                            break;
+                        case "filter":
+                            //childNode = new SVGFilterNode(this.svgRoot, childXML, isClone);
+                            break;
+                        case "g":                        
+                            childNode = new SVGGroupNode(this.svgRoot, childXML);
+                            break;
+                        case "glyph":                        
+                            childNode = new SVGGlyphNode(this.svgRoot, childXML);
+                            break;
+                        case "image":                   
+                            childNode = new SVGImageNode(this.svgRoot, childXML);
+                            break;
+                        case "line":
+                            childNode = new SVGLineNode(this.svgRoot, childXML);
+                            break;    
+                        case "lineargradient": 
+                            childNode = new SVGLinearGradient(this.svgRoot, childXML);
+                            break;    
+                        case "mask":
+                            childNode = new SVGMaskNode(this.svgRoot, childXML);
+                            break;                        
+                        case "metadata":
+                            childNode = new SVGMetadataNode(this.svgRoot, childXML);
+                            break;
+                        case "namedview":
+                            //Add Handling 
+                            break;                            
+                        case "polygon":
+                            childNode = new SVGPolygonNode(this.svgRoot, childXML);
+                            break;
+                        case "polyline":
+                            childNode = new SVGPolylineNode(this.svgRoot, childXML);
+                            break;
+                        case "path":                        
+                            childNode = new SVGPathNode(this.svgRoot, childXML);
+                            break;
+                        case "radialgradient": 
+                            childNode = new SVGRadialGradient(this.svgRoot, childXML);
+                            break;    
+                        case "rect":
+                            childNode = new SVGRectNode(this.svgRoot, childXML);
+                            break;
+                        case "script":
+                            childNode = new SVGScriptNode(this.svgRoot, childXML);
+                            break;
+                        case "set":
+                            //childNode = new SVGSetNode(this.svgRoot, childXML, isClone);
+                            break;
+                        case "stop":
+                            childNode = new SVGStopNode(this.svgRoot, childXML);            
+                            break;
+                        case "svg":
+                            childNode = new SVGSVGNode(this.svgRoot, childXML);
+                            break;                        
+                        case "symbol":
+                            childNode = new SVGSymbolNode(this.svgRoot, childXML);
+                            break;                        
+                        case "text":    
+                            childNode = new SVGTextNode(this.svgRoot, childXML);
+                            break; 
+                        case "title":    
+                            childNode = new SVGTitleNode(this.svgRoot, childXML);
+                            break; 
+                        case "tspan":                        
+                            childNode = new SVGTspanNode(this.svgRoot, childXML);
+                            break; 
+                        case "use":
+                            childNode = new SVGUseNode(this.svgRoot, childXML);
+                            break; 
+                        case "null":
+                            break;
+                            
+                        default:
+                            trace("Unknown Element: " + nodeName);
+                            break;    
+                    }
+                    
+                    if (childNode) {
+                       this.addChild(childNode);
+                    }
+                }
+            }
+        }
         
         
         /*
@@ -970,196 +1093,7 @@ package com.sgweb.svg.core
                 this.svgRoot.registerElement(id, this);
             }
 
-        }
-
-        /**
-         * Parse the SVG XML.
-         * This handles creation of child nodes.
-         **/
-        protected function parse():void {
-            //this.dbg("parse: " + this.xml.@id + " type " + describeType(this).@name);
-            this.refreshHref();
-            
-            for each (var childXML:XML in this._xml.children()) {    
-
-                if (childXML.nodeKind() == 'element') {
-
-                    // This handle strange gradient bugs with negative transforms
-                    // by separating the transform from every object
-                    if (childXML.@['transform'] != undefined) {
-                        var newChildXML:XML = childXML.copy();
-                        var stubGroupXML:XML = <g></g>;
-                        stubGroupXML.@['transform'] = newChildXML.@['transform'];
-                        delete newChildXML.@['transform'];
-                        stubGroupXML.appendChild(newChildXML.toXMLString());
-                        newChildNode = new SVGGroupNode(this.svgRoot, stubGroupXML);
-                        this.addChild(newChildNode);
-                        continue;
-                    }
-                    var newChildNode:SVGNode = this.parseNode(childXML);
-
-                    if (!newChildNode) {
-                        if (childXML.localName() == 'script') {
-                            var scriptString:String = childXML.toXMLString();
-                            scriptString = scriptString.split('\\n').join(';_SVGNL_;');
-                            scriptString = scriptString.replace(/<script.*/, '');
-                            scriptString = scriptString.replace(/<svg:script.*/, '');
-                            scriptString = scriptString.replace(/]].*$/, '');
-                            this.svgRoot.handleScript(scriptString);
-                        }
-                        else {
-                            this.dbg("did not add object!:" + childXML.localName());
-                        }
-                        continue;
-                    }
-                    newChildNode.refreshHref();
-                    newChildNode.setAttributes();
-
-                    var filterStr:String = newChildNode.getAttribute('filter');
-
-                    // Objects with a gaussian filter need to be 
-                    // masked by their own shape to mask any gaussian blurs
-                    // that might extend too far beyond the object boundaries.
-                    // SVG clips this blur and so we have to create a mask here
-                    // to mimic that behavior.
-
-                    // A stub object is created as parent of the masking
-                    // object and the masked object. The mask is applied to the parent
-                    // stub object. This is done because if we apply a mask directly to
-                    // an object with a gaussian filter, flash will blur the mask, even
-                    // if the mask is not drawn with a blur.
-                    // SVG does not blur its mask in this scenario so we apply the 
-                    // mask to a stub parent object. 
-
-                    // Note that if the object has a clip-path specified, then 
-                    // the object will create a clip mask parent to hold the clip-path.
-                    if (filterStr
-                        && !(this.parent && this.parent.parent is SVGMask
-                             && this.parent.parent.parent is SVGBlurMaskParent)
-                        && !(this.parent && this.parent is SVGBlurMaskParent) ) {
-                        newChildNode = new SVGBlurMaskParent(this.svgRoot, childXML, filterStr);
-                    }
-                    else {
-                        if (    (childXML.@['clip-path'] != undefined)
-                             || (childXML.@['mask'] != undefined) ) {
-                            newChildNode = new SVGClipMaskParent(this.svgRoot, childXML);
-                        }
-                    }
-                    this.addChild(newChildNode);
-                }
-            }
-        }
-
-
-        public function parseNode(childXML:XML):SVGNode {
-            var childNode:SVGNode = null;
-            var nodeName:String = childXML.localName();
-                    
-            nodeName = nodeName.toLowerCase();
-
-            switch(nodeName) {
-                case "a":
-                    childNode = new SVGANode(this.svgRoot, childXML);
-                    break;
-                case "animate":
-                    childNode = new SVGAnimateNode(this.svgRoot, childXML);
-                    break;    
-                case "animatemotion":
-                    childNode = new SVGAnimateMotionNode(this.svgRoot, childXML);
-                    break;    
-                case "animatecolor":
-                    childNode = new SVGAnimateColorNode(this.svgRoot, childXML);
-                    break;    
-                case "animatetransform":
-                    childNode = new SVGAnimateTransformNode(this.svgRoot, childXML);
-                    break;    
-                case "circle":
-                    childNode = new SVGCircleNode(this.svgRoot, childXML);
-                    break;        
-                case "clippath":
-                    childNode = new SVGClipPathNode(this.svgRoot, childXML);
-                    break;
-                case "desc":
-                    //Do Nothing
-                    break;
-                case "defs":
-                    childNode = new SVGDefsNode(this.svgRoot, childXML);
-                    break;
-                case "ellipse":
-                    childNode = new SVGEllipseNode(this.svgRoot, childXML);
-                    break;
-                case "filter":
-                    childNode = new SVGFilterNode(this.svgRoot, childXML);
-                    break;
-                case "g":                        
-                    childNode = new SVGGroupNode(this.svgRoot, childXML);
-                    break;
-                case "image":                        
-                    childNode = new SVGImageNode(this.svgRoot, childXML);
-                    break;
-                case "line": 
-                    childNode = new SVGLineNode(this.svgRoot, childXML);
-                    break;    
-                case "lineargradient": 
-                    childNode = new SVGLinearGradient(this.svgRoot, childXML);
-                    break;    
-                case "mask":
-                    childNode = new SVGMaskNode(this.svgRoot, childXML);
-                    break;                        
-                case "metadata":
-                    //Do Nothing
-                    break;
-                case "namedview":
-                    //Add Handling 
-                    break;                            
-                case "polygon":
-                    childNode = new SVGPolygonNode(this.svgRoot, childXML);
-                    break;
-                case "polyline":
-                    childNode = new SVGPolylineNode(this.svgRoot, childXML);
-                    break;
-                case "path":                        
-                    childNode = new SVGPathNode(this.svgRoot, childXML);
-                    break;
-                case "radialgradient": 
-                    childNode = new SVGRadialGradient(this.svgRoot, childXML);
-                    break;    
-                case "rect":
-                    childNode = new SVGRectNode(this.svgRoot, childXML);
-                    break;
-                case "set":
-                    childNode = new SVGSetNode(this.svgRoot, childXML);
-                    break;
-                case "stop":
-                    childNode = new SVGGradientStop(this.svgRoot, childXML);            
-                    break;
-                case "svg":
-                    childNode = new SVGSVGNode(this.svgRoot, childXML);
-                    break;                        
-                case "symbol":
-                    childNode = new SVGSymbolNode(this.svgRoot, childXML);
-                    break;                        
-                case "text":    
-                    childNode = new SVGTextNode(this.svgRoot, childXML);
-                    break; 
-                case "title":    
-                    childNode = new SVGTitleNode(this.svgRoot, childXML);
-                    break; 
-                case "tspan":                        
-                    childNode = new SVGTspanNode(this.svgRoot, childXML);
-                    break; 
-                case "use":
-                    childNode = new SVGUseNode(this.svgRoot, childXML);
-                    break;
-                case "null":
-                    break;
-                    
-                default:
-                    trace("Unknown Element: " + nodeName);
-                    break;    
-            }
-            return childNode;
-        }
+        }        
 
         public function parseStyle(styleAttr:String):String {
             if (!this._xml.@style)
@@ -1493,12 +1427,18 @@ package com.sgweb.svg.core
          *
         **/
         public function set xml(xml:XML):void {
-            this._originalXML = xml.copy();
-            this._xml = xml;
-            this._revision++;
+            _xml = value;
+            
             this.clearChildren();
-            this._parsedChildren = false;
-            this.invalidateDisplay();
+            this.graphics.clear();
+            
+            if (_xml) { 
+                this.parseStyle();      
+                this.parseNodes();
+                this.invalidateDisplay();
+            }
+            
+            this.updateClones();
         }
         
         public function get xml():XML {
@@ -1506,8 +1446,7 @@ package com.sgweb.svg.core
         }
 
         public function get id():String {
-            var id:String = this._xml.@id;
-            return id;
+            return _id;
         }
 
         public function get revision():int {
@@ -1676,19 +1615,7 @@ package com.sgweb.svg.core
 
         public function dbg(debugString:String):void {
             this.svgRoot.debug(debugString);
-        }
-        
-        /*
-         * Functions from experimental
-         */
-        public function clone():SVGNode {
-            var nodeClass:Class = getDefinitionByName(getQualifiedClassName(this)) as Class;
-            var newXML:XML = this._xml.copy();
-            
-            var node:SVGNode = new nodeClass(this.svgRoot, newXML, this) as SVGNode;
-            
-            return node;
-        }
+        }        
 
     }
 }
