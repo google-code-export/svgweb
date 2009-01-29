@@ -17,8 +17,9 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package com.sgweb.svg.core
 {
+	import com.sgweb.svg.nodes.*;
     import com.sgweb.svg.data.SVGColors;
     import com.sgweb.svg.data.SVGUnits;
     import com.sgweb.svg.nodes.mask.SVGBlurMaskParent;
@@ -110,14 +111,97 @@ package com.sgweb.svg.nodes
          */
         public function SVGNode(svgRoot:SVGRoot, xml:XML = null, original:SVGNode = null):void {
             this.svgRoot = svgRoot;
-            this.xml = xml;            
+            this.xml = xml;
             if (original) {
                 this.original = original;
                 _isClone = true;
             }
             
-            this.addEventListener(Event.ADDED, registerId);
+            this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
         }
+        
+        
+        /*
+         * Node registration triggered by stage add / remove
+         */
+         
+        protected function onAddedToStage(event:Event):void {
+            this.registerID();
+            if (this.original) {
+                this.original.registerClone(this);
+            }
+        }
+        
+        protected function onRemovedFromStage(event:Event):void {
+            this.unregisterID();
+            if (this.original) {
+                this.original.unregisterClone(this);
+            }
+        }
+        
+        protected function registerID():void {
+            if (this._isClone) {
+                return;
+            }
+            
+            var id:String = this.getAttribute('id');
+            
+            if (id == _id) {
+                return;
+            }
+            
+            if (_id) {
+                this.svgRoot.unregisterNode(this);
+            }
+            
+            if (id && id != "") {
+                _id = id;                
+                this.svgRoot.registerNode(this);                
+            }
+        }
+        
+        protected function unregisterID():void {
+            if (this._id) {
+                this.svgRoot.unregisterNode(this);
+                _id = null;
+            }
+        }
+        
+        /*
+         * Clone Handlers
+         */        
+        
+        public function clone():SVGNode {
+            var nodeClass:Class = getDefinitionByName(getQualifiedClassName(this)) as Class;
+            var newXML:XML = this._xml.copy();
+            
+            var node:SVGNode = new nodeClass(this.svgRoot, newXML, this) as SVGNode;
+            
+            return node;
+        }
+        
+        public function registerClone(clone:SVGNode):void {
+            if (this._clones.indexOf(clone) == -1) {
+               this._clones.push(clone);
+            }
+        }
+        
+        public function unregisterClone(clone:SVGNode):void {
+            var index:int = this._clones.indexOf(clone);
+            if (index > -1) {
+                this._clones = this._clones.splice(index, 1);
+            }
+        }
+        
+        protected function updateClones():void {
+            for (var i:uint = 0; i < this._clones.length; i++) {
+               SVGNode(this._clones[i]).xml = this._xml.copy(); 
+            }
+        }
+        
+        
+        
 
         /** 
          * Called to generate AS3 graphics commands from the SVG instructions
