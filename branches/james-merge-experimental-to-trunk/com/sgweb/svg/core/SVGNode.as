@@ -44,7 +44,7 @@ package com.sgweb.svg.core
                                          'font-family', 'font-size', 'letter-spacing', 'filter', 'visibility'];
                                          
         public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
-                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
+                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];                                         
                                                  
                                          
         public namespace xlink = 'http://www.w3.org/1999/xlink';
@@ -941,11 +941,24 @@ package com.sgweb.svg.core
                 this._xml.@[name] = value;
             }
             
-            //TO DO: Need to detect which values don't need a readraw such as x & y
-            //Ex: if (name == "x")  then this.x = value, don't call invalidateDisplay, still need to update clones
-            //
-            
-            this.invalidateDisplay();
+            switch(name) {
+            	case 'x':      	           	   
+            	case 'y':
+            	case 'rotate': 
+            	   this.setAttributes();
+            	   break;    	   
+            	           	   
+                case 'transform':
+                case 'viewBox':
+                    this.transform.matrix = new Matrix();
+                    this.setAttributes();
+                    this.transformNode();
+                    this.applyViewBox();
+                    
+                default:  
+                    this.invalidateDisplay();          	
+            }
+                        
             this.updateClones();
         }
         
@@ -958,9 +971,20 @@ package com.sgweb.svg.core
                 delete this._xml.@[name];
             }
             
-            //TO DO: Need to detect which values don't need a readraw such as x & y
-            //Ex: if (name == "x")  then this.x = value, don't call invalidateDisplay, still need to update clones
-            //
+             switch(name) {
+                case 'x':                      
+                case 'y':
+                case 'rotate': 
+                case 'transform':
+                case 'viewBox':
+                    this.transform.matrix = new Matrix();
+                    this.setAttributes();
+                    this.transformNode();
+                    this.applyViewBox();
+                    
+                default:  
+                    this.invalidateDisplay();           
+            }
             
             this.invalidateDisplay();
             this.updateClones();
