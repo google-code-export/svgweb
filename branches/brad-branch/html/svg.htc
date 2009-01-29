@@ -46,9 +46,9 @@ but only on root node
           root element 'hidden' from the external DOM. Called by
           FlashHandler._insertFlash() inside of svg.js.
           
-          @param flash Flash DOM OBJECT/EMBED ready to be inserted. */
-      this._insertFlashForIE = function(flash) {
-        console.log('insertFlashForIE');
+          @param flash Flash object as HTML string. */
+      this._insertFlash = function(flash) {
+        console.log('htcNode.insertFlash');
         /**
           We use a Behavior ViewLink trick to 'hide' this shadow content from 
           the external page, so that we don't see the Flash object in the 
@@ -75,15 +75,58 @@ but only on root node
         */
         var html = element.document.createElement('html');
         var body = element.document.createElement('body');
-        body.appendChild(flash);
+        var div = element.document.createElement('div');
+        body.appendChild(div);
         html.appendChild(body);
         defaults.viewLink = html.document; // ViewLink magic
         this._doc = html.document;
+        
+        // We have to use a DIV container for the Flash object; since we don't
+        // want this DIV to stay around, acting almost like a DocumentFragment,
+        // we use div.outerHTML on it to have the Flash control go into it and
+        // have the DIV 'disappear' in a poof of smoke
+        
+        // outerHTML must be set _after_ DIV is added to DOM for
+        // Flash ExternalInterface to work correctly
+        
+        // Note: as _soon_ as we make this call the Flash will load, even
+        // before the rest of this method has finished. The Flash can
+        // therefore finish loading before anything after the next statement
+        // has run, so be careful of timing bugs.
+        div.outerHTML = flash;
       }
       
-      this.test = function() {
-        console.log('inside!');
-        console.log('this._proxyNode='+this._proxyNode);
+      /** Gets the Flash DOM object. */
+      this._getFlashObj = function() {
+       var flashObj = this._doc.getElementById(this._handler.flashID);
+       
+       return flashObj; 
+      }
+      
+      /** Makes calling ExternalInterface functions on the Flash object
+          work. */
+      this._makeFlashCallable = function(flashObj) {
+        // If we use the Behavior ViewLink trick to 'hide' the Flash object
+        // from the external page's DOM, then Flash's ExternalInterface
+        // doesn't work correctly. That's ok, we can fix this with some
+        // tricks from Dojo Flash. More details on these
+        // hidden Flash methods here:
+        // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
+        flashObj.sendToFlash = getFlashFunction('sendToFlash');
+      }
+      
+      /** A function that makes it possible to call Flash functions
+          exposed through ExternalInterface. We need to do some magic
+          to call Flash functions even though we are embedded inside
+          of a Microsoft Behavior. This function encapsulates this magic.
+          This function actually returns a function which is then suitable
+          for calling. */
+      function getFlashFunction(method) {
+        return function() {
+          return eval(this.CallFunction(
+            "<invoke name=\"" + method + "\" returntype=\"javascript\">" 
+            + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
+        }
       }
   </script>
 </head>

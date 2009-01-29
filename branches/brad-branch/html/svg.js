@@ -904,7 +904,6 @@ extend(SVGWeb, {
   
   /** Patches the document object to also use the Flash backend. */
   _patchDocumentObject: function() {
-    console.log('patchDocumentObject');
     var self = this;
     
     // We don't capture the original document functions as a closure, 
@@ -1010,10 +1009,8 @@ extend(SVGWeb, {
     }
     
     // add missing IDs to all elements and get the root SVG elements ID
-    console.log('adding IDs');
     var parsedSVG = this._addIDs(svg);
     var rootID = parsedSVG.documentElement.getAttribute('id');
-    console.log('rootID='+rootID);
     
     // create the correct handler
     var self = this;
@@ -1024,7 +1021,7 @@ extend(SVGWeb, {
 
       self._handleDone(id);
     }
-    console.log('creating renderer');
+    
     this.handlers[rootID] = new this._renderer(
                                             {type: 'script', 
                                             svgID: rootID,
@@ -1435,6 +1432,10 @@ function FlashHandler(args) {
 }
 
 extend(FlashHandler, {
+  flashID: null, /** The Flash object's ID; set by _SVGSVGElement. */
+  
+  flash: null, /** The Flash object; set by _SVGSVGElement. */
+  
   /** Fired when the page and all SVG elements are done and loaded. */
   fireOnLoad: function() {
   },
@@ -1455,6 +1456,13 @@ extend(FlashHandler, {
     return '{' + result + '}';
   },
   
+  /** Sends a message to the Flash object rendering this SVG. */
+  sendToFlash: function(msg) {
+    // note that this._flash is set by the _SVGSVGElement._insertFlash()
+    // after we create a Flash object there
+    this.flash.sendToFlash(msg);
+  },
+  
   onMessage: function(msg) {
     console.log('onMessage, msg='+this.debugMsg(msg));
     if (msg.type == 'event') {
@@ -1465,7 +1473,7 @@ extend(FlashHandler, {
       return;
     } else if (msg.type == 'script') {
       // TODO: Bring onScript over from Rick's fork
-      this._onScript(msg);
+      this._onObjectScript(msg);
       return;
     }
   },
@@ -1476,8 +1484,8 @@ extend(FlashHandler, {
     // create proxy objects representing the Document and SVG root
     this.document = new _Document(this);
     this.document.documentElement = 
-          new _SVGSVGElement(this._parsedSVG.documentElement, this._scriptNode,
-                             this);
+          new _SVGSVGElement(this._parsedSVG.documentElement, this._svgString,
+                             this._scriptNode, this);
   },
   
   _handleObject: function() {
@@ -1493,7 +1501,7 @@ extend(FlashHandler, {
       this._onRenderingFinished(msg);
       return;
     } else if (msg.eventType == 'onFlashLoaded') {
-      this._onFlashLoaded(msg);
+      this.document.documentElement._onFlashLoaded(msg);
       return;
     } else if (msg.eventType.substr(0,5) == 'mouse') {
       this._onMouseEvent(msg);
@@ -1501,21 +1509,6 @@ extend(FlashHandler, {
     } else if (msg.eventType == 'onHTCLoaded') {
       this.document.documentElement._onHTCLoaded(msg);
     }
-  },
-  
-  _onFlashLoaded: function(msg) {
-    // the Flash object is done loading
-    console.log('_onFlashLoaded');
-    
-    // NOTE: in my original fork I had code here to get around an
-    // IE caching issue using a setTimeout, as well as some special handling
-    // for dynamic SVG on IE; I might need these if I run into issues
-    
-    var svgID = msg.uniqueId;
-    
-    // send the SVG over to Flash now
-    this._flashObj.sendToFlash({type: 'load', sourceType: 'string',
-                                svgString: this._svgStr});
   },
   
   /** The Flash is finished rendering. */
@@ -1886,7 +1879,6 @@ extend(_Element, {
   
   // copies the attributes from the XML DOM node into ourself
   _importAttributes: function(xmlDOMNode) {
-    console.log('importAttributes');
     for (var i = 0; i < xmlDOMNode.attributes.length; i++) {
       var attr = xmlDOMNode.attributes[i];
       this[attr.nodeName] = attr.nodeValue;
@@ -1940,15 +1932,17 @@ extend(_Style, {
 /** SVG Root element.
 
     @param rootNode A parsed XML object that is the SVG root node.
+    @param svgString The full SVG as a string.
     @param scriptNode The script node that contains this SVG. 
     @param handler The FlashHandler that we are a part of. */
-function _SVGSVGElement(rootNode, scriptNode, handler) {
+function _SVGSVGElement(rootNode, svgString, scriptNode, handler) {
   console.log('SVGSVGElement created');
   // superclass constructor
   _Element.call('svg', _Node.ELEMENT_NODE);
   
   this._handler = handler;
   this._xml = rootNode;
+  this._svgString = svgString;
   this._scriptNode = scriptNode;
   
   // copy our attributes over
@@ -1964,7 +1958,7 @@ function _SVGSVGElement(rootNode, scriptNode, handler) {
     
     // now wait for the HTC file to load for the SVG root element
   } else { // non-IE browsers; immediately insert the Flash
-    this._insertFlash(document);
+    this._setupFlash(document);
   }
 }  
 
@@ -1991,13 +1985,33 @@ extend(_SVGSVGElement, {
       this._htcNode = htcNode;
       this._htcNode._proxyNode = this;
       
-      // now insert out Flash
-      this._insertFlash(elemDoc, htcNode);
+      // now insert our Flash
+      this._setupFlash(elemDoc, htcNode);
     }
   },
   
-  _insertFlash: function(doc, htcNode) {
-    console.log('insertFlash, doc='+doc);
+  /** Called when the Flash SWF file has been loaded. Note that this doesn't
+      include the SVG being rendered -- at this point we haven't even
+      sent the SVG to the Flash file for rendering yet. */
+  _onFlashLoaded: function(msg) {
+    // the Flash object is done loading
+    console.log('_onFlashLoaded');
+    
+    // store a reference to the Flash object so we can send it messages
+    if (isIE) {
+      this._handler.flash = this._htcNode._getFlashObj();
+      this._htcNode._makeFlashCallable(this._handler.flash);
+    } else {
+      this._handler.flash = document.getElementById(this._handler.flashID);
+    }
+    
+    // send the SVG over to Flash now
+    this._handler.sendToFlash({type: 'load', sourceType: 'string',
+                               svgString: this._svgString});
+  },
+  
+  _setupFlash: function(doc, htcNode) {
+    console.log('setupFlash, doc='+doc);
     
     // get the size and background color information
     var size = this._determineSize();  
@@ -2006,12 +2020,44 @@ extend(_SVGSVGElement, {
     // get a Flash object and insert it into our document
     var flash = this._createFlash(size, background, doc);
     if (isIE) {
-      htcNode._insertFlashForIE(flash);
+      // have the HTC node insert the actual Flash so that it gets
+      // hidden in the HTC's shadow DOM
+      htcNode._insertFlash(flash);
     } else {
-      this._scriptNode.parentNode.replaceChild(flash, this._scriptNode);
+      this._insertFlash(flash);
     }
-    console.log('flash inserted');
+    
     // wait for the Flash file to finish loading
+  },
+  
+  /** Inserts the Flash object into the page for all non-IE browsers.
+  
+      @param flash Flash HTML string.
+      
+      @returns The Flash DOM object. */
+  _insertFlash: function(flash) {
+    // do a trick to turn the Flash HTML string into an actual DOM object
+    // unfortunately this doesn't work on IE; on IE the Flash is immediately
+    // loaded when we do div.innerHTML even though we aren't attached
+    // to the document!
+    var div = document.createElement('div');
+    div.innerHTML = flash;
+    var flashObj = div.childNodes[0];
+    div.removeChild(flashObj);
+    
+    // at this point we have the OBJECT tag; ExternalInterface communication
+    // won't work on Firefox unless we get the EMBED tag itself
+    for (var i = 0; i < flashObj.childNodes.length; i++) {
+      var check = flashObj.childNodes[i];
+      if (check.nodeName.toUpperCase() == 'EMBED') {
+        flashObj = check;
+        break;
+      }
+    }
+    // now insert the EMBED tag into the document
+    this._scriptNode.parentNode.replaceChild(flashObj, this._scriptNode);
+    
+    return flashObj;
   },
   
   /** Determines a width and height for the parsedSVG. Returns an
@@ -2082,8 +2128,9 @@ extend(_SVGSVGElement, {
       @param doc Either 'document' or element.document if being called
       from the Microsoft Behavior HTC. 
       
-      @returns Flash DOM OBJECT/EMBED ready to be inserted into document. */ 
+      @returns Flash object as HTML string. */ 
   _createFlash: function(size, background, doc) {
+    console.log('createFlash');
     var flashVars = 
           'uniqueId=' + encodeURIComponent(this.id)
         + '&sourceType=string'
@@ -2096,9 +2143,9 @@ extend(_SVGSVGElement, {
     if (protocol.charAt(protocol.length - 1) == ':') {
       protocol = protocol.substring(0, protocol.length - 1);
     }
-    this._flashID = this.id + '_flash';
     
-    // adapted from Dojo Flash
+    this._handler.flashID = this.id + '_flash';
+
     var flash =
           '<object\n '
             + 'classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000"\n '
@@ -2108,22 +2155,23 @@ extend(_SVGSVGElement, {
             + 'swflash.cab#version=9,0,0,0"\n '
             + 'width="' + size.width + '"\n '
             + 'height="' + size.height + '"\n '
-            + 'id="' + this._flashID + '"\n '
-            + 'name="' + this._flashID + '">\n '
+            + 'id="' + this._handler.flashID + '"\n '
+            + 'name="' + this._handler.flashID + '">\n '
             + '<param name="allowScriptAccess" value="always"></param>\n '
             + '<param name="movie" value="' + src + '"></param>\n '
             + '<param name="quality" value="high"></param>\n '
             + '<param name="FlashVars" value="' + flashVars + '"></param>\n '
             + (background.color ? '<param name="bgcolor" value="' + background.color + '"></param>\n ' : '')
             + (background.transparent ? '<param name="wmode" value="transparent"></param>\n ' : '')
-            + '<embed src="' + src + '" '
+            + '<embed '
+              + 'src="' + src + '" '
               + 'quality="high" '
               + (background.color ? 'bgcolor="' + background.color + '" \n' : '')
               + (background.transparent ? 'wmode="transparent" \n' : '')
               + 'width="' + size.width + '" '
               + 'height="' + size.height + '" '
-              + 'id="' + this._flashID + '" '
-              + 'name="' + this._flashID + '" '
+              + 'id="' + this._handler.flashID + '" '
+              + 'name="' + this._handler.flashID + '" '
               + 'swLiveConnect="true" '
               + 'allowScriptAccess="always" '
               + 'type="application/x-shockwave-flash" '
@@ -2133,12 +2181,6 @@ extend(_SVGSVGElement, {
               +'://www.macromedia.com/go/getflashplayer" '
               + '></embed>'
           + '</object>';
-    
-    // do a trick to turn the Flash HTML string into an actual DOM object
-    var div = doc.createElement('div');
-    div.innerHTML = flash;
-    var flash = div.childNodes[0];
-    flash = div.removeChild(flash);
     
     return flash;
   }
