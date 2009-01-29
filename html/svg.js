@@ -1568,7 +1568,7 @@ function NativeHandler(args) {
   } else if (this.type == 'script') {
     this.id = args.svgID;
     this._processSVGScript(args.parsedSVG, args.svgString, args.scriptNode);
-    finishedCallback(this.id);
+    this._finishedCallback(this.id, 'script');
   }
 }
 
