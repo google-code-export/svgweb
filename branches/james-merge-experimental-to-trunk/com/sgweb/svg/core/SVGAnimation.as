@@ -17,24 +17,41 @@
  limitations under the License.
 */
 
-package com.sgweb.svg
+package com.sgweb.svg.core
 {
-	
 	import com.sgweb.svg.nodes.SVGSVGNode;
-	
-	import mx.core.UIComponent;
 
-	public class SVGViewerFlex extends UIComponent
+	public class SVGAnimation extends SVGNode
 	{
-		var viewer:SVGViewerFlash;
-		var svgRoot:SVGSVGNode;
-		public function SVGViewerFlex()
+		
+		private var timeOffset:int = 0;
+		
+		public function SVGAnimation(svgRoot:SVGSVGNode, xml:XML=null, original:SVGNode=null)
 		{
-			super();
-			viewer = new SVGViewerFlash();
-			this.addChild(viewer);
-			svgRoot = viewer.svgRoot;			
+			super(svgRoot, xml, original);
 		}
+		
+		public function render(time:int):void {
+			
+		}		
+		
+		//SMIL interface
+		public function begin():void {
+			
+		}
+		
+		public function begintAt(offset:int):void {
+			
+		}
+		
+		public function end():void {
+			
+		}
+		
+		public function endAt(offset:int):void {
+			
+		}
+		
 		
 	}
 }

@@ -21,6 +21,7 @@ package com.sgweb.svg.nodes {
     import com.sgweb.svg.core.SVGNode;
     import com.sgweb.svg.core.SVGViewer;
     import com.sgweb.svg.events.SVGEvent;
+    import com.sgweb.svg.utils.AnimationManager;
     
     import flash.events.Event;
     import flash.geom.Matrix;
@@ -32,10 +33,17 @@ package com.sgweb.svg.nodes {
         
         protected var parentSVGRoot:SVGSVGNode = null;
         
+        public var animationManager:AnimationManager;
+        
         public function SVGSVGNode(svgRoot:SVGSVGNode = null, xml:XML = null, original:SVGNode = null) {
             if (svgRoot) {
                 this.parentSVGRoot = svgRoot;
+                animationManager = svgRoot.animationManager;
             }           
+            else {
+            	animationManager = new AnimationManager(this);
+            }
+            
             super(this, xml, original);
         }
         

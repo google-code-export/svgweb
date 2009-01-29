@@ -24,7 +24,7 @@ package com.sgweb.svg
 	public class SVGViewerFlash extends SVGViewer
 	{
 		public function SVGViewerFlash()
-		{
+		{			
 			super();
 		}
 		
