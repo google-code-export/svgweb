@@ -20,23 +20,22 @@
 package com.sgweb.svg.core
 {
 	import com.sgweb.svg.nodes.*;
-    import com.sgweb.svg.data.SVGColors;
-    import com.sgweb.svg.data.SVGUnits;
-    import com.sgweb.svg.nodes.mask.SVGBlurMaskParent;
-    import com.sgweb.svg.nodes.mask.SVGClipMaskParent;
-    import com.sgweb.svg.nodes.mask.SVGMask;
-    
-    import flash.display.CapsStyle;
-    import flash.display.DisplayObject;
-    import flash.display.JointStyle;
-    import flash.display.LineScaleMode;
-    import flash.display.Shape;
-    import flash.display.Sprite;
-    import flash.events.Event;
-    import flash.geom.Matrix;
-    import flash.geom.Point;
-    import flash.utils.getDefinitionByName;
-    import flash.utils.getQualifiedClassName;
+	import com.sgweb.svg.nodes.mask.SVGBlurMaskParent;
+	import com.sgweb.svg.nodes.mask.SVGClipMaskParent;
+	import com.sgweb.svg.nodes.mask.SVGMask;
+	import com.svgweb.svg.nodes.SVGSVGNode;
+	
+	import flash.display.CapsStyle;
+	import flash.display.DisplayObject;
+	import flash.display.JointStyle;
+	import flash.display.LineScaleMode;
+	import flash.display.Shape;
+	import flash.display.Sprite;
+	import flash.events.Event;
+	import flash.geom.Matrix;
+	import flash.geom.Point;
+	import flash.utils.getDefinitionByName;
+	import flash.utils.getQualifiedClassName;
 
     /** Base node extended by all other SVG Nodes **/
     public class SVGNode extends Sprite
@@ -56,7 +55,7 @@ package com.sgweb.svg.core
         /**
          * 
          **/
-        public var svgRoot:SVGRoot = null;
+        public var svgRoot:SVGSVGNode = null;
 
         /**
          * SVG XML for this node
@@ -109,7 +108,7 @@ package com.sgweb.svg.core
          *
          * @return void.
          */
-        public function SVGNode(svgRoot:SVGRoot, xml:XML = null, original:SVGNode = null):void {
+        public function SVGNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
             this.svgRoot = svgRoot;
             this.xml = xml;
             if (original) {
@@ -120,6 +119,8 @@ package com.sgweb.svg.core
             this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
             this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
         }
+        
+        
         
         
         /*
