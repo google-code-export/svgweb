@@ -496,46 +496,68 @@ package com.sgweb.svg.core
 
 
         public function getWidth():Number {
-            if (this.xml.@width) {
-                var widthStr:String = this.xml.@width;
-                if (widthStr.match(/%/)) {
-                    widthStr=widthStr.replace(/%/g, "");
-                    var num:Number = SVGColors.cleanNumber(widthStr);
-                    if (this.parent) {
-                        return SVGNode(this.parent).getWidth() * num / 100;
+            var widthStr:String = this.getAttribute('width');
+            var tmp:Number;
+            
+            if (widthStr) {
+                var num:Number = SVGUnits.cleanNumber(widthStr);                
+                if (widthStr.match(/%/)) {            
+                    if (this.parent is SVGNode) {
+                        tmp = SVGNode(this.parent).getWidth();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
-                    else {
-                        return 0;
+                    else if (this.parent is SVGViewer) {
+                        tmp = SVGViewer(this.parent).getWidth();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
                 }
                 else {
-                    return SVGColors.cleanNumber(widthStr);
+                    return num;
                 }
             }
-            else
-                return SVGNode(this.parent).getWidth();
+            
+            if (this.viewWidth > 0) {
+                return this.viewWidth;
+            }
+            
+            return 0;
         }
 
 
         public function getHeight():Number {
-            if (this.xml.@height) {
-                var heightStr:String = this.xml.@height;
-                if (heightStr.match(/%/)) {
-                    heightStr=heightStr.replace(/%/g, "");
-                    var num:Number = SVGColors.cleanNumber(heightStr);
-                    if (this.parent) {
-                        return SVGNode(this.parent).getHeight() * num / 100;
+            var heightStr:String = this.getAttribute('height');
+            var tmp:Number;
+            
+            if (heightStr) {
+                var num:Number = SVGUnits.cleanNumber(heightStr);                
+                if (heightStr.match(/%/)) {            
+                    if (this.parent is SVGNode) {
+                        tmp = SVGNode(this.parent).getHeight();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
-                    else {
-                        return 0;
+                    else if (this.parent is SVGViewer) {
+                        tmp = SVGViewer(this.parent).getHeight();
+                        if (tmp > 0) {
+                            return tmp * num / 100;
+                        }
                     }
                 }
                 else {
-                    return SVGColors.cleanNumber(heightStr);
+                    return num;
                 }
             }
-            else
-                return SVGNode(this.parent).getWidth();
+            
+            if (this.viewHeight > 0) {
+                return this.viewHeight;
+            }
+                        
+            return 0;
         }
 
 
