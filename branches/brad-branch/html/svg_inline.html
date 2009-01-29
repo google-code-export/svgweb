@@ -5,12 +5,18 @@
   <head>
     <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
+    
+    <script>
+      svgweb.addOnLoad(function() {
+        console.log('developers onload called');
+      });
+    </script>
   </head>
 
   <body>
     <h1>Tests embedding a single SVG block into a SCRIPT block</h1>
     
-    <!--<script type="image/svg+xml">
+    <script type="image/svg+xml">
       <svg width="200" height="200">
         <rect
            width="36.416"
@@ -19,7 +25,7 @@
            y="50"
            fill="red"/>
       </svg>
-    </script>-->
+    </script>
     
     <script type="image/svg+xml">
       <?xml version="1.0"?>
@@ -1762,7 +1768,7 @@
       </svg>
     </script>
 
-<!--
+
     <script type="image/svg+xml">
       <svg
          xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -3143,7 +3149,7 @@
           </g>
         </g>
       </svg>
-    </script>-->
+    </script>
     
     <h1>Test HTML H1</h1>
 
