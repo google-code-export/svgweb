@@ -1159,8 +1159,25 @@ package com.sgweb.svg.core
         }
 
 
-        public function get invalidDisplay():Boolean {
-            return this._invalidDisplay;
+        public function invalidateDisplay():void {
+            if (this._invalidDisplay == false) {    
+                this._invalidDisplay = true;
+                this.addEventListener(Event.ENTER_FRAME, drawNode);
+                if ( !(this is SVGSVGNode)) {
+                    this.svgRoot.startRendering();
+                }                
+            }            
+        }
+        
+        public function invalidateChildren():void {
+            var child:DisplayObject;
+            for (var i:uint = 0; i < this.numChildren; i++) {
+                child = this.getChildAt(i);
+                if (child is SVGNode) {
+                    SVGNode(child).invalidateDisplay();
+                    SVGNode(child).invalidateChildren();
+                }
+            }
         }
 
         // Getters / Setters
