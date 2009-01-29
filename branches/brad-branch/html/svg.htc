@@ -16,6 +16,9 @@ but only on root node
       on the page. The lightWeight property sidesteps this bug.
   -->
   <public:component lightWeight="true">
+  
+      <public:property name="innerHTML"
+                       get="getInnerHTML" put="putInnerHTML" />
        
       <public:attach event="oncontentready" onevent="contentReady()" />
       
@@ -30,9 +33,6 @@ but only on root node
       /** Called when the content is ready for some SVG tag in the HTML
           page. This method is called for each individual SVG tag. */
       function contentReady() {
-        // the FlashHandler we are associated with
-        this._handler = svgweb.handlers[element.id];
-      
         // indicate that we are now loaded
         var msg = { type: 'event', 
                     eventType: 'onHTCLoaded',
@@ -146,6 +146,14 @@ but only on root node
             "<invoke name=\"" + method + "\" returntype=\"javascript\">" 
             + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
         }
+      }
+      
+      function getInnerHTML() {
+        return 'hello world!';
+      }
+      
+      function putInnerHTML(newValue) {
+        this._innerHTML = newValue;
       }
   </script>
 </head>

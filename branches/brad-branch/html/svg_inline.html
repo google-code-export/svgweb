@@ -9,6 +9,11 @@
     <script>
       svgweb.addOnLoad(function() {
         console.log('developers onload called');
+        var myRect = document.getElementById('myRect');
+        console.log('myRect='+myRect.id);
+        console.log('myRect.innerHTML='+myRect.innerHTML);
+        var mySVG = document.getElementById('mySVG');
+        console.log('mySVG='+mySVG.id);
       });
     </script>
   </head>
@@ -17,8 +22,9 @@
     <h1>Tests embedding a single SVG block into a SCRIPT block</h1>
     
     <script type="image/svg+xml">
-      <svg width="200" height="200">
+      <svg id="mySVG" width="200" height="200">
         <rect
+           id="myRect"
            width="36.416"
            height="36.416"
            x="50"
@@ -26,7 +32,7 @@
            fill="red"/>
       </svg>
     </script>
-    
+    <!--
     <script type="image/svg+xml">
       <?xml version="1.0"?>
       <svg
@@ -3149,7 +3155,7 @@
           </g>
         </g>
       </svg>
-    </script>
+    </script>-->
     
     <h1>Test HTML H1</h1>
 

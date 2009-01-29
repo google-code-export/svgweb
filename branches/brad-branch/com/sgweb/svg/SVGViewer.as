@@ -122,6 +122,25 @@ package com.sgweb.svg
                 }
             }
         }
+        
+        /**
+            Stringifies the msg object sent back from the Flash SVG renderer or 
+            from the HTC file to help with debugging.
+        */
+        public function debugMsg(msg:Object):String {
+            if (this.debugEnabled) {
+                var result = [];
+                for (var i in msg) {
+                    result.push(i + ': ' + msg[i]);
+                }
+                result = result.join(', ');
+
+                return '{' + result + '}';
+            } else {
+                return null;
+            }
+        }
+        
         public function handleOnLoad():void {
             var onLoadHandler:String = '';
             if (this._svgRoot.xml.@onload) {
@@ -464,6 +483,7 @@ package com.sgweb.svg
         }
 
         public function js_handleInvoke(jsMsg:Object):Object {
+            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element:SVGNode;
             if (jsMsg.method == 'createElementNS') {
                 var xmlString:String = '<' + jsMsg.elementType + ' id="' + jsMsg.elementId +  '" />';
@@ -655,9 +675,8 @@ package com.sgweb.svg
                     this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
                 }
             }
-
+            
             return jsMsg;
         }
-
     }
 }

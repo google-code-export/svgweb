@@ -14,6 +14,7 @@ all: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/
 com/sgweb/svg/build/svg.swf: com/sgweb/svg/SVGViewer.as com/sgweb/svg/data/*.as com/sgweb/svg/nodes/*.as com/sgweb/svg/utils/*.as com/sgweb/svg/nodes/mask/*.as
 	@echo Building svg.swf file...
 	(cd com/sgweb/svg;mxmlc -output build/svg.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../../ -- SVGViewer.as)
+	cp com/sgweb/svg/build/svg.swf html/svg.swf
 
 ifeq ($(COMPRESS), 1)
 com/sgweb/svg/build/svg.js: html/svg.js

@@ -651,6 +651,41 @@ function mixin(f, addMe) {
   } 
 }
 
+/** Utility function to do XPath cross browser.
+
+    @param xml Parsed XML object to work with.
+    @param expr String XPath expression to execute.
+    
+    @returns Array with results, empty array if there are none. */
+function xpath(xml, expr) {
+  if (typeof XPathEvaluator != 'undefined') { // non-IE browsers
+    var evaluator = new XPathEvaluator();
+    var resolver;
+    if (xml.ownerDocument == null) {
+      resolver = evaluator.createNSResolver(xml.documentElement);
+    } else {
+      resolver = evaluator.createNSResolver(xml.ownerDocument.documentElement);
+    }
+
+    var result = evaluator.evaluate(expr, xml, resolver, 0, null);
+    var found = [], current;
+    while (current = result.iterateNext()) {
+      found.push(current);
+    }
+
+    return found;
+  } else { // IE
+    xml.setProperty('SelectionLanguage', 'XPath');
+    var results = xml.documentElement.selectNodes(expr);
+    if (results == null || typeof results == 'undefined') {
+      results = [];
+    }
+    
+    return results;
+  }
+}
+
+
 /** 
   Our singleton object that acts as the primary entry point for the library. 
   Gets exposed globally as 'svgweb'.
@@ -673,11 +708,10 @@ function SVGWeb() {
 extend(SVGWeb, {
   // path to find library resources
   libraryPath: './',
-  
   // RenderConfig object of which renderer (native or Flash) to use
   config: null,
-  
   pageLoaded: false,
+  handlers: [],
   
   _listeners: [],
   
@@ -804,7 +838,6 @@ extend(SVGWeb, {
     
     // now process each of the SVG SCRIPTs and SVG OBJECTs
     this.totalLoaded = 0;
-    this.handlers = [];
     var self = this;
     for (var i = 0; i < this._svgScripts.length; i++) {
       this._processSVGScript(this._svgScripts[i]);
@@ -1012,26 +1045,29 @@ extend(SVGWeb, {
     }
     
     // add missing IDs to all elements and get the root SVG elements ID
-    var parsedSVG = this._addIDs(svg);
-    var rootID = parsedSVG.documentElement.getAttribute('id');
+    var xml = this._addIDs(svg);
+    var rootID = xml.documentElement.getAttribute('id');
     
     // create the correct handler
     var self = this;
     var finishedCallback = function(id, type){
       // prevent IE memory leaks
       script = null;
-      parsedSVG = null;
+      xml = null;
 
       self._handleDone(id, type);
     }
     
-    this.handlers[rootID] = new this._renderer(
-                                            {type: 'script', 
-                                            svgID: rootID,
-                                            parsedSVG: parsedSVG, 
-                                            svgString: svg,
-                                            scriptNode: script,
-                                            finishedCallback: finishedCallback});
+    var handler = new this._renderer({type: 'script', 
+                                      svgID: rootID,
+                                      xml: xml, 
+                                      svgString: svg,
+                                      scriptNode: script,
+                                      finishedCallback: finishedCallback});
+    // NOTE: FIXME: If someone chooses a rootID that starts with a number
+    // this will break
+    this.handlers[rootID] = handler;
+    this.handlers.push(handler);                          
   },
   
   /** Generates a random SVG ID. It is recommended that you use the prefix
@@ -1406,7 +1442,7 @@ FlashInfo.prototype = {
     
     type - The string 'script'.
     svgID - A unique ID for the SVG root tag.
-    parsedSVG - XML Document object for parsed SVG.
+    xml - XML Document object for parsed SVG.
     svgString - The SVG content as a String.
     scriptNode - The DOM element for the SVG SCRIPT block.
     finishedCallback - Called when we are done loading and rendering the
@@ -1429,7 +1465,7 @@ function FlashHandler(args) {
   
   if (this.type == 'script') {
     this.id = args.svgID;
-    this._parsedSVG = args.parsedSVG;
+    this._xml = args.xml;
     this._svgString = args.svgString;
     this._scriptNode = args.scriptNode;
     
@@ -1442,9 +1478,10 @@ function FlashHandler(args) {
 }
 
 extend(FlashHandler, {
-  flashID: null, /** The Flash object's ID; set by _SVGSVGElement. */
-  
-  flash: null, /** The Flash object; set by _SVGSVGElement. */
+  /** The Flash object's ID; set by _SVGSVGElement. */
+  flashID: null, 
+  /** The Flash object; set by _SVGSVGElement. */
+  flash: null,
   
   /** Fired when the page and all SVG elements are done and loaded. */
   fireOnLoad: function() {
@@ -1498,12 +1535,10 @@ extend(FlashHandler, {
   },
   
   _handleScript: function() {
-    console.log('handleScript');
-
     // create proxy objects representing the Document and SVG root
-    this.document = new _Document(this);
+    this.document = new _Document(this._xml, this);
     this.document.documentElement = 
-          new _SVGSVGElement(this._parsedSVG.documentElement, this._svgString,
+          new _SVGSVGElement(this._xml.documentElement, this._svgString,
                              this._scriptNode, this);
   },
   
@@ -1539,7 +1574,7 @@ extend(FlashHandler, {
     
     type - The string 'script'.
     svgID - A unique ID for the SVG root tag.
-    parsedSVG - XML Document object for parsed SVG.
+    xml - XML Document object for parsed SVG.
     svgString - The SVG content as a String.
     scriptNode - The DOM element for the SVG SCRIPT block.
     finishedCallback - Called when we are done loading and rendering the
@@ -1567,7 +1602,7 @@ function NativeHandler(args) {
     this._watchObjectLoad();
   } else if (this.type == 'script') {
     this.id = args.svgID;
-    this._processSVGScript(args.parsedSVG, args.svgString, args.scriptNode);
+    this._processSVGScript(args.xml, args.svgString, args.scriptNode);
     this._finishedCallback(this.id, 'script');
   }
 }
@@ -1586,8 +1621,8 @@ extend(NativeHandler, {
   },
   
   /** Inserts the SVG back into the HTML page with the correct namespace. */
-  _processSVGScript: function(parsedSVG, svgString, scriptNode) {   
-   var importedSVG = document.importNode(parsedSVG.documentElement, true);
+  _processSVGScript: function(xml, svgString, scriptNode) {   
+   var importedSVG = document.importNode(xml.documentElement, true);
    scriptNode.parentNode.replaceChild(importedSVG, scriptNode);
   }
 });
@@ -1684,8 +1719,13 @@ extend(_DOMImplementation, {
 // We don't parse and retain comments, processing instructions, etc. CDATA
 // nodes are turned into text nodes.
 function _Node(nodeName /* String */, nodeType /* Optional; Number */) {
+  if (nodeName == undefined && nodeType == undefined) {
+    // prototype subclassing
+    return;
+  }
+  
   this.nodeName = nodeName;
-  this.nodeType == nodeType || Node.ELEMENT_NODE;
+  this.nodeType == nodeType || _Node.ELEMENT_NODE;
   
   // prepare the getter and setter magic for non-IE browsers
   // TODO
@@ -1757,13 +1797,37 @@ extend(_Node, {
 });
 
 
-function _Element(tagName) {
+/** Our DOM Element for each SVG node.
+
+    @param tagName The svg local name, such as 'rect'.
+    @param nodeXML The parsed XML DOM node for this element.
+    @param handler The FlashHandler rendering this node. */
+function _Element(tagName, nodeXML, handler) {
+  if (tagName == undefined && nodeXML == undefined && handler == undefined) {
+    // prototype subclassing
+    return;
+  }
+
   // superclass constructor
-  _Node.call(tagName, _Node.ELEMENT_NODE);
+  _Node.apply(this, [tagName, _Node.ELEMENT_NODE]);
   
   this.tagName = tagName;
+  this._nodeXML = nodeXML;
+  this._handler = handler;
+  
+  // copy our attributes over
+  this._importAttributes(nodeXML);
+  
   // track .style changes
   this.style = new _Style();
+  
+  // if we are IE, we must use a behavior in order to get onpropertychange
+  // and override core DOM methods. We don't do it for the root SVG
+  // element since that is already a proper Behavior as it embeds our
+  // Flash control inside of _SVGSVGElement
+  if (isIE && this.nodeName != 'svg') {
+    this._uiNode = this._createUINode();
+  }
 }
 
 // subclasses _Node
@@ -1892,11 +1956,39 @@ extend(_Element, {
   // not supported
   
   // copies the attributes from the XML DOM node into ourself
-  _importAttributes: function(xmlDOMNode) {
-    for (var i = 0; i < xmlDOMNode.attributes.length; i++) {
-      var attr = xmlDOMNode.attributes[i];
+  _importAttributes: function(nodeXML) {
+    for (var i = 0; i < nodeXML.attributes.length; i++) {
+      var attr = nodeXML.attributes[i];
       this[attr.nodeName] = attr.nodeValue;
     }
+  },
+  
+  // if we are IE, we must use a behavior in order to get onpropertychange
+  // and override core DOM methods
+  _createUINode: function() {
+    console.log('createUINode');
+    // we store our HTC nodes into a hidden container located in the
+    // HEAD of the document; either get it now or create one on demand
+    if (!this._uiContainer) {
+      var rootID = this._handler.document.documentElement.id;
+      this._uiContainer = document.getElementById('__ui_container_' + rootID);
+      if (!this._uiContainer) {
+        var head = document.getElementsByTagName('head')[0];
+        this._uiContainer = document.createElement('div');
+        this._uiContainer.id = '__ui_container_' + rootID;
+        head.appendChild(this._uiContainer);
+      }
+    }
+    
+    // now store our HTC UI node into this container; we will intercept
+    // all calls through the HTC, and implement all the real behavior
+    // inside ourselves (inside _Element)
+    var uiNode = document.createElement('svg:' + this.nodeName);
+    uiNode._internalNode = this;
+    uiNode._handler = this._handler;
+    this._uiContainer.appendChild(uiNode);
+    
+    return uiNode;
   }
 });
 
@@ -1945,22 +2037,19 @@ extend(_Style, {
 
 /** SVG Root element.
 
-    @param rootNode A parsed XML object that is the SVG root node.
+    @param nodeXML A parsed XML node object that is the SVG root node.
     @param svgString The full SVG as a string.
     @param scriptNode The script node that contains this SVG. 
     @param handler The FlashHandler that we are a part of. */
-function _SVGSVGElement(rootNode, svgString, scriptNode, handler) {
-  console.log('SVGSVGElement created');
-  // superclass constructor
-  _Element.call('svg', _Node.ELEMENT_NODE);
+function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
+  console.log('_SVGSVGElement created');
   
-  this._handler = handler;
-  this._xml = rootNode;
+  // superclass constructor
+  _Element.apply(this, ['svg', nodeXML, handler]);
+  
+  this._nodeXML = nodeXML;
   this._svgString = svgString;
   this._scriptNode = scriptNode;
-  
-  // copy our attributes over
-  this._importAttributes(this._xml);
   
   if (isIE) {
     // for IE, replace the SCRIPT tag with our SVG root element; this is so
@@ -1968,6 +2057,7 @@ function _SVGSVGElement(rootNode, svgString, scriptNode, handler) {
     // as a shadow DOM
     var svgDOM = document.createElement('svg:svg');
     svgDOM.id = this.id;
+    svgDOM._handler = handler;
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
     
     // now wait for the HTC file to load for the SVG root element
@@ -2058,6 +2148,7 @@ extend(_SVGSVGElement, {
       
       @returns The Flash DOM object. */
   _insertFlash: function(flash) {
+    console.log('insertFlash');
     // do a trick to turn the Flash HTML string into an actual DOM object
     // unfortunately this doesn't work on IE; on IE the Flash is immediately
     // loaded when we do div.innerHTML even though we aren't attached
@@ -2078,32 +2169,32 @@ extend(_SVGSVGElement, {
     }
     // now insert the EMBED tag into the document
     this._scriptNode.parentNode.replaceChild(flashObj, this._scriptNode);
-    
+
     return flashObj;
   },
   
-  /** Determines a width and height for the parsedSVG. Returns an
+  /** Determines a width and height for the parsed SVG XML. Returns an
       object literal with two values, width and height. */
   _determineSize: function() {
     var width = '100%', height = '100%';
     
     // explicit width and height set
-    if (this._xml.getAttribute('width')) {
-      width = this._xml.getAttribute('width');
+    if (this._nodeXML.getAttribute('width')) {
+      width = this._nodeXML.getAttribute('width');
     }
     
-    if (this._xml.getAttribute('height')) {
-      height = this._xml.getAttribute('height');
+    if (this._nodeXML.getAttribute('height')) {
+      height = this._nodeXML.getAttribute('height');
     }
     
     // both explicit width and height set; we are done
-    if (this._xml.getAttribute('width') && this._xml.getAttribute('height')) {
+    if (this._nodeXML.getAttribute('width') && this._nodeXML.getAttribute('height')) {
       return {width: width, height: height};
     }
     
     // viewBox
-    if (this._xml.getAttribute('viewBox')) {
-      var viewBox = this._xml.getAttribute('viewBox').split(/\s+|,/);
+    if (this._nodeXML.getAttribute('viewBox')) {
+      var viewBox = this._nodeXML.getAttribute('viewBox').split(/\s+|,/);
       var boxX = viewBox[0];
       var boxY = viewBox[1];
       var boxWidth = viewBox[2];
@@ -2126,7 +2217,7 @@ extend(_SVGSVGElement, {
     // support external CSS style rules for now; we also only support
     // 'background-color' property and not 'background' CSS property for
     // setting the background color.
-    var style = this._xml.getAttribute('style');
+    var style = this._nodeXML.getAttribute('style');
     if (style && style.indexOf('background-color') != -1) {
       var m = style.match(/background\-color:\s*([^;]*)/);
       if (m) {
@@ -2148,7 +2239,7 @@ extend(_SVGSVGElement, {
       
       @returns Style string ready to copy over to Flash object. */
   _determineStyle: function() {
-    var style = this._xml.getAttribute('style');
+    var style = this._nodeXML.getAttribute('style');
     if (!style) {
       style = '';
     }
@@ -2238,12 +2329,16 @@ extend(_SVGSVGElement, {
 });
 
 
+/** Represent a Document object for manipulating the SVG document.
 
-function _Document(flashHandler) {
+    @param xml Parsed XML for the SVG.
+    @param handler The FlashHandler this document is a part of. */
+function _Document(xml, handler) {
   // superclass constructor
-  _Node.call('#document', _Node.DOCUMENT_NODE);
+  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE]);
   
-  this.handler = flashHandler;
+  this._xml = xml;
+  this._handler = handler;
   this.implementation = new _DOMImplementation();
 }
 
@@ -2251,6 +2346,9 @@ function _Document(flashHandler) {
 _Document.prototype = new _Node;
 
 extend(_Document, {
+  /** Stores a lookup from a node's ID to it's _Element representation. */
+  _elementById: {},
+  
   /*
     Note: technically these 2 properties should be read-only and throw 
     a _DOMException when set. For simplicity we make them simple JS
@@ -2266,7 +2364,42 @@ extend(_Document, {
   
   getElementsByTagNameNS: function(ns, localName) /* _NodeList */ {},
   
-  getElementById: function(id) /* _Element */ {}
+  getElementById: function(id) /* _Element */ {
+    console.log('getElementById, id='+id);
+    // XML parser does not have getElementById, due to id mapping in XML
+    // issues; use XPath instead
+    var results = xpath(this._xml, '//*[@id="' + id + '"]');
+    var nodeXML, node;
+    
+    if (results.length) {
+      nodeXML = results[0];
+    } else {
+      return null;
+    }
+    
+    // if we've created an _Element for this node before, we
+    // stored a reference to it by ID so we could get it later
+    node = this._elementById['_' + nodeXML.getAttribute('id')];
+    
+    if (!node) {
+      // never seen before -- we'll have to create a new _Element now
+      node = new _Element(nodeXML.nodeName, nodeXML, this._handler);
+      
+      // store a reference to ourselves. 
+      // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
+      // can't just say nodeXML._proxyNode = node, so we have to use a lookup
+      // table
+      this._elementById['_' + node.id] = node;
+    }
+    
+    if (!isIE) {
+      return node;
+    } else {
+      // for IE, the developer will manipulate things through the UI, HTC
+      // node so that we can know about property changes, etc.
+      return node._uiNode;
+    }
+  }
   
   // Note: createDocumentFragment, createComment, createCDATASection,
   // createProcessingInstruction, createAttribute, createEntityReference,
