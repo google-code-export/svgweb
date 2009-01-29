@@ -992,6 +992,9 @@ extend(SVGWeb, {
     console.log('processSVGScript');
     var svg = script.innerHTML;
     
+    // remove any leading whitespace from beginning of SVG doc
+    svg = svg.replace(/^\s*/, '');
+    
     // add any missing things (XML declaration, SVG namespace, etc.)
     if (/\<\?xml/m.test(svg) == false) { // XML declaration
       svg = '<?xml version="1.0"?>\n' + svg;
