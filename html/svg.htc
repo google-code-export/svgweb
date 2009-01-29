@@ -46,10 +46,29 @@ but only on root node
           root element 'hidden' from the external DOM. Called by
           FlashHandler._insertFlash() inside of svg.js.
           
-          @param flash Flash object as HTML string. */
-      this._insertFlash = function(flash) {
+          @param flash Flash object as HTML string.
+          @param style A style string that we can apply to ourselves
+          to have the correct style on the SVG root tag, since that
+          is what is visible to the outside DOM. Applying it to the
+          Flash object is not enough. */
+      this._insertFlash = function(flash, style) {
         console.log('htcNode.insertFlash');
+        
+        // apply our style to ourselves first
+        var rules = style.split(';');
+        for (var i = 0; i < rules.length; i++) {
+          var rule = rules[i].split(':');
+          if (!rules[i] || rules[i].indexOf(':') == -1) {
+            continue;
+          }
+          var propName = rule[0].replace(/^\s*|\s*$/, '');
+          var propValue = rule[1].replace(/^\s*|\s*$/, '');
+          this.style[propName] = propValue;
+        }
+        
         /**
+          Now insert the Flash.
+          
           We use a Behavior ViewLink trick to 'hide' this shadow content from 
           the external page, so that we don't see the Flash object in the 
           external DOM. For more details on ViewLinks: 

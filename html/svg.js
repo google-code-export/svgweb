@@ -894,7 +894,7 @@ extend(SVGWeb, {
     // itself for details why
     //this._watchDynamicSVG();
     
-    for (var i = 0; i < this._listeners; i++) {
+    for (var i = 0; i < this._listeners.length; i++) {
       this._listeners[i]();
     }
     
@@ -1017,12 +1017,12 @@ extend(SVGWeb, {
     
     // create the correct handler
     var self = this;
-    var finishedCallback = function(id){
+    var finishedCallback = function(id, type){
       // prevent IE memory leaks
       script = null;
       parsedSVG = null;
 
-      self._handleDone(id);
+      self._handleDone(id, type);
     }
     
     this.handlers[rootID] = new this._renderer(
@@ -1154,9 +1154,16 @@ extend(SVGWeb, {
       loading every SVG item then we fire window onload and also indicate to
       each handler that the page is finished loading so that handlers can
       take further action, such as executing any SVG scripts that might be
-      inside of an SVG file loaded in an SVG OBJECT. */
-  _handleDone: function(id) {
+      inside of an SVG file loaded in an SVG OBJECT. 
+      
+      @param ID of either the SVG root element inside of an SVG SCRIPT or 
+      the SVG OBJECT that has finished loading.
+      @param type Either 'script' for an SVG SCRIPT or 'object' for an
+      SVG OBJECT.
+      */
+  _handleDone: function(id, type) {
     this.totalLoaded++;
+    
     if (this.totalLoaded == this.totalSVG) {
       // we are finished
       this._fireOnLoad();
@@ -1461,7 +1468,7 @@ extend(FlashHandler, {
   
   /** Sends a message to the Flash object rendering this SVG. */
   sendToFlash: function(msg) {
-    // note that this._flash is set by the _SVGSVGElement._insertFlash()
+    // note that this._flash is set by the _SVGSVGElement._setupFlash()
     // after we create a Flash object there
     this.flash.sendToFlash(msg);
   },
@@ -1479,6 +1486,15 @@ extend(FlashHandler, {
       this._onObjectScript(msg);
       return;
     }
+  },
+  
+  /** Called by _SVGSVGElement when we are loaded and rendered. 
+  
+      @param id The ID of the SVG element.
+      @param type The type of element that is finished loading,
+      either 'script' or 'object'. */
+  fireOnLoad: function(id, type) {
+    this._finishedCallback(id, type);
   },
   
   _handleScript: function() {
@@ -1500,23 +1516,18 @@ extend(FlashHandler, {
   },
   
   _onEvent: function(msg) {
-    if (msg.eventType == 'onRenderingFinished') {
-      this._onRenderingFinished(msg);
+    if (msg.eventType.substr(0,5) == 'mouse') {
+      this._onMouseEvent(msg);
+      return;
+    } else if (msg.eventType == 'onRenderingFinished') {
+      this.document.documentElement._onRenderingFinished(msg);
       return;
     } else if (msg.eventType == 'onFlashLoaded') {
       this.document.documentElement._onFlashLoaded(msg);
       return;
-    } else if (msg.eventType.substr(0,5) == 'mouse') {
-      this._onMouseEvent(msg);
-      return;
     } else if (msg.eventType == 'onHTCLoaded') {
       this.document.documentElement._onHTCLoaded(msg);
     }
-  },
-  
-  /** The Flash is finished rendering. */
-  _onRenderingFinished: function(msg) {
-    // TODO: implement
   }
 });  
 
@@ -2013,19 +2024,27 @@ extend(_SVGSVGElement, {
                                svgString: this._svgString});
   },
   
+  /** The Flash is finished rendering. */
+  _onRenderingFinished: function(msg) {
+    console.log('onRenderingFinished');
+    
+    this._handler.fireOnLoad(this.id, 'script');
+  },
+  
   _setupFlash: function(doc, htcNode) {
     console.log('setupFlash, doc='+doc);
     
     // get the size and background color information
     var size = this._determineSize();  
     var background = this._determineBackground();
+    var style = this._determineStyle();
     
     // get a Flash object and insert it into our document
-    var flash = this._createFlash(size, background, doc);
+    var flash = this._createFlash(size, background, style, doc);
     if (isIE) {
       // have the HTC node insert the actual Flash so that it gets
       // hidden in the HTC's shadow DOM
-      htcNode._insertFlash(flash);
+      htcNode._insertFlash(flash, style);
     } else {
       this._insertFlash(flash);
     }
@@ -2123,16 +2142,42 @@ extend(_SVGSVGElement, {
     return {color: color, transparent: transparent};
   },
   
+  /** Determines what the style should be on the SVG root element, copying
+      over any styles the user has placed inline and defaulting certain
+      styles. We will bring these over to the Flash object.
+      
+      @returns Style string ready to copy over to Flash object. */
+  _determineStyle: function() {
+    var style = this._xml.getAttribute('style');
+    if (!style) {
+      style = '';
+    }
+    
+    // SVG spec says default display value for SVG root element is 
+    // inline
+    if (style.indexOf('display:') == -1) {
+      style += 'display: inline;';
+    }
+    
+    // SVG spec says SVG by default should have overflow: none
+    if (style.indexOf('overflow:') == -1) {
+      style += 'overflow: hidden;';
+    }
+    
+    return style;
+  },
+  
   /** Creates a Flash object that embeds the Flash SVG Viewer.
 
       @param size Object literal with width and height.
       @param background Object literal with background color and 
       transparent boolean.
+      @param style Style string to copy onto Flash object.
       @param doc Either 'document' or element.document if being called
       from the Microsoft Behavior HTC. 
       
       @returns Flash object as HTML string. */ 
-  _createFlash: function(size, background, doc) {
+  _createFlash: function(size, background, style, doc) {
     console.log('createFlash');
     var flashVars = 
           'uniqueId=' + encodeURIComponent(this.id)
@@ -2159,7 +2204,9 @@ extend(_SVGSVGElement, {
             + 'width="' + size.width + '"\n '
             + 'height="' + size.height + '"\n '
             + 'id="' + this._handler.flashID + '"\n '
-            + 'name="' + this._handler.flashID + '">\n '
+            + 'name="' + this._handler.flashID + '"\n '
+            + 'style="' + style + '"\n '
+            + '>\n '
             + '<param name="allowScriptAccess" value="always"></param>\n '
             + '<param name="movie" value="' + src + '"></param>\n '
             + '<param name="quality" value="high"></param>\n '
@@ -2182,6 +2229,7 @@ extend(_SVGSVGElement, {
               + 'pluginspage="'
               + protocol
               +'://www.macromedia.com/go/getflashplayer" '
+              + 'style="' + style + '">\n '
               + '></embed>'
           + '</object>';
     
