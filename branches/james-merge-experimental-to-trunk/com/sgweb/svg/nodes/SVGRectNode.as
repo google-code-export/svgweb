@@ -17,14 +17,15 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
-    import com.sgweb.svg.data.SVGColors;
+package com.sgweb.svg.nodes {
     
-    public class SVGRectNode extends SVGNode
-    {                
-        public function SVGRectNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
+        
+    public class SVGRectNode extends SVGNode {
+                        
+        public function SVGRectNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
         
         /**
@@ -33,11 +34,15 @@ package com.sgweb.svg.nodes
         protected override function generateGraphicsCommands():void {
             
             this._graphicsCommands = new  Array();
-            
+                
             var widthStr:String = this.getAttribute('width','0');
             var heightStr:String = this.getAttribute('height','0');
-            var width:Number = SVGColors.cleanNumber2(widthStr, getWidth());
-            var height:Number = SVGColors.cleanNumber2(heightStr, getHeight());
+            
+            //var width:Number = SVGUnits.cleanNumber2(widthStr, getWidth());
+            //var height:Number = SVGUnits.cleanNumber2(heightStr, getHeight());
+            
+            var width:Number = SVGUnits.cleanNumber(widthStr);
+            var height:Number = SVGUnits.cleanNumber(heightStr);
             
             var rx:String = this.getAttribute('rx');
             var ry:String = this.getAttribute('ry');            
@@ -51,11 +56,17 @@ package com.sgweb.svg.nodes
             
             //x & y loaded in setAttributes()
             if (rx != null) {
-                this._graphicsCommands.push(['RECT', 0, 0, width, height, (SVGColors.cleanNumber(rx) * 2), SVGColors.cleanNumber(ry) * 2]);                
+                this._graphicsCommands.push(['RECT', 0, 0, width, height, (SVGUnits.cleanNumber(rx) * 2), SVGUnits.cleanNumber(ry) * 2]);                
             }
             else {
                 this._graphicsCommands.push(['RECT', 0, 0, width, height]);
             }
+            
+            //Width/height calculations for gradients
+            this.setXMinMax(0);
+            this.setYMinMax(0);
+            this.setXMinMax(width);
+            this.setYMinMax(height);
         }        
     }
 }

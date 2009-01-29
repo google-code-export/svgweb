@@ -19,6 +19,8 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    
     import flash.events.Event;
     
     /** 
@@ -28,17 +30,16 @@ package com.sgweb.svg.nodes
     public class SVGDefsNode extends SVGNode
     {
         
-        public function SVGDefsNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
-        }        
-                
-        override protected function draw():void {
-            //Do Nothing
-        }
+        public function SVGDefsNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
+        }    
         
-        override protected function generateGraphicsCommands():void {
-            this._graphicsCommands = new Array();
-            //Do Nothing
+        override public function drawNode(event:Event = null):void {          
+            this.removeEventListener(Event.ENTER_FRAME, drawNode);      
+            this._invalidDisplay = false;    
+            this.visible = false;  
+                        
+            this.svgRoot.doneRendering();
         }
         
 

@@ -17,33 +17,14 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
-    import flash.display.Sprite;
+package com.sgweb.svg.nodes {
     
-    public class SVGClipPathNode extends SVGNode
-    {    
-        
-        public function SVGClipPathNode(svgRoot:SVGRoot, xml:XML):void {    
-            super(svgRoot, xml);
-        }                
-        
-        /**
-         * Override parent function to do nothing
-         **/
-        override protected function draw():void {
-            //Do Nothing
-        }
-
-        
-        /**
-         * Override parent function to do nothing except create a blank _graphicsCommands array
-         **/
-        override protected function generateGraphicsCommands():void {
-            //Do Nothing
-            this._graphicsCommands = new  Array();
-        }
-        
-        
+    import com.sgweb.svg.core.SVGNode;
+    
+    public class SVGClipPathNode extends SVGMaskNode {
+                    
+        public function SVGClipPathNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {    
+            super(svgRoot, xml, original);
+        }        
     }
 }

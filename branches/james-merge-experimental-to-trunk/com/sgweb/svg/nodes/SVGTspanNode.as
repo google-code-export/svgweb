@@ -17,14 +17,14 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
+package com.sgweb.svg.nodes {
+    import com.sgweb.svg.core.SVGNode;
     
-    public class SVGTspanNode extends SVGTextNode
-    {        
-        public function SVGTspanNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
-        }    
+    public class SVGTspanNode extends SVGTextNode {
+                
+        public function SVGTspanNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
+        }     
         
     }
 }

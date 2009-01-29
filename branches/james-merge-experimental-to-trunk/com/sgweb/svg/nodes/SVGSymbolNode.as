@@ -19,25 +19,19 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    
+    import flash.events.Event;
+    
     /** 
      * Contains drawing instructions used by SVGUseNode
      * It is not rendered directly
      **/
-    public class SVGSymbolNode extends SVGNode
-    {        
-        public function SVGSymbolNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
-        }    
-        
-        override protected function draw():void {
-            //Do Nothing
-        }
-        
-        override protected function generateGraphicsCommands():void {
-            this._graphicsCommands = new Array();
-            //Do Nothing
-        }
-        
+    public class SVGSymbolNode extends SVGDefsNode  {
+                
+        public function SVGSymbolNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
+        }  
         
     }
 }

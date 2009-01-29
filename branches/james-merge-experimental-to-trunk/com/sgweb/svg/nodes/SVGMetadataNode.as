@@ -24,38 +24,29 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 package com.sgweb.svg.nodes {
-    import com.sgweb.svg.core.SVGNode;
+	import com.sgweb.svg.core.SVGNode;
+	
+	import flash.events.Event;    
     
-    import flash.events.MouseEvent;
-    import flash.net.URLRequest;    
-    
-    public class SVGANode extends SVGNode {
+    public class SVGMetadataNode extends SVGNode {
         
         public var url:String; 
         public var target:String;
         
-        public function SVGANode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null) {
+        public function SVGMetadataNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null) {
             super(svgRoot, xml, original);
         }
         
-        override protected function generateGraphicsCommands():void {
-            url = this.getAttribute('href');
-            target = this.getAttribute('target');
-            if (!target) {
-                target = '_self';
-            }
-        }
-        
-        override protected function draw():void {
-            if (this.parent is SVGNode) {
-                SVGNode(this.parent).addEventListener(MouseEvent.CLICK, onParentMouseClick);
-            }
-        }
-        
-        private function onParentMouseClick(event:MouseEvent):void {
-            var urlRequest:URLRequest = new URLRequest(url);
-            flash.net.navigateToURL(urlRequest, target);
-        }
+       override public function drawNode(event:Event=null):void {
+       	    this.removeEventListener(Event.ENTER_FRAME, drawNode);    
+            this._invalidDisplay = false;
+            
+            this.visible = false;
+       }
+       
+       override protected function parseNodes():void {
+            //Do not parse child XML
+       }
         
     }
 }

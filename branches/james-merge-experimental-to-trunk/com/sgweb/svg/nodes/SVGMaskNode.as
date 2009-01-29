@@ -17,20 +17,26 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
-    public class SVGMaskNode extends SVGNode
-    {
-        public function SVGMaskNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+package com.sgweb.svg.nodes {
+    
+    import com.sgweb.svg.core.SVGNode;
+    import flash.events.Event;
+    
+    public class SVGMaskNode extends SVGNode {
+        
+        public function SVGMaskNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
         
-        override protected function draw():void {
-        	//Node should not be visible
-        	//Only acts as a data holder
-        	
-        	this.visible = false;
-        }
+        override public function drawNode(event:Event = null):void {            
+            this.removeEventListener(Event.ENTER_FRAME, drawNode);    
+            this._invalidDisplay = false;
+            
+            //If mask is is not currently being used don't show it
+            this.visible = false;           
+            
+            this.svgRoot.doneRendering();
+        } 
         
     }
 }

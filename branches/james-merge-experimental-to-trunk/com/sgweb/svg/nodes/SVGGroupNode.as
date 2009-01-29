@@ -19,13 +19,16 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    
     /**
      * Acts as a container for other nodes
      **/
     public class SVGGroupNode extends SVGNode
     {
-        public function SVGGroupNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+        public function SVGGroupNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
     }
 }
+

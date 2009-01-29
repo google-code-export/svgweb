@@ -1,5 +1,6 @@
 /*
 Copyright (c) 2008 James Hight
+Copyright (c) 2008 Richard R. Masters, for his changes.
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -24,38 +25,14 @@ OTHER DEALINGS IN THE SOFTWARE.
 */
 
 package com.sgweb.svg.nodes {
-    import com.sgweb.svg.core.SVGNode;
-    
-    import flash.events.MouseEvent;
-    import flash.net.URLRequest;    
-    
-    public class SVGANode extends SVGNode {
+	
+	import com.sgweb.svg.core.SVGNode;
+	import com.sgweb.svg.utils.SVGUnits;
+	
+    public class SVGStopNode extends SVGNode {
         
-        public var url:String; 
-        public var target:String;
-        
-        public function SVGANode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null) {
+        public function SVGStopNode(svgRoot:SVGSVGNode, xml:XML, original:SVGNode = null):void {
             super(svgRoot, xml, original);
-        }
-        
-        override protected function generateGraphicsCommands():void {
-            url = this.getAttribute('href');
-            target = this.getAttribute('target');
-            if (!target) {
-                target = '_self';
-            }
-        }
-        
-        override protected function draw():void {
-            if (this.parent is SVGNode) {
-                SVGNode(this.parent).addEventListener(MouseEvent.CLICK, onParentMouseClick);
-            }
-        }
-        
-        private function onParentMouseClick(event:MouseEvent):void {
-            var urlRequest:URLRequest = new URLRequest(url);
-            flash.net.navigateToURL(urlRequest, target);
-        }
-        
+        }        
     }
 }

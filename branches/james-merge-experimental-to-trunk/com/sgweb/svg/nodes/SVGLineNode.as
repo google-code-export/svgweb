@@ -19,9 +19,12 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
+    
     public class SVGLineNode extends SVGNode
     {        
-        public function SVGLineNode(svgRoot:SVGRoot, xml:XML):void {
+        public function SVGLineNode(svgRoot:SVGSVGNode, xml:XML = null, isClone:Boolean = false):void {
             super(svgRoot, xml);
         }    
         
@@ -32,10 +35,17 @@ package com.sgweb.svg.nodes
             
             this._graphicsCommands = new  Array();
             
-            var x1:Number = this.getAttribute('x1',0);
-            var y1:Number = this.getAttribute('y1',0);
-            var x2:Number = this.getAttribute('x2',0);
-            var y2:Number = this.getAttribute('y2',0);
+            var x1:Number = SVGUnits.cleanNumber(this.getAttribute('x1',0));
+            var y1:Number = SVGUnits.cleanNumber(this.getAttribute('y1',0));
+            var x2:Number = SVGUnits.cleanNumber(this.getAttribute('x2',0));
+            var y2:Number = SVGUnits.cleanNumber(this.getAttribute('y2',0));
+            
+            //Width/height calculations for gradients
+            this.setXMinMax(x1);
+            this.setYMinMax(x2);
+            
+            this.setXMinMax(y1);
+            this.setYMinMax(y2);
             
             this._graphicsCommands.push(['LINE', x1, y1, x2, y2]);
         }        

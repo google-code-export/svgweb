@@ -17,15 +17,16 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
-    import mx.utils.StringUtil;
+package com.sgweb.svg.nodes {
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGColors;
     
-    public class SVGPolygonNode extends SVGNode
-    {        
-        public function SVGPolygonNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
-        }    
+    
+    public class SVGPolygonNode extends SVGNode {
+                
+        public function SVGPolygonNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
+        } 
         
         /**
          * Generate graphics commands to draw a polygon
@@ -34,7 +35,7 @@ package com.sgweb.svg.nodes
             
             this._graphicsCommands = new  Array();
             
-            var pointsString:String = StringUtil.trim(this.getAttribute('points',''));
+            var pointsString:String = SVGColors.trim(this.getAttribute('points',''));
             var points:Array = pointsString.split(' ');
             
             for (var i:int = 0; i < points.length; i++) {
@@ -50,10 +51,14 @@ package com.sgweb.svg.nodes
                 }
                 else {
                     this._graphicsCommands.push(['L', point[0], point[1]]);
-                }                
+                }   
+                
+                //Width/height calculations for gradients
+                this.setXMinMax(point[0]);
+                this.setYMinMax(point[1]);             
             }
             
-            this._graphicsCommands.push(['R', x, y, width, height]);            
+            //this._graphicsCommands.push(['R', x, y, width, height]);            
         }    
         
     }

@@ -17,27 +17,27 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
+package com.sgweb.svg.nodes {
+    
+    import com.sgweb.svg.core.SVGNode;
     import com.sgweb.svg.utils.EllipticalArc;
+    import com.sgweb.svg.utils.SVGColors;
     
-    import mx.utils.StringUtil;
-    
-    public class SVGPathNode extends SVGNode
-    {        
+    public class SVGPathNode extends SVGNode {
+                
         private var currentX:Number;
         private var currentY:Number;
         
         private var lastCurveControlX:Number;
         private var lastCurveControlY:Number;
         
-        public function SVGPathNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+        public function SVGPathNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
         
-        protected override function draw():void {
+        /* protected override function draw():void {
             this.runGraphicsCommands();            
-        }
+        } */
         
         /**
          * Normalize SVG Path Data:
@@ -46,7 +46,7 @@ package com.sgweb.svg.nodes
          */
          
         public function normalizeSVGData(data:String):String {
-            data = StringUtil.trim(data);
+            data = SVGColors.trim(data);
             
             /* M & Z moved to main regular expression to support multiple occurances */
             //data = data.replace(/^(M)/sig,"$1,");
@@ -81,7 +81,8 @@ package com.sgweb.svg.nodes
             var szSegs:Array = pathData.split(',');
             
             this._graphicsCommands.push(['SF']);
-                        
+             
+            var firstMove:Boolean = true;
             for(var pos:int = 0; pos < szSegs.length; ) {
                 var command:String = szSegs[pos++];                
                                         
@@ -91,7 +92,11 @@ package com.sgweb.svg.nodes
                     case "M":
                         isAbs = true;
                     case "m":
-                        this.moveTo(szSegs[pos++],szSegs[pos++]); // Move is always absolute                
+                        if (firstMove) { //If first move is 'm' treate is as absolute
+                            isAbs = true;
+                            firstMove = false;
+                        }
+                        this.moveTo(szSegs[pos++],szSegs[pos++], isAbs); // Move is always absolute                
                         while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
                             this.line(szSegs[pos++], szSegs[pos++], isAbs);
                         } 
@@ -156,13 +161,13 @@ package com.sgweb.svg.nodes
                         break;
                     case "Z":
                     case "z":
-                        this.closePath();
+                        this.closePath();                        
                         break;            
                                 
                     default:
                         trace("Unknown Segment Type: " + command);
                         break;
-                }            
+                }         
             }        
             this._graphicsCommands.push(['EF']);    
         }
@@ -171,10 +176,18 @@ package com.sgweb.svg.nodes
             this._graphicsCommands.push(['Z']);
         }
         
-        private function moveTo(x:Number, y:Number):void {
+        private function moveTo(x:Number, y:Number, isAbs:Boolean):void {
+            if (!isAbs) {
+                x += this.currentX;
+                y += this.currentY;
+            }
+            
             this._graphicsCommands.push(['M', x, y]);
             this.currentX = x;
             this.currentY = y;
+            
+            this.setXMinMax(x);
+            this.setYMinMax(y);
         }
         
         private function lineHorizontal(x:Number, isAbs:Boolean):void {
@@ -204,7 +217,10 @@ package com.sgweb.svg.nodes
                 this.currentX += x;
                 this.currentY += y;                
             }            
-            this._graphicsCommands.push(['L', this.currentX, this.currentY]);            
+            this._graphicsCommands.push(['L', this.currentX, this.currentY]);      
+            
+            this.setXMinMax(x);
+            this.setYMinMax(y);       
         }
         
         private function ellipticalArc(rx:Number, ry:Number, xAxisRotation:Number, largeArcFlag:Number, 
@@ -219,6 +235,11 @@ package com.sgweb.svg.nodes
             
             this.currentX = x;
             this.currentY = y;
+            
+            this.setXMinMax(rx);
+            this.setYMinMax(ry);
+            this.setXMinMax(x);
+            this.setYMinMax(y);
             
         }
         
@@ -255,6 +276,11 @@ package com.sgweb.svg.nodes
             
             this.lastCurveControlX = x1;
             this.lastCurveControlY = y1;
+            
+            this.setXMinMax(x);
+            this.setYMinMax(y);
+            this.setXMinMax(x1);
+            this.setYMinMax(y1);
         }
         
         private function cubicBezierSmooth(x2:Number, y2:Number,
@@ -330,7 +356,28 @@ package com.sgweb.svg.nodes
             this.currentY = y;
             
             this.lastCurveControlX = x2;
-            this.lastCurveControlY = y2;            
+            this.lastCurveControlY = y2;  
+            
+            //Width/height calculations for gradients
+            this.setXMinMax(Pc_1.x);
+            this.setYMinMax(Pc_1.y);
+            this.setXMinMax(Pa_1.x);
+            this.setYMinMax(Pa_1.y);
+            
+            this.setXMinMax(Pc_2.x);
+            this.setYMinMax(Pc_2.y);
+            this.setXMinMax(Pa_2.x);
+            this.setYMinMax(Pa_2.y);
+            
+            this.setXMinMax(Pc_3.x);
+            this.setYMinMax(Pc_3.y);
+            this.setXMinMax(Pa_3.x);
+            this.setYMinMax(Pa_3.y);
+            
+            this.setXMinMax(Pc_4.x);
+            this.setYMinMax(Pc_4.y);
+            this.setXMinMax(P3.x);
+            this.setYMinMax(P3.y);          
         }    
         
         private function getMiddle(P0:Object, P1:Object):Object

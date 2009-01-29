@@ -19,11 +19,13 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    
     public class SVGEllipseNode extends SVGNode
     {
         
-        public function SVGEllipseNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+        public function SVGEllipseNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
         
         /**
@@ -37,6 +39,12 @@ package com.sgweb.svg.nodes
             var cy:Number = this.getAttribute('cy',0);
             var rx:Number = this.getAttribute('rx',0);
             var ry:Number = this.getAttribute('ry',0);
+            
+            //Width/height calculations for gradients
+            this.setXMinMax(cx - ry);
+            this.setXMinMax(cx + ry);
+            this.setYMinMax(cy - ry);
+            this.setYMinMax(cy + ry);
             
             this._graphicsCommands.push(['ELLIPSE', (cx - rx), (cy - ry), (rx * 2), (ry * 2)]);            
         }                    

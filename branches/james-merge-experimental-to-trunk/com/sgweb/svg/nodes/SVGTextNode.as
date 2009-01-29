@@ -17,10 +17,11 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
-    import com.sgweb.svg.data.SVGColors;
-    import com.sgweb.svg.data.SVGUnits;
+package com.sgweb.svg.nodes {
+    
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGColors;
+    import com.sgweb.svg.utils.SVGUnits;
     
     import flash.text.TextField;
     import flash.text.TextFieldAutoSize;
@@ -28,8 +29,7 @@ package com.sgweb.svg.nodes
     import flash.text.TextLineMetrics;
     
     /** SVG Text element node **/
-    public class SVGTextNode extends SVGNode
-    {    
+    public class SVGTextNode extends SVGNode {    
         
         /**
          * Hold node's text
@@ -46,16 +46,22 @@ package com.sgweb.svg.nodes
          **/
         private var _textField:TextField;
         
-        public function SVGTextNode(svgRoot:SVGRoot, xml:XML):void {            
-            super(svgRoot, xml);            
-        }
+        /**
+         * Bitmap to display text rendered by _textField
+         **/
+        //private var _textBitmap:Bitmap;
+        
+        public function SVGTextNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {            
+            super(svgRoot, xml, original);            
+        }       
+        
         
         /**
          * Get any child text (not text inside child nodes)
          * If this node has any text create a TextField at this._textField
          * Call SVGNode.parse()
          **/
-        override protected function parse():void {
+        override protected function parseNodes():void {
             this._text = '';
             
             for each(var childXML:XML in this._xml.children()) {
@@ -69,8 +75,8 @@ package com.sgweb.svg.nodes
                 this._textField.autoSize = TextFieldAutoSize.LEFT;
             }
             
-            super.parse();
-        }
+            super.parseNodes();
+        } 
         
         /**
          * Call SVGNode.setAttributes()
@@ -94,7 +100,7 @@ package com.sgweb.svg.nodes
                     fontFamily = fontFamily.replace("'", '');
                     textFormat.font = fontFamily;
                 }
-                
+              
                 if (fontSize != null) {
                     //Handle floating point font size
                     var fontSizeNum:Number = SVGUnits.cleanNumber(fontSize);
@@ -120,8 +126,8 @@ package com.sgweb.svg.nodes
                 }
                 
                 // only bold/no bold supported for now (SVG has many levels of bold)
-                var currentNode:SVGNode = this;
-                while (fontWeight == 'inherit') {                    
+                currentNode = this;
+                while (fontWeight == 'inherit') {                   
                     if (currentNode.parent is SVGNode) {
                         currentNode = SVGNode(currentNode.parent);
                         fontWeight = currentNode.getAttribute('font-weight');
@@ -129,17 +135,18 @@ package com.sgweb.svg.nodes
                     else {
                         fontWeight = null;
                     }
-                }                    
+                }                   
                 if (fontWeight != null && fontWeight != 'normal') {
                     textFormat.bold = true;
                 }
                                 
                 this._textField.text = this._text;
                 this._textField.setTextFormat(textFormat);
+                
                 var textLineMetrics:TextLineMetrics = this._textField.getLineMetrics(0);
                 
-                currentNode = this;
-                while (textAnchor == 'inherit') {                    
+                var currentNode:SVGNode = this;
+                while (textAnchor == 'inherit') {                   
                     if (currentNode.parent is SVGNode) {
                         currentNode = SVGNode(currentNode.parent);
                         textAnchor = currentNode.getAttribute('text-anchor');
@@ -147,36 +154,44 @@ package com.sgweb.svg.nodes
                     else {
                         textAnchor = null;
                     }
-                }    
+                }   
                 
-                // Handle text-anchor attribute
-                switch (textAnchor) {                    
+                //Handle text-anchor attribute
+                switch (textAnchor) {                   
                     case 'middle':
-                        this._textField.x = textLineMetrics.x - Math.floor(textLineMetrics.width / 2);
+                        this._textField.x = textLineMetrics.x - 2 - Math.floor(textLineMetrics.width / 2);
                         break;
                     case 'end':
-                        this._textField.x = textLineMetrics.x - textLineMetrics.width;
+                        this._textField.x = textLineMetrics.x - 2 - textLineMetrics.width;
                         break;
                     default: //'start'
+                        // 2 pixel gutter
+                        this._textField.x = -2;
                         break;
                 }
                 
-                // SVG Text elements position y attribute as baseline of text,
-                // not the top
-                this._textField.y = 0 - textLineMetrics.ascent - 1;
+                //SVG Text elements position y attribute as baseline of text, not the
+                //top
+                //this._textField.y = 0 - textLineMetrics.ascent - 2;   
+                this._textField.x = -2;
                
             }
         }    
         
         /**
-         * 
+         * Add _textField to node
          **/
         override protected function draw():void {
             super.draw();
 
+
             if (this._textField != null) {
+                var textLineMetrics:TextLineMetrics = this._textField.getLineMetrics(0);
+                //this.x = this.x -textLineMetrics.x - 2; //account for 2px gutter
+                this.y = this.y - textLineMetrics.ascent - 1;
+
                 this.addChild(this._textField);            
-            }            
+            } 
         }             
     }
 }

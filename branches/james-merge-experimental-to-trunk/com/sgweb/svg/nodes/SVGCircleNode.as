@@ -19,11 +19,14 @@
 
 package com.sgweb.svg.nodes
 {
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
+    
     public class SVGCircleNode extends SVGNode
     {
         
-        public function SVGCircleNode(svgRoot:SVGRoot, xml:XML):void {
-            super(svgRoot, xml);
+        public function SVGCircleNode(svgRoot:SVGSVGNode, xml:XML, original:SVGNode = null):void {
+            super(svgRoot, xml, original);
         }    
         
         /**
@@ -33,9 +36,15 @@ package com.sgweb.svg.nodes
             
             this._graphicsCommands = new  Array();
             
-            var cx:Number = this.getAttribute('cx',0);
+            var cx:Number = SVGUnits.cleanNumber(this.getAttribute('cx',0));
             var cy:Number = this.getAttribute('cy',0);
             var r:Number = this.getAttribute('r',0);
+            
+            //Width/height calculations for gradients
+            this.setXMinMax(cx - r);
+            this.setXMinMax(cx + r);
+            this.setYMinMax(cy - r);
+            this.setYMinMax(cy + r);
             
             this._graphicsCommands.push(['CIRCLE', cx, cy, r]);
         }

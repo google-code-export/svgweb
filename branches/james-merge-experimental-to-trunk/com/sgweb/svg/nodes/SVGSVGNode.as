@@ -17,12 +17,13 @@
  limitations under the License.
 */
 
-package com.svgweb.svg.nodes {
-    import com.svgweb.svg.core.SVGNode;
-    import com.svgweb.svg.core.SVGViewer;
-    import com.svgweb.svg.events.SVGEvent;
+package com.sgweb.svg.nodes {
+    import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.core.SVGViewer;
+    import com.sgweb.svg.events.SVGEvent;
     
     import flash.events.Event;
+    import flash.geom.Matrix;
     
     public class SVGSVGNode extends SVGNode {
         
@@ -52,7 +53,7 @@ package com.svgweb.svg.nodes {
             this.applyViewBox();
             this.createMask();     
             
-            this.attachEventListeners();                   
+            //this.attachEventListeners();                   
         }
                 
         public function registerNode(node:SVGNode):void {

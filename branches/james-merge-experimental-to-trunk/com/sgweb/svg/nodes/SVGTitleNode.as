@@ -17,34 +17,34 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
-{
+package com.sgweb.svg.nodes {
+    
+    import com.sgweb.svg.core.SVGNode;
+    
     /**
      * Title of SVG
      **/
-    public class SVGTitleNode extends SVGNode
-    {
+    public class SVGTitleNode extends SVGNode {
         
-        private var _title:String = "";
+        public var title:String = "";
         
-        public function SVGTitleNode(svgRoot:SVGRoot, xml:XML)
-        {
-            super(svgRoot, xml);
+        public function SVGTitleNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null) {
+            super(svgRoot, xml, original);
         }
         
-        override protected function parse():void {
-            this._title = '';
+        override protected function parseNodes():void {
+            title = '';
             
             for each(var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'text') {
-                    this._title += childXML.toString();
+                    title += childXML.toString();
                 }
             }
         }
         
         override protected function setAttributes():void {
-            super.setAttributes();
-            this.svgRoot.title = this._title;
+            this._styles = new Object();
+            /* this.svgRoot.title = this._title; */
         }
         
     }
