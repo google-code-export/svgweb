@@ -1,4 +1,4 @@
-package com.svgweb.svg.core
+package com.sgweb.svg.core
 {
 	
 	import com.sgweb.svg.nodes.SVGSVGNode;
