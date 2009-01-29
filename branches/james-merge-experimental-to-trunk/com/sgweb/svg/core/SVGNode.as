@@ -177,7 +177,7 @@ package com.sgweb.svg.core
                             childNode = new SVGLineNode(this.svgRoot, childXML);
                             break;    
                         case "lineargradient": 
-                            childNode = new SVGLinearGradient(this.svgRoot, childXML);
+                            //childNode = new SVGLinearGradient(this.svgRoot, childXML);
                             break;    
                         case "mask":
                             childNode = new SVGMaskNode(this.svgRoot, childXML);
@@ -198,7 +198,7 @@ package com.sgweb.svg.core
                             childNode = new SVGPathNode(this.svgRoot, childXML);
                             break;
                         case "radialgradient": 
-                            childNode = new SVGRadialGradient(this.svgRoot, childXML);
+                            //childNode = new SVGRadialGradient(this.svgRoot, childXML);
                             break;    
                         case "rect":
                             childNode = new SVGRectNode(this.svgRoot, childXML);
@@ -231,8 +231,7 @@ package com.sgweb.svg.core
                             childNode = new SVGUseNode(this.svgRoot, childXML);
                             break; 
                         case "null":
-                            break;
-                            
+                            break;                            
                         default:
                             trace("Unknown Element: " + nodeName);
                             break;    
@@ -349,10 +348,7 @@ package com.sgweb.svg.core
             for (var i:uint = 0; i < this._clones.length; i++) {
                SVGNode(this._clones[i]).xml = this._xml.copy(); 
             }
-        }
-        
-        
-        
+        }        
 
         /** 
          * Called to generate AS3 graphics commands from the SVG instructions
@@ -388,64 +384,8 @@ package com.sgweb.svg.core
             if (attr) {
                 this.alpha = SVGUnits.cleanNumber(attr);
             }
-
         }
-
-
-        public static function overwriteStyles(baseStylesStr:String, newStylesStr:String):String {
-
-            var mergedStyles:Object = new Object();
-            var mergedStylesStr:String = "";
-            var styleSet:Array;
-            var attrName:String;
-            var attrValue:String;
-            var style:String;
-
-            // Create an object with the base styles
-            var baseStyles:Array = baseStylesStr.split(';');
-            for each(style in baseStyles) {
-                styleSet = style.split(':');
-                if (styleSet.length == 2) {
-                    attrName = styleSet[0];
-                    attrValue = styleSet[1];
-                    // Trim leading whitespace.
-                    attrName = attrName.replace(/^\s+/, '');
-                    attrValue = attrValue.replace(/^\s+/, '');
-                    mergedStyles[attrName] = attrValue;
-                }
-            }
-
-            // Set the new styles over the base styles
-            var newStyles:Array = newStylesStr.split(';');
-            for each(style in newStyles) {
-                styleSet = style.split(':');
-                if (styleSet.length == 2) {
-                    attrName = styleSet[0];
-                    attrValue = styleSet[1];
-                    // Trim leading whitespace.
-                    attrName = attrName.replace(/^\s+/, '');
-                    attrValue = attrValue.replace(/^\s+/, '');
-                    // overwriting fills have special rules.
-                    // url gradients take precedence over new rgb
-                    if (attrName == 'fill' && mergedStyles[attrName] != undefined) {
-                        if (   (mergedStyles[attrName].indexOf('url') == -1)
-                            || (attrValue.indexOf('url') != -1) ) {
-                            mergedStyles[attrName] = attrValue;
-                        }
-                    }
-                    else {
-                        mergedStyles[attrName] = attrValue;
-                    }
-                }
-            }
-
-            for (attrName in mergedStyles) {
-                mergedStylesStr = mergedStylesStr + attrName + ":" + mergedStyles[attrName] + ";";
-            }
-            return mergedStylesStr;
-        }
-            
-
+        
         public function parseTransform(trans:String, baseMatrix:Matrix = null):Matrix {
             if (!baseMatrix) {
                 baseMatrix = new Matrix();
