@@ -386,80 +386,7 @@ package com.sgweb.svg.core
             }
         }
         
-        public function parseTransform(trans:String, baseMatrix:Matrix = null):Matrix {
-            if (!baseMatrix) {
-                baseMatrix = new Matrix();
-            }
-            
-            if (trans != null) {
-                var transArray:Array = trans.match(/\S+\(.*?\)/sg);
-                transArray.reverse();
-                for each(var tran:String in transArray) {
-                    var tranArray:Array = tran.split('(',2);
-                    if (tranArray.length == 2)
-                    {
-                        var command:String = String(tranArray[0]);
-                        var args:String = String(tranArray[1]);
-                        args = args.replace(')','');
-                        args = args.replace(/ /g, '');
-                        var argsArray:Array = args.split(/[, ]/);
-
-                        var nodeMatrix:Matrix = new Matrix();
-                        switch (command) {
-                            case "matrix":
-                                if (argsArray.length == 6) {
-                                    nodeMatrix.a = argsArray[0];
-                                    nodeMatrix.b = argsArray[1];
-                                    nodeMatrix.c = argsArray[2];
-                                    nodeMatrix.d = argsArray[3];
-                                    nodeMatrix.tx = argsArray[4];
-                                    nodeMatrix.ty = argsArray[5];
-                                }
-                                break;
-
-                            case "translate":
-                                if (argsArray.length == 1) {
-                                    nodeMatrix.tx = argsArray[0]; 
-                                }
-                                else if (argsArray.length == 2) {
-                                    nodeMatrix.tx = argsArray[0]; 
-                                    nodeMatrix.ty = argsArray[1]; 
-                                }
-                                break;
-
-                            case "scale":
-                                if (argsArray.length == 1) {
-                                    nodeMatrix.a = argsArray[0];
-                                    nodeMatrix.d = argsArray[0];
-                                }
-                                else if (argsArray.length == 2) {
-                                    nodeMatrix.a = argsArray[0];
-                                    nodeMatrix.d = argsArray[1];
-                                }
-                                break;
-                                
-                            case "skewX":
-                                nodeMatrix.c = Math.tan(argsArray[0] * Math.PI / 180.0);
-                                break;
-                                
-                            case "skewY":
-                                nodeMatrix.b = Math.tan(argsArray[0] * Math.PI / 180.0);
-                                break;
-                                
-                            case "rotate":
-                                nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0); 
-                                break;
-                                
-                            default:
-                                //this.dbg('Unknown Transformation: ' + command);
-                        }
-                        baseMatrix.concat(nodeMatrix);
-                    }
-                }
-            }
-            
-            return baseMatrix;
-        }
+        
 
 
         public function getWidth():Number {
@@ -539,6 +466,81 @@ package com.sgweb.svg.core
             if (transform) {
                 this.transform.matrix = this.parseTransform(transform, this.transform.matrix.clone());              
             }  
+        }
+        
+        public function parseTransform(trans:String, baseMatrix:Matrix = null):Matrix {
+            if (!baseMatrix) {
+                baseMatrix = new Matrix();
+            }
+            
+            if (trans != null) {
+                var transArray:Array = trans.match(/\S+\(.*?\)/sg);
+                transArray.reverse();
+                for each(var tran:String in transArray) {
+                    var tranArray:Array = tran.split('(',2);
+                    if (tranArray.length == 2)
+                    {
+                        var command:String = String(tranArray[0]);
+                        var args:String = String(tranArray[1]);
+                        args = args.replace(')','');
+                        args = args.replace(/ /g, '');
+                        var argsArray:Array = args.split(/[, ]/);
+
+                        var nodeMatrix:Matrix = new Matrix();
+                        switch (command) {
+                            case "matrix":
+                                if (argsArray.length == 6) {
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.b = argsArray[1];
+                                    nodeMatrix.c = argsArray[2];
+                                    nodeMatrix.d = argsArray[3];
+                                    nodeMatrix.tx = argsArray[4];
+                                    nodeMatrix.ty = argsArray[5];
+                                }
+                                break;
+
+                            case "translate":
+                                if (argsArray.length == 1) {
+                                    nodeMatrix.tx = argsArray[0]; 
+                                }
+                                else if (argsArray.length == 2) {
+                                    nodeMatrix.tx = argsArray[0]; 
+                                    nodeMatrix.ty = argsArray[1]; 
+                                }
+                                break;
+
+                            case "scale":
+                                if (argsArray.length == 1) {
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.d = argsArray[0];
+                                }
+                                else if (argsArray.length == 2) {
+                                    nodeMatrix.a = argsArray[0];
+                                    nodeMatrix.d = argsArray[1];
+                                }
+                                break;
+                                
+                            case "skewX":
+                                nodeMatrix.c = Math.tan(argsArray[0] * Math.PI / 180.0);
+                                break;
+                                
+                            case "skewY":
+                                nodeMatrix.b = Math.tan(argsArray[0] * Math.PI / 180.0);
+                                break;
+                                
+                            case "rotate":
+                                nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0); 
+                                break;
+                                
+                            default:
+                                //this.dbg('Unknown Transformation: ' + command);
+                        }
+                        baseMatrix.concat(nodeMatrix);
+                    }
+                }
+            }
+            
+            return baseMatrix;
         }
         
         protected function applyViewBox():void {
@@ -991,6 +993,41 @@ package com.sgweb.svg.core
             }
             
             return null;
+        }
+        
+        public function setAttribute(name:String, value:String):void {
+                        
+            if (this._styles.hasOwnProperty(name)) {
+               this._styles[name] = value;
+               updateStyle();
+            }
+            else {
+                this._xml.@[name] = value;
+            }
+            
+            //TO DO: Need to detect which values don't need a readraw such as x & y
+            //Ex: if (name == "x")  then this.x = value, don't call invalidateDisplay, still need to update clones
+            //
+            
+            this.invalidateDisplay();
+            this.updateClones();
+        }
+        
+        public function deleteAttribute(name:String):void {
+            if (this._styles.hasOwnProperty(name)) {
+               delete this._styles[name];
+               updateStyle();
+            }
+            else {
+                delete this._xml.@[name];
+            }
+            
+            //TO DO: Need to detect which values don't need a readraw such as x & y
+            //Ex: if (name == "x")  then this.x = value, don't call invalidateDisplay, still need to update clones
+            //
+            
+            this.invalidateDisplay();
+            this.updateClones();
         }
 
 
