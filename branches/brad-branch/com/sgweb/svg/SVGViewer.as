@@ -496,15 +496,6 @@ package com.sgweb.svg
             if (jsMsg.method == 'setTransform') {
                 this.transform.matrix = this._svgRoot.parseTransform(jsMsg.transform); 
             }
-            if (jsMsg.method == 'getElementById') {
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    return jsMsg;
-                }
-                if (!this._svgRoot.getElement(jsMsg.elementId)) {
-                    this.debug("getElem:not found: " + jsMsg.elementId);
-                    return null;
-                }
-            }
             if (jsMsg.method == 'addEventListener') {
                 // Get the parent node
                 if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
