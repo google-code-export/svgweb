@@ -9,11 +9,41 @@
     <script>
       svgweb.addOnLoad(function() {
         console.log('developers onload called');
+        
+        // TODO: Get these into a separate test page with JSUnit testing
+        // to assert correct results
+        
+        // getElementByID
+        
+        console.log("document.getElementById('myRect')");
         var myRect = document.getElementById('myRect');
-        console.log('myRect='+myRect.id);
-        console.log('myRect.innerHTML='+myRect.innerHTML);
+        console.log('myRect.id='+myRect.id);
+        
+        console.log("document.getElementById('myRect')");
+        var myRect = document.getElementById('myRect');
+        console.log('myRect.id='+myRect.id);
+        
+        console.log("document.getElementById('mySVG')");
         var mySVG = document.getElementById('mySVG');
-        console.log('mySVG='+mySVG.id);
+        console.log('mySVG.id='+mySVG.id);
+        
+        // getElementsByTagNameNS
+        console.log("document.getElementsByTagNameNS(svgns, 'rect')");
+        var rects = document.getElementsByTagNameNS(svgns, 'rect');
+        console.log('rects.length='+rects.length);
+        
+        var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
+        console.log("document.getElementsByTagNameNS(sodipodi_ns, '*')");
+        var sodipodi = document.getElementsByTagNameNS(sodipodi_ns, '*');
+        console.log('sodipodi.length='+sodipodi.length);
+        
+        console.log("sodipodi = document.getElementsByTagNameNS(sodipodi_ns, 'namedview')");
+        sodipodi = document.getElementsByTagNameNS(sodipodi_ns, 'namedview');
+        console.log('sodipodi.length='+sodipodi.length);
+        
+        console.log("rects = document.getElementsByTagNameNS(null, 'rect')");
+        rects = document.getElementsByTagNameNS(null, 'rect');
+        console.log('rects.length='+rects.length);
       });
     </script>
   </head>
@@ -32,7 +62,7 @@
            fill="red"/>
       </svg>
     </script>
-    <!--
+  
     <script type="image/svg+xml">
       <?xml version="1.0"?>
       <svg
@@ -3155,7 +3185,7 @@
           </g>
         </g>
       </svg>
-    </script>-->
+    </script>
     
     <h1>Test HTML H1</h1>
 
