@@ -676,9 +676,15 @@ function xpath(xml, expr) {
     return found;
   } else { // IE
     xml.setProperty('SelectionLanguage', 'XPath');
-    var results = xml.documentElement.selectNodes(expr);
-    if (results == null || typeof results == 'undefined') {
-      results = [];
+    var found = xml.documentElement.selectNodes(expr);
+    if (found == null || typeof found == 'undefined') {
+      found = [];
+    }
+    
+    // found is not an Array; it is a NodeList -- turn it into an Array
+    var results = [];
+    for (var i = 0; i < found.length; i++) {
+      results.push(found[i]);
     }
     
     return results;
@@ -964,24 +970,30 @@ extend(SVGWeb, {
     
     // getElementsByTagNameNS
     document._getElementsByTagNameNS = document.getElementsByTagNameNS;
-    document.getElementsByTagNameNS = function(ns, tagName) {
-      var result;
+    document.getElementsByTagNameNS = function(ns, localName) {
+      var results = createNodeList();
+      
+      // NOTE: can't use Array.concat to combine our arrays below because 
+      // getElementsByTagNameNS results aren't a real Array
+      
       if (document._getElementsByTagNameNS) {
-        result = _getElementsByTagNameNS(ns, tagName);
-      }
-      
-      if (result != null) { // Firefox doesn't like 'if (result)'
-        return result;
-      }
-      
-      for (var i = 0; i < self.handlers.length; i++) {
-        result = self.handlers[i].document.getElementByTagNameNS(ns, tagName);
-        if (result) {
-          return result;
+        var matches = document._getElementsByTagNameNS(ns, localName);
+        
+        for (var j = 0; j < matches.length; j++) {
+          results.push(matches[j]);
         }
       }
       
-      return null;
+      for (var i = 0; i < self.handlers.length; i++) {
+        var doc = self.handlers[i].document;
+        var matches = doc.getElementsByTagNameNS(ns, localName);
+        
+        for (var j = 0; j < matches.length; j++) {
+          results.push(matches[j]);
+        }
+      }
+
+      return results;
     }
     
     // TODO: Figure out how to handle appendChild in various configurations;
@@ -1125,7 +1137,7 @@ extend(SVGWeb, {
     } else {
        try {
          // TODO: I believe we might need to loop here to try instantiating 
-         // different versions of the ActiveX XML Parser
+         // different versions of the ActiveX MSXML Parser
          xmlDoc = new ActiveXObject('Microsoft.XMLDOM');
          xmlDoc.async = 'false';
          xmlDoc.loadXML(svg);
@@ -1816,22 +1828,21 @@ function _Element(tagName, nodeXML, handler) {
   this._handler = handler;
   
   // copy our attributes over
-  this._importAttributes(nodeXML);
+  this._importAttributes(this, this._nodeXML);
   
   // track .style changes
   this.style = new _Style();
   
   // innerHTML
-  this.__defineGetter__('innerHTML', function() {
-    console.log('inside getter');
-    return 'foo';
-  });
+  if (!isIE) {
+    this.__defineGetter__('innerHTML', function() {
+      return 'foo';
+    });
 
-  this.__defineSetter__('innerHTML', function(newValue) {
-    console.log('inside setter');
-    return newValue;
-  });
-  
+    this.__defineSetter__('innerHTML', function(newValue) {
+      return newValue;
+    });
+  }
   
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods. We don't do it for the root SVG
@@ -1839,6 +1850,7 @@ function _Element(tagName, nodeXML, handler) {
   // Flash control inside of _SVGSVGElement
   if (isIE && this.nodeName != 'svg') {
     this._uiNode = this._createUINode();
+    this._importAttributes(this._uiNode, this._nodeXML);
   }
 }
 
@@ -1967,18 +1979,19 @@ extend(_Element, {
   // SVGLocatable, SVGTests, SVGLangSpace, SVGExternalResourcesRequired
   // not supported
   
-  // copies the attributes from the XML DOM node into ourself
-  _importAttributes: function(nodeXML) {
+  // copies the attributes from the XML DOM node into target
+  _importAttributes: function(target, nodeXML) {
     for (var i = 0; i < nodeXML.attributes.length; i++) {
       var attr = nodeXML.attributes[i];
-      this[attr.nodeName] = attr.nodeValue;
+      target[attr.nodeName] = attr.nodeValue;
     }
+    
+    // TODO: Make sure these get copied into get/setAttribute as well
   },
   
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods
   _createUINode: function() {
-    console.log('createUINode');
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
     if (!this._uiContainer) {
@@ -2352,6 +2365,10 @@ function _Document(xml, handler) {
   this._xml = xml;
   this._handler = handler;
   this.implementation = new _DOMImplementation();
+  
+  if (isIE) {
+    this._namespaces = this._getNamespaces();
+  }
 }
 
 // subclasses _Node
@@ -2374,10 +2391,7 @@ extend(_Document, {
   
   createTextNode: function(data /* String */) /* _Text */ {},
   
-  getElementsByTagNameNS: function(ns, localName) /* _NodeList */ {},
-  
   getElementById: function(id) /* _Element */ {
-    console.log('getElementById, id='+id);
     // XML parser does not have getElementById, due to id mapping in XML
     // issues; use XPath instead
     var results = xpath(this._xml, '//*[@id="' + id + '"]');
@@ -2411,12 +2425,98 @@ extend(_Document, {
       // node so that we can know about property changes, etc.
       return node._uiNode;
     }
-  }
+  },
+  
+  /** NOTE: on IE we don't support calls like the following:
+      getElementsByTagNameNS(*, 'someTag');
+      
+      We do support:
+      getElementsByTagNameNS('*', '*');
+      getElementsByTagNameNS('somePrefix', '*');
+      getElementsByTagNameNS(null, 'someTag');
+  */
+  getElementsByTagNameNS: function(ns, localName) /* _NodeList */ {
+    var results = createNodeList();
+    var matches;
+    // DOM Level 2 spec details:
+    // if ns is null or '', return elements that have no namespace
+    // if ns is '*', match all namespaces
+    // if localName is '*', match all tags in the given namespace
+    if (ns == '') {
+      ns = null;
+    }
+    
+    if (this._xml.getElementsByTagNameNS) {
+      // non-IE browsers
+      matches = this._xml.getElementsByTagNameNS(ns, localName);
+      // turn into an Array
+      for (var i = 0; i < matches.length; i++) {
+        results.push(matches[i]);
+      }
+      return results;
+    } else { // IE
+      if (ns == null) {
+        // we can't just use getElementsByTagName() here, because IE
+        // will incorrectly return tags that are in the default namespace
+        return xpath(this._xml, '//' + localName);
+      }
+      
+      var query;
+      if (ns == '*' && localName == '*') {
+        query = '*';
+      } else if (ns == '*') { // not supported
+        return createNodeList();
+      } else {
+        var prefix = this._namespaces['_' + ns];
+        
+        if (prefix == undefined) {
+          return createNodeList();
+        } else if (prefix == 'xmlns') {
+          query = localName;
+        } else {
+          query = prefix + ':' + localName;
+        }
+      }
+      
+      matches = this._xml.getElementsByTagName(query);
+      for (var i = 0; i < matches.length; i++) {
+        results.push(matches[i]);
+      }
+      return results;
+    }
+  },
   
   // Note: createDocumentFragment, createComment, createCDATASection,
   // createProcessingInstruction, createAttribute, createEntityReference,
   // importNode, createElement, getElementsByTagName,
   // createAttributeNS not supported
+  
+  /** Extracts any namespaces we might have, creating a prefix/namespaceURI
+      lookup table. For IE.
+      
+      NOTE: We only support namespace declarations on the root SVG node
+      for now
+      
+      @returns An object that associates prefix to namespaceURI, and vice
+      versa. */
+  _getNamespaces: function() {
+    var results = {};
+    
+    var attrs = this._xml.documentElement.attributes;
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+      if (/^xmlns:?(.*)$/.test(attr.nodeName)) {
+        var m = attr.nodeName.match(/^xmlns:?(.*)$/);
+        var prefix = (m[1] ? m[1] : 'xmlns');
+        var namespaceURI = attr.nodeValue;
+        
+        results['_' + prefix] = namespaceURI;
+        results['_' + namespaceURI] = prefix;
+      }
+    }
+    
+    return results;
+  }
 });
 
 
@@ -2426,7 +2526,11 @@ extend(_Document, {
 function createNodeList() {
   var results = [];
   results.item = function(i) {
-    return this[i];
+    if (i >= this.length) {
+      return null; // DOM Level 2 spec says return null
+    } else {
+      return this[i];
+    }
   }
   return results;
 }
