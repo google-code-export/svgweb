@@ -1821,6 +1821,18 @@ function _Element(tagName, nodeXML, handler) {
   // track .style changes
   this.style = new _Style();
   
+  // innerHTML
+  this.__defineGetter__('innerHTML', function() {
+    console.log('inside getter');
+    return 'foo';
+  });
+
+  this.__defineSetter__('innerHTML', function(newValue) {
+    console.log('inside setter');
+    return newValue;
+  });
+  
+  
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods. We don't do it for the root SVG
   // element since that is already a proper Behavior as it embeds our
