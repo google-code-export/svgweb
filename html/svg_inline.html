@@ -179,6 +179,14 @@
                       path.getAttribute('d'));
         assertNull("path.getAttribute('fill') == null", 
                     path.getAttribute('fill'));
+                    
+        var gradient = document.getElementById('linearGradient4485');
+        assertEquals("gradient.getAttribute('gradientUnits') == userSpaceOnUse", 
+                      'userSpaceOnUse',
+                      gradient.getAttribute('gradientUnits'));
+        assertEquals("gradient.getAttribute('x1') == 394.93762", 
+                      '394.93762',
+                      gradient.getAttribute('x1'));
 
         console.log('Finished testing.');
       });
