@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
@@ -187,7 +187,54 @@
         assertEquals("gradient.getAttribute('x1') == 394.93762", 
                       '394.93762',
                       gradient.getAttribute('x1'));
-
+                      
+        sodipodi = document.getElementById('base');
+        assertExists("document.getElementById('base')", sodipodi);
+        assertEquals("sodipodi.getAttribute('objecttolerance') == 10", 
+                      '10',
+                      sodipodi.getAttribute('objecttolerance'));        
+                      
+        // setAttribute
+        console.log('Testing setAttribute...');
+        rect = document.getElementById('myRect');
+        rect.setAttribute('fill', 'yellow');
+        assertEquals("rect.getAttribute('fill') == yellow", 'yellow',
+                      rect.getAttribute('fill'));
+        rect.setAttribute('stroke', 'rgb(0,0,0)');
+        assertEquals("rect.getAttribute('stroke') == rgb(0,0,0)", 'rgb(0,0,0)',
+                      rect.getAttribute('stroke'));              
+        rect.setAttribute('width', 400);
+        assertEquals("rect.getAttribute('width') == 400", '400',
+                      rect.getAttribute('width'));   
+        rect.setAttribute('width', '450');
+        assertEquals("rect.getAttribute('width') == 450", '450',
+                      rect.getAttribute('width'));   
+        rect.setAttribute('height', 400);
+        assertEquals("rect.getAttribute('height') == 400", '400',
+                      rect.getAttribute('height'));   
+        rect.setAttribute('height', '450');
+        assertEquals("rect.getAttribute('height') == 450", '450',
+                      rect.getAttribute('height')); 
+        rect.setAttribute('stroke-width', '5px');
+        assertEquals("rect.getAttribute('stroke-width') == 5px", '5px',
+                      rect.getAttribute('stroke-width'));
+        rect.setAttribute('stroke', 'pink');
+        assertEquals("rect.getAttribute('stroke') == pink", 'pink',
+                      rect.getAttribute('stroke')); 
+        rect.setAttribute('fill-opacity', '0.3');
+        assertEquals("rect.getAttribute('fill-opacity') == 0.3", '0.3',
+                      rect.getAttribute('fill-opacity')); 
+                      
+        sodipodi = document.getElementById('base');
+        assertExists("document.getElementById('base')", sodipodi);
+        sodipodi.setAttribute('pagecolor', '#0f0f0f');
+        assertEquals("sodipodi.getAttribute('pagecolor') == #0f0f0f", '#0f0f0f',
+                      sodipodi.getAttribute('pagecolor'));
+        sodipodi.setAttribute('newAttribute', 'hello world');
+        assertEquals("sodipodi.getAttribute('newAttribute') == hello world", 
+                      'hello world',
+                      sodipodi.getAttribute('newAttribute'));
+                                    
         console.log('Finished testing.');
       });
       
