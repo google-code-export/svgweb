@@ -137,12 +137,55 @@
         assertEquals("svg11242.height.baseVal.value should be 265.35126", 
                     265.35126, root.height.baseVal.value.toPrecision(8));
                     
+        // getAttribute
+        console.log('Testing getAttribute...');
+        root = document.getElementsByTagNameNS(svgns, 'svg');
+        assertExists("document.getElementsByTagNameNS(svgns, 'svg')", root);
+        root = root[0];
+        assertExists("document.getElementsByTagNameNS(svgns, 'svg')[0]", root);
+        assertEquals("root.getAttribute(width) == 200", 200,
+                      root.getAttribute('width'));
+        assertEquals("root.getAttribute(height) == 200", 200,
+                      root.getAttribute('height')); 
+        assertNull("root.getAttribute(badproperty) == null",
+                   root.getAttribute('badproperty'));
+                      
+        var rect = document.getElementById('myRect');
+        assertEquals("rect.getAttribute(width) == 36.416", 36.416,
+                      rect.getAttribute('width'));      
+        assertEquals("rect.getAttribute(height) == 36.416", 36.416,
+                      rect.getAttribute('height')); 
+        assertEquals("rect.getAttribute(x) == 50", 50,
+                      rect.getAttribute('x')); 
+        assertEquals("rect.getAttribute(y) == 50", 50,
+                      rect.getAttribute('y')); 
+        assertEquals("rect.getAttribute(fill) == red", 'red',
+                      rect.getAttribute('fill')); 
+                      
+        var path = document.getElementById('path3327');
+        assertExists('path3327', path);
+        assertEquals("path.getAttribute('id') == path3327", 'path3327',
+                      path.getAttribute('id'));
+        assertEquals("path.getAttribute(d)", 
+                     'M 142.36876,165.39221 L 130.68164,163.08268 '
+                     + 'L 141.15363,231.4999 L 121.92367,164.90725 '
+                     + 'L 112.13114,171.69172 L 114.44068,160.0046 '
+                     + 'L 45.393496,171.10654 L 112.6161,151.24663 '
+                     + 'L 105.83164,141.4541 L 117.51875,143.76364 '
+                     + 'L 107.67672,77.866207 L 126.27672,141.93906 '
+                     + 'L 136.06925,135.1546 L 133.75972,146.84171 '
+                     + 'L 201.54699,140.14944 L 135.58429,155.59968 '
+                     + 'L 142.36876,165.39221 z ',
+                      path.getAttribute('d'));
+        assertNull("path.getAttribute('fill') == null", 
+                    path.getAttribute('fill'));
+
         console.log('Finished testing.');
       });
       
       // TODO: replace these with JSUnit's assert functions
       function assertEquals(comment, expected, actual) {
-        if (expected != actual) {
+        if (expected != actual) {    
           var msg = 'assertEquals Failed: ' + comment 
                     + '\n(expected: ' + expected
                     + ', actual: ' + actual + ')';
@@ -153,8 +196,15 @@
       function assertExists(comment, actual) {
         if (actual == null || actual == undefined) {
           var msg = 'assertExists failed: ' + comment 
-                    + '\n(expected: ' + expected
-                    + ', actual: ' + actual + ')';
+                    + '\n(actual: ' + actual + ')';
+          throw new Error(msg);
+        }
+      }
+      
+      function assertNull(comment, actual) {
+        if (actual !== null) {
+          var msg = 'assertNull failed: ' + comment 
+                    + '\n(actual: ' + actual + ')';
           throw new Error(msg);
         }
       }

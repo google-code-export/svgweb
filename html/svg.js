@@ -1925,18 +1925,11 @@ extend(_Element, {
       value = this._nodeXML.getAttribute(attrName);
     }
     
-    if (value === undefined) {
-      return undefined;
+    if (value == undefined || value == null || /^[ ]*$/.test(value)) {
+      return null;
     }
     
-    // SVGAnimatedLength attributes
-    if (this.namespaceURI == svgns 
-        && (attrName == 'x' || attrName == 'y' || attrName == 'width'
-        || attrName == 'height')) {
-      return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
-    } else {
-      return value;
-    }
+    return value;
   },
   
   setAttribute: function(attrName, attrValue /* String */) /* void */ {
@@ -2051,8 +2044,26 @@ extend(_Element, {
   // not supported: xmlbase, viewportElement
   
   // SVGSVGElement and SVGUseElement readonly
-  // x, y, width, height -- definition happens inside of _defineAccessors
-  // for non-IE browsers and inside the HTC file for IE
+  
+  _getX: function() { /* SVGAnimatedLength */
+    var value = this.getAttribute('x');  
+    return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
+  },
+  
+  _getY: function() { /* SVGAnimatedLength */
+    var value = this.getAttribute('y');
+    return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
+  },
+  
+  _getWidth: function() { /* SVGAnimatedLength */
+    var value = this.getAttribute('width');
+    return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
+  },
+  
+  _getHeight: function() { /* SVGAnimatedLength */
+    var value = this.getAttribute('height');
+    return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
+  },
   
   // many attributes and methods from these two interfaces not here
   
@@ -2092,7 +2103,7 @@ extend(_Element, {
     // _allEvents array
   },
   
-  // SVGLocatable, SVGTests, SVGLangSpace, SVGExternalResourcesRequired
+  // SVGTests, SVGLangSpace, SVGExternalResourcesRequired
   // not supported
   
   // contains any attribute set with setAttribute; object literal of
@@ -2154,20 +2165,14 @@ extend(_Element, {
     
     // SVGSVGElement and SVGUseElement readyonly props
     if (this.nodeName == 'svg' || this.nodeName == 'use') {
-      props = ['x', 'y', 'width', 'height'];
-    
-      // make getters for each property
-      for (var i = 0; i < props.length; i++) {
-        // define each accessor in a separate function so that
-        // the closure is setup correctly; if we did the closure for
-        // each getter/setter function here instead, we would incorrectly capture
-        // the final state of our variables at the end of the loop
-        this._defineAccessor(props[i], false);  
-      }
+      this.__defineGetter__('x', function() { return self._getX(); });
+      this.__defineGetter__('y', function() { return self._getY(); });
+      this.__defineGetter__('width', function() { return self._getWidth(); });
+      this.__defineGetter__('height', function() { return self._getHeight(); });
     }
     
     // read/write props
-    props = ['id'];
+    var props = ['id'];
     
     // make getters for each property
     for (var i = 0; i < props.length; i++) {
@@ -2281,6 +2286,20 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
 _SVGSVGElement.prototype = new _Element;
 
 extend(_SVGSVGElement, {
+  // SVGLocatable
+  
+  nearestViewportElement: null, /* readonly SVGElement */
+  farthestViewportElement: null, /* readonly SVGElement */
+  
+  getBBox: function() /* SVGRect */ {},
+  getCTM: function() /* SVGMatrix */ {},
+  getScreenCTM: function() /* SVGMatrix */ {},
+  getTransformToElement: function(element /* SVGElement */) /* SVGMatrix */ {
+    /* throws SVGException */
+  },
+  
+  // end of SVGLocatable
+  
   /** Called when the Microsoft Behavior HTC file is loaded; called for
       each HTC node element (which will correspond with each SVG element
       in the document). The message object is a literal with two values:

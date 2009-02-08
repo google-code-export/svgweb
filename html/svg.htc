@@ -194,10 +194,10 @@ but only on root node
     function _setInnerHTML(v) { return this._proxyNode._setInnerHTML(v); }
     
     // SVGSVGElement and SVGUseElement only
-    function _getX() { return this._proxyNode.getAttribute('x'); }
-    function _getY() { return this._proxyNode.getAttribute('y'); }
-    function _getWidth() { return this._proxyNode.getAttribute('width'); }
-    function _getHeight() { return this._proxyNode.getAttribute('height'); }
+    function _getX() { return this._proxyNode._getX(); }
+    function _getY() { return this._proxyNode._getY(); }
+    function _getWidth() { return this._proxyNode._getWidth(); }
+    function _getHeight() { return this._proxyNode._getHeight(); }
     
   </script>
 </head>
