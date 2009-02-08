@@ -17,11 +17,28 @@ but only on root node
   -->
   <public:component lightWeight="true">
   
+      <!-- _Node properties -->
+      <public:property name="nodeName" get="_getNodeName" />
+      <public:property name="nodeType" get="_getNodeType" />
+      <public:property name="localName" get="_getLocalName" />
+      <public:property name="prefix" get="_getPrefix" />
+      <public:property name="namespaceURI" get="_getNamespaceURI" />
+  
+      <!-- Non-standard defacto properties -->
       <public:property name="innerHTML" 
                        get="_getInnerHTML" put="_setInnerHTML" />
-      <public:property name="id" get="_getId" put="_setId" />             
+                       
+      <!-- _Element properties -->
+      <public:property name="id" get="_getId" put="_setId" />
+      
+      <!-- SVGSVGElement and SVGUseElement readonly props -->
+      <public:property name="x" get="_getX" />             
+      <public:property name="y" get="_getY" />
+      <public:property name="width" get="_getWidth" />
+      <public:property name="height" get="_getHeight" />
                        
       <public:method name="setAttribute" />
+      <public:method name="getAttribute" />
        
       <public:attach event="oncontentready" onevent="contentReady()" />
       
@@ -36,7 +53,7 @@ but only on root node
     /** Called when the content is ready for some SVG tag in the HTML
         page. This method is called for each individual SVG tag. */
     function contentReady() {
-      console.log('contentReady');
+      //console.log('htcNode.contentReady');
        
       // indicate that we are now loaded
       var msg = { type: 'event', 
@@ -57,7 +74,7 @@ but only on root node
         is what is visible to the outside DOM. Applying it to the
         Flash object is not enough. */
     this._insertFlash = function(flash, style) {
-      console.log('htcNode.insertFlash');
+      //console.log('htcNode.insertFlash');
       
       // apply our style to ourselves first
       var rules = style.split(';');
@@ -153,14 +170,34 @@ but only on root node
       }
     }
     
+    function getAttribute(attrName) { 
+      return this._proxyNode.getAttribute(attrName);
+    }
+    
+    function setAttribute(attrName, attrValue) {
+      return this._proxyNode.setAttribute(attrName, attrValue);
+    }
+    
     // getter/setter accessors; they delegate back into the
     // svg.js _Element and _Node classes
     
-    function _getId() { return this._proxyNode._getId(); }
-    function _setId(v) { return this._proxyNode._setId(v); }
+    function _getNodeName() { return this._proxyNode.nodeName; }
+    function _getNodeType() { return this._proxyNode.nodeType; }
+    function _getLocalName() { return this._proxyNode.localName; }
+    function _getPrefix() { return this._proxyNode.prefix; }
+    function _getNamespaceURI() { return this._proxyNode.namespaceURI; }
+    
+    function _getId() { return this._proxyNode.getAttribute('id'); }
+    function _setId(v) { return this._proxyNode.setAttribute('id', v); }
     
     function _getInnerHTML() { return this._proxyNode._getInnerHTML(); }
     function _setInnerHTML(v) { return this._proxyNode._setInnerHTML(v); }
+    
+    // SVGSVGElement and SVGUseElement only
+    function _getX() { return this._proxyNode.getAttribute('x'); }
+    function _getY() { return this._proxyNode.getAttribute('y'); }
+    function _getWidth() { return this._proxyNode.getAttribute('width'); }
+    function _getHeight() { return this._proxyNode.getAttribute('height'); }
     
   </script>
 </head>

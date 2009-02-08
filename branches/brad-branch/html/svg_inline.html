@@ -13,42 +13,151 @@
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
         
-        // getElementByID        
-        console.log("document.getElementById('myRect')");
-        var myRect = document.getElementById('myRect');
-        console.log('myRect.id='+myRect.id);
+        // getElementById
+        console.log('Testing getElementById...');
         
-        console.log("document.getElementById('myRect')");
         var myRect = document.getElementById('myRect');
-        console.log('myRect.id='+myRect.id);
+        assertExists('Getting myRect first time', myRect);
+        assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
         
-        console.log("document.getElementById('mySVG')");
+        var myRect = document.getElementById('myRect');
+        assertExists('Getting myRect second time', myRect);
+        assertEquals('Getting myRect second time, myRect.id should be myRect', 
+                     'myRect', myRect.id);
+        
         var mySVG = document.getElementById('mySVG');
-        console.log('mySVG.id='+mySVG.id);
+        assertExists('mySVG root should exist', mySVG);
+        assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
         
         // getElementsByTagNameNS
-        console.log("document.getElementsByTagNameNS(svgns, 'rect')");
+        console.log('Testing getElementsByTagNameNS...');
+        
         var rects = document.getElementsByTagNameNS(svgns, 'rect');
-        console.log('rects.length='+rects.length);
+        assertExists("document.getElementsByTagNameNS(svgns, 'rect')", rects);
+        assertEquals("document.getElementsByTagNameNS(svgns, 'rect').length "
+                     + "should be 10", 10, rects.length);
         
         var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
-        console.log("document.getElementsByTagNameNS(sodipodi_ns, '*')");
         var sodipodi = document.getElementsByTagNameNS(sodipodi_ns, '*');
-        console.log('sodipodi.length='+sodipodi.length);
+        assertExists("document.getElementsByTagNameNS(sodipodi_ns, '*')", 
+                     sodipodi);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, '*').length "
+                     + "should be 1", 1, sodipodi.length);
         
-        console.log("sodipodi = document.getElementsByTagNameNS(sodipodi_ns, 'namedview')");
         sodipodi = document.getElementsByTagNameNS(sodipodi_ns, 'namedview');
-        console.log('sodipodi.length='+sodipodi.length);
+        assertExists("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')",
+                     sodipodi);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview') "
+                     + "length should be 1", 1, sodipodi.length);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                     + "[0].nodeName == namedview", 'sodipodi:namedview',
+                     sodipodi[0].nodeName);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                    + "[0].localName == namedview", 'namedview',
+                    sodipodi[0].localName);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                    + "[0].prefix == sodipodi", 'sodipodi',
+                    sodipodi[0].prefix);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                     + "[0].namespaceURI == sodipodi_ns", sodipodi_ns,
+                     sodipodi[0].namespaceURI);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                    + "[0].nodeType == 1", 1, sodipodi[0].nodeType);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                    + "[0].getAttribute('gridtolerance') == 10000", 10000,
+                    sodipodi[0].getAttribute('gridtolerance'));
+        sodipodi[0].setAttribute('gridtolerance', 20000);
+        assertEquals("document.getElementsByTagNameNS(sodipodi_ns, 'namedview')"
+                    + "[0].getAttribute('gridtolerance') should now be 20000", 
+                    20000,
+                    sodipodi[0].getAttribute('gridtolerance'));
+                     
+        var dc_ns = "http://purl.org/dc/elements/1.1/";
+        var dc = document.getElementsByTagNameNS(dc_ns, 'format');
+        assertExists("document.getElementsByTagNameNS(dc_ns, 'format')", dc);
+        assertEquals("document.getElementsByTagNameNS(dc_ns, 'format').length "
+                     + "== 1", 1, dc.length);
+        // TODO: Uncomment when we have childNodes and text nodes working
+        /*assertEquals("document.getElementsByTagNameNS(dc_ns, 'format')[0]"
+                     + ".nodeValue == image/svg+xml", 'image/svg+xml',
+                     dc[0].nodeValue);
+        assertEquals("document.getElementsByTagNameNS(dc_ns, 'format')[0]"
+                    + ".nodeName == format", 'format',
+                    dc[0].nodeName);*/
         
-        console.log("rects = document.getElementsByTagNameNS(null, 'rect')");
+        var bad = document.getElementsByTagNameNS('http://bad-namespace.com',
+                                                  'rect');
+        assertExists("document.getElementsByTagNameNS('http://bad-namespace.com', "
+                     + "'rect')", bad);
+        assertEquals("document.getElementsByTagNameNS('http://bad-namespace.com', "
+                     + "'rect') length should be 0", 0, bad.length);
+                     
+        bad = document.getElementsByTagNameNS('http://bad-namespace.com', '*');
+        assertExists("document.getElementsByTagNameNS('http://bad-namespace.com', "
+                    + "'*')", bad);
+        assertEquals("document.getElementsByTagNameNS('http://bad-namespace.com', "
+                     + "'*') length should be 0", 0, bad.length);
+        
         rects = document.getElementsByTagNameNS(null, 'rect');
-        console.log('rects.length='+rects.length);
+        assertExists("document.getElementsByTagNameNS(null, 'rect')", rects);
+        assertEquals("document.getElementsByTagNameNS(null, 'rect').length "
+                     + "should be 0", 0, rects.length);
+                     
+        // SVGSVGElement.x, .y, .width, .height
+        console.log('Testing SVGSVGElement.x, .y, .width, and .height...');
+        var root;
         
-        // innerHTML
-        console.log('myRect.innerHTML='+myRect.innerHTML);
-        myRect.innerHTML = 'bar';
-        console.log('After setting myRect.innerHTML, value='+myRect.innerHTML);
+        root = document.getElementById('mySVG');
+        assertEquals("mySVG.x.baseVal.value should be 0", 0, 
+                     root.x.baseVal.value);
+        assertEquals("mySVG.y.baseVal.value should be 0", 0, 
+                     root.y.baseVal.value);
+        assertEquals("mySVG.width.baseVal.value should be 200", 200, 
+                     root.width.baseVal.value);
+        assertEquals("mySVG.height.baseVal.value should be 200", 200, 
+                     root.height.baseVal.value);
+                     
+        root = document.getElementById('svg2');
+        assertEquals("svg2.x.baseVal.value should be 0", 0, 
+                     root.x.baseVal.value);
+        assertEquals("svg2.y.baseVal.value should be 0", 0, 
+                     root.y.baseVal.value);
+        assertEquals("svg2.width.baseVal.value should be 450", 450, 
+                     root.width.baseVal.value);
+        assertEquals("svg2.height.baseVal.value should be 450", 450, 
+                     root.height.baseVal.value);
+                     
+        root = document.getElementById('svg11242');
+        assertEquals("svg11242.x.baseVal.value should be 100", 100, 
+                    root.x.baseVal.value);
+        assertEquals("svg11242.y.baseVal.value should be 100", 100, 
+                    root.y.baseVal.value);
+        assertEquals("svg11242.width.baseVal.value should be 466.11172", 
+                    466.11172, root.width.baseVal.value.toPrecision(8));
+        assertEquals("svg11242.height.baseVal.value should be 265.35126", 
+                    265.35126, root.height.baseVal.value.toPrecision(8));
+                    
+        console.log('Finished testing.');
       });
+      
+      // TODO: replace these with JSUnit's assert functions
+      function assertEquals(comment, expected, actual) {
+        if (expected != actual) {
+          var msg = 'assertEquals Failed: ' + comment 
+                    + '\n(expected: ' + expected
+                    + ', actual: ' + actual + ')';
+          throw new Error(msg);
+        }
+      }
+      
+      function assertExists(comment, actual) {
+        if (actual == null || actual == undefined) {
+          var msg = 'assertExists failed: ' + comment 
+                    + '\n(expected: ' + expected
+                    + ', actual: ' + actual + ')';
+          throw new Error(msg);
+        }
+      }
     </script>
   </head>
 
@@ -67,7 +176,7 @@
       </svg>
     </script>
   
-    <!--<script type="image/svg+xml">
+    <script type="image/svg+xml">
       <?xml version="1.0"?>
       <svg
          xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -1813,6 +1922,8 @@
       <svg
          xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
          version="1.0" id="svg11242"
+         x="100"
+         y="100"
          width="466.11172"
          height="265.35126">
         <defs
@@ -3189,7 +3300,7 @@
           </g>
         </g>
       </svg>
-    </script>-->
+    </script>
     
     <h1>Test HTML H1</h1>
 
