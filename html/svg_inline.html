@@ -13,8 +13,7 @@
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
         
-        // getElementByID
-        
+        // getElementByID        
         console.log("document.getElementById('myRect')");
         var myRect = document.getElementById('myRect');
         console.log('myRect.id='+myRect.id);
@@ -44,6 +43,11 @@
         console.log("rects = document.getElementsByTagNameNS(null, 'rect')");
         rects = document.getElementsByTagNameNS(null, 'rect');
         console.log('rects.length='+rects.length);
+        
+        // innerHTML
+        console.log('myRect.innerHTML='+myRect.innerHTML);
+        myRect.innerHTML = 'bar';
+        console.log('After setting myRect.innerHTML, value='+myRect.innerHTML);
       });
     </script>
   </head>
@@ -63,7 +67,7 @@
       </svg>
     </script>
   
-    <script type="image/svg+xml">
+    <!--<script type="image/svg+xml">
       <?xml version="1.0"?>
       <svg
          xmlns:dc="http://purl.org/dc/elements/1.1/"
@@ -3185,7 +3189,7 @@
           </g>
         </g>
       </svg>
-    </script>
+    </script>-->
     
     <h1>Test HTML H1</h1>
 

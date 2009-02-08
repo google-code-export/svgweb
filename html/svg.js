@@ -188,8 +188,8 @@ SVG Scripting Support
 SVG has a SCRIPT tag, which allows you to embed JavaScript inside of your
 SVG. SVG files brought in with the OBJECT tag can have SVG SCRIPT blocks that 
 will execute as normal. However, if you directly embed SVG into your page
-using the SVG SCRIPT process, you can not have further SCRIPT tags inside of
-them.
+using the SVG SCRIPT process but have nested SVG script tags, you should 
+make sure that you namespace all of your SVG, such as having <svg:script>.
 
 For browsers with native SVG support, the SVG content inside of a SCRIPT tag 
 shows up fully in the browser's DOM, with the SCRIPT tag thrown away after the
@@ -1550,8 +1550,8 @@ extend(FlashHandler, {
     // create proxy objects representing the Document and SVG root
     this.document = new _Document(this._xml, this);
     this.document.documentElement = 
-          new _SVGSVGElement(this._xml.documentElement, this._svgString,
-                             this._scriptNode, this);
+            new _SVGSVGElement(this._xml.documentElement, this._svgString,
+                               this._scriptNode, this);
   },
   
   _handleObject: function() {
@@ -1730,7 +1730,8 @@ extend(_DOMImplementation, {
 // Note: Only element and text section nodes are supported for now.
 // We don't parse and retain comments, processing instructions, etc. CDATA
 // nodes are turned into text nodes.
-function _Node(nodeName /* String */, nodeType /* Optional; Number */) {
+function _Node(nodeName /* String */, nodeType /* Optional; Number */,
+               passThrough /* Optional; Boolean */) {
   if (nodeName == undefined && nodeType == undefined) {
     // prototype subclassing
     return;
@@ -1739,6 +1740,12 @@ function _Node(nodeName /* String */, nodeType /* Optional; Number */) {
   this.nodeName = nodeName;
   this.nodeType == nodeType || _Node.ELEMENT_NODE;
   
+  if (passThrough === undefined) {
+    passThrough = false;
+  }
+  
+  this._passThrough = passThrough;
+  
   // prepare the getter and setter magic for non-IE browsers
   // TODO
 }
@@ -1746,8 +1753,18 @@ function _Node(nodeName /* String */, nodeType /* Optional; Number */) {
 mixin(_Node, {
   ELEMENT_NODE: 1,
   TEXT_NODE: 3,
-  DOCUMENT_NODE: 9
+  DOCUMENT_NODE: 9,
+  
   // Note: many other node types left out here
+  
+  /** The pass through flag controls whether we 'pass through' any changes
+      to this object to the underlying Flash viewer. For example, if a
+      Node has been created but is not yet attached to the document, any 
+      changes to its attributes should not pass through to the Flash viewer,
+      and this flag would therefore be false. After the Node is attached
+      through appendChild(), passThrough would become true and everything
+      would get passed through to Flash for rendering. */
+  _passThrough: false
 });
 
 extend(_Node, {
@@ -1813,15 +1830,17 @@ extend(_Node, {
 
     @param tagName The svg local name, such as 'rect'.
     @param nodeXML The parsed XML DOM node for this element.
-    @param handler The FlashHandler rendering this node. */
-function _Element(tagName, nodeXML, handler) {
+    @param handler The FlashHandler rendering this node. 
+    @param passThrough Optional boolean on whether any changes to this
+    element 'pass through' and cause changes in the Flash renderer. */
+function _Element(tagName, nodeXML, handler, passThrough) {
   if (tagName == undefined && nodeXML == undefined && handler == undefined) {
     // prototype subclassing
     return;
   }
 
   // superclass constructor
-  _Node.apply(this, [tagName, _Node.ELEMENT_NODE]);
+  _Node.apply(this, [tagName, _Node.ELEMENT_NODE], passThrough);
   
   this.tagName = tagName;
   this._nodeXML = nodeXML;
@@ -1833,24 +1852,18 @@ function _Element(tagName, nodeXML, handler) {
   // track .style changes
   this.style = new _Style();
   
-  // innerHTML
-  if (!isIE) {
-    this.__defineGetter__('innerHTML', function() {
-      return 'foo';
-    });
-
-    this.__defineSetter__('innerHTML', function(newValue) {
-      return newValue;
-    });
-  }
-  
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods. We don't do it for the root SVG
   // element since that is already a proper Behavior as it embeds our
   // Flash control inside of _SVGSVGElement
   if (isIE && this.nodeName != 'svg') {
     this._uiNode = this._createUINode();
-    this._importAttributes(this._uiNode, this._nodeXML);
+  }
+  
+  // define our accessors if we are not IE; IE does this by using the HTC
+  // file rather than doing it here
+  if (!isIE) {
+    this._defineAccessors();
   }
 }
 
@@ -1858,10 +1871,35 @@ function _Element(tagName, nodeXML, handler) {
 _Element.prototype = new _Node;
 
 extend(_Element, {
-  getAttribute: function(name) /* String */ {},
+  getAttribute: function(name) /* String */ {
+    
+  },
   
-  setAttribute: function(name, value /* String */) /* void */ {
-  /* throws _DOMException */
+  setAttribute: function(attrName, attrValue /* String */) /* void */ {
+    // if id then change node lookup table
+    if (attrName == 'id') {
+      var doc = this._handler.document;
+      
+      // old lookup
+      doc._elementById['_' + nodeXML.getAttribute('id')] = undefined;
+      // new lookup
+      doc._elementById['_' + attrValue] = this;
+    }
+    
+    // update our XML
+    this._nodeXML.setAttribute(attrName, attrValue);
+    
+    // update our internal set of attributes
+    this._attributes['_' + attrName] = attrValue;
+    
+    // send to Flash
+    var elementId = this._nodeXML.getAttribute('id');
+    if (this._passThrough) {
+      this._hander.sendToFlash(
+                       { type: 'invoke', method: 'setAttribute',
+                         elementId: elementId, attrName: attrName, 
+                         attrValue: attrValue });
+    }
   },
   
   removeAttribute: function(name) /* void */ {
@@ -1935,8 +1973,13 @@ extend(_Element, {
   },
   
   // SVGElement
-  _setID: function(id) {},
-  _getID: function() {},
+  _getId: function() {
+    return this._attributes['_id']
+  },
+  
+  _setId: function(id) {
+    return this.setAttribute('id', id);
+  },
   
   ownerSVGElement: null, /* Note: technically readonly */
   
@@ -1945,12 +1988,43 @@ extend(_Element, {
   // SVGSVGElement and SVGUseElement
   // technically these attributes should not be on all elements, but we
   // have them here for simplicity; they are all technically readonly
-  x: null,
-  y: null,
-  width: null,
-  height: null,
+  _getX: function() {
+  },
+  
+  _setX: function(x) {
+  },
+  
+  _getY: function() { 
+  },
+  
+  _setY: function(y) {
+  },
+  
+  _getWidth: function() {
+  },
+  
+  _setWidth: function(width) {
+  },
+  
+  _getHeight: function() {
+  },
+  
+  _setHeight: function(height) {
+  },
   
   // many attributes and methods from these two interfaces not here
+  
+  // defacto non-standard attributes
+  
+  _getInnerHTML: function() {
+    // TODO
+    return 'foo';
+  },
+  
+  _setInnerHTML: function(newValue) {
+    // TODO
+    return newValue;
+  },
   
   // SVG 1.1 inline event attributes:
   // http://www.w3.org/TR/SVG/script.html#EventAttributes
@@ -1979,14 +2053,16 @@ extend(_Element, {
   // SVGLocatable, SVGTests, SVGLangSpace, SVGExternalResourcesRequired
   // not supported
   
+  // contains any attribute set with setAttribute; object literal of
+  // name/value pairs
+  _attributes: {},
+  
   // copies the attributes from the XML DOM node into target
   _importAttributes: function(target, nodeXML) {
     for (var i = 0; i < nodeXML.attributes.length; i++) {
       var attr = nodeXML.attributes[i];
-      target[attr.nodeName] = attr.nodeValue;
+      this._attributes['_' + attr.nodeName] = attr.nodeValue;
     }
-    
-    // TODO: Make sure these get copied into get/setAttribute as well
   },
   
   // if we are IE, we must use a behavior in order to get onpropertychange
@@ -2009,11 +2085,49 @@ extend(_Element, {
     // all calls through the HTC, and implement all the real behavior
     // inside ourselves (inside _Element)
     var uiNode = document.createElement('svg:' + this.nodeName);
-    uiNode._internalNode = this;
+    uiNode._proxyNode = this;
     uiNode._handler = this._handler;
     this._uiContainer.appendChild(uiNode);
     
     return uiNode;
+  },
+  
+  /** Does all the getter/setter magic for attributes, so that external
+      callers can do something like myElement.innerHTML = 'foobar' or
+      myElement.id = 'test' and our getters and setters will intercept
+      these to do the correct behavior with the Flash viewer.*/
+  _defineAccessors: function() {
+    console.log('defineAccessors');
+    var props = ['id', 'x', 'y', 'width', 'height', 'innerHTML'];
+    
+    // make getters and setters for each property
+    for (var i = 0; i < props.length; i++) {
+      // define each accessor in a separate function so that
+      // the closure is setup correctly; if we did the closure for
+      // each getter/setter function here instead, we would incorrectly capture
+      // the final state of our variables at the end of the loop
+      this._defineAccessor(props[i]);  
+    }
+  },
+  
+  _defineAccessor: function(prop) {
+    var self = this;
+    
+    // capitalize first letter (i.e. innerHTML becomes InnerHTML)
+    var p = prop.replace(/^[a-z]/i, prop.charAt(0).toUpperCase());
+    
+    var getMethodName = '_get' + p; // ex: _getInnerHTML
+    var setMethodName = '_set' + p;
+    
+    var getMethod = function() {
+      return self[getMethodName]();
+    };
+    var setMethod = function(newValue) {
+      return self[setMethodName](newValue);
+    };
+    
+    this.__defineGetter__(prop, getMethod);
+    this.__defineSetter__(prop, setMethod);
   }
 });
 
@@ -2081,14 +2195,20 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     // that we can kick off the HTC running so that it can insert our Flash
     // as a shadow DOM
     var svgDOM = document.createElement('svg:svg');
-    svgDOM.id = this.id;
+    svgDOM._proxyNode = this;
     svgDOM._handler = handler;
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
+    this._uiNode = svgDOM;
     
     // now wait for the HTC file to load for the SVG root element
   } else { // non-IE browsers; immediately insert the Flash
     this._setupFlash(document);
   }
+  
+  // store in our lookup table for getElementById and 
+  // getElementsByTagNameNS
+  var elementId = this._nodeXML.getAttribute('id');
+  this._handler.document._elementById['_' + elementId] = this;
 }  
 
 // subclasses _Element
@@ -2109,10 +2229,7 @@ extend(_SVGSVGElement, {
     // TODO: We are not handling dynamically created nodes yet
     
     if (htcNode.nodeName.toUpperCase() == 'SVG') {
-      // store a reference to ourselves in the HTC node, so that we
-      // can do all the real work behind the HTC
       this._htcNode = htcNode;
-      this._htcNode._proxyNode = this;
       
       // now insert our Flash
       this._setupFlash(elemDoc, htcNode);
@@ -2143,7 +2260,8 @@ extend(_SVGSVGElement, {
   _onRenderingFinished: function(msg) {
     console.log('onRenderingFinished');
     
-    this._handler.fireOnLoad(this.id, 'script');
+    var elementId = this._nodeXML.getAttribute('id');
+    this._handler.fireOnLoad(elementId, 'script');
   },
   
   _setupFlash: function(doc, htcNode) {
@@ -2295,20 +2413,20 @@ extend(_SVGSVGElement, {
       @returns Flash object as HTML string. */ 
   _createFlash: function(size, background, style, doc) {
     console.log('createFlash');
+    var elementId = this._nodeXML.getAttribute('id');
     var flashVars = 
-          'uniqueId=' + encodeURIComponent(this.id)
+          'uniqueId=' + encodeURIComponent(elementId)
         + '&sourceType=string'
         + '&scaleMode=showAll_svg' // FIXME: is this the right scaleMode?
         + '&debug=true'
-        + '&svgId=' + encodeURIComponent(this.id);
-    
+        + '&svgId=' + encodeURIComponent(elementId);
     var src = svgweb.libraryPath + 'svg.swf';
     var protocol = window.location.protocol;
     if (protocol.charAt(protocol.length - 1) == ':') {
       protocol = protocol.substring(0, protocol.length - 1);
     }
     
-    this._handler.flashID = this.id + '_flash';
+    this._handler.flashID = elementId + '_flash';
 
     var flash =
           '<object\n '
@@ -2403,28 +2521,9 @@ extend(_Document, {
       return null;
     }
     
-    // if we've created an _Element for this node before, we
-    // stored a reference to it by ID so we could get it later
-    node = this._elementById['_' + nodeXML.getAttribute('id')];
-    
-    if (!node) {
-      // never seen before -- we'll have to create a new _Element now
-      node = new _Element(nodeXML.nodeName, nodeXML, this._handler);
-      
-      // store a reference to ourselves. 
-      // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
-      // can't just say nodeXML._proxyNode = node, so we have to use a lookup
-      // table
-      this._elementById['_' + node.id] = node;
-    }
-    
-    if (!isIE) {
-      return node;
-    } else {
-      // for IE, the developer will manipulate things through the UI, HTC
-      // node so that we can know about property changes, etc.
-      return node._uiNode;
-    }
+    // create or get an _Element for this XML DOM node
+    var elem = this._getElement(nodeXML);
+    return elem;
   },
   
   /** NOTE: on IE we don't support calls like the following:
@@ -2435,8 +2534,8 @@ extend(_Document, {
       getElementsByTagNameNS('somePrefix', '*');
       getElementsByTagNameNS(null, 'someTag');
   */
-  getElementsByTagNameNS: function(ns, localName) /* _NodeList */ {
-    var results = createNodeList();
+  getElementsByTagNameNS: function(ns, localName) /* _NodeList of _Elements */ {
+    var results = [];
     var matches;
     // DOM Level 2 spec details:
     // if ns is null or '', return elements that have no namespace
@@ -2446,43 +2545,82 @@ extend(_Document, {
       ns = null;
     }
     
-    if (this._xml.getElementsByTagNameNS) {
-      // non-IE browsers
-      matches = this._xml.getElementsByTagNameNS(ns, localName);
-      // turn into an Array
-      for (var i = 0; i < matches.length; i++) {
-        results.push(matches[i]);
-      }
-      return results;
+    // get DOM nodes with the given tag name
+    if (this._xml.getElementsByTagNameNS) { // non-IE browsers
+      results = this._xml.getElementsByTagNameNS(ns, localName);
     } else { // IE
       if (ns == null) {
         // we can't just use getElementsByTagName() here, because IE
         // will incorrectly return tags that are in the default namespace
-        return xpath(this._xml, '//' + localName);
-      }
-      
-      var query;
-      if (ns == '*' && localName == '*') {
-        query = '*';
-      } else if (ns == '*') { // not supported
-        return createNodeList();
+        results = xpath(this._xml, '//' + localName);
       } else {
-        var prefix = this._namespaces['_' + ns];
-        
-        if (prefix == undefined) {
-          return createNodeList();
-        } else if (prefix == 'xmlns') {
-          query = localName;
+        // figure out correct query string for IE
+        var query;
+        if (ns == '*' && localName == '*') {
+          query = '*';
+        } else if (ns == '*') { // not supported
+          return createNodeList(); // empty []
         } else {
-          query = prefix + ':' + localName;
+          var prefix = this._namespaces['_' + ns];  
+          if (prefix == undefined) {
+            return createNodeList(); // empty []
+          }
+        
+          if (prefix == undefined) {
+            results = [];
+          } else if (prefix == 'xmlns') {
+            query = localName;
+          } else {
+            query = prefix + ':' + localName;
+          }
+        }
+        
+        matches = this._xml.getElementsByTagName(query);
+        for (var i = 0; i < matches.length; i++) {
+          results.push(matches[i]);
         }
       }
+    }
+    
+    // now create or fetch _Elements representing these DOM nodes
+    var nodes = createNodeList();
+    for (var i = 0; i < results.length; i++) {
+      // create or get an _Element for this XML DOM node
+      var elem = this._getElement(results[i]);
+      nodes.push(elem);
+    }
+    
+    return nodes;
+  },
+  
+  /** Fetches an _Element or creates a new one on demand. Used by
+      getElementById and getElementsByTagNameNS.
+      @param nodeXML XML DOM node for the element to use when constructing
+      the _Element. */
+  _getElement: function(nodeXML) {
+    // if we've created an _Element for this node before, we
+    // stored a reference to it by ID so we could get it later
+    var node = this._elementById['_' + nodeXML.getAttribute('id')];
+    
+    if (!node) {
+      // never seen before -- we'll have to create a new _Element now
+      node = new _Element(nodeXML.nodeName, nodeXML, this._handler, false);
+      node._passThrough = true;
       
-      matches = this._xml.getElementsByTagName(query);
-      for (var i = 0; i < matches.length; i++) {
-        results.push(matches[i]);
-      }
-      return results;
+      // store a reference to ourselves. 
+      // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
+      // can't just say nodeXML._proxyNode = node, so we have to use a lookup
+      // table
+      var elementId = node._nodeXML.getAttribute('id');
+      this._elementById['_' + elementId] = node;
+    }
+    
+    if (!isIE) {
+      return node;
+    } else {
+      // for IE, the developer will manipulate things through the UI, HTC
+      // node so that we can know about property changes, etc.
+      return node._uiNode;
     }
   },
   
