@@ -481,9 +481,9 @@ package com.sgweb.svg
             catch(error:SecurityError) {
             }
         }
-
+        
         public function js_handleInvoke(jsMsg:Object):Object {
-            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element:SVGNode;
             if (jsMsg.method == 'createElementNS') {
                 var xmlString:String = '<' + jsMsg.elementType + ' id="' + jsMsg.elementId +  '" />';
@@ -667,6 +667,7 @@ package com.sgweb.svg
                 }
             }
             
+            //this.debug('Returning jsMsg='+this.debugMsg(jsMsg));
             return jsMsg;
         }
     }
