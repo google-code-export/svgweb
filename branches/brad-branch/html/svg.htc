@@ -17,8 +17,11 @@ but only on root node
   -->
   <public:component lightWeight="true">
   
-      <public:property name="innerHTML"
-                       get="getInnerHTML" put="putInnerHTML" />
+      <public:property name="innerHTML" 
+                       get="_getInnerHTML" put="_setInnerHTML" />
+      <public:property name="id" get="_getId" put="_setId" />             
+                       
+      <public:method name="setAttribute" />
        
       <public:attach event="oncontentready" onevent="contentReady()" />
       
@@ -30,131 +33,135 @@ but only on root node
   </public:component>
 
   <script type="text/javascript">
-      /** Called when the content is ready for some SVG tag in the HTML
-          page. This method is called for each individual SVG tag. */
-      function contentReady() {
-        // indicate that we are now loaded
-        var msg = { type: 'event', 
-                    eventType: 'onHTCLoaded',
-                    uniqueId: element.id, 
-                    elemDoc: element.document,
-                    htcNode: this };
-        this._handler.onMessage(msg);
-      }
-      
-      /** Does some magic to have the Flash object show up in our SVG 
-          root element 'hidden' from the external DOM. Called by
-          FlashHandler._insertFlash() inside of svg.js.
-          
-          @param flash Flash object as HTML string.
-          @param style A style string that we can apply to ourselves
-          to have the correct style on the SVG root tag, since that
-          is what is visible to the outside DOM. Applying it to the
-          Flash object is not enough. */
-      this._insertFlash = function(flash, style) {
-        console.log('htcNode.insertFlash');
-        
-        // apply our style to ourselves first
-        var rules = style.split(';');
-        for (var i = 0; i < rules.length; i++) {
-          var rule = rules[i].split(':');
-          if (!rules[i] || rules[i].indexOf(':') == -1) {
-            continue;
-          }
-          var propName = rule[0].replace(/^\s*|\s*$/, '');
-          var propValue = rule[1].replace(/^\s*|\s*$/, '');
-          this.style[propName] = propValue;
-        }
-        
-        /**
-          Now insert the Flash.
-          
-          We use a Behavior ViewLink trick to 'hide' this shadow content from 
-          the external page, so that we don't see the Flash object in the 
-          external DOM. For more details on ViewLinks: 
-          
-          http://msdn.microsoft.com/en-us/library/ms531428(VS.85).aspx
-          
-          Note, though, that we want to keep almost all of our SVG elements
-          'lightWeight' (see the lightWeight attribute on the
-          public:component tag at the top of this file) because
-          non-lightWeight components have performance and caching issues.
-          LightWeight HTC components however can not use View Links or have
-          shadow content.
-          
-          As a trick, we 'convert' ourselves into having a shadow DOM
-          just for the SVG root tag by manually creating an HTML document below,
-          then storing this document in this._doc for later retrieval.
-          For the trick to work we also have to set some public:defaults
-          above at the top of this file.
-          
-          This approach successfully keeps the performance benefits of
-          lightWeight HTCs while being able to have shadow content that
-          doesn't show up in the external DOM.
-        */
-        var html = element.document.createElement('html');
-        var body = element.document.createElement('body');
-        var div = element.document.createElement('div');
-        body.appendChild(div);
-        html.appendChild(body);
-        defaults.viewLink = html.document; // ViewLink magic
-        this._doc = html.document;
-        
-        // We have to use a DIV container for the Flash object; since we don't
-        // want this DIV to stay around, acting almost like a DocumentFragment,
-        // we use div.outerHTML on it to have the Flash control go into it and
-        // have the DIV 'disappear' in a poof of smoke
-        
-        // outerHTML must be set _after_ DIV is added to DOM for
-        // Flash ExternalInterface to work correctly
-        
-        // Note: as _soon_ as we make this call the Flash will load, even
-        // before the rest of this method has finished. The Flash can
-        // therefore finish loading before anything after the next statement
-        // has run, so be careful of timing bugs.
-        div.outerHTML = flash;
-      }
-      
-      /** Gets the Flash DOM object. */
-      this._getFlashObj = function() {
-       var flashObj = this._doc.getElementById(this._handler.flashID);
+    /** Called when the content is ready for some SVG tag in the HTML
+        page. This method is called for each individual SVG tag. */
+    function contentReady() {
+      console.log('contentReady');
        
-       return flashObj; 
-      }
+      // indicate that we are now loaded
+      var msg = { type: 'event', 
+                  eventType: 'onHTCLoaded',
+                  uniqueId: this.id, 
+                  elemDoc: element.document,
+                  htcNode: this };
+      this._handler.onMessage(msg);
+    }
+    
+    /** Does some magic to have the Flash object show up in our SVG 
+        root element 'hidden' from the external DOM. Called by
+        FlashHandler._insertFlash() inside of svg.js.
+        
+        @param flash Flash object as HTML string.
+        @param style A style string that we can apply to ourselves
+        to have the correct style on the SVG root tag, since that
+        is what is visible to the outside DOM. Applying it to the
+        Flash object is not enough. */
+    this._insertFlash = function(flash, style) {
+      console.log('htcNode.insertFlash');
       
-      /** Makes calling ExternalInterface functions on the Flash object
-          work. */
-      this._makeFlashCallable = function(flashObj) {
-        // If we use the Behavior ViewLink trick to 'hide' the Flash object
-        // from the external page's DOM, then Flash's ExternalInterface
-        // doesn't work correctly. That's ok, we can fix this with some
-        // tricks from Dojo Flash. More details on these
-        // hidden Flash methods here:
-        // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
-        flashObj.sendToFlash = getFlashFunction('sendToFlash');
-      }
-      
-      /** A function that makes it possible to call Flash functions
-          exposed through ExternalInterface. We need to do some magic
-          to call Flash functions even though we are embedded inside
-          of a Microsoft Behavior. This function encapsulates this magic.
-          This function actually returns a function which is then suitable
-          for calling. */
-      function getFlashFunction(method) {
-        return function() {
-          return eval(this.CallFunction(
-            "<invoke name=\"" + method + "\" returntype=\"javascript\">" 
-            + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
+      // apply our style to ourselves first
+      var rules = style.split(';');
+      for (var i = 0; i < rules.length; i++) {
+        var rule = rules[i].split(':');
+        if (!rules[i] || rules[i].indexOf(':') == -1) {
+          continue;
         }
+        var propName = rule[0].replace(/^\s*|\s*$/, '');
+        var propValue = rule[1].replace(/^\s*|\s*$/, '');
+        this.style[propName] = propValue;
       }
       
-      function getInnerHTML() {
-        return 'hello world!';
-      }
+      /**
+        Now insert the Flash.
+        
+        We use a Behavior ViewLink trick to 'hide' this shadow content from 
+        the external page, so that we don't see the Flash object in the 
+        external DOM. For more details on ViewLinks: 
+        
+        http://msdn.microsoft.com/en-us/library/ms531428(VS.85).aspx
+        
+        Note, though, that we want to keep almost all of our SVG elements
+        'lightWeight' (see the lightWeight attribute on the
+        public:component tag at the top of this file) because
+        non-lightWeight components have performance and caching issues.
+        LightWeight HTC components however can not use View Links or have
+        shadow content.
+        
+        As a trick, we 'convert' ourselves into having a shadow DOM
+        just for the SVG root tag by manually creating an HTML document below,
+        then storing this document in this._doc for later retrieval.
+        For the trick to work we also have to set some public:defaults
+        above at the top of this file.
+        
+        This approach successfully keeps the performance benefits of
+        lightWeight HTCs while being able to have shadow content that
+        doesn't show up in the external DOM.
+      */
+      var html = element.document.createElement('html');
+      var body = element.document.createElement('body');
+      var div = element.document.createElement('div');
+      body.appendChild(div);
+      html.appendChild(body);
+      defaults.viewLink = html.document; // ViewLink magic
+      this._doc = html.document;
       
-      function putInnerHTML(newValue) {
-        this._innerHTML = newValue;
+      // We have to use a DIV container for the Flash object; since we don't
+      // want this DIV to stay around, acting almost like a DocumentFragment,
+      // we use div.outerHTML on it to have the Flash control go into it and
+      // have the DIV 'disappear' in a poof of smoke
+      
+      // outerHTML must be set _after_ DIV is added to DOM for
+      // Flash ExternalInterface to work correctly
+      
+      // Note: as _soon_ as we make this call the Flash will load, even
+      // before the rest of this method has finished. The Flash can
+      // therefore finish loading before anything after the next statement
+      // has run, so be careful of timing bugs.
+      div.outerHTML = flash;
+    }
+    
+    /** Gets the Flash DOM object. */
+    this._getFlashObj = function() {
+     var flashObj = this._doc.getElementById(this._handler.flashID);
+     
+     return flashObj; 
+    }
+    
+    /** Makes calling ExternalInterface functions on the Flash object
+        work. */
+    this._makeFlashCallable = function(flashObj) {
+      // If we use the Behavior ViewLink trick to 'hide' the Flash object
+      // from the external page's DOM, then Flash's ExternalInterface
+      // doesn't work correctly. That's ok, we can fix this with some
+      // tricks from Dojo Flash. More details on these
+      // hidden Flash methods here:
+      // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
+      flashObj.sendToFlash = getFlashFunction('sendToFlash');
+    }
+    
+    /** A function that makes it possible to call Flash functions
+        exposed through ExternalInterface. We need to do some magic
+        to call Flash functions even though we are embedded inside
+        of a Microsoft Behavior. This function encapsulates this magic.
+        This function actually returns a function which is then suitable
+        for calling. */
+    function getFlashFunction(method) {
+      return function() {
+        return eval(this.CallFunction(
+          "<invoke name=\"" + method + "\" returntype=\"javascript\">" 
+          + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
       }
+    }
+    
+    // getter/setter accessors; they delegate back into the
+    // svg.js _Element and _Node classes
+    
+    function _getId() { return this._proxyNode._getId(); }
+    function _setId(v) { return this._proxyNode._setId(v); }
+    
+    function _getInnerHTML() { return this._proxyNode._getInnerHTML(); }
+    function _setInnerHTML(v) { return this._proxyNode._setInnerHTML(v); }
+    
   </script>
 </head>
 </html>
