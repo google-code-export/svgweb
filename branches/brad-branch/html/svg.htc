@@ -74,8 +74,6 @@ but only on root node
         is what is visible to the outside DOM. Applying it to the
         Flash object is not enough. */
     this._insertFlash = function(flash, style) {
-      //console.log('htcNode.insertFlash');
-      
       // apply our style to ourselves first
       var rules = style.split(';');
       for (var i = 0; i < rules.length; i++) {
