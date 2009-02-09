@@ -64,16 +64,7 @@ package com.sgweb.svg.nodes {
         }
         
         protected override function generateGraphicsCommands():void {
-            
-            /*this.attributes['stroke-width'] = this.getAttribute('stroke-width', 1);
-            //this.attributes['stroke'] = this.getColor(this.getAttribute('stroke', 'black'));
-            this.attributes['stroke-dasharray'] = this.getAttribute('stroke-dasharray', 'none');            
-            
-            // Alphas
-            this.attributes['fill-opacity'] = this.getAttribute('fill-opacity', 1);
-            this.attributes['stroke-opacity'] = this.getAttribute('stroke-opacity', 1);
-            this.attributes['opacity'] = this.getAttribute('opacity', 1);*/
-        
+                    
             this._graphicsCommands = new  Array();
             
             var pathData:String = this.normalizeSVGData(this._xml.@d);            
@@ -98,7 +89,7 @@ package com.sgweb.svg.nodes {
                         }
                         this.moveTo(szSegs[pos++],szSegs[pos++], isAbs); // Move is always absolute                
                         while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
-                            this.line(szSegs[pos++], szSegs[pos++], isAbs);
+                            this.line(szSegs[pos++], szSegs[pos++], false);
                         } 
                         break;
                     case "A":
@@ -161,13 +152,17 @@ package com.sgweb.svg.nodes {
                         break;
                     case "Z":
                     case "z":
-                        this.closePath();                        
+                        this.closePath();      
+                        while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
+                            this.line(szSegs[pos++], szSegs[pos++], false);
+                        }                   
                         break;            
                                 
                     default:
                         trace("Unknown Segment Type: " + command);
                         break;
-                }         
+                }     
+                 
             }        
             this._graphicsCommands.push(['EF']);    
         }
