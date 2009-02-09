@@ -282,7 +282,6 @@ package com.sgweb.svg.core
                         
             attr = this.getAttribute('mask');
             if (!attr) {
-                isMask = false;
                 attr = this.getAttribute('clip-path');
             }
                         
@@ -294,11 +293,9 @@ package com.sgweb.svg.core
                    if (node) {
                        this.mask = node;                       
                        node.visible = true;
-                       if (isMask) {
-                           //Enable mask transparencies
-                           this.cacheAsBitmap = true; 
-                           node.cacheAsBitmap = true;
-                       }
+                       
+                       this.cacheAsBitmap = true; 
+                       node.cacheAsBitmap = true;                       
                    }
                }
             }           
