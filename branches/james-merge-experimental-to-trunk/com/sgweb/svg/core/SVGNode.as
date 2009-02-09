@@ -23,6 +23,7 @@ package com.sgweb.svg.core
 	import com.sgweb.svg.utils.SVGColors;
 	import com.sgweb.svg.utils.SVGUnits;
 	
+	import flash.display.BitmapData;
 	import flash.display.CapsStyle;
 	import flash.display.DisplayObject;
 	import flash.display.JointStyle;
@@ -158,7 +159,10 @@ package com.sgweb.svg.core
                             break;
                         case "namedview":
                             //Add Handling 
-                            break;                            
+                            break;    
+                        case "pattern":
+                            childNode = new SVGPatternNode(this.svgRoot, childXML);
+                            break;                        
                         case "polygon":
                             childNode = new SVGPolygonNode(this.svgRoot, childXML);
                             break;
@@ -221,7 +225,9 @@ package com.sgweb.svg.core
          */ 
         
         public function drawNode(event:Event = null):void {
-            this.removeEventListener(Event.ENTER_FRAME, drawNode); 
+        	if (this.hasEventListener(Event.ENTER_FRAME)) {
+                this.removeEventListener(Event.ENTER_FRAME, drawNode);
+            } 
             this._invalidDisplay = false;
             
             this._firstX = true;
@@ -679,7 +685,7 @@ package com.sgweb.svg.core
             
             var fill:String = this.getAttribute('fill');
             
-            var fillGradient:Array = fill.match(/^\s*url\(#(\S+)\)/si);
+            var fillUrl:Array = fill.match(/^\s*url\(#(\S+)\)/si);
             var name:String;
             
             fill_alpha = SVGColors.cleanNumber(this.getAttribute('fill-opacity'));
@@ -688,11 +694,18 @@ package com.sgweb.svg.core
                 fill_alpha = 0;
                 fill_color = 0; 
             }           
-           else if( fillGradient && fillGradient.length ) {
-                fillNode = this.svgRoot.getNode(fillGradient[1]);    
+           else if( fillUrl && fillUrl.length ) {
+                fillNode = this.svgRoot.getNode(fillUrl[1]);    
                 if (fillNode is SVGGradient) {
                     SVGGradient(fillNode).beginGradientFill(this);                    
                 }   
+                else if (fillNode is SVGPatternNode) {
+                	if ((fillNode.width > 0) && (fillNode.height > 0)) {
+                	   var bitmapData:BitmapData = new BitmapData(fillNode.width, fillNode.height);
+                	   bitmapData.draw(fillNode);
+                	   this.graphics.beginBitmapFill(bitmapData);
+                	}
+                }
             } 
             else {      
                 fill_color = SVGColors.getColor((fill));
