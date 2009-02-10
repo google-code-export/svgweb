@@ -59,13 +59,27 @@ package com.sgweb.svg.nodes {
             var patternX:Number = SVGUnits.cleanNumber(this.getAttribute('x'));
             var patternY:Number = SVGUnits.cleanNumber(this.getAttribute('y'));
             
-            var matrix:Matrix = this.transform.concatenatedMatrix;
+            var matrix:Matrix
+            tmp = this.getAttribute('patternTransform');
+            if (tmp) {
+                matrix = this.parseTransform(tmp, matrix);               
+            }
+            else {
+            	matrix = new Matrix();
+            }
+            
+            matrix.concat(this.transform.concatenatedMatrix);
+            
             var nodeMatrix:Matrix = node.transform.concatenatedMatrix;
             nodeMatrix.invert();
             
-            matrix.concat(nodeMatrix);  
+            matrix.concat(nodeMatrix);            
+            
             matrix.translate(patternX, patternY);
             
+              
+            
+                        
             if ((patternWidth > 0) && (patternHeight > 0)) {
                var bitmapData:BitmapData = new BitmapData(patternWidth, patternHeight);
                bitmapData.draw(this);
