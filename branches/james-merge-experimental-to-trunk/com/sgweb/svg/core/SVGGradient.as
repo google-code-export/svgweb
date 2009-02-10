@@ -43,53 +43,85 @@ package com.sgweb.svg.core
         	
         }
         
+        protected function isIdentityMatrix(matrix:Matrix):Boolean {
+        	if ((matrix.a = 1)
+        	   && (matrix.b = 0) 
+        	   && (matrix.c = 0)
+        	   && (matrix.d = 1)
+        	   && (matrix.tx = 0)
+        	   && (matrix.ty = 0)) {
+        	   return true;   	
+        	}
+        	return false;
+        }
+        
         public function getMatrix(node:SVGNode):Matrix {   
         	var matrix:Matrix;
-        	     	
-        	var attr:String = this.getAttribute('gradientTransform');            
-            if (attr) {
-                matrix = this.parseTransform(attr);                
-            }
-            else {
-                matrix = new Matrix();
-                var width:Number = node.xMax - node.xMin;
-                var height:Number = node.yMax - node.yMin;
-                matrix.createGradientBox(width, height, 0, 0);
+            
+            var w:Number = node.xMax - node.xMin;
+            var h:Number = node.yMax - node.yMin;
+            
+            if ((w == 0) || (h == 0)) { //We don't fill an object with area == 0
+            	return null;
             }
             
-            var x1:Number = this.getAttribute('x1', 0, false);
-            var y1:Number = this.getAttribute('y1', 0, false);
+            matrix = new Matrix();
+                 
+            var gradientUnits:String = this.getAttribute('gradientUnits', null, false);
+                    
+            var x1String:String = this.getAttribute('x1', '0%', false);
+            var x2String:String = this.getAttribute('x2', '100%', false);         
+            var y1String:String = this.getAttribute('y1', '0%', false);
+            var y2String:String = this.getAttribute('y2', '0%', false);
             
-            var x2:Number = this.getAttribute('x2', 0, false);
-            var y2:Number = this.getAttribute('y2', 0, false);            
+            var x1:Number = SVGColors.cleanNumber(x1String);
+            var x2:Number = SVGColors.cleanNumber(x2String);
+            var y1:Number = SVGColors.cleanNumber(y1String);
+            var y2:Number = SVGColors.cleanNumber(y2String);
+                        
+            if (x1String.search('%') > -1) {
+            	x1 *= w / 100;
+            }
+            else if (gradientUnits == "objectBoundingBox") {
+            	x1 *= w;
+            }
+            
+            if (x2String.search('%') > -1) {
+                x2 *= w / 100;
+            }  
+            else if (gradientUnits == "objectBoundingBox") {
+                x2 *= w;
+            }
+            
+            if (y1String.search('%') > -1) {
+                y1 *= h / 100;
+            }
+            else if (gradientUnits == "objectBoundingBox") {
+                y1 *= h;
+            }
+            
+            if (y2String.search('%') > -1) {
+                y2 *= h / 100;
+            } 
+            else if (gradientUnits == "objectBoundingBox") {
+                y2 *= h;
+            }      
+                    
+            var dx:Number = x2 - x1; 
+            var dy:Number = y2 - y1; 
 
-            //x & y should already be set
-            var objectX:Number = node.x; 
-            var objectY:Number = node.y;            
-
-            var dx:Number = x2 - x1;
-            var dy:Number = y2 - y1;
             var angle:Number = Math.atan2(dy, dx);
             
-            // Disabled because i am currently doing the object adjustment at the
-            // end, which seems to be necessary for radial gradients, but it is not
-            // clear what the difference is. I will do it the same as radials to
-            // be consistent, and on the hunch that it is correct.
-            //var tx:Number = (x1 + x2) / 2 - objectX;
-            //var ty:Number = (y1 + y2) / 2 - objectY;
-            var tx:Number = (x1 + x2) / 2;
-            var ty:Number = (y1 + y2) / 2;
+            if (dx == 0) {
+            	dx = w;
+            }
 
-            var gradientWidth:Number = Math.abs(x2 - x1);
-            var gradientHeight:Number = Math.abs(y2 - y1);
-            var sx:Number = Math.sqrt(gradientWidth*gradientWidth+gradientHeight*gradientHeight) / 1638.4;
-            var sy:Number = 1;
-
-            //matrix.scale(sx, sy);
-            matrix.rotate(angle);
-            matrix.translate(tx, ty);            
-
-            matrix.translate(-objectX, -objectY);
+            matrix.createGradientBox(dx, dy, angle, x1, y1);
+            
+            var gradientTransform:String = this.getAttribute('gradientTransform');
+            if (gradientTransform) {
+                this.parseTransform(gradientTransform, matrix);                
+            }
             
             return matrix;
         }
