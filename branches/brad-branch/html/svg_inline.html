@@ -71,6 +71,28 @@
                     + "[0].getAttribute('gridtolerance') should now be 20000", 
                     20000,
                     sodipodi[0].getAttribute('gridtolerance'));
+                    
+        var rdf = document.getElementsByTagNameNS(
+                            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                            'RDF');
+        assertExists('RDF elements should exist', rdf);
+        assertEquals('# of RDF elements == 1', 1, rdf.length);
+        rdf = rdf[0];
+        assertExists('RDF element', rdf);
+        assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
+        assertEquals('rdf.nodeName == rdf:RDF', 'rdf:RDF', rdf.nodeName);
+        assertEquals('rdf.prefix == rdf', 'rdf', rdf.prefix);
+        assertEquals('rdf.namespaceURI == '
+                     + 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     rdf.namespaceURI);
+        assertEquals('rdf.localName == RDF', 'RDF', rdf.localName);
+        assertEquals('rdf.nodeType == 1', 1, rdf.nodeType);
+        
+        rdf = document.getElementsByTagNameNS(
+                            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                            'badName');
+        assertEquals('rdf.length == 0', 0, rdf.length);
                      
         var dc_ns = "http://purl.org/dc/elements/1.1/";
         var dc = document.getElementsByTagNameNS(dc_ns, 'format');
@@ -136,6 +158,10 @@
                     466.11172, root.width.baseVal.value.toPrecision(8));
         assertEquals("svg11242.height.baseVal.value should be 265.35126", 
                     265.35126, root.height.baseVal.value.toPrecision(8));
+                    
+        // SVGSVGElement.x, .y, .width, .height
+        console.log('Testing SVGUseElement.x, .y, .width, and .height...');
+        // TODO
                     
         // getAttribute
         console.log('Testing getAttribute...');
@@ -235,7 +261,11 @@
                       'hello world',
                       sodipodi.getAttribute('newAttribute'));
                       
-        // createTextNode
+        // createTextNode and textNode.nodeValue, textNode.textContent,
+        // and textNode.data
+        // TODO
+        // create a text node, get/set the different ways to work with its
+        // value
         
         // childNodes
         console.log('Testing childNodes...');
@@ -262,6 +292,165 @@
           assertExists('looping through childNodes, .nodeName for i=' + i,
                        group.childNodes[i].nodeName);
         }
+        
+        var body = document.getElementsByTagName('body')[0];
+        var whitespaceAreNodes = false;
+        if (body.childNodes[0].nodeType == 3) {
+          whitespaceAreNodes = true;
+        }
+        // 11 child nodes of body on non-IE browsers due to whitespace 
+        // handling, 5 on IE
+        if (whitespaceAreNodes) {
+          assertEquals('body.childNodes.length == 11 (non-IE browsers)', 11, 
+                       body.childNodes.length);
+        } else {
+          assertEquals('body.childNodes.length == 5 (Internet Explorer only)', 
+                       5, body.childNodes.length);
+        }
+        // get the children in different ways due to whitespacing handling
+        // first SVG root element
+        if (whitespaceAreNodes) {
+          child = body.childNodes[3];
+        } else {
+          child = body.childNodes[1]; 
+        }
+        assertExists('First SVG root element', child);
+        assertEquals('first SVG root element.nodeName == svg', 'svg', 
+                     child.nodeName);
+        assertEquals('first SVG root element.nodeType == 1', 1, child.nodeType);
+        assertNull('first SVG root element.nodeValue == null', child.nodeValue);
+        assertEquals('first SVG root element.childNodes.length == 1', 1, 
+                     child.childNodes.length);
+        assertNull('first SVG root element.prefix == null', child.prefix);
+        assertEquals('first SVG root element.namespaceURI == svgns', svgns,
+                     child.namespaceURI);
+        assertEquals('first SVG root element.getAttribute(id) == mySVG', 'mySVG',
+                     child.getAttribute('id'));
+        // 2nd SVG root element
+        if (whitespaceAreNodes) {
+          child = body.childNodes[5];
+        } else {
+          child = body.childNodes[2]; 
+        }
+        assertExists('Second SVG root element', child);
+        assertEquals('2nd SVG root element == svg', 'svg', 
+                     child.nodeName);
+        assertEquals('2nd SVG root element.nodeType == 1', 1, child.nodeType);
+        assertNull('2nd SVG root element.nodeValue == null', child.nodeValue);
+        assertEquals('2nd SVG root element.childNodes.length == 19', 19, 
+                     child.childNodes.length);
+        assertNull('2nd SVG root element.prefix == null', child.prefix);
+        assertEquals('2nd SVG root element.namespaceURI == svgns', svgns,
+                     child.namespaceURI);
+        assertEquals('2nd SVG root element.getAttribute(id) == svg2', 'svg2',
+                     child.getAttribute('id'));
+        // 3rd SVG root element
+        if (whitespaceAreNodes) {
+          child = body.childNodes[7];
+        } else {
+          child = body.childNodes[3]; 
+        }
+        assertExists('Third SVG root element', child);
+        assertEquals('3rd SVG root element.nodeName == svg', 'svg', 
+                     child.nodeName);
+        assertEquals('3rd SVG root element.nodeType == 1', 1, child.nodeType);
+        assertNull('3rd SVG root element.nodeValue == null', child.nodeValue);
+        assertEquals('3rd SVG root element.childNodes.length == 2', 2, 
+                     child.childNodes.length);
+        assertNull('3rd SVG root element.prefix == null', child.prefix);
+        assertEquals('3rd SVG root element.namespaceURI == svgns', svgns,
+                     child.namespaceURI);
+        assertEquals('3rd SVG root element.getAttribute(id) == svg11242', 
+                     'svg11242', child.getAttribute('id'));             
+        
+        root = child;
+        assertEquals('root.childNodes.length == 2', 2, root.childNodes.length);
+        child = root.childNodes[0];
+        assertExists('root.childNodes[0] exists', child);
+        assertEquals('root.childNodes[0].nodeName == defs', 'defs',
+                     child.nodeName);
+        assertEquals('root.childNodes[0].getAttribute(id) == defs3', 'defs3',
+                     child.getAttribute('id'));
+        assertEquals('root.childNodes[0].childNodes.length == 105', 105,
+                     child.childNodes.length);
+        assertEquals('root.childNodes[0].childNodes[0].nodeName '
+                     + '== linearGradient', 'linearGradient',
+                     child.childNodes[0].nodeName);
+        assertEquals('root.childNodes[0].childNodes[0].childNodes[0].nodeName == stop',
+                     'stop', child.childNodes[0].childNodes[0].nodeName);
+        assertEquals('root.childNodes[0].childNodes[0].childNodes[0].getAttribute(offset) == 0',
+                     0, 
+                     child.childNodes[0].childNodes[0].getAttribute('offset'));
+        
+        root = document.getElementsByTagNameNS(svgns, 'svg')[2];
+        assertEquals('root.childNodes.length == 2', 2, root.childNodes.length);
+        child = root.childNodes[0];
+        assertExists('root.childNodes[0] exists', child);
+        assertEquals('root.childNodes[0].nodeName == defs', 'defs',
+                     child.nodeName);
+        assertEquals('root.childNodes[0].getAttribute(id) == defs3', 'defs3',
+                     child.getAttribute('id'));
+        assertEquals('root.childNodes[0].childNodes.length == 105', 105,
+                     child.childNodes.length);
+        assertEquals('root.childNodes[0].childNodes[0].nodeName '
+                     + '== linearGradient', 'linearGradient',
+                     child.childNodes[0].nodeName);
+        assertEquals('root.childNodes[0].childNodes[0].childNodes[0].nodeName == stop',
+                     'stop', child.childNodes[0].childNodes[0].nodeName);
+        assertEquals('root.childNodes[0].childNodes[0].childNodes[0].getAttribute(offset) == 0',
+                     0, 
+                     child.childNodes[0].childNodes[0].getAttribute('offset'));
+        
+        var metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+        assertExists('metadata element', metadata);
+        assertEquals('metadata.getAttribute(id) == metadata7', 'metadata7',
+                     metadata.getAttribute('id'));
+        metadata.setAttribute('id', 'metadata8');
+        assertEquals('After setting, metadata.getAttribute(id) == metadata8', 
+                     'metadata8', metadata.getAttribute('id'));
+        metadata = document.getElementById('metadata7');
+        assertNull('metadata.id was changed, should be null now', metadata);
+        metadata = document.getElementById('metadata8');
+        assertExists('metadata.id was changed, should not be null', metadata);
+        assertEquals('metadata.childNodes == 1', 1, metadata.childNodes.length);
+        rdf = metadata.childNodes[0];
+        assertExists('RDF element', rdf);
+        assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
+        assertEquals('rdf.nodeName == rdf:RDF', 'rdf:RDF', rdf.nodeName);
+        assertEquals('rdf.prefix == rdf', 'rdf', rdf.prefix);
+        assertEquals('rdf.namespaceURI == http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     rdf.namespaceURI);
+        assertEquals('rdf.localName == RDF', 'RDF', rdf.localName);
+        assertEquals('rdf.nodeType == 1', 1, rdf.nodeType);
+        rdf = document.getElementsByTagNameNS(
+                            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                            'RDF');
+        assertExists('RDF elements should exist', rdf);
+        assertEquals('# of RDF elements == 1', 1, rdf.length);
+        rdf = rdf[0];
+        assertExists('RDF element', rdf);
+        assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
+        assertEquals('rdf.nodeName == rdf:RDF', 'rdf:RDF', rdf.nodeName);
+        assertEquals('rdf.prefix == rdf', 'rdf', rdf.prefix);
+        assertEquals('rdf.namespaceURI == '
+                     + 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                     rdf.namespaceURI);
+        assertEquals('rdf.localName == RDF', 'RDF', rdf.localName);
+        assertEquals('rdf.nodeType == 1', 1, rdf.nodeType);
+        var cc = rdf.childNodes[0];
+        assertExists('Creative Commons element should exist', cc);
+        assertEquals('cc.childNodes.length == 2', 2, cc.childNodes.length);
+        assertEquals('cc.nodeName == cc:Work', 'cc:Work', cc.nodeName);
+        assertEquals('cc.prefix == cc', 'cc', cc.prefix);
+        assertEquals('cc.namespaceURI == http://web.resource.org/cc/',
+                     'http://web.resource.org/cc/', cc.namespaceURI);
+        assertEquals('cc.localName == Work', 'Work', cc.localName);
+        assertEquals('cc.nodeType == 1', 1, cc.nodeType);            
+        
+        // TODO: Test walking the entire DOM of the whole page, adding 
+        // some attribute
                                     
         console.log('Finished testing.');
       });
@@ -3447,5 +3636,4 @@
     
     <h1>Test HTML H1</h1>
 
-  </body>
-</html>
+  </body></html>
