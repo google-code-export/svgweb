@@ -549,6 +549,37 @@ the whitespace that is between tags. This will allow you to create
 JavaScript DOM code that works consistently between browsers. No empty
 whitespace text nodes will be in the SVG portion of the DOM.
 
+Remember, though, that the rest of your HTML document will be using the
+whitespace behavior of the browser itself. For example, if you have a BODY
+tag with some nested SVG and are calling BODY.childNodes, whitespace elements 
+will show up in the DOM on all browsers except for Internet Explorer.
+
+Known Issues
+------------
+* If you use the Flash viewer on browsers such as Firefox and Safari, rather
+than Internet Explorer, and embed some SVG into a SCRIPT tag, the Flash will 
+show up directly in the DOM as an EMBED tag with the 'class' set to 'embedssvg'. 
+You can get the SVG root element by calling 'documentElement' on the EMBED tag
+(this is non-standard and is not part of the SVG 1.1 spec).
+
+For example, if your page had an SVG SCRIPT block right under the BODY tag, 
+this would get transformed into an EMBED tag with the Flash viewer:
+
+BODY
+   EMBED (class='embedssvg')
+       svg root
+       
+Using script you could get the svg root node as follows:
+
+var embed = document.body.childNodes[0];
+if (embed.className.indexOf('embedssvg') != -1) {
+  var svg = embed.documentElement;
+  // now have root SVG element and can manipulate it as normal
+}
+
+Internet Explorer does not have this limitation, with the SVG root element
+showing up directly in the DOM.
+
 What SVG Features Are and Are Not Supported
 -------------------------------------------
 
@@ -1709,7 +1740,6 @@ extend(NativeHandler, {
   },
   
   _patchDocumentObject: function() {
-    console.log('patchDocumentObject');
     if (document._getElementById) {
       // already defined before
       return;
@@ -1798,7 +1828,6 @@ extend(NativeHandler, {
       @returns An object that associates prefix to namespaceURI, and vice
       versa. */
   _getNamespaces: function() {
-    console.log('getNamespaces');
     var results = [];
     
     var attrs = this._xml.documentElement.attributes;
@@ -2644,8 +2673,6 @@ extend(_SVGSVGElement, {
   },
   
   _setupFlash: function(doc, htcNode) {
-    //console.log('setupFlash, doc='+doc);
-    
     // get the size and background color information
     var size = this._determineSize();  
     var background = this._determineBackground();
@@ -2690,7 +2717,13 @@ extend(_SVGSVGElement, {
     }
     // now insert the EMBED tag into the document
     this._scriptNode.parentNode.replaceChild(flashObj, this._scriptNode);
-
+    
+    // for non-IE browsers, expose the root SVG element as 'documentElement'
+    // on the EMBED tag, and set the EMBED tag's class name to be
+    // 'embedssvg' to help script writers
+    flashObj.className += flashObj.className + ' embedssvg';
+    flashObj.documentElement = this;
+  
     return flashObj;
   },
   
@@ -2908,7 +2941,8 @@ extend(_Document, {
     if (nodeXML.namespaceURI == svgns) {
       // FIXME: We only create _Elements for SVG nodes right now, not for any
       // non-SVG nodes that might be embedded inside a metadata
-      // or foreignObject node
+      // or foreignObject node; this means that changes won't pass back into
+      // the Flash side for non-SVG embedded elements
       elem = this._getElement(nodeXML);
       return elem;
     } else {

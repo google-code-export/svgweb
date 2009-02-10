@@ -624,6 +624,11 @@ package com.sgweb.svg
             if (jsMsg.method == 'setAttribute') {
                 if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
                     element=this.js_createdElements[jsMsg.elementId];
+                    
+                    if (jsMsg.attrName == 'id') {
+                        this.js_createdElements[element.id] = undefined;
+                        this._svgRoot.unregisterElement(element.id);
+                    }
                 }
                 else {
                     element = this._svgRoot.getElement(jsMsg.elementId);
@@ -645,6 +650,7 @@ package com.sgweb.svg
 
                     if (jsMsg.attrName == 'id') {
                         this.js_createdElements[jsMsg.attrValue] = element;
+                        this._svgRoot.registerElement(jsMsg.attrValue, element);
                     }
                     // xxx the following probably belongs in SVGNode
                     if (jsMsg.attrName == 'transform' || jsMsg.attrName=='viewBox') {
