@@ -989,7 +989,7 @@ package com.sgweb.svg.nodes
                     childNode = new SVGClipPathNode(this.svgRoot, childXML);
                     break;
                 case "desc":
-                    //Do Nothing
+                    childNode = new SVGDescNode(this.svgRoot, childXML);
                     break;
                 case "defs":
                     childNode = new SVGDefsNode(this.svgRoot, childXML);
@@ -1016,11 +1016,8 @@ package com.sgweb.svg.nodes
                     childNode = new SVGMaskNode(this.svgRoot, childXML);
                     break;                        
                 case "metadata":
-                    //Do Nothing
-                    break;
-                case "namedview":
-                    //Add Handling 
-                    break;                            
+                    childNode = new SVGMetadataNode(this.svgRoot, childXML);
+                    break;                          
                 case "polygon":
                     childNode = new SVGPolygonNode(this.svgRoot, childXML);
                     break;
@@ -1065,6 +1062,7 @@ package com.sgweb.svg.nodes
                     
                 default:
                     trace("Unknown Element: " + nodeName);
+                    childNode = new SVGUnknownNode(this.svgRoot, childXML);
                     break;    
             }
             return childNode;

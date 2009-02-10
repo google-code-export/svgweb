@@ -98,6 +98,16 @@ package com.sgweb.svg.nodes
             //this.svgRoot.debug("Registering: " + id);
             this._elementById[id] = node;
         }
+        
+        /**
+         * Unregisters a node
+         * 
+         * @param id id to unregister
+         **/
+        public function unregisterElement(id:String):void {    
+            //this.svgRoot.debug("Unregistering: " + id);
+            this._elementById[id] = undefined;
+        }
 
         /**
          * 
