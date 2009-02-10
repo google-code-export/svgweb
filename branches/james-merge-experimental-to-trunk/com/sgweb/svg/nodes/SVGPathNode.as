@@ -67,29 +67,36 @@ package com.sgweb.svg.nodes {
                     
             this._graphicsCommands = new  Array();
             
+            var command:String
+            
+            var lineAbs:Boolean;
+            var isAbs:Boolean;
+            
             var pathData:String = this.normalizeSVGData(this._xml.@d);            
 
             var szSegs:Array = pathData.split(',');
+            
             
             this._graphicsCommands.push(['SF']);
              
             var firstMove:Boolean = true;
             for(var pos:int = 0; pos < szSegs.length; ) {
-                var command:String = szSegs[pos++];                
+                command = szSegs[pos++];                
                                         
-                var isAbs:Boolean = false;
+                isAbs = false;
                         
                 switch(command) {
                     case "M":
                         isAbs = true;
                     case "m":
+                        lineAbs = isAbs;
                         if (firstMove) { //If first move is 'm' treate is as absolute
                             isAbs = true;
                             firstMove = false;
                         }
                         this.moveTo(szSegs[pos++],szSegs[pos++], isAbs); // Move is always absolute                
                         while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
-                            this.line(szSegs[pos++], szSegs[pos++], false);
+                            this.line(szSegs[pos++], szSegs[pos++], lineAbs);
                         } 
                         break;
                     case "A":
@@ -151,10 +158,11 @@ package com.sgweb.svg.nodes {
                         } while (pos < szSegs.length && !isNaN(Number(szSegs[pos])));
                         break;
                     case "Z":
+                        isAbs = true;
                     case "z":
                         this.closePath();      
                         while (pos < szSegs.length && !isNaN(Number(szSegs[pos]))) {
-                            this.line(szSegs[pos++], szSegs[pos++], false);
+                            this.line(szSegs[pos++], szSegs[pos++], isAbs);
                         }                   
                         break;            
                                 
