@@ -82,9 +82,23 @@ package com.sgweb.svg.nodes {
                         
             if ((patternWidth > 0) && (patternHeight > 0)) {
                var bitmapData:BitmapData = new BitmapData(patternWidth, patternHeight);
-               bitmapData.draw(this);
+               bitmapData.draw(this.targetPattern());
                node.graphics.beginBitmapFill(bitmapData, matrix);
             }
+        }
+        
+        public function targetPattern():SVGPatternNode {
+        	var href:String = this.getAttribute("href");
+            
+            if (href) {
+               href = href.substr(1);
+               var node:SVGNode = this.svgRoot.getNode(href);
+               if (node is SVGPatternNode) {
+                   return SVGPatternNode(node).targetPattern();
+               }    
+            }
+            
+            return this;            
         }
         
     }
