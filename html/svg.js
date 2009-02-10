@@ -669,20 +669,24 @@ function mixin(f, addMe) {
 
     @param xml Parsed XML object to work with.
     @param expr String XPath expression to execute.
+    @param namespaces Optional; an array that contains prefix to namespace
+    lookups; see the _getNamespaces() methods in this file for how this
+    data structure is setup.
     
     @returns Array with results, empty array if there are none. */
-function xpath(xml, expr) {
+function xpath(xml, expr, namespaces) {
   if (typeof XPathEvaluator != 'undefined') { // non-IE browsers
-    var evaluator = new XPathEvaluator();
-    var resolver;
+    var context;
     if (xml.ownerDocument == null) {
-      resolver = evaluator.createNSResolver(xml.documentElement);
+      context = xml.documentElement;
     } else {
-      resolver = evaluator.createNSResolver(xml.ownerDocument.documentElement);
+      context = xml.ownerDocument.documentElement;
     }
-
+    
+    var evaluator = new XPathEvaluator();
+    var resolver = xml.createNSResolver(context);
     var result = evaluator.evaluate(expr, xml, resolver, 0, null);
-    var found = [], current;
+    var found = createNodeList(), current;
     while (current = result.iterateNext()) {
       found.push(current);
     }
@@ -690,13 +694,24 @@ function xpath(xml, expr) {
     return found;
   } else { // IE
     xml.setProperty('SelectionLanguage', 'XPath');
+    
+    if (namespaces) {
+      var allNamespaces = '';
+      for (var i = 0; i < namespaces.length; i++) {
+        var namespaceURI = namespaces[i];
+        var prefix = namespaces['_' + namespaceURI];
+        allNamespaces += 'xmlns:' + prefix + '="' + namespaceURI + '" ';
+      }
+      xml.setProperty("SelectionNamespaces",  allNamespaces);
+    }
+    
     var found = xml.documentElement.selectNodes(expr);
     if (found == null || typeof found == 'undefined') {
-      found = [];
+      found = createNodeList();
     }
     
     // found is not an Array; it is a NodeList -- turn it into an Array
-    var results = [];
+    var results = createNodeList();
     for (var i = 0; i < found.length; i++) {
       results.push(found[i]);
     }
@@ -1640,6 +1655,8 @@ function NativeHandler(args) {
   this.type = args.type;
   this._finishedCallback = args.finishedCallback;
   
+  this._xml = args.xml;
+  
   if (this.type == 'object') {
     // these are just handled by the browser; just add an onload handler
     // to know when they are done and save any old one that might be present
@@ -1647,8 +1664,9 @@ function NativeHandler(args) {
     this._watchObjectLoad();
   } else if (this.type == 'script') {
     this.id = args.svgID;
-    this._processSVGScript(args.xml, args.svgString, args.scriptNode);
+    this._namespaces = this._getNamespaces();
     this._patchDocumentObject();
+    this._processSVGScript(this._xml, args.svgString, args.scriptNode);
     this._finishedCallback(this.id, 'script');
   }
 }
@@ -1668,6 +1686,7 @@ extend(NativeHandler, {
   
   /** Inserts the SVG back into the HTML page with the correct namespace. */
   _processSVGScript: function(xml, svgString, scriptNode) {   
+   console.log('processSVGScript');
    var importedSVG = document.importNode(xml.documentElement, true);
    scriptNode.parentNode.replaceChild(importedSVG, scriptNode);
    root = importedSVG;
@@ -1677,18 +1696,9 @@ extend(NativeHandler, {
    // we call it with the ID of a sodipodi:namedview element, for example,
    // it won't return anything; store a reference to these so we can 
    // return them properly
-   var namespaces = [];
-   for (var i = 0; i < root.attributes.length; i++) {
-     var attr = root.attributes[i];
-     if (attr.nodeName.indexOf('xmlns:') != -1
-         && (attr.nodeValue != svgns && attr.nodeValue != xlinkns)) {
-      namespaces.push(attr.nodeValue);
-     }
-   }
-   
    this._idToNodes = {};
-   for (var i = 0; i < namespaces.length; i++) {
-     var nodes = document.getElementsByTagNameNS(namespaces[i], '*');
+   for (var i = 0; i < this._namespaces.length; i++) {
+     var nodes = document._getElementsByTagNameNS(this._namespaces[i], '*');
      for (var j = 0; j < nodes.length; j++) {
        var id = nodes[j].getAttribute('id');
        if (id) {
@@ -1699,6 +1709,7 @@ extend(NativeHandler, {
   },
   
   _patchDocumentObject: function() {
+    console.log('patchDocumentObject');
     if (document._getElementById) {
       // already defined before
       return;
@@ -1719,14 +1730,92 @@ extend(NativeHandler, {
       
       for (var i = 0; i < svgweb.handlers.length; i++) {
         var handler = svgweb.handlers[i];
-        result = handler._idToNodes['_' + id];
+        result = handler._idToNodes['_' + id];  
         if (result != null && result != undefined) {
-          return result;
+          // double check to make sure this node's ID didn't change
+          // out from under us
+          if (result.getAttribute('id') == id) {
+            return result;
+          } else {
+            handler._idToNodes['_' + id] = undefined;
+            handler._idToNodes['_' + result.getAttribute('id')] = result;
+            continue;
+          }
         }
       }
       
       return null;
     }
+    
+    // we also have to patch getElementsByTagNameNS because it does 
+    // not seem to work consistently with namepaced content in an HTML
+    // context, I believe due to casing issues (i.e. if the local name
+    // were RDF rather than rdf it won't work)
+    
+    // getElementsByTagNameNS
+    document._getElementsByTagNameNS = document.getElementsByTagNameNS;
+    document.getElementsByTagNameNS = function(ns, localName) {
+      var result = document._getElementsByTagNameNS(ns, localName);
+      // firefox doesn't like if (result)
+      if (result != null && result.length != 0) {
+        return result;
+      }
+      
+      if (result == null) {
+        result = createNodeList();
+      }
+      
+      var xpathResults;
+      for (var i = 0; i < svgweb.handlers.length; i++) {
+        var handler = svgweb.handlers[i];
+        var prefix = handler._namespaces['_' + ns];
+        if (!prefix) {
+          continue;
+        }
+        
+        xpathResults = xpath(handler._xml, '//' + prefix + ':' + localName,
+                             handler._namespaces);
+        if (xpathResults != null && xpathResults != undefined
+            && xpathResults.length > 0) {
+          for (var j = 0; j < result.length; j++) {
+            xpathResults.push(result[j]);
+          }
+          
+          return xpathResults;
+        }
+      }
+      
+      return createNodeList();
+    }
+  },
+  
+  /** Extracts any namespaces we might have, creating a prefix/namespaceURI
+      lookup table.
+      
+      NOTE: We only support namespace declarations on the root SVG node
+      for now.
+      
+      @returns An object that associates prefix to namespaceURI, and vice
+      versa. */
+  _getNamespaces: function() {
+    console.log('getNamespaces');
+    var results = [];
+    
+    var attrs = this._xml.documentElement.attributes;
+    for (var i = 0; i < attrs.length; i++) {
+      var attr = attrs[i];
+      if (/^xmlns:?(.*)$/.test(attr.nodeName)) {
+        var m = attr.nodeName.match(/^xmlns:?(.*)$/);
+        var prefix = (m[1] ? m[1] : 'xmlns');
+        var namespaceURI = attr.nodeValue;
+        
+        results['_' + prefix] = namespaceURI;
+        results['_' + namespaceURI] = prefix;
+        results.push(namespaceURI);
+      }
+    }
+    
+    return results;
   }
 });
 
@@ -2952,12 +3041,12 @@ extend(_Document, {
       lookup table. For IE.
       
       NOTE: We only support namespace declarations on the root SVG node
-      for now
+      for now.
       
       @returns An object that associates prefix to namespaceURI, and vice
       versa. */
   _getNamespaces: function() {
-    var results = {};
+    var results = [];
     
     var attrs = this._xml.documentElement.attributes;
     for (var i = 0; i < attrs.length; i++) {
@@ -2969,6 +3058,7 @@ extend(_Document, {
         
         results['_' + prefix] = namespaceURI;
         results['_' + namespaceURI] = prefix;
+        results.push(namespaceURI);
       }
     }
     
