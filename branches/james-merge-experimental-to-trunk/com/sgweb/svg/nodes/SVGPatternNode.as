@@ -20,8 +20,11 @@
 
 package com.sgweb.svg.nodes {
     import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
     
-    import flash.events.Event;    
+    import flash.display.BitmapData;
+    import flash.events.Event;
+    import flash.geom.Matrix;    
     
     public class SVGPatternNode extends SVGNode {        
         
@@ -38,6 +41,37 @@ package com.sgweb.svg.nodes {
             
             this.svgRoot.doneRendering();
         }    
+        
+        public function beginPatternFill(node:SVGNode):void {
+        	var patternWidth:Number = this.width;
+            var patternHeight:Number = this.height;
+            
+            var tmp:String = this.getAttribute('width');
+            if (tmp) {
+                patternWidth = SVGUnits.cleanNumber(tmp);
+            } 
+            
+            tmp = this.getAttribute('height');
+            if (tmp) {
+                patternHeight = SVGUnits.cleanNumber(tmp);
+            }             
+                        
+            var patternX:Number = SVGUnits.cleanNumber(this.getAttribute('x'));
+            var patternY:Number = SVGUnits.cleanNumber(this.getAttribute('y'));
+            
+            var matrix:Matrix = this.transform.concatenatedMatrix;
+            var nodeMatrix:Matrix = node.transform.concatenatedMatrix;
+            nodeMatrix.invert();
+            
+            matrix.concat(nodeMatrix);  
+            matrix.translate(patternX, patternY);
+            
+            if ((patternWidth > 0) && (patternHeight > 0)) {
+               var bitmapData:BitmapData = new BitmapData(patternWidth, patternHeight);
+               bitmapData.draw(this);
+               node.graphics.beginBitmapFill(bitmapData, matrix);
+            }
+        }
         
     }
 }

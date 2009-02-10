@@ -700,11 +700,7 @@ package com.sgweb.svg.core
                     SVGGradient(fillNode).beginGradientFill(this);                    
                 }   
                 else if (fillNode is SVGPatternNode) {
-                	if ((fillNode.width > 0) && (fillNode.height > 0)) {
-                	   var bitmapData:BitmapData = new BitmapData(fillNode.width, fillNode.height);
-                	   bitmapData.draw(fillNode);
-                	   this.graphics.beginBitmapFill(bitmapData);
-                	}
+                	SVGPatternNode(fillNode).beginPatternFill(this);
                 }
             } 
             else {      
