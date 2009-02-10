@@ -535,6 +535,20 @@ This will return true on all browsers that natively support SVG; we also patch
 things so that true will be returned if we can use Flash to do all the SVG
 hard work.
 
+Whitespace Handling
+-------------------
+
+In an XML document there can be whitespace, such as spaces and newlines, between
+tags. Example:
+
+<mytag>text</mytag>    <anothertag>foobar</anothertag>
+
+Internet Explorer handles whitespace different than other browsers. In order
+to normalize things, when dealing with embedded SVG content we remove all
+the whitespace that is between tags. This will allow you to create 
+JavaScript DOM code that works consistently between browsers. No empty
+whitespace text nodes will be in the SVG portion of the DOM.
+
 What SVG Features Are and Are Not Supported
 -------------------------------------------
 
@@ -977,8 +991,9 @@ extend(SVGWeb, {
   _processSVGScript: function(script) {
     var svg = script.innerHTML;
     
-    // remove any leading whitespace from beginning of SVG doc
+    // remove any leading whitespace from beginning and end of SVG doc
     svg = svg.replace(/^\s*/, '');
+    svg = svg.replace(/\s*$/, '');
     
     // add any missing things (XML declaration, SVG namespace, etc.)
     if (/\<\?xml/m.test(svg) == false) { // XML declaration
@@ -995,6 +1010,10 @@ extend(SVGWeb, {
     if (/xmlns:[^=]+=['"]http:\/\/www\.w3\.org\/1999\/xlink['"]/.test(svg) == false) {
       svg = svg.replace('<svg', '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
     }
+    
+    // remove whitespace between tags to normalize the DOM between IE
+    // and other browsers
+    svg = svg.replace(/\>\s+\</gm, '><');
     
     // add missing IDs to all elements and get the root SVG elements ID
     var xml = this._addIDs(svg);
@@ -1082,6 +1101,7 @@ extend(SVGWeb, {
          xmlDoc.loadXML(svg);
          root = xmlDoc.documentElement;
        } catch (e) {
+         console.log(e.message);
          throw 'Unable to parse SVG: ' + e.message;
        }
     }
@@ -1803,6 +1823,8 @@ extend(_DOMImplementation, {
 // nodes are turned into text nodes.
 function _Node(nodeName /* String */, 
                nodeType /* Optional; Number */,
+               nodeXML /* XML DOM Node */,
+               handler /* Flash handler */,
                prefix /* Optional; String */,
                namespaceURI /* String */, 
                passThrough /* Optional; Boolean */) {
@@ -1812,6 +1834,8 @@ function _Node(nodeName /* String */,
   }
   
   this.nodeName = nodeName;
+  this._nodeXML = nodeXML;
+  this._handler = handler;
   
   if (nodeName.indexOf(':') != -1) {
     this.localName = nodeName.match(/^[^:]*:(.*)$/)[1];
@@ -1825,8 +1849,14 @@ function _Node(nodeName /* String */,
     this.nodeType = _Node.ELEMENT_NODE;
   }
   
-  this.prefix = prefix;
-  this.namespaceURI = namespaceURI;
+  if (nodeType == _Node.ELEMENT_NODE || nodeType == _Node.DOCUMENT_NODE) {
+    this.prefix = prefix;
+    this.namespaceURI = namespaceURI;
+    this._nodeXML = nodeXML;
+    this._nodeValue = null;
+  }
+  
+  this.ownerDocument = document;
   
   if (passThrough === undefined) {
     passThrough = false;
@@ -1834,8 +1864,19 @@ function _Node(nodeName /* String */,
   
   this._passThrough = passThrough;
   
+  if (!isIE) {
+    // NOTE: we make _childNodes an object literal instead of an Array; if
+    // it is an array we can't do __defineGetter__ on each index position on
+    // Safari
+    this._childNodes = {};
+  } else { // IE
+    this._childNodes = [];
+  }
+  
   // prepare the getter and setter magic for non-IE browsers
-  // TODO
+  if (!isIE) {
+    this._defineNodeAccessors();
+  }
 }
 
 mixin(_Node, {
@@ -1895,15 +1936,15 @@ extend(_Node, {
   
   // getter/setter attribute methods
   
-  _getNodeValue: function() { /* throws _DOMException */ },
-  _setNodeValue: function(value) { /* throws _DOMException */ },
+  // nodeValue defined as getter/setter
+  // textContent and data defined as getters/setters for TEXT_NODES
+  // childNodes defined as getter/setter
   
   _getParentNode: function() { /* readonly; returns _Node */ },
-  _getChildNodes: function() { /* readonly; returns _NodeList */ },
   _getFirstChild: function() { /* readonly; returns _Node */ },
   _getLastChild: function() { /* readonly; returns _Node */ },
   _getPreviousSibling: function() { /* readonly; returns _Node */ },
-  _getNextSibling: function() { /* readonly; returns _Node */ }
+  _getNextSibling: function() { /* readonly; returns _Node */ },
   
   // Note: 'attributes' property not supported since we don't support
   // Attribute DOM Node types
@@ -1911,33 +1952,144 @@ extend(_Node, {
   // TODO: It would be nice to support the ElementTraversal spec here as well
   // since it cuts down on code size:
   // http://www.w3.org/TR/ElementTraversal/
+  _defineNodeAccessors: function() {
+    var self = this;
+    
+    // readonly properties
+    this.__defineGetter__('parentNode', function() { 
+      return self._getParentNode(); 
+    });
+    this.__defineGetter__('firstChild', function() { 
+      return self._getFirstChild(); 
+    });
+    this.__defineGetter__('lastChild', function() { 
+      return self._getLastChild(); 
+    });
+    this.__defineGetter__('previousSibling', function() { 
+      return self._getPreviousSibling(); 
+    });
+    this.__defineGetter__('nextSibling', function() { 
+      return self._getNextSibling(); 
+    });
+    
+    // childNodes array
+    // FIXME: This should probably technically be a NodeList
+    this.__defineGetter__('childNodes', function() {
+      return self._childNodes;
+    });
+    var children = this._nodeXML.childNodes;
+    this._childNodes.length = children.length; 
+    for (var i = 0; i < children.length; i++) {
+      // do the defineGetter in a different method so the closure gets
+      // formed correctly (closures can be tricky in loops if you are not
+      // careful)
+      this._defineChildNodeAccessor(i);
+    }
+    
+    // read/write properties
+    if (this.nodeType == _Node.TEXT_NODE) {
+      this.__defineGetter__('data', function() { 
+        return self._nodeValue; 
+      });
+      this.__defineSetter__('data', function(newValue) {
+        return self._nodeValue = newValue;
+      });
+      
+      this.__defineGetter__('textContent', function() { 
+        return self._nodeValue; 
+      });
+      this.__defineSetter__('textContent', function(newValue) {
+        return self._nodeValue = newValue;
+      });
+    } else { // ELEMENT and DOCUMENT nodes
+      // Firefox and Safari return '' for textContent for non text nodes;
+      // mimic this behavior
+      this.__defineGetter__('textContent', function() {
+        return '';
+      });
+    }
+    
+    this.__defineGetter__('nodeValue', function() { 
+      return self._nodeValue; 
+    });
+    this.__defineSetter__('nodeValue', function(newValue) {
+      return self._nodeValue = newValue;
+    });
+  },
+  
+  _defineChildNodeAccessor: function(i) {
+    var self = this;
+    
+    this._childNodes.__defineGetter__(i, function() {
+      return self._getChildNode(self._nodeXML.childNodes[i]);
+    });
+  },
+  
+  _getChildNode: function(child) {
+    var doc = this._handler.document;
+    
+    if (child.nodeType == _Node.ELEMENT_NODE) {
+      var elem = doc._getElement(child);
+      elem._passThrough = true;
+      return elem;
+    } else if (child.nodeType == _Node.TEXT_NODE) {
+      // just always create these on demand since they have no ID
+      var textNode = doc.createTextNode(child.nodeValue);
+      textNode._passThrough = true;
+      return textNode;
+    } else { // others not supported
+      return undefined;
+    }
+  },
+  
+  /** For IE we have to do some tricks that are a bit different than
+      the other browsers; we can't know when a particular
+      indexed member is called, such as childNodes[1], so instead we
+      return the entire _childNodes array; what is nice is that IE applies
+      the indexed lookup _after_ we've returned things, so this works. This
+      requires us to instantiate all the children, however, when childNodes
+      is called. This method is called by the HTC file. */
+  _getChildNodes: function() {
+    // NOTE: for IE we return a real Array, while for other browsers
+    // our _childNodes array is an object literal in order to do
+    // our __defineGetter__ magic in _defineNodeAccessors.
+    var results = [];
+    
+    if (this._nodeXML.childNodes.length == this._childNodes.length) {
+      // we've already processed our childNodes before
+      return this._childNodes;
+    } else {
+      for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
+        results.push(this._getChildNode(this._nodeXML.childNodes[i]));
+      }
+      
+      this._childNodes = results;
+      return results;
+    }
+  }
 });
 
 
 /** Our DOM Element for each SVG node.
 
-    @param tagName The local name, such as 'rect'.
+    @param localName The local name, such as 'rect'.
     @param prefix The namespace prefix, such as 'svg' or 'sodipodi'.
     @param namespaceURI The namespace URI. If undefined, defaults to null.
     @param nodeXML The parsed XML DOM node for this element.
     @param handler The FlashHandler rendering this node. 
     @param passThrough Optional boolean on whether any changes to this
     element 'pass through' and cause changes in the Flash renderer. */
-function _Element(tagName, prefix, namespaceURI, nodeXML, handler, 
+function _Element(localName, prefix, namespaceURI, nodeXML, handler, 
                   passThrough) {
-  if (tagName == undefined && namespaceURI == undefined 
+  if (localName == undefined && namespaceURI == undefined 
       && nodeXML == undefined && handler == undefined) {
     // prototype subclassing
     return;
   }
-
-  // superclass constructor
-  _Node.apply(this, [tagName, _Node.ELEMENT_NODE, prefix, namespaceURI, 
-                     passThrough]);
   
-  this.tagName = tagName;
-  this._nodeXML = nodeXML;
-  this._handler = handler;
+  // superclass constructor
+  _Node.apply(this, [localName, _Node.ELEMENT_NODE, nodeXML, handler, prefix, 
+                     namespaceURI, passThrough]);
   
   // copy our attributes over
   this._importAttributes(this, this._nodeXML);
@@ -1952,7 +2104,7 @@ function _Element(tagName, prefix, namespaceURI, nodeXML, handler,
   // element since that is already a proper Behavior as it embeds our
   // Flash control inside of _SVGSVGElement
   if (isIE && this.nodeName != 'svg') {
-    this._uiNode = this._createUINode();
+    this._createUINode();
   }
   
   // define our accessors if we are not IE; IE does this by using the HTC
@@ -2199,8 +2351,7 @@ extend(_Element, {
     uiNode._proxyNode = this;
     uiNode._handler = this._handler;
     this._uiContainer.appendChild(uiNode);
-    
-    return uiNode;
+    this._uiNode = uiNode;
   },
   
   /** Does all the getter/setter magic for attributes, so that external
@@ -2380,7 +2531,7 @@ extend(_SVGSVGElement, {
       sent the SVG to the Flash file for rendering yet. */
   _onFlashLoaded: function(msg) {
     // the Flash object is done loading
-    console.log('_onFlashLoaded');
+    //console.log('_onFlashLoaded');
     
     // store a reference to the Flash object so we can send it messages
     if (isIE) {
@@ -2615,7 +2766,7 @@ extend(_SVGSVGElement, {
     @param handler The FlashHandler this document is a part of. */
 function _Document(xml, handler) {
   // superclass constructor
-  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE], svgns);
+  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, xml, handler], svgns);
   
   this._xml = xml;
   this._handler = handler;
@@ -2644,7 +2795,13 @@ extend(_Document, {
   
   createElementNS: function(ns, qName) /* _Element, throws _DOMException */ {},
   
-  createTextNode: function(data /* String */) /* _Text */ {},
+  createTextNode: function(data /* String */) /* _Text */ {
+    var nodeXML = this._xml.createTextNode(data);
+    var textNode = new _Node('#text', _Node.TEXT_NODE, nodeXML, this._handler,
+                             null, null, false);
+    textNode.data = data;
+    return textNode;
+  },
   
   getElementById: function(id) /* _Element */ {
     // XML parser does not have getElementById, due to id mapping in XML
@@ -2761,11 +2918,11 @@ extend(_Document, {
       // never seen before -- we'll have to create a new _Element now
       node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
                           nodeXML.namespaceURI, nodeXML, this._handler, false);
-                          
+                                            
       if (node.namespaceURI == svgns) {
         // FIXME: For right now we only pass changes to this node to the Flash
         // for SVG nodes, not for other ones since the Flash viewer doesn't
-        // parse or handle non-SVG nodes
+        // parse or handle non-SVG nodes yet
         node._passThrough = true;
       }
       

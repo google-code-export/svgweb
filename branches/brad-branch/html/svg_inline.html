@@ -234,6 +234,34 @@
         assertEquals("sodipodi.getAttribute('newAttribute') == hello world", 
                       'hello world',
                       sodipodi.getAttribute('newAttribute'));
+                      
+        // createTextNode
+        
+        // childNodes
+        console.log('Testing childNodes...');
+        
+        var group = document.getElementById('myGroup');
+        assertExists("group.childNodes", group.childNodes);
+        assertEquals("group.length == 1", 1, group.childNodes.length);
+        var child = group.childNodes[0];
+        assertExists("group.childNodes[0]", child);
+        assertEquals("child.childNodes[0].id", 'myRect', child.id);
+        assertEquals("child.childNodes[0].nodeName", 'rect', child.nodeName);
+        assertEquals("child.childNodes[0].nodeType", 1, child.nodeType);
+        assertUndefined("child.childNodes[0].data == undefined", child.data);
+        assertEquals("child.childNodes[0].textContent == ''", '', 
+                     child.textContent);
+        assertNull("child.childNodes[0].nodeValue == null", child.nodeValue);
+        assertExists("child.childNodes", child.childNodes);
+        assertEquals("child.childNodes.length == 0", 0, 
+                     child.childNodes.length);       
+        assertUndefined("group.childNodes[1] == undefined", group.childNodes[1]);
+        for (var i = 0; i < group.childNodes.length; i++) {
+          assertExists('looping through childNodes, i=' + i, 
+                       group.childNodes[i]);
+          assertExists('looping through childNodes, .nodeName for i=' + i,
+                       group.childNodes[i].nodeName);
+        }
                                     
         console.log('Finished testing.');
       });
@@ -263,6 +291,14 @@
           throw new Error(msg);
         }
       }
+      
+      function assertUndefined(comment, actual) {
+        if (actual !== undefined) {
+          var msg = 'assertNull failed: ' + comment 
+                    + '\n(actual: ' + actual + ')';
+          throw new Error(msg);
+        }
+      }
     </script>
   </head>
 
@@ -271,13 +307,15 @@
     
     <script type="image/svg+xml">
       <svg id="mySVG" width="200" height="200">
-        <rect
-           id="myRect"
-           width="36.416"
-           height="36.416"
-           x="50"
-           y="50"
-           fill="red"/>
+        <g id="myGroup">
+          <rect
+             id="myRect"
+             width="36.416"
+             height="36.416"
+             x="50"
+             y="50"
+             fill="red"/>
+        </g>
       </svg>
     </script>
   
