@@ -39,6 +39,10 @@ package com.sgweb.svg.nodes
             super(svgRoot, xml);
         }
         
+        override public function getText():String {
+            return this._title;
+        }
+        
         override protected function parse():void {
             this._title = '';
             

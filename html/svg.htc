@@ -176,11 +176,23 @@
     }
     
     function getAttribute(attrName) { 
-      return this._proxyNode.getAttribute(attrName);
+      // _Node.TEXT_NODE is not visible here (global variables aren't
+      // shared between HTC and it's host page)
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode.getAttribute(attrName);
+      }
     }
     
     function setAttribute(attrName, attrValue) {
-      return this._proxyNode.setAttribute(attrName, attrValue);
+      // _Node.TEXT_NODE is not visible here (global variables aren't
+      // shared between HTC and it's host page)
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode.setAttribute(attrName, attrValue);
+      }
     }
     
     // getter/setter accessors; they delegate back into the
@@ -192,7 +204,9 @@
     function _getPrefix() { return this._proxyNode.prefix; }
     function _getNamespaceURI() { return this._proxyNode.namespaceURI; }
     
-    function _getChildNodes() { return this._proxyNode._getChildNodes(); }
+    function _getChildNodes() {
+      return this._proxyNode._getChildNodes();
+    }
     
     function _getParentNode() { return this._proxyNode._getParentNode(); }
     function _getFirstChild() { return this._proxyNode._getFirstChild(); }
@@ -210,7 +224,7 @@
     function _getTextContent() { 
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
-      if (this._proxyNode.nodeType == this._proxyNode.TEXT_NODE) {
+      if (this._proxyNode.nodeType == 3) { // text node
         return this._proxyNode._nodeValue;
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
@@ -218,7 +232,7 @@
     }
     
     function _setTextContent(newValue) { 
-      if (this._proxyNode.nodeType == this._proxyNode.TEXT_NODE) {
+      if (this._proxyNode.nodeType == 3) { // text node
         return this._proxyNode._nodeValue = newValue;
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
@@ -226,7 +240,7 @@
     }
     
     function _getData() {
-      if (this._proxyNode.nodeType == this._proxyNode.TEXT_NODE) {
+      if (this._proxyNode.nodeType == 3) { // text node
         return this._proxyNode._nodeValue;
       } else {
         return undefined;
@@ -234,25 +248,65 @@
     }
     
     function _setData(newValue) { 
-      if (this._proxyNode.nodeType == this._proxyNode.TEXT_NODE) {
+      if (this._proxyNode.nodeType == 3) { // text node
         return this._proxyNode._nodeValue = newValue;
       } else {
         return undefined;
       }
     }
     
-    function _getId() { return this._proxyNode.getAttribute('id'); }
-    function _setId(v) { return this._proxyNode.setAttribute('id', v); }
+    function _getId() { 
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode.getAttribute('id'); 
+      }
+    }
+    
+    function _setId(v) { 
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode.setAttribute('id', v); 
+      }
+    }
     
     function _getInnerHTML() { return this._proxyNode._getInnerHTML(); }
     function _setInnerHTML(v) { return this._proxyNode._setInnerHTML(v); }
     
-    // SVGSVGElement and SVGUseElement only
-    function _getX() { return this._proxyNode._getX(); }
-    function _getY() { return this._proxyNode._getY(); }
-    function _getWidth() { return this._proxyNode._getWidth(); }
-    function _getHeight() { return this._proxyNode._getHeight(); }
+    // SVGSVGElement and SVGUseElement only properties
     
+    function _getX() {
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode._getX(); 
+      }
+    }
+    
+    function _getY() { 
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode._getY(); 
+      }
+    }
+    
+    function _getWidth() { 
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode._getWidth(); 
+      }
+    }
+    
+    function _getHeight() { 
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode._getHeight(); 
+      }
+    }
   </script>
 </head>
 </html>

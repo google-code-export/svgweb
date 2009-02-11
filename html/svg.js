@@ -1061,6 +1061,12 @@ extend(SVGWeb, {
     
     // add missing IDs to all elements and get the root SVG elements ID
     var xml = this._addIDs(svg);
+    if (typeof XMLSerializer != 'undefined') { // non-IE browsers
+      svg = (new XMLSerializer()).serializeToString(xml);
+    } else { // IE
+      svg = xml.xml;
+    }
+    
     var rootID = xml.documentElement.getAttribute('id');
     
     // create the correct handler
@@ -1486,11 +1492,12 @@ function FlashHandler(args) {
     this._xml = args.xml;
     this._svgString = args.svgString;
     this._scriptNode = args.scriptNode;
-    
+       
     this._handleScript();
   } else if (this.type == 'object') {
     this.id = args.objID;
     this._objNode = args.objNode;
+    
     this._handleObject();
   }
 }
@@ -1937,13 +1944,8 @@ extend(_DOMImplementation, {
 // Note: Only element and text section nodes are supported for now.
 // We don't parse and retain comments, processing instructions, etc. CDATA
 // nodes are turned into text nodes.
-function _Node(nodeName /* String */, 
-               nodeType /* Optional; Number */,
-               nodeXML /* XML DOM Node */,
-               handler /* Flash handler */,
-               prefix /* Optional; String */,
-               namespaceURI /* String */, 
-               passThrough /* Optional; Boolean */) {
+function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler, 
+               passThrough) {
   if (nodeName == undefined && nodeType == undefined) {
     // prototype subclassing
     return;
@@ -1953,10 +1955,12 @@ function _Node(nodeName /* String */,
   this._nodeXML = nodeXML;
   this._handler = handler;
   
-  if (nodeName.indexOf(':') != -1) {
-    this.localName = nodeName.match(/^[^:]*:(.*)$/)[1];
-  } else {
-    this.localName = nodeName;
+  if (nodeType == _Node.ELEMENT_NODE) {
+    if (nodeName.indexOf(':') != -1) {
+      this.localName = nodeName.match(/^[^:]*:(.*)$/)[1];
+    } else {
+      this.localName = nodeName;
+    }
   }
   
   if (nodeType) {
@@ -1992,24 +1996,22 @@ function _Node(nodeName /* String */,
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
     this._defineNodeAccessors();
+  } else if (isIE && this.nodeType != _Node.DOCUMENT_NODE 
+             && this.nodeName != 'svg') {
+    // if we are IE, we must use a behavior in order to get onpropertychange
+    // and override core DOM methods. We don't do it for the root SVG
+    // element since that is already a proper Behavior as it embeds our
+    // Flash control inside of _SVGSVGElement
+    this._createUINode();
   }
 }
 
 mixin(_Node, {
   ELEMENT_NODE: 1,
   TEXT_NODE: 3,
-  DOCUMENT_NODE: 9,
+  DOCUMENT_NODE: 9
   
   // Note: many other node types left out here
-  
-  /** The pass through flag controls whether we 'pass through' any changes
-      to this object to the underlying Flash viewer. For example, if a
-      Node has been created but is not yet attached to the document, any 
-      changes to its attributes should not pass through to the Flash viewer,
-      and this flag would therefore be false. After the Node is attached
-      through appendChild(), passThrough would become true and everything
-      would get passed through to Flash for rendering. */
-  _passThrough: false
 });
 
 extend(_Node, {
@@ -2068,6 +2070,17 @@ extend(_Node, {
   // TODO: It would be nice to support the ElementTraversal spec here as well
   // since it cuts down on code size:
   // http://www.w3.org/TR/ElementTraversal/
+  
+  /** The pass through flag controls whether we 'pass through' any changes
+      to this object to the underlying Flash viewer. For example, if a
+      Node has been created but is not yet attached to the document, any 
+      changes to its attributes should not pass through to the Flash viewer,
+      and this flag would therefore be false. After the Node is attached
+      through appendChild(), passThrough would become true and everything
+      would get passed through to Flash for rendering. */
+  _passThrough: false,
+  
+  /** Do the getter/setter magic for our attributes for non-IE browsers. */
   _defineNodeAccessors: function() {
     var self = this;
     
@@ -2089,7 +2102,6 @@ extend(_Node, {
     });
     
     // childNodes array
-    // FIXME: This should probably technically be a NodeList
     this.__defineGetter__('childNodes', function() {
       return self._childNodes;
     });
@@ -2118,7 +2130,7 @@ extend(_Node, {
         return self._nodeValue = newValue;
       });
     } else { // ELEMENT and DOCUMENT nodes
-      // Firefox and Safari return '' for textContent for non text nodes;
+      // Firefox and Safari return '' for textContent for non-text nodes;
       // mimic this behavior
       this.__defineGetter__('textContent', function() {
         return '';
@@ -2142,7 +2154,6 @@ extend(_Node, {
   },
   
   _getChildNode: function(child) {
-    //console.log('getChildNode, child.nodeType='+child.nodeType + ', child.nodeName='+child.nodeName);
     var doc = this._handler.document;
     
     if (child.nodeType == _Node.ELEMENT_NODE) {
@@ -2150,10 +2161,14 @@ extend(_Node, {
       elem._passThrough = true;
       return elem;
     } else if (child.nodeType == _Node.TEXT_NODE) {
-      // just always create these on demand since they have no ID
+      // create these on demand since they have no ID
       var textNode = doc.createTextNode(child.nodeValue);
       textNode._passThrough = true;
-      return textNode;
+      if (isIE) {
+        return textNode._uiNode;
+      } else {
+        return textNode;
+      }
     } else { // others not supported
       return undefined;
     }
@@ -2167,7 +2182,6 @@ extend(_Node, {
       requires us to instantiate all the children, however, when childNodes
       is called. This method is called by the HTC file. */
   _getChildNodes: function() {
-    //console.log('getChildNodes');
     // NOTE: for IE we return a real Array, while for other browsers
     // our _childNodes array is an object literal in order to do
     // our __defineGetter__ magic in _defineNodeAccessors.
@@ -2184,30 +2198,62 @@ extend(_Node, {
       this._childNodes = results;
       return results;
     }
+  },
+  
+  // if we are IE, we must use a behavior in order to get onpropertychange
+  // and override core DOM methods
+  _createUINode: function() {
+    // we store our HTC nodes into a hidden container located in the
+    // HEAD of the document; either get it now or create one on demand
+    if (!this._uiContainer) {
+      var rootID = this._handler.document.documentElement.getAttribute('id');
+      this._uiContainer = document.getElementById('__ui_container_' + rootID);
+      if (!this._uiContainer) {
+        var head = document.getElementsByTagName('head')[0];
+        this._uiContainer = document.createElement('div');
+        this._uiContainer.id = '__ui_container_' + rootID;
+        head.appendChild(this._uiContainer);
+      }
+    }
+    
+    // now store our HTC UI node into this container; we will intercept
+    // all calls through the HTC, and implement all the real behavior
+    // inside ourselves (inside _Element)
+    // Note: we do svg: even if we are dealing with a non-SVG node on IE,
+    // such as sodipodi:namedview
+    var nodeName = this.nodeName;
+    if (nodeName == '#text') {
+      nodeName = '__text'; // text nodes
+    }
+    var uiNode = document.createElement('svg:' + this.nodeName);
+    uiNode._proxyNode = this;
+    uiNode._handler = this._handler;
+    this._uiContainer.appendChild(uiNode);
+    this._uiNode = uiNode;
   }
 });
 
 
 /** Our DOM Element for each SVG node.
 
-    @param localName The local name, such as 'rect'.
+    @param nodeName The node name, such as 'rect' or 'sodipodi:namedview'.
     @param prefix The namespace prefix, such as 'svg' or 'sodipodi'.
     @param namespaceURI The namespace URI. If undefined, defaults to null.
     @param nodeXML The parsed XML DOM node for this element.
     @param handler The FlashHandler rendering this node. 
     @param passThrough Optional boolean on whether any changes to this
-    element 'pass through' and cause changes in the Flash renderer. */
-function _Element(localName, prefix, namespaceURI, nodeXML, handler, 
+    element 'pass through' and cause changes in the Flash renderer. */                 
+function _Element(nodeName, prefix, namespaceURI, nodeXML, handler, 
                   passThrough) {
-  if (localName == undefined && namespaceURI == undefined 
+  if (nodeName == undefined && namespaceURI == undefined 
       && nodeXML == undefined && handler == undefined) {
     // prototype subclassing
     return;
   }
   
   // superclass constructor
-  _Node.apply(this, [localName, _Node.ELEMENT_NODE, nodeXML, handler, prefix, 
-                     namespaceURI, passThrough]);
+  _Node.apply(this, [nodeName, _Node.ELEMENT_NODE, prefix, namespaceURI, nodeXML,
+                     handler, prefix, passThrough]);
   
   // copy our attributes over
   this._importAttributes(this, this._nodeXML);
@@ -2215,14 +2261,6 @@ function _Element(localName, prefix, namespaceURI, nodeXML, handler,
   // track .style changes
   if (this.namespaceURI == svgns) {
     this.style = new _Style();
-  }
-  
-  // if we are IE, we must use a behavior in order to get onpropertychange
-  // and override core DOM methods. We don't do it for the root SVG
-  // element since that is already a proper Behavior as it embeds our
-  // Flash control inside of _SVGSVGElement
-  if (isIE && this.nodeName != 'svg') {
-    this._createUINode();
   }
   
   // define our accessors if we are not IE; IE does this by using the HTC
@@ -2442,34 +2480,6 @@ extend(_Element, {
       var attr = nodeXML.attributes[i];
       this._attributes['_' + attr.nodeName] = attr.nodeValue;
     }
-  },
-  
-  // if we are IE, we must use a behavior in order to get onpropertychange
-  // and override core DOM methods
-  _createUINode: function() {
-    // we store our HTC nodes into a hidden container located in the
-    // HEAD of the document; either get it now or create one on demand
-    if (!this._uiContainer) {
-      var rootID = this._handler.document.documentElement.id;
-      this._uiContainer = document.getElementById('__ui_container_' + rootID);
-      if (!this._uiContainer) {
-        var head = document.getElementsByTagName('head')[0];
-        this._uiContainer = document.createElement('div');
-        this._uiContainer.id = '__ui_container_' + rootID;
-        head.appendChild(this._uiContainer);
-      }
-    }
-    
-    // now store our HTC UI node into this container; we will intercept
-    // all calls through the HTC, and implement all the real behavior
-    // inside ourselves (inside _Element)
-    // Note: we do svg: even if we are dealing with a non-SVG node on IE,
-    // such as sodipodi:namedview
-    var uiNode = document.createElement('svg:' + this.nodeName);
-    uiNode._proxyNode = this;
-    uiNode._handler = this._handler;
-    this._uiContainer.appendChild(uiNode);
-    this._uiNode = uiNode;
   },
   
   /** Does all the getter/setter magic for attributes, so that external
@@ -2888,7 +2898,7 @@ extend(_SVGSVGElement, {
     @param handler The FlashHandler this document is a part of. */
 function _Document(xml, handler) {
   // superclass constructor
-  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, xml, handler], svgns);
+  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, xml, handler], svgns);
   
   this._xml = xml;
   this._handler = handler;
@@ -2919,9 +2929,9 @@ extend(_Document, {
   
   createTextNode: function(data /* String */) /* _Text */ {
     var nodeXML = this._xml.createTextNode(data);
-    var textNode = new _Node('#text', _Node.TEXT_NODE, nodeXML, this._handler,
-                             null, null, false);
-    textNode.data = data;
+    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML, 
+                             this._handler);
+    textNode._nodeValue = data;
     return textNode;
   },
   
@@ -2937,17 +2947,8 @@ extend(_Document, {
       return null;
     }
     
-    // create or get an _Element for this XML DOM node for SVG Nodes
-    if (nodeXML.namespaceURI == svgns) {
-      // FIXME: We only create _Elements for SVG nodes right now, not for any
-      // non-SVG nodes that might be embedded inside a metadata
-      // or foreignObject node; this means that changes won't pass back into
-      // the Flash side for non-SVG embedded elements
-      elem = this._getElement(nodeXML);
-      return elem;
-    } else {
-      return nodeXML;
-    }
+    // create or get an _Element for this XML DOM node for node
+    return this._getElement(nodeXML);
   },
   
   /** NOTE: on IE we don't support calls like the following:
@@ -3017,23 +3018,11 @@ extend(_Document, {
   },
   
   /** Fetches an _Element or creates a new one on demand. Used by
-      getElementById and getElementsByTagNameNS. A special case is
-      if the node is not an SVG node, such as other namespaced nodes
-      inside of a metadata or foreignObject node. On IE we create
-      _Element nodes for these; other browsers return the native DOM
-      object.
+      getElementById and getElementsByTagNameNS.
+      
       @param nodeXML XML DOM node for the element to use when constructing
       the _Element. */
   _getElement: function(nodeXML) {
-    //console.log('getElement');
-    // non-SVG node on non-IE browsers; we don't wrap these, instead having
-    // the browser natively handle working with this
-    if (!isIE && nodeXML.namespaceURI != svgns) {
-      // FIXME: This means that changes to this node will not currently
-      // show up in our DOM, effectively making them readonly currently
-      return nodeXML;
-    }
-    
     // if we've created an _Element for this node before, we
     // stored a reference to it by ID so we could get it later
     var node = this._elementById['_' + nodeXML.getAttribute('id')];
@@ -3042,13 +3031,7 @@ extend(_Document, {
       // never seen before -- we'll have to create a new _Element now
       node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
                           nodeXML.namespaceURI, nodeXML, this._handler, false);
-                                            
-      if (node.namespaceURI == svgns) {
-        // FIXME: For right now we only pass changes to this node to the Flash
-        // for SVG nodes, not for other ones since the Flash viewer doesn't
-        // parse or handle non-SVG nodes yet
-        node._passThrough = true;
-      }
+      node._passThrough = true;
       
       // store a reference to ourselves. 
       // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
