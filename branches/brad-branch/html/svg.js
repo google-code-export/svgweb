@@ -722,7 +722,7 @@ function xpath(doc, context, expr, namespaces) {
 
     return found;
   } else { // IE
-    xml.setProperty('SelectionLanguage', 'XPath');
+    doc.setProperty('SelectionLanguage', 'XPath');
     
     if (namespaces) {
       var allNamespaces = '';
@@ -731,7 +731,7 @@ function xpath(doc, context, expr, namespaces) {
         var prefix = namespaces['_' + namespaceURI];
         allNamespaces += 'xmlns:' + prefix + '="' + namespaceURI + '" ';
       }
-      xml.setProperty("SelectionNamespaces",  allNamespaces);
+      doc.setProperty("SelectionNamespaces",  allNamespaces);
     }
     
     var found = context.selectNodes(expr);
@@ -2142,6 +2142,7 @@ extend(_Node, {
   },
   
   _getChildNode: function(child) {
+    //console.log('getChildNode, child.nodeType='+child.nodeType + ', child.nodeName='+child.nodeName);
     var doc = this._handler.document;
     
     if (child.nodeType == _Node.ELEMENT_NODE) {
@@ -2166,6 +2167,7 @@ extend(_Node, {
       requires us to instantiate all the children, however, when childNodes
       is called. This method is called by the HTC file. */
   _getChildNodes: function() {
+    //console.log('getChildNodes');
     // NOTE: for IE we return a real Array, while for other browsers
     // our _childNodes array is an object literal in order to do
     // our __defineGetter__ magic in _defineNodeAccessors.
@@ -3023,6 +3025,7 @@ extend(_Document, {
       @param nodeXML XML DOM node for the element to use when constructing
       the _Element. */
   _getElement: function(nodeXML) {
+    //console.log('getElement');
     // non-SVG node on non-IE browsers; we don't wrap these, instead having
     // the browser natively handle working with this
     if (!isIE && nodeXML.namespaceURI != svgns) {
@@ -3202,7 +3205,8 @@ extend(_SVGTransform, {
 // SVGRect
 function createSVGRect(x /* float */, y /* float */, width /* float */, 
                      height /* float */) {
-  return {x: float(x), y: float(y), width: float(width), height: float(height)};
+  return {x: parseFloat(x), y: parseFloat(y), 
+          width: parseFloat(width), height: parseFloat(height)};
 }
 
 

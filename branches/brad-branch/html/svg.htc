@@ -1,12 +1,5 @@
 <html xmlns:svg="http://www.w3.org/2000/svg">
 
-<!--
-TODO:
-sendToFlash method that just takes a flashMsg object
-expose flashObj so that I can call methods exposed on it through ExternalInterface externally
-but only on root node
--->
-
 <head>
   <!-- 
     The 'lightWeight' attribute below is important for two reasons:

@@ -36,7 +36,7 @@ com/sgweb/svg/build/svg.htc: html/svg.htc
 	# shell variables then paste them all together at the end to produce the final
 	# result.
 	(compressed_js=`sed -n -e '/script/, /\/script/ p' -e 's/script//' <html/svg.htc | grep -v 'script>' | grep -v '<script' | java -jar utils/yuicompressor-2.4.1.jar --type js --nomunge --preserve-semi 2>&1`; \
-   top_of_htc=`sed -e '/script/,/<\/html>/ s/^.*$$//' <html/svg.htc | sed '/\<\!\-\-/,/\-\-\>/ s/.*//' | cat -s`; \
+   top_of_htc=`sed -e '/script/,/<\/html>/ s/.*//' <html/svg.htc | sed 's/[ ]*<\!\-\-[^>]*>[ ]*//g;' | sed '/\<\!\-\-/,/\-\-\>/ s/.*//' | cat -s`; \
    echo $$top_of_htc '<script type="text/javascript">' $$compressed_js '</script></body></html>' >com/sgweb/svg/build/svg.htc;)
 	@echo Final size: svg.htc \(`ls -lrt com/sgweb/svg/build/svg.htc | awk '{print $$5}'` bytes\)
 else
