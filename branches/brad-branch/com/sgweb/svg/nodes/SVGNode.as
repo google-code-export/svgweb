@@ -96,6 +96,11 @@ package com.sgweb.svg.nodes
         protected var _invalidDisplay:Boolean = false;
         protected var _parsedChildren:Boolean = false;
         
+        /**
+         * Hold node's text if any is present.
+         **/
+        protected var _text:String = null;
+        
 
         public var _initialRenderDone:Boolean = false;
 
@@ -1175,6 +1180,24 @@ package com.sgweb.svg.nodes
             }
         }
         
+        /**
+         * Returns true if this node has a child text node, for example
+         * such as <text>hello world</text>
+         */
+        public function hasText():Boolean {
+            if (this._text == null) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        
+        /**
+         * Returns any text content this node might have as a child.
+         */
+        public function getText():String {
+            return this._text;
+        }
                 
         /**
          * Force a redraw of a node

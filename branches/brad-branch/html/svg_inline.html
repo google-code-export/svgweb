@@ -267,7 +267,7 @@
         // TODO: having a TEXT node with a child #text node creates an
         // error on IE below; see method _getChildNode
         assertExists("group.childNodes", group.childNodes);
-        assertEquals("group.length == 1", 1, group.childNodes.length);
+        assertEquals("group.length == 2", 2, group.childNodes.length);
         var child = group.childNodes[0];
         assertExists("group.childNodes[0]", child);
         assertEquals("child.childNodes[0].id", 'myRect', child.id);
@@ -452,9 +452,11 @@
                      'http://web.resource.org/cc/', cc.namespaceURI);
         assertEquals('cc.localName == Work', 'Work', cc.localName);
         assertEquals('cc.nodeType == 1', 1, cc.nodeType);  
+        
+        // TODO: test .id syntax and see if it works natively
 
         // ownerDocument
-        /*var svg = document.getElementsByTagNameNS(svgns, 'svg');
+        var svg = document.getElementsByTagNameNS(svgns, 'svg');
         assertEquals('Three svg elements', 3, svg.length);
         for (var i = 0; i < svg.length; i++) {
           assertEquals('svg[' + i + '].ownerDocument == document',
@@ -470,7 +472,7 @@
         assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
         assertEquals('svgText.childNodes.length == 1', 1, 
                      svgText.childNodes.length);
-                     
+                  
         // text nodes (createTextNode, textNode.nodeValue, textNode.textContent,
         // and textNode.data) including setting and getting
         var textNode = svgText.childNodes[0];
@@ -480,6 +482,11 @@
         assertNull('textNode.localName == null', textNode.localName);
         assertNull('textNode.namespaceURI == null', textNode.namespaceURI);
         assertNull('textNode.prefix == null', textNode.prefix);
+        assertUndefined('textNode.x == undefined', textNode.x);
+        assertUndefined('textNode.y == undefined', textNode.y);
+        assertUndefined('textNode.width == undefined', textNode.width);
+        assertUndefined('textNode.height == undefined', textNode.height);
+        assertUndefined('textNode.id == undefined', textNode.id);
         assertExists('textNode.childNodes should exist', textNode.childNodes);
         assertEquals('textNode.childNodes.length == 0', 0,
                      textNode.childNodes.length);
@@ -520,7 +527,7 @@
                      textNode.data);
         assertEquals('After setting .textContent, textNode.textContent == '
                      + 'set through textContent', 'set through textContent',
-                     textNode.textContent); */
+                     textNode.textContent);
                      
         // when we have appendChild working uncomment below and append the
         // node to an SVG node and ensure the values are correct, and when
@@ -627,6 +634,7 @@
                x="50"
                y="50"
                fill="red"/>
+            <text>hello world</text>
           </g>
         </svg>
       </script>

@@ -34,6 +34,24 @@ package com.sgweb.svg.nodes
             super(svgRoot, xml);
         }
         
+        /**
+         * Get any child text (not text inside child nodes). Also parse
+         * unknown child nodes.
+         **/
+        override protected function parse():void {
+            for each(var childXML:XML in this._xml.children()) {
+                if (childXML.nodeKind() == 'text') {
+                    if (this._text == null) {
+                        this._text = '';
+                    }
+                    
+                    this._text += childXML.toString();
+                }
+            }
+            
+            super.parse();
+        }
+        
         override protected function draw():void {
             //Do Nothing
         }

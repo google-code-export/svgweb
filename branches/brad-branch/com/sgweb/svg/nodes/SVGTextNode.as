@@ -40,11 +40,6 @@ package com.sgweb.svg.nodes
     {    
         
         /**
-         * Hold node's text
-         **/
-        private var _text:String = '';
-        
-        /**
          * Hold text path node if text follows a path
          **/
         private var _textPath:SVGNode = null;
@@ -60,7 +55,7 @@ package com.sgweb.svg.nodes
         //private var _textBitmap:Bitmap;
         
         public function SVGTextNode(svgRoot:SVGRoot, xml:XML):void { 
-            super(svgRoot, xml);            
+            super(svgRoot, xml);      
         }
         
         /**
