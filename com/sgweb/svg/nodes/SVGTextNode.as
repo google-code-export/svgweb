@@ -59,7 +59,7 @@ package com.sgweb.svg.nodes
          **/
         //private var _textBitmap:Bitmap;
         
-        public function SVGTextNode(svgRoot:SVGRoot, xml:XML):void {            
+        public function SVGTextNode(svgRoot:SVGRoot, xml:XML):void { 
             super(svgRoot, xml);            
         }
         
