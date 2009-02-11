@@ -572,7 +572,7 @@ BODY
 Using script you could get the svg root node as follows:
 
 var embed = document.body.childNodes[0];
-if (embed.className.indexOf('embedssvg') != -1) {
+if (embed.className && embed.className.indexOf('embedssvg') != -1) {
   var svg = embed.documentElement;
   // now have root SVG element and can manipulate it as normal
 }
@@ -698,25 +698,23 @@ function mixin(f, addMe) {
 
 /** Utility function to do XPath cross browser.
 
-    @param xml Parsed XML object to work with.
+    @param doc Either HTML or XML document to work with.
+    @param context DOM node context to restrict the xpath executing 
+    against; can be null, which defaults to doc.documentElement.
     @param expr String XPath expression to execute.
     @param namespaces Optional; an array that contains prefix to namespace
     lookups; see the _getNamespaces() methods in this file for how this
     data structure is setup.
     
     @returns Array with results, empty array if there are none. */
-function xpath(xml, expr, namespaces) {
+function xpath(doc, context, expr, namespaces) {
+  if (!context) {
+    context = doc.documentElement;
+  }
   if (typeof XPathEvaluator != 'undefined') { // non-IE browsers
-    var context;
-    if (xml.ownerDocument == null) {
-      context = xml.documentElement;
-    } else {
-      context = xml.ownerDocument.documentElement;
-    }
-    
     var evaluator = new XPathEvaluator();
-    var resolver = xml.createNSResolver(context);
-    var result = evaluator.evaluate(expr, xml, resolver, 0, null);
+    var resolver = doc.createNSResolver(context);
+    var result = evaluator.evaluate(expr, context, resolver, 0, null);
     var found = createNodeList(), current;
     while (current = result.iterateNext()) {
       found.push(current);
@@ -736,7 +734,7 @@ function xpath(xml, expr, namespaces) {
       xml.setProperty("SelectionNamespaces",  allNamespaces);
     }
     
-    var found = xml.documentElement.selectNodes(expr);
+    var found = context.selectNodes(expr);
     if (found == null || typeof found == 'undefined') {
       found = createNodeList();
     }
@@ -1720,12 +1718,12 @@ extend(NativeHandler, {
    console.log('processSVGScript');
    var importedSVG = document.importNode(xml.documentElement, true);
    scriptNode.parentNode.replaceChild(importedSVG, scriptNode);
-   root = importedSVG;
+   this._svgRoot = importedSVG;
    
    // non-SVG elements with IDs don't get registered with 
    // document.getElementById for some reason (i.e. if
    // we call it with the ID of a sodipodi:namedview element, for example,
-   // it won't return anything; store a reference to these so we can 
+   // it won't return anything); store a reference to these so we can 
    // return them properly
    this._idToNodes = {};
    for (var i = 0; i < this._namespaces.length; i++) {
@@ -1802,8 +1800,8 @@ extend(NativeHandler, {
         if (!prefix) {
           continue;
         }
-        
-        xpathResults = xpath(handler._xml, '//' + prefix + ':' + localName,
+        xpathResults = xpath(document, handler._svgRoot, 
+                             '//' + prefix + ':' + localName,
                              handler._namespaces);
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
@@ -2928,7 +2926,7 @@ extend(_Document, {
   getElementById: function(id) /* _Element */ {
     // XML parser does not have getElementById, due to id mapping in XML
     // issues; use XPath instead
-    var results = xpath(this._xml, '//*[@id="' + id + '"]');
+    var results = xpath(this._xml, null, '//*[@id="' + id + '"]');
     var nodeXML, node;
     
     if (results.length) {
@@ -2976,7 +2974,7 @@ extend(_Document, {
       if (ns == null) {
         // we can't just use getElementsByTagName() here, because IE
         // will incorrectly return tags that are in the default namespace
-        results = xpath(this._xml, '//' + localName);
+        results = xpath(this._xml, null, '//' + localName);
       } else {
         // figure out correct query string for IE
         var query;
