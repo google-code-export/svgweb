@@ -260,19 +260,13 @@
         assertEquals("sodipodi.getAttribute('newAttribute') == hello world", 
                       'hello world',
                       sodipodi.getAttribute('newAttribute'));
-                      
-        // createTextNode and textNode.nodeValue, textNode.textContent,
-        // and textNode.data
-        // TODO
-        // create a text node, get/set the different ways to work with its
-        // value
         
         // childNodes
         console.log('Testing childNodes...');
         
         var group = document.getElementById('myGroup');
         assertExists("group.childNodes", group.childNodes);
-        assertEquals("group.length == 1", 1, group.childNodes.length);
+        assertEquals("group.length == 2", 2, group.childNodes.length);
         var child = group.childNodes[0];
         assertExists("group.childNodes[0]", child);
         assertEquals("child.childNodes[0].id", 'myRect', child.id);
@@ -285,7 +279,7 @@
         assertExists("child.childNodes", child.childNodes);
         assertEquals("child.childNodes.length == 0", 0, 
                      child.childNodes.length);       
-        assertUndefined("group.childNodes[1] == undefined", group.childNodes[1]);
+        assertUndefined("group.childNodes[2] == undefined", group.childNodes[2]);
         for (var i = 0; i < group.childNodes.length; i++) {
           assertExists('looping through childNodes, i=' + i, 
                        group.childNodes[i]);
@@ -314,7 +308,7 @@
         } else {
           child = div.childNodes[1]; 
         }
-        if (child.className.indexOf('embedssvg') != -1) {
+        if (String(child.className).indexOf('embedssvg') != -1) {
           child = child.documentElement;
         }
         assertExists('First SVG root element', child);
@@ -335,7 +329,7 @@
         } else {
           child = div.childNodes[2]; 
         }
-        if (child.className.indexOf('embedssvg') != -1) {
+        if (String(child.className).indexOf('embedssvg') != -1) {
           child = child.documentElement;
         }
         assertExists('Second SVG root element', child);
@@ -356,7 +350,7 @@
         } else {
           child = div.childNodes[3]; 
         }
-        if (child.className.indexOf('embedssvg') != -1) {
+        if (String(child.className).indexOf('embedssvg') != -1) {
           child = child.documentElement;
         }
         assertExists('Third SVG root element', child);
@@ -456,11 +450,129 @@
         assertEquals('cc.namespaceURI == http://web.resource.org/cc/',
                      'http://web.resource.org/cc/', cc.namespaceURI);
         assertEquals('cc.localName == Work', 'Work', cc.localName);
-        assertEquals('cc.nodeType == 1', 1, cc.nodeType);            
+        assertEquals('cc.nodeType == 1', 1, cc.nodeType);  
         
-        // TODO: Test walking the entire DOM of the whole page, adding 
-        // some attribute
-                                    
+        // ownerDocument
+        var svg = document.getElementsByTagNameNS(svgns, 'svg');
+        assertEquals('Three svg elements', 3, svg.length);
+        for (var i = 0; i < svg.length; i++) {
+          assertEquals('svg[' + i + '].ownerDocument == document',
+                       document, svg[i].ownerDocument);
+        }
+        rdf = document.getElementsByTagNameNS(
+                            'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
+                            'RDF')[0];
+        assertEquals('rdf.ownerDocument == document', document, 
+                      rdf.ownerDocument);
+        var svgText = document.getElementById('mySVG').childNodes[0].childNodes[1];
+        assertExists('svgText should exist', svgText);
+        assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
+        assertEquals('svgText.childNodes.length == 1', 1, 
+                     svgText.childNodes.length);
+                     
+        // text nodes (createTextNode, textNode.nodeValue, textNode.textContent,
+        // and textNode.data) including setting and getting
+        var textNode = svgText.childNodes[0];
+        assertExists('svgText should have a DOM TEXT NODE', textNode);
+        assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
+        assertEquals('textNode.nodeName == #text', '#text', textNode.nodeName);
+        assertNull('textNode.localName == null', textNode.localName);
+        assertNull('textNode.namespaceURI == null', textNode.namespaceURI);
+        assertNull('textNode.prefix == null', textNode.prefix);
+        assertExists('textNode.childNodes should exist', textNode.childNodes);
+        assertEquals('textNode.childNodes.length == 0', 0,
+                     textNode.childNodes.length);
+        assertEquals('textNode.ownerDocument == document', document,
+                     textNode.ownerDocument);
+        assertEquals('textNode.nodeValue == hello world', 'hello world',
+                     textNode.nodeValue);
+        assertEquals('textNode.data == hello world', 'hello world',
+                     textNode.data);
+        assertEquals('textNode.textContent == hello world', 'hello world',
+                     textNode.textContent);
+        textNode.nodeValue = 'set through nodeValue';
+        assertEquals('After setting .nodeValue, textNode.nodeValue == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.nodeValue);
+        assertEquals('After setting .nodeValue, textNode.data == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.data);
+        assertEquals('After setting .nodeValue, textNode.textContent == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.textContent);
+        textNode.data = 'set through data';
+        assertEquals('After setting .data, textNode.nodeValue == '
+                     + 'set through data', 'set through data',
+                     textNode.nodeValue);
+        assertEquals('After setting .data, textNode.data == '
+                     + 'set through data', 'set through data',
+                     textNode.data);
+        assertEquals('After setting .data, textNode.textContent == '
+                     + 'set through nodeValue', 'set through data',
+                     textNode.textContent);
+        textNode.textContent = 'set through textContent';
+        assertEquals('After setting .textContent, textNode.nodeValue == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.nodeValue);
+        assertEquals('After setting .textContent, textNode.data == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.data);
+        assertEquals('After setting .textContent, textNode.textContent == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.textContent); 
+                     
+        // when we have appendChild working uncomment below and append the
+        // node to an SVG node and ensure the values are correct, and when
+        // changed pass through to the Flash
+        /*textNode = document.createTextNode('hello world');
+        assertExists('svgText should have a DOM TEXT NODE', textNode);
+        assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
+        assertEquals('textNode.nodeName == #text', '#text', textNode.nodeName);
+        assertNull('textNode.localName == null', textNode.localName);
+        assertNull('textNode.namespaceURI == null', textNode.namespaceURI);
+        assertNull('textNode.prefix == null', textNode.prefix);
+        assertExists('textNode.childNodes should exist', textNode.childNodes);
+        assertEquals('textNode.childNodes.length == 0', 0,
+                     textNode.childNodes.length);
+        assertEquals('textNode.ownerDocument == document', document,
+                     textNode.ownerDocument);
+        assertEquals('textNode.nodeValue == hello world', 'hello world',
+                     textNode.nodeValue);
+        assertEquals('textNode.data == hello world', 'hello world',
+                     textNode.data);
+        assertEquals('textNode.textContent == hello world', 'hello world',
+                     textNode.textContent);
+        textNode.nodeValue = 'set through nodeValue';
+        assertEquals('After setting .nodeValue, textNode.nodeValue == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.nodeValue);
+        assertEquals('After setting .nodeValue, textNode.data == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.data);
+        assertEquals('After setting .nodeValue, textNode.textContent == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.textContent);
+        textNode.data = 'set through data';
+        assertEquals('After setting .data, textNode.nodeValue == '
+                     + 'set through data', 'set through data',
+                     textNode.nodeValue);
+        assertEquals('After setting .data, textNode.data == '
+                     + 'set through data', 'set through data',
+                     textNode.data);
+        assertEquals('After setting .data, textNode.textContent == '
+                     + 'set through nodeValue', 'set through data',
+                     textNode.textContent);
+        textNode.textContent = 'set through textContent';
+        assertEquals('After setting .textContent, textNode.nodeValue == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.nodeValue);
+        assertEquals('After setting .textContent, textNode.data == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.data);
+        assertEquals('After setting .textContent, textNode.textContent == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.textContent);  */
+                                               
         console.log('Finished testing.');
       });
       
@@ -514,6 +626,7 @@
                x="50"
                y="50"
                fill="red"/>
+            <text>hello world</text>
           </g>
         </svg>
       </script>
