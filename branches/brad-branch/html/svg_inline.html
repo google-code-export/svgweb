@@ -9,6 +9,12 @@
     <script>
       svgweb.addOnLoad(function() {
         console.log('developers onload called');
+        var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
+        var dc_ns = "http://purl.org/dc/elements/1.1/";
+        
+        var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
+            path, gradient, group, child, whitespaceAreNodes, metadata,
+            cc, svg, svgText, textNode, text, desc, title, format, type;
         
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
@@ -16,29 +22,28 @@
         // getElementById
         console.log('Testing getElementById...');
         
-        var myRect = document.getElementById('myRect');
+        myRect = document.getElementById('myRect');
         assertExists('Getting myRect first time', myRect);
         assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
         
-        var myRect = document.getElementById('myRect');
+        myRect = document.getElementById('myRect');
         assertExists('Getting myRect second time', myRect);
         assertEquals('Getting myRect second time, myRect.id should be myRect', 
                      'myRect', myRect.id);
         
-        var mySVG = document.getElementById('mySVG');
+        mySVG = document.getElementById('mySVG');
         assertExists('mySVG root should exist', mySVG);
         assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
         
         // getElementsByTagNameNS
         console.log('Testing getElementsByTagNameNS...');
         
-        var rects = document.getElementsByTagNameNS(svgns, 'rect');
+        rects = document.getElementsByTagNameNS(svgns, 'rect');
         assertExists("document.getElementsByTagNameNS(svgns, 'rect')", rects);
         assertEquals("document.getElementsByTagNameNS(svgns, 'rect').length "
                      + "should be 10", 10, rects.length);
         
-        var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
-        var sodipodi = document.getElementsByTagNameNS(sodipodi_ns, '*');
+        sodipodi = document.getElementsByTagNameNS(sodipodi_ns, '*');
         assertExists("document.getElementsByTagNameNS(sodipodi_ns, '*')", 
                      sodipodi);
         assertEquals("document.getElementsByTagNameNS(sodipodi_ns, '*').length "
@@ -72,7 +77,7 @@
                     20000,
                     sodipodi[0].getAttribute('gridtolerance'));
                     
-        var rdf = document.getElementsByTagNameNS(
+        rdf = document.getElementsByTagNameNS(
                             'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
                             'RDF');
         assertExists('RDF elements should exist', rdf);
@@ -94,20 +99,43 @@
                             'badName');
         assertEquals('rdf.length == 0', 0, rdf.length);
                      
-        var dc_ns = "http://purl.org/dc/elements/1.1/";
-        var dc = document.getElementsByTagNameNS(dc_ns, 'format');
+        dc = document.getElementsByTagNameNS(dc_ns, 'format');
         assertExists("document.getElementsByTagNameNS(dc_ns, 'format')", dc);
         assertEquals("document.getElementsByTagNameNS(dc_ns, 'format').length "
                      + "== 1", 1, dc.length);
-        // TODO: Uncomment when we have childNodes and text nodes working
-        /*assertEquals("document.getElementsByTagNameNS(dc_ns, 'format')[0]"
-                     + ".nodeValue == image/svg+xml", 'image/svg+xml',
-                     dc[0].nodeValue);
-        assertEquals("document.getElementsByTagNameNS(dc_ns, 'format')[0]"
-                    + ".nodeName == format", 'format',
-                    dc[0].nodeName);*/
+        dc = dc[0];
+        assertEquals('dc.childNodes.length == 1', 1, dc.childNodes.length);
+        assertExists('dc.firstChild should exist', dc.firstChild);
+        assertEquals('dc.firstChild.nodeType == 3', 3, dc.firstChild.nodeType);
+        child = dc.firstChild;
+        assertEquals("dc.firstChild.nodeValue == image/svg+xml", 
+                     'image/svg+xml', child.nodeValue);
+        assertEquals("dc.firstChild.nodeName == #text", '#text',
+                    child.nodeName);
+        child.nodeValue = 'foobar/changed';
+        assertEquals("dc.firstChild.nodeValue == foobar/changed", 
+                    'foobar/changed', child.nodeValue);
+        assertEquals("dc.firstChild.data == foobar/changed", 'foobar/changed',
+                    child.data);
+        assertEquals("dc.firstChild.textContent == foobar/changed", 
+                    'foobar/changed', child.textContent);
+        child.data = 'foobar/changed2';
+        assertEquals("dc.firstChild.nodeValue == foobar/changed2", 
+                    'foobar/changed2', child.nodeValue);
+        assertEquals("dc.firstChild.data == foobar/changed2", 'foobar/changed2',
+                    child.data);
+        assertEquals("dc.firstChild.textContent == foobar/changed2", 
+                    'foobar/changed2', child.textContent);
+        child.textContent = 'foobar/changed3';
+        assertEquals("dc.firstChild.nodeValue == foobar/changed3", 
+                    'foobar/changed3', child.nodeValue);
+        assertEquals("dc.firstChild.data == foobar/changed3", 'foobar/changed3',
+                    child.data);
+        assertEquals("dc.firstChild.textContent == foobar/changed3", 
+                    'foobar/changed3', child.textContent);
+        child.nodeValue = 'image/svg+xml';
         
-        var bad = document.getElementsByTagNameNS('http://bad-namespace.com',
+        bad = document.getElementsByTagNameNS('http://bad-namespace.com',
                                                   'rect');
         assertExists("document.getElementsByTagNameNS('http://bad-namespace.com', "
                      + "'rect')", bad);
@@ -127,16 +155,15 @@
                      
         // SVGSVGElement.x, .y, .width, .height
         console.log('Testing SVGSVGElement.x, .y, .width, and .height...');
-        var root;
         
         root = document.getElementById('mySVG');
         assertEquals("mySVG.x.baseVal.value should be 0", 0, 
                      root.x.baseVal.value);
         assertEquals("mySVG.y.baseVal.value should be 0", 0, 
                      root.y.baseVal.value);
-        assertEquals("mySVG.width.baseVal.value should be 200", 200, 
+        assertEquals("mySVG.width.baseVal.value should be 500", 500, 
                      root.width.baseVal.value);
-        assertEquals("mySVG.height.baseVal.value should be 200", 200, 
+        assertEquals("mySVG.height.baseVal.value should be 500", 500, 
                      root.height.baseVal.value);
                      
         root = document.getElementById('svg2');
@@ -169,14 +196,14 @@
         assertExists("document.getElementsByTagNameNS(svgns, 'svg')", root);
         root = root[0];
         assertExists("document.getElementsByTagNameNS(svgns, 'svg')[0]", root);
-        assertEquals("root.getAttribute(width) == 200", 200,
+        assertEquals("root.getAttribute(width) == 500", 500,
                       root.getAttribute('width'));
-        assertEquals("root.getAttribute(height) == 200", 200,
+        assertEquals("root.getAttribute(height) == 500", 500,
                       root.getAttribute('height')); 
         assertNull("root.getAttribute(badproperty) == null",
                    root.getAttribute('badproperty'));
                       
-        var rect = document.getElementById('myRect');
+        rect = document.getElementById('myRect');
         assertEquals("rect.getAttribute(width) == 36.416", 36.416,
                       rect.getAttribute('width'));      
         assertEquals("rect.getAttribute(height) == 36.416", 36.416,
@@ -188,7 +215,7 @@
         assertEquals("rect.getAttribute(fill) == red", 'red',
                       rect.getAttribute('fill')); 
                       
-        var path = document.getElementById('path3327');
+        path = document.getElementById('path3327');
         assertExists('path3327', path);
         assertEquals("path.getAttribute('id') == path3327", 'path3327',
                       path.getAttribute('id'));
@@ -206,7 +233,7 @@
         assertNull("path.getAttribute('fill') == null", 
                     path.getAttribute('fill'));
                     
-        var gradient = document.getElementById('linearGradient4485');
+        gradient = document.getElementById('linearGradient4485');
         assertEquals("gradient.getAttribute('gradientUnits') == userSpaceOnUse", 
                       'userSpaceOnUse',
                       gradient.getAttribute('gradientUnits'));
@@ -263,12 +290,11 @@
         
         // childNodes
         console.log('Testing childNodes...');
-        var group = document.getElementById('myGroup');
-        // TODO: having a TEXT node with a child #text node creates an
-        // error on IE below; see method _getChildNode
+        
+        group = document.getElementById('myGroup');
         assertExists("group.childNodes", group.childNodes);
-        assertEquals("group.length == 2", 2, group.childNodes.length);
-        var child = group.childNodes[0];
+        assertEquals("group.length == 4", 4, group.childNodes.length);
+        child = group.childNodes[0];
         assertExists("group.childNodes[0]", child);
         assertEquals("child.childNodes[0].id", 'myRect', child.id);
         assertEquals("child.childNodes[0].nodeName", 'rect', child.nodeName);
@@ -280,16 +306,16 @@
         assertExists("child.childNodes", child.childNodes);
         assertEquals("child.childNodes.length == 0", 0, 
                      child.childNodes.length);       
-        assertUndefined("group.childNodes[2] == undefined", group.childNodes[2]);
+        assertUndefined("group.childNodes[4] == undefined", group.childNodes[4]);
         for (var i = 0; i < group.childNodes.length; i++) {
           assertExists('looping through childNodes, i=' + i, 
                        group.childNodes[i]);
           assertExists('looping through childNodes, .nodeName for i=' + i,
                        group.childNodes[i].nodeName);
         }
-        
-        var div = document.getElementById('test_container');
-        var whitespaceAreNodes = false;
+
+        div = document.getElementById('test_container');
+        whitespaceAreNodes = false;
         if (div.childNodes[0].nodeType == 3) {
           whitespaceAreNodes = true;
         }
@@ -405,7 +431,7 @@
                      0,
                      child.childNodes[0].childNodes[0].getAttribute('offset'));
 
-        var metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+        metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
         assertExists('metadata element', metadata);
         assertEquals('metadata.getAttribute(id) == metadata7', 'metadata7',
                      metadata.getAttribute('id'));
@@ -443,7 +469,7 @@
                      rdf.namespaceURI);
         assertEquals('rdf.localName == RDF', 'RDF', rdf.localName);
         assertEquals('rdf.nodeType == 1', 1, rdf.nodeType);
-        var cc = rdf.childNodes[0];
+        cc = rdf.childNodes[0];
         assertExists('Creative Commons element should exist', cc);
         assertEquals('cc.childNodes.length == 2', 2, cc.childNodes.length);
         assertEquals('cc.nodeName == cc:Work', 'cc:Work', cc.nodeName);
@@ -453,10 +479,34 @@
         assertEquals('cc.localName == Work', 'Work', cc.localName);
         assertEquals('cc.nodeType == 1', 1, cc.nodeType);  
         
-        // TODO: test .id syntax and see if it works natively
+        // element.id syntax
+        console.log('Testing element.id...');
+        group = document.getElementById('g4743');
+        assertExists('SVG g element with ID g4743 should exist', group);
+        assertEquals('group.nodeName == g', 'g', group.nodeName);
+        assertEquals('group.id == g4743', 'g4743', group.id);
+        
+        gradient = document.getElementsByTagNameNS(svgns, 'linearGradient');
+        assertExists('There should be gradient tags', gradient);
+        gradient = gradient[0];
+        assertExists('gradient with ID linearGradient2361 should exist',
+                     gradient);
+        assertEquals('gradient.nodeName == linearGradient', 'linearGradient',
+                     gradient.nodeName);
+        assertEquals('gradient.id == linearGradient2361', 'linearGradient2361',
+                     gradient.id);
+                     
+        svg = document.body.getElementsByTagNameNS(svgns, 'svg');
+        assertExists("document.body.getElementsByTagNameNS(svgns, 'svg') "
+                     + "should exist", svg);
+        assertEquals("document.body.getElementsByTagNameNS(svgns, 'svg').length "
+                     + " == 3", 3, svg.length);
+        svg = svg[2];
+        assertExists('SVG root with svg11242 should exist', svg);
+        assertEquals('svg.id == svg11242', 'svg11242', svg.id);
 
         // ownerDocument
-        var svg = document.getElementsByTagNameNS(svgns, 'svg');
+        svg = document.getElementsByTagNameNS(svgns, 'svg');
         assertEquals('Three svg elements', 3, svg.length);
         for (var i = 0; i < svg.length; i++) {
           assertEquals('svg[' + i + '].ownerDocument == document',
@@ -467,15 +517,15 @@
                             'RDF')[0];
         assertEquals('rdf.ownerDocument == document', document, 
                       rdf.ownerDocument);
-        var svgText = document.getElementById('mySVG').childNodes[0].childNodes[1];
+        svgText = document.getElementById('mySVG').childNodes[0].childNodes[1];
         assertExists('svgText should exist', svgText);
         assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
         assertEquals('svgText.childNodes.length == 1', 1, 
                      svgText.childNodes.length);
-                  
+
         // text nodes (createTextNode, textNode.nodeValue, textNode.textContent,
         // and textNode.data) including setting and getting
-        var textNode = svgText.childNodes[0];
+        textNode = svgText.childNodes[0];
         assertExists('svgText should have a DOM TEXT NODE', textNode);
         assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
         assertEquals('textNode.nodeName == #text', '#text', textNode.nodeName);
@@ -498,6 +548,73 @@
                      textNode.data);
         assertEquals('textNode.textContent == hello world', 'hello world',
                      textNode.textContent);
+        textNode.nodeValue = 'set through nodeValue';
+
+        assertEquals('After setting .nodeValue, textNode.nodeValue == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.nodeValue);
+        assertEquals('After setting .nodeValue, textNode.data == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.data);
+        assertEquals('After setting .nodeValue, textNode.textContent == '
+                     + 'set through nodeValue', 'set through nodeValue',
+                     textNode.textContent);
+        textNode.data = 'set through data';
+        assertEquals('After setting .data, textNode.nodeValue == '
+                     + 'set through data', 'set through data',
+                     textNode.nodeValue);
+        assertEquals('After setting .data, textNode.data == '
+                     + 'set through data', 'set through data',
+                     textNode.data);
+        assertEquals('After setting .data, textNode.textContent == '
+                     + 'set through nodeValue', 'set through data',
+                     textNode.textContent);
+        textNode.textContent = 'set through textContent';
+        assertEquals('After setting .textContent, textNode.nodeValue == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.nodeValue);
+        assertEquals('After setting .textContent, textNode.data == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.data);
+        assertEquals('After setting .textContent, textNode.textContent == '
+                     + 'set through textContent', 'set through textContent',
+                     textNode.textContent);
+                    
+        text = document.getElementById('myText');
+        assertExists('SVG text element should exist', text);
+        assertEquals('text.id == myText', 'myText', text.id);
+        assertEquals('text.getAttribute(id) == myText', 'myText',
+                     text.getAttribute('id'));
+        assertEquals("text.getAttribute('x') == 80", 80,
+                     text.getAttribute('x'));
+        assertEquals("text.getAttribute('y') == 80", 80,
+                     text.getAttribute('y'));
+        assertEquals("text.getAttribute('font-family') == Verdana", 'Verdana',
+                     text.getAttribute('font-family'));
+        assertEquals("text.getAttribute('font-size') == 24", 24,
+                     text.getAttribute('font-size'));
+        assertEquals("text.getAttribute('fill') == blue", 'blue',
+                     text.getAttribute('fill'));           
+        assertNull('text.nodeValue == null', text.nodeValue);
+        assertEquals('text.childNodes.length == 1', 1, text.childNodes.length);
+        textNode = text.childNodes[0];
+        assertExists('text.childNodes[0] should exist', textNode);
+        assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
+        assertEquals('textNode.nodeName == #text', '#text', textNode.nodeName);
+        assertNull('textNode.localName == null', textNode.localName);
+        assertNull('textNode.namespaceURI == null', textNode.namespaceURI);
+        assertNull('textNode.prefix == null', textNode.prefix);
+        assertEquals('textNode.childNodes.length == 0', 0,
+                     textNode.childNodes.length);
+        assertEquals('textNode.ownerDocument == document', document,
+                     textNode.ownerDocument);
+        textNode.nodeValue = 'hello world';
+        assertEquals('textNode.nodeValue == hello world', 'hello world',
+                     textNode.nodeValue);
+        assertEquals('textNode.data == hello world', 'hello world',
+                     textNode.data);
+        assertEquals('textNode.textContent == hello world', 'hello world',
+                     textNode.textContent); 
         textNode.nodeValue = 'set through nodeValue';
         assertEquals('After setting .nodeValue, textNode.nodeValue == '
                      + 'set through nodeValue', 'set through nodeValue',
@@ -529,6 +646,234 @@
                      + 'set through textContent', 'set through textContent',
                      textNode.textContent);
                      
+        desc = document.getElementsByTagNameNS(svgns, 'desc');
+        assertExists('There should be a DESC element', desc);
+        assertEquals('There should be 1 DESC element', 1, desc.length);
+        desc = desc[0];
+        assertEquals('desc.nodeName == desc', 'desc', desc.nodeName);
+        assertNull('desc.nodeValue == null', desc.nodeValue);
+        assertEquals('desc.childNodes.length == 1', 1, desc.childNodes.length);
+        text = desc.childNodes[0];
+        assertEquals('text.nodeType == 3', 3, text.nodeType);
+        assertEquals('text.nodeValue == This is a description',
+                     'This is a description', text.nodeValue);
+        assertEquals('text.data == This is a description',
+                     'This is a description', text.data);
+        assertEquals('text.textContent == This is a description',
+                     'This is a description', text.textContent);
+        text.nodeValue = 'This is a description2';
+        assertEquals('text.nodeValue == This is a description2',
+                     'This is a description2', text.nodeValue);
+        assertEquals('text.data == This is a description2',
+                     'This is a description2', text.data);
+        assertEquals('text.textContent == This is a description2',
+                     'This is a description2', text.textContent);                    
+        text.data = 'This is a description3';
+        assertEquals('text.nodeValue == This is a description3',
+                     'This is a description3', text.nodeValue);
+        assertEquals('text.data == This is a description3',
+                     'This is a description3', text.data);
+        assertEquals('text.textContent == This is a description3',
+                     'This is a description3', text.textContent);
+        text.textContent = 'This is a description4';
+        assertEquals('text.nodeValue == This is a description4',
+                     'This is a description4', text.nodeValue);
+        assertEquals('text.data == This is a description4',
+                     'This is a description4', text.data);
+        assertEquals('text.textContent == This is a description4',
+                     'This is a description4', text.textContent);
+                     
+        title = document.getElementsByTagNameNS(svgns, 'title');
+        assertExists('There should be a TITLE element', title);
+        assertEquals('There should be 1 TITLE element', 1, title.length);
+        title = title[0];
+        assertEquals('title.nodeName == title', 'title', title.nodeName);
+        assertNull('title.nodeValue == null', title.nodeValue);
+        assertEquals('title.childNodes.length == 1', 1, 
+                     title.childNodes.length);
+        text = title.childNodes[0];
+        assertEquals('text.nodeType == 3', 3, text.nodeType);
+        assertEquals('text.nodeValue == This is a title',
+                     'This is a title', text.nodeValue);
+        assertEquals('text.data == This is a title',
+                     'This is a title', text.data);
+        assertEquals('text.textContent == This is a title',
+                     'This is a title', text.textContent);
+        text.nodeValue = 'This is a title2';
+        assertEquals('text.nodeValue == This is a title2',
+                     'This is a title2', text.nodeValue);
+        assertEquals('text.data == This is a title2',
+                     'This is a title2', text.data);
+        assertEquals('text.textContent == This is a title2',
+                     'This is a title2', text.textContent);                    
+        text.data = 'This is a title3';
+        assertEquals('text.nodeValue == This is a title3',
+                     'This is a title3', text.nodeValue);
+        assertEquals('text.data == This is a title3',
+                     'This is a title3', text.data);
+        assertEquals('text.textContent == This is a title3',
+                     'This is a title3', text.textContent);
+        text.textContent = 'This is a title4';
+        assertEquals('text.nodeValue == This is a title4',
+                     'This is a title4', text.nodeValue);
+        assertEquals('text.data == This is a title4',
+                     'This is a title4', text.data);
+        assertEquals('text.textContent == This is a title4',
+                     'This is a title4', text.textContent);
+        
+        // parentNode, firstChild, lastChild, previousSibling, and nextSibling
+        console.log('Testing parentNode, firstChild, lastChild, '
+                    + 'previousSibling, and nextSibling...');
+        svg = document.getElementById('svg11242');
+        div = document.getElementById('test_container');
+        assertExists('svg.parentNode should exist', svg.parentNode);
+        if (svg.parentNode.nodeName == 'embed') { // FF and Safari with Flash
+          assertEquals('svg.parentNode.nodeName == embed (non-IE browsers)', 
+                       'embed', svg.parentNode.nodeName.toLowerCase());
+          assertEquals('svg.parentNode.className == embedssvg '
+                       + '(non-IE browsers)', 'embedssvg',
+                       svg.parentNode.className);
+        } else { // IE with Flash and FF and Safari using native support
+          assertEquals('svg.parentNode.nodeName == div', 
+                       'div', svg.parentNode.nodeName.toLowerCase());
+          assertEquals('svg.parentNode.id == test_container', 'test_container', 
+                       svg.parentNode.id);
+        }
+        
+        assertExists('svg.previousSibling should exist', svg.previousSibling);
+        assertExists('svg.nextSibling should exist', svg.nextSibling);
+        if (whitespaceAreNodes) { // FF and Safari
+          assertEquals('svg.previousSibling.nodeType == 3', 3,
+                       svg.previousSibling.nodeType);
+          assertEquals('svg.nextSibling.nodeType == 3', 3,
+                       svg.nextSibling.nodeType);
+        } else { // IE
+          assertEquals('svg.previousSibling.nodeName == svg', 'svg',
+                       svg.previousSibling.nodeName);
+          assertEquals('svg.previousSibling.id == svg2', 'svg2',
+                       svg.previousSibling.id);
+          assertEquals('svg.nextSibling.nodeName == h1', 'h1',
+                       svg.nextSibling.nodeName);
+          assertEquals('svg.nextSibling.data == Test HTML H1', 'Test HTML H1',
+                       svg.nextSibling.data);
+        }
+        
+        assertExists('svg.firstChild should exist', svg.firstChild);
+        assertEquals('svg.firstChild == svg.childNodes[0]', svg.childNodes[0],
+                     svg.firstChild);
+        child = svg.firstChild;
+        assertEquals('firstChild.nodeName == defs', 'defs', child.nodeName);
+        assertEquals('firstChild.parentNode == svg', svg, child.parentNode);
+        assertNull('firstChild.previousSibling == null', child.previousSibling);
+        assertExists('firstChild.nextSibling should exist', child.nextSibling);
+        assertEquals('firstChild.nextSibling.nodeName == g', 'g',
+                     child.nextSibling.nodeName);
+        assertEquals('firstChild.nextSibling.id == g4337', 'g4337',
+                     child.nextSibling.id);
+        assertExists('firstChild.firstChild should exist', child.firstChild);
+        assertExists('firstChild.lastChild should exist', child.lastChild);
+        assertEquals('firstChild.firstChild.nodeName == linearGradient',
+                     'linearGradient', child.firstChild.nodeName);
+        assertEquals('firstChild.firstChild.id == linearGradient2361',
+                     'linearGradient2361', child.firstChild.id);
+        assertEquals('firstChild.lastChild.nodeName == linearGradient',
+                     'linearGradient', child.lastChild.nodeName);
+        assertEquals('firstChild.lastChild.id == linearGradient4485',
+                     'linearGradient4485', child.lastChild.id);
+        assertEquals('firstChild.firstChild.parentNode == this (def)',
+                     child, child.firstChild.parentNode);
+        assertEquals('firstChild.lastChild.parentNode == this (def)',
+                     child, child.lastChild.parentNode);
+        
+        assertExists('svg.lastChild should exist', svg.lastChild);
+        assertEquals('svg.lastChild == svg.childNodes[last child]',
+                     svg.childNodes[svg.childNodes.length - 1],
+                     svg.lastChild);
+        child = svg.lastChild;
+        assertEquals('lastChild.nodeName == g', 'g', child.nodeName);
+        assertEquals('lastChild.getAttribute(id) == g4337', 'g4337', 
+                     child.getAttribute('id'));
+        assertEquals('lastChild.parentNode == svg', svg, child.parentNode);
+        assertNull('lastChild.nextSibling == null', child.nextSibling);
+        assertExists('lastChild.previousSibling should exist',
+                     child.previousSibling);
+        assertEquals('lastChild.previousSibling.nodeName == defs', 'defs',
+                     child.previousSibling.nodeName);
+        assertExists('lastChild.firstChild should exist', child.firstChild);
+        assertExists('lastChild.lastChild should exist', child.lastChild);
+        assertEquals('lastChild.firstChild.nodeName == path',
+                     'path', child.firstChild.nodeName);
+        assertEquals('lastChild.firstChild.id == path5427',
+                     'path5427', child.firstChild.id);
+        assertEquals('lastChild.lastChild.nodeName == g',
+                     'g', child.lastChild.nodeName);
+        assertEquals('lastChild.lastChild.id == layer1',
+                     'layer1', child.lastChild.id);
+        assertEquals('lastChild.firstChild.parentNode == this (g)',
+                     child, child.firstChild.parentNode);
+        assertEquals('lastChild.lastChild.parentNode == this (g)',
+                     child, child.lastChild.parentNode);
+
+        metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+        svg = document.getElementById('svg2');
+        assertEquals('metadata.parentNode == svg2', svg, 
+                     metadata.parentNode);
+        assertExists('metadata.previousSibling should exist', 
+                     metadata.previousSibling);
+        assertEquals('metadata.previousSibling.nodeName == sodipodi:namedview',
+                     'sodipodi:namedview', metadata.previousSibling.nodeName);
+        assertExists('metadata.nextSibling should exist', metadata.nextSibling);
+        assertEquals('metadata.nextSibling.nodeName == g', 'g',
+                     metadata.nextSibling.nodeName);
+        assertEquals('metadata.nextSibling.id == layer1', 'layer1',
+                     metadata.nextSibling.id);
+        assertExists('metadata.firstChild should exist', metadata.firstChild);
+        assertExists('metadata.lastChild should exist', metadata.lastChild);
+        assertEquals('metadata.firstChild == metadata.lastChild)',
+                     metadata.lastChild, metadata.firstChild);
+        rdf = metadata.firstChild;
+        assertEquals('metadata.firstChild.nodeName == rdf:RDF', 'rdf:RDF',
+                     rdf.nodeName);
+        assertExists('metadata.firstChild.parentNode', 
+                     rdf.parentNode);
+        assertEquals('metadata.firstChild.parentNode == metadata node',
+                     metadata, rdf.parentNode);
+        assertExists('metadata.firstChild.childNodes[0] should exist',
+                     rdf.childNodes[0]);
+        cc = metadata.firstChild.childNodes[0];
+        assertEquals('cc.nodeName == cc:Work', 'cc:Work', cc.nodeName);
+        assertEquals('cc.parentNode == RDF node', rdf, cc.parentNode);
+        assertExists('cc.firstChild should exist', cc.firstChild);
+        assertExists('cc.lastChild should exist', cc.lastChild);
+        format = cc.firstChild;
+        type = cc.lastChild;
+        assertEquals('cc.firstChild.nodeName == dc:format', 'dc:format',
+                     format.nodeName);
+        assertEquals('cc.lastChild.nodeName == dc:type', 'dc:type',
+                     type.nodeName);
+        assertEquals('cc.firstChild.nextSibling == cc.lastChild',
+                     cc.lastChild, format.nextSibling);
+        assertNull('cc.firstChild.previousSibling == null', 
+                   format.previousSibling);
+        assertEquals('cc.lastChild.previousSibling == cc.firstChild',
+                     cc.firstChild, type.previousSibling);
+        assertNull('cc.lastChild.nextSibling == null', 
+                   type.nextSibling);
+        assertExists('format.firstChild should exist (text node)',
+                     format.firstChild);
+        assertExists('format.lastChild should exist (text node)',
+                     format.lastChild);
+        assertEquals('format.childNodes.length == 1', 1, 
+                     format.childNodes.length);
+        child = format.firstChild;
+        assertEquals('format.firstChild.nodeType == 3', 3, child.nodeType);
+        assertEquals('format.firstChild.data == image/svg+xml', 'image/svg+xml', 
+                     child.data);
+        assertEquals('format.firstChild.parentNode == format', format,
+                     child.parentNode);
+        assertNull('format.firstChild.nextSibling == null', child.nextSibling);
+        assertNull('format.firstChild.nextSibling == null', 
+                   child.previousSibling);
         // when we have appendChild working uncomment below and append the
         // node to an SVG node and ensure the values are correct, and when
         // changed pass through to the Flash
@@ -581,6 +926,10 @@
                      + 'set through textContent', 'set through textContent',
                      textNode.textContent);  */
                                                
+        // TODO: Test every one of the SVG element types, perhaps
+        // creating them dynamically and building up an image; probably
+        // in another file                                   
+                                               
         console.log('Finished testing.');
       });
       
@@ -625,7 +974,7 @@
       <h1>Tests embedding a single SVG block into a SCRIPT block</h1>
     
       <script type="image/svg+xml">
-        <svg id="mySVG" width="200" height="200">
+        <svg id="mySVG" width="500" height="500">
           <g id="myGroup">
             <rect
                id="myRect"
@@ -634,7 +983,14 @@
                x="50"
                y="50"
                fill="red"/>
-            <text>hello world</text>
+            <text id="myText" 
+                  x="80" 
+                  y="80" 
+                  font-family="Verdana" 
+                  font-size="24" 
+                  fill="blue">hello world</text>
+            <desc>This is a description</desc>
+            <title>This is a title</title>
           </g>
         </svg>
       </script>

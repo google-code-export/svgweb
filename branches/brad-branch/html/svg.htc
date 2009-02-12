@@ -14,7 +14,7 @@
       <property name="nodeName" get="_getNodeName" />
       <property name="nodeType" get="_getNodeType" />
       <property name="nodeValue" get="_getNodeValue" 
-                                        put="_setNodeValue" />
+                                 put="_setNodeValue" />
       <property name="localName" get="_getLocalName" />
       <property name="prefix" get="_getPrefix" />
       <property name="namespaceURI" get="_getNamespaceURI" />
@@ -28,7 +28,7 @@
       <property name="nextSibling" get="_getNextSibling" />
       
       <property name="textContent" get="_getTextContent"
-                                          put="_setTextContent" />
+                                   put="_setTextContent" />
       <property name="data" get="_getData" put="_setData" />
   
       <!-- Non-standard defacto properties -->
@@ -60,8 +60,6 @@
     /** Called when the content is ready for some SVG tag in the HTML
         page. This method is called for each individual SVG tag. */
     function contentReady() {
-      //console.log('htcNode.contentReady');
-       
       // indicate that we are now loaded
       var msg = { type: 'event', 
                   eventType: 'onHTCLoaded',
@@ -218,22 +216,23 @@
     
     function _getNodeValue() { return this._proxyNode._nodeValue; }
     function _setNodeValue(newValue) {
-      return this._proxyNode._nodeValue = newValue;
+      return this._proxyNode._setNodeValue(newValue);
     }
     
-    function _getTextContent() { 
+    function _getTextContent() {
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
       if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._nodeValue;
+        var test = this._proxyNode._nodeValue;
+        return test;
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
       }
     }
     
-    function _setTextContent(newValue) { 
+    function _setTextContent(newValue) {
       if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._nodeValue = newValue;
+        return this._proxyNode._setNodeValue(newValue);
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
       }
@@ -249,7 +248,7 @@
     
     function _setData(newValue) { 
       if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._nodeValue = newValue;
+        return this._proxyNode._setNodeValue(newValue);
       } else {
         return undefined;
       }

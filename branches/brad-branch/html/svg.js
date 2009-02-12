@@ -1537,7 +1537,7 @@ extend(FlashHandler, {
   
   /** Sends a message to the Flash object rendering this SVG. */
   sendToFlash: function(msg) {
-    // note that this._flash is set by the _SVGSVGElement._setupFlash()
+    // note that 'this.flash' is set by the _SVGSVGElement._setupFlash()
     // after we create a Flash object there
     return this.flash.sendToFlash(msg);
   },
@@ -1721,8 +1721,7 @@ extend(NativeHandler, {
   },
   
   /** Inserts the SVG back into the HTML page with the correct namespace. */
-  _processSVGScript: function(xml, svgString, scriptNode) {   
-   console.log('processSVGScript');
+  _processSVGScript: function(xml, svgString, scriptNode) {
    var importedSVG = document.importNode(xml.documentElement, true);
    scriptNode.parentNode.replaceChild(importedSVG, scriptNode);
    this._svgRoot = importedSVG;
@@ -1796,7 +1795,7 @@ extend(NativeHandler, {
         return result;
       }
       
-      if (result == null) {
+      if (result == null || result.length == 0) {
         result = createNodeList();
       }
       
@@ -1807,9 +1806,14 @@ extend(NativeHandler, {
         if (!prefix) {
           continue;
         }
+        var expr;
+        if (prefix) {
+          expr = '//' + prefix + ':' + localName;
+        } else {
+          expr = '//' + localName;
+        }
         xpathResults = xpath(document, handler._svgRoot, 
-                             '//' + prefix + ':' + localName,
-                             handler._namespaces);
+                             expr, handler._namespaces);
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
           for (var j = 0; j < result.length; j++) {
@@ -1842,6 +1846,10 @@ extend(NativeHandler, {
         var m = attr.nodeName.match(/^xmlns:?(.*)$/);
         var prefix = (m[1] ? m[1] : 'xmlns');
         var namespaceURI = attr.nodeValue;
+        
+        if (prefix == 'xmlns') { // default namespace
+          continue;
+        }
         
         results['_' + prefix] = namespaceURI;
         results['_' + namespaceURI] = prefix;
@@ -1972,8 +1980,9 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   if (nodeType == _Node.ELEMENT_NODE || nodeType == _Node.DOCUMENT_NODE) {
     this.prefix = prefix;
     this.namespaceURI = namespaceURI;
-    this._nodeXML = nodeXML;
     this._nodeValue = null;
+  } else if (nodeType == _Node.TEXT_NODE) {
+    this._nodeValue = this._nodeXML.nodeValue;
   }
   
   this.ownerDocument = document;
@@ -2058,11 +2067,88 @@ extend(_Node, {
   // textContent and data defined as getters/setters for TEXT_NODES
   // childNodes defined as getter/setter
   
-  _getParentNode: function() { /* readonly; returns _Node */ },
-  _getFirstChild: function() { /* readonly; returns _Node */ },
-  _getLastChild: function() { /* readonly; returns _Node */ },
-  _getPreviousSibling: function() { /* readonly; returns _Node */ },
-  _getNextSibling: function() { /* readonly; returns _Node */ },
+  _getParentNode: function() {
+    if (this.nodeType == _Node.DOCUMENT_NODE) {
+      return null;
+    }
+    
+    var parentXML = this._nodeXML.parentNode;
+    if (parentXML == null) {
+      return null;
+    }
+    
+    var elem = this._handler.document._getElement(parentXML);
+    elem._passThrough = true;
+    return elem;
+  },
+  
+  _getFirstChild: function() {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return null;
+    }
+    
+    var childXML = this._nodeXML.firstChild;
+    if (childXML == null) {
+      return null;
+    }
+    
+    var elem = this._handler.document._getElement(childXML);
+    elem._passThrough = true;
+    return elem;
+  },
+  
+  _getLastChild: function() {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return null;
+    }
+    
+    var childXML = this._nodeXML.lastChild;
+    if (childXML == null) {
+      return null;
+    }
+    
+    var elem = this._handler.document._getElement(childXML);
+    elem._passThrough = true;
+    return elem;
+  },
+  
+  _getPreviousSibling: function() {
+    if (this.nodeType == _Node.DOCUMENT_NODE) {
+      return null;
+    }
+    
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return null;
+    }
+    
+    var siblingXML = this._nodeXML.previousSibling;
+    if (siblingXML == null) {
+      return null;
+    }
+    
+    var elem = this._handler.document._getElement(siblingXML);
+    elem._passThrough = true;
+    return elem;
+  },
+  
+  _getNextSibling: function() { 
+    if (this.nodeType == _Node.DOCUMENT_NODE) {
+      return null;
+    }
+    
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return null;
+    }
+    
+    var siblingXML = this._nodeXML.nextSibling;
+    if (siblingXML == null) {
+      return null;
+    }
+    
+    var elem = this._handler.document._getElement(siblingXML);
+    elem._passThrough = true;
+    return elem;
+  },
   
   // Note: 'attributes' property not supported since we don't support
   // Attribute DOM Node types
@@ -2120,14 +2206,14 @@ extend(_Node, {
         return self._nodeValue; 
       });
       this.__defineSetter__('data', function(newValue) {
-        return self._nodeValue = newValue;
+        return self._setNodeValue(newValue);
       });
       
       this.__defineGetter__('textContent', function() { 
         return self._nodeValue; 
       });
       this.__defineSetter__('textContent', function(newValue) {
-        return self._nodeValue = newValue;
+        return self._setNodeValue(newValue);
       });
     } else { // ELEMENT and DOCUMENT nodes
       // Firefox and Safari return '' for textContent for non-text nodes;
@@ -2141,7 +2227,7 @@ extend(_Node, {
       return self._nodeValue; 
     });
     this.__defineSetter__('nodeValue', function(newValue) {
-      return self._nodeValue = newValue;
+      return self._setNodeValue(newValue);
     });
   },
   
@@ -2162,7 +2248,7 @@ extend(_Node, {
       return elem;
     } else if (child.nodeType == _Node.TEXT_NODE) {
       // create these on demand since they have no ID
-      var textNode = doc.createTextNode(child.nodeValue);
+      var textNode = doc.createTextNode(child);
       textNode._passThrough = true;
       if (isIE) {
         return textNode._uiNode;
@@ -2230,6 +2316,29 @@ extend(_Node, {
     uiNode._handler = this._handler;
     this._uiContainer.appendChild(uiNode);
     this._uiNode = uiNode;
+  },
+  
+  _setNodeValue: function(newValue) {
+    if (this.nodeType != _Node.TEXT_NODE) {
+      // FIXME: Is this correct? Can other kinds of nodes other than
+      // text nodes have a nodeValue?
+      return newValue;
+    }
+    
+    this._nodeValue = newValue;
+    if (this._passThrough) {
+      // get the ID of our parent, since text nodes have no idea
+      var parentId = this._nodeXML.parentNode.getAttribute('id');
+      if (!parentId 
+          || this._nodeXML.parentNode.nodeType != _Node.ELEMENT_NODE) {
+        return newValue;
+      }
+
+      this._handler.sendToFlash({ type: 'invoke', method: 'setTextNodeValue',
+                                  elementId: parentId, textContent: newValue});
+    }
+
+    return newValue;
   }
 });
 
@@ -2927,11 +3036,10 @@ extend(_Document, {
   
   createElementNS: function(ns, qName) /* _Element, throws _DOMException */ {},
   
-  createTextNode: function(data /* String */) /* _Text */ {
-    var nodeXML = this._xml.createTextNode(data);
-    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML, 
+  createTextNode: function(textXML /* DOM Text Node */) /* _Node */ {
+    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, textXML, 
                              this._handler);
-    textNode._nodeValue = data;
+    textNode._nodeValue = textXML.data;
     return textNode;
   },
   
@@ -3017,35 +3125,47 @@ extend(_Document, {
     return nodes;
   },
   
-  /** Fetches an _Element or creates a new one on demand. Used by
-      getElementById and getElementsByTagNameNS.
+  /** Fetches an _Element or creates a new one on demand.
       
       @param nodeXML XML DOM node for the element to use when constructing
       the _Element. */
   _getElement: function(nodeXML) {
-    // if we've created an _Element for this node before, we
-    // stored a reference to it by ID so we could get it later
-    var node = this._elementById['_' + nodeXML.getAttribute('id')];
+    var node;
     
-    if (!node) {
-      // never seen before -- we'll have to create a new _Element now
-      node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
-                          nodeXML.namespaceURI, nodeXML, this._handler, false);
-      node._passThrough = true;
+    if (nodeXML.nodeType == _Node.ELEMENT_NODE) {
+      // if we've created an _Element for this node before, we
+      // stored a reference to it by ID so we could get it later
+      node = this._elementById['_' + nodeXML.getAttribute('id')];
+    
+      if (!node) {
+        // never seen before -- we'll have to create a new _Element now
+        node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
+                            nodeXML.namespaceURI, nodeXML, this._handler, false);
+        node._passThrough = true;
       
-      // store a reference to ourselves. 
-      // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
-      // can't just say nodeXML._proxyNode = node, so we have to use a lookup
-      // table
-      var elementId = node._nodeXML.getAttribute('id');
-      this._elementById['_' + elementId] = node;
+        // store a reference to ourselves. 
+        // unfortunately IE doesn't support 'expandos' on XML parser objects, so we 
+        // can't just say nodeXML._proxyNode = node, so we have to use a lookup
+        // table
+        var elementId = node._nodeXML.getAttribute('id');
+        this._elementById['_' + elementId] = node;
+      }
+    } else if (nodeXML.nodeType == _Node.TEXT_NODE) {
+      // we always create these on demand since they have no ID to use
+      // for caching
+      node = new _Node(nodeXML.nodeName, _Node.TEXT_NODE, null, null, nodeXML,
+                       this._handler, false);
+      node._passThrough = true;
+    } else {
+      throw new Error('Unknown node type given to _getElement: ' 
+                      + nodeXML.nodeType);
     }
     
     if (!isIE) {
       return node;
     } else {
-      // for IE, the developer will manipulate things through the UI, HTC
-      // node so that we can know about property changes, etc.
+      // for IE, the developer will manipulate things through the UI/HTC
+      // proxy facade so that we can know about property changes, etc.
       return node._uiNode;
     }
   },
@@ -3073,6 +3193,10 @@ extend(_Document, {
         var m = attr.nodeName.match(/^xmlns:?(.*)$/);
         var prefix = (m[1] ? m[1] : 'xmlns');
         var namespaceURI = attr.nodeValue;
+        
+        if (prefix == 'xmlns') { // default namespace
+          continue;
+        }
         
         results['_' + prefix] = namespaceURI;
         results['_' + namespaceURI] = prefix;

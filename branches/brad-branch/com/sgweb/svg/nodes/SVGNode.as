@@ -1181,15 +1181,11 @@ package com.sgweb.svg.nodes
         }
         
         /**
-         * Returns true if this node has a child text node, for example
-         * such as <text>hello world</text>
+         * Returns true if this node can have text children. Subclasses
+         * should override this if they want to have text node children.
          */
         public function hasText():Boolean {
-            if (this._text == null) {
-                return false;
-            } else {
-                return true;
-            }
+            return false;
         }
         
         /**
@@ -1197,6 +1193,13 @@ package com.sgweb.svg.nodes
          */
         public function getText():String {
             return this._text;
+        }
+        
+        /**
+         * Sets any text content this node might have as a child.
+         */
+        public function setText(newValue):String {
+            return this._text = newValue;
         }
                 
         /**
