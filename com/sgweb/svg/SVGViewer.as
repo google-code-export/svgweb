@@ -672,6 +672,23 @@ package com.sgweb.svg
                     this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
                 }
             }
+            if (jsMsg.method == 'setTextNodeValue') {
+                // Sets the text node of an element that can have text
+                // node children
+                
+                // Get the parent node
+                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                    element=this.js_createdElements[jsMsg.elementId];
+                }
+                else {
+                    element = this._svgRoot.getElement(jsMsg.elementId);
+                }
+                
+                if (element.hasText()) {
+                    element.setText(jsMsg.textContent);
+                    element.invalidateDisplay();
+                }
+            }
             
             //this.debug('Returning jsMsg='+this.debugMsg(jsMsg));
             return jsMsg;

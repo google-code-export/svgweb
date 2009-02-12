@@ -34,6 +34,10 @@ package com.sgweb.svg.nodes
             super(svgRoot, xml);
         }
         
+        override public function hasText():Boolean {
+            return true;
+        }
+        
         /**
          * Get any child text (not text inside child nodes). Also parse
          * unknown child nodes.

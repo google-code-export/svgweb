@@ -58,6 +58,15 @@ package com.sgweb.svg.nodes
             super(svgRoot, xml);      
         }
         
+        override public function hasText():Boolean {
+            return true;
+        }
+        
+        override public function setText(newValue):String {
+            this._text = newValue;
+            return this._text;
+        }
+        
         /**
          * Get any child text (not text inside child nodes)
          * If this node has any text create a TextField at this._textField

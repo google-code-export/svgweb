@@ -43,6 +43,14 @@ package com.sgweb.svg.nodes
             return this._title;
         }
         
+        override public function setText(newValue):String {
+            return this._title = newValue;
+        }
+        
+        override public function hasText():Boolean {
+            return true;
+        }
+        
         override protected function parse():void {
             this._title = '';
             
