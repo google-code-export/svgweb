@@ -1266,7 +1266,8 @@ extend(SVGWeb, {
       it will interpret the first SVG TITLE as the HTML TITLE and change
       the browser's title at the top of the title bar; this only happens
       with the native handler, but for consistency we insert an empty
-      HTML TITLE into the page if none is present which solves the issue. */
+      HTML TITLE into the page if none is present for all handlers
+      which solves the issue. */
   _handleHTMLTitleBug: function() {
     var head = document.getElementsByTagName('head')[0];
     var title = head.getElementsByTagName('title');
