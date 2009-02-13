@@ -580,6 +580,11 @@ if (embed.className && embed.className.indexOf('embedssvg') != -1) {
 Internet Explorer does not have this limitation, with the SVG root element
 showing up directly in the DOM.
 
+* Scoping getElementsByTagNameNS on elements other than the document element is
+not supported. For example, you can not currently do
+document.body.getElementsByTagNameNS(svgns, 'rect') or
+myDiv.getElementsByTagNameNS(svgns, 'ellipse').
+
 What SVG Features Are and Are Not Supported
 -------------------------------------------
 
@@ -729,6 +734,9 @@ function xpath(doc, context, expr, namespaces) {
       for (var i = 0; i < namespaces.length; i++) {
         var namespaceURI = namespaces[i];
         var prefix = namespaces['_' + namespaceURI];
+        if (prefix == 'xmlns') {
+          continue;
+        }
         allNamespaces += 'xmlns:' + prefix + '="' + namespaceURI + '" ';
       }
       doc.setProperty("SelectionNamespaces",  allNamespaces);
@@ -1733,7 +1741,11 @@ extend(NativeHandler, {
    // return them properly
    this._idToNodes = {};
    for (var i = 0; i < this._namespaces.length; i++) {
-     var nodes = document._getElementsByTagNameNS(this._namespaces[i], '*');
+     var ns = this._namespaces[i];
+     if (ns == 'xmlns') {
+       ns = null;
+     }
+     var nodes = document._getElementsByTagNameNS(ns, '*');
      for (var j = 0; j < nodes.length; j++) {
        var id = nodes[j].getAttribute('id');
        if (id) {
@@ -1806,14 +1818,19 @@ extend(NativeHandler, {
         if (!prefix) {
           continue;
         }
+        
         var expr;
-        if (prefix) {
+        if (prefix == 'xmlns') { // default SVG namespace
+          expr = "//*[namespace-uri()='" + svgns + "' and name()='" 
+                 + localName + "']";
+        } else if (prefix) {
           expr = '//' + prefix + ':' + localName;
         } else {
           expr = '//' + localName;
         }
-        xpathResults = xpath(document, handler._svgRoot, 
-                             expr, handler._namespaces);
+        
+        xpathResults = xpath(document, handler._svgRoot, expr, 
+                             handler._namespaces);
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
           for (var j = 0; j < result.length; j++) {
@@ -1846,10 +1863,6 @@ extend(NativeHandler, {
         var m = attr.nodeName.match(/^xmlns:?(.*)$/);
         var prefix = (m[1] ? m[1] : 'xmlns');
         var namespaceURI = attr.nodeValue;
-        
-        if (prefix == 'xmlns') { // default namespace
-          continue;
-        }
         
         results['_' + prefix] = namespaceURI;
         results['_' + namespaceURI] = prefix;
@@ -2011,7 +2024,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     // and override core DOM methods. We don't do it for the root SVG
     // element since that is already a proper Behavior as it embeds our
     // Flash control inside of _SVGSVGElement
-    this._createUINode();
+    this._createHTC();
   }
 }
 
@@ -2072,6 +2085,17 @@ extend(_Node, {
       return null;
     }
     
+    // are we the root SVG object?
+    if (this.nodeName == 'svg') {
+      if (this._htc) { // IE
+        // we stored the realParentNode in the _SVGSVGElement constructor
+        // when we created the SVG root
+        return this._htc._realParentNode;
+      } else { // other browsers
+        return this._handler.flash;
+      }
+    }
+    
     var parentXML = this._nodeXML.parentNode;
     if (parentXML == null) {
       return null;
@@ -2121,6 +2145,17 @@ extend(_Node, {
       return null;
     }
     
+    // are we the root SVG object?
+    if (this.nodeName == 'svg') {
+      if (this._htc) { // IE
+        // we stored the realPreviousSibling in the _SVGSVGElement constructor
+        // when we created the SVG root
+        return this._htc._realPreviousSibling;
+      } else { // other browsers
+        return this._handler.flash.previousSibling;
+      }
+    }
+    
     var siblingXML = this._nodeXML.previousSibling;
     if (siblingXML == null) {
       return null;
@@ -2138,6 +2173,17 @@ extend(_Node, {
     
     if (this.nodeType == _Node.TEXT_NODE) {
       return null;
+    }
+    
+    // are we the root SVG object?
+    if (this.nodeName == 'svg') {
+      if (this._htc) { // IE
+        // we stored the realNextSibling in the _SVGSVGElement constructor
+        // when we created the SVG root
+        return this._htc._realNextSibling;
+      } else { // other browsers
+        return this._handler.flash.nextSibling;
+      }
     }
     
     var siblingXML = this._nodeXML.nextSibling;
@@ -2251,7 +2297,7 @@ extend(_Node, {
       var textNode = doc.createTextNode(child);
       textNode._passThrough = true;
       if (isIE) {
-        return textNode._uiNode;
+        return textNode._htc;
       } else {
         return textNode;
       }
@@ -2288,17 +2334,17 @@ extend(_Node, {
   
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods
-  _createUINode: function() {
+  _createHTC: function() {
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
-    if (!this._uiContainer) {
+    if (!this._htcContainer) {
       var rootID = this._handler.document.documentElement.getAttribute('id');
-      this._uiContainer = document.getElementById('__ui_container_' + rootID);
-      if (!this._uiContainer) {
+      this._htcContainer = document.getElementById('__htc_container_' + rootID);
+      if (!this._htcContainer) {
         var head = document.getElementsByTagName('head')[0];
-        this._uiContainer = document.createElement('div');
-        this._uiContainer.id = '__ui_container_' + rootID;
-        head.appendChild(this._uiContainer);
+        this._htcContainer = document.createElement('div');
+        this._htcContainer.id = '__htc_container_' + rootID;
+        head.appendChild(this._htcContainer);
       }
     }
     
@@ -2311,11 +2357,11 @@ extend(_Node, {
     if (nodeName == '#text') {
       nodeName = '__text'; // text nodes
     }
-    var uiNode = document.createElement('svg:' + this.nodeName);
-    uiNode._proxyNode = this;
-    uiNode._handler = this._handler;
-    this._uiContainer.appendChild(uiNode);
-    this._uiNode = uiNode;
+    var htc = document.createElement('svg:' + this.nodeName);
+    htc._proxyNode = this;
+    htc._handler = this._handler;
+    this._htcContainer.appendChild(htc);
+    this._htc = htc;
   },
   
   _setNodeValue: function(newValue) {
@@ -2710,8 +2756,16 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     var svgDOM = document.createElement('svg:svg');
     svgDOM._proxyNode = this;
     svgDOM._handler = handler;
+    
+    // store the real parentNode and sibling info so we can return it; calling
+    // svgDOM.parentNode, for example, would cause us to recursively call our
+    // magic parentNode getter instead, so we store this
+    svgDOM._realParentNode = scriptNode.parentNode;
+    svgDOM._realPreviousSibling = scriptNode.previousSibling;
+    svgDOM._realNextSibling = scriptNode.nextSibling;
+    
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
-    this._uiNode = svgDOM;
+    this._htc = svgDOM;
     
     // now wait for the HTC file to load for the SVG root element
   } else { // non-IE browsers; immediately insert the Flash
@@ -2839,8 +2893,15 @@ extend(_SVGSVGElement, {
     
     // for non-IE browsers, expose the root SVG element as 'documentElement'
     // on the EMBED tag, and set the EMBED tag's class name to be
-    // 'embedssvg' to help script writers
-    flashObj.className += flashObj.className + ' embedssvg';
+    // 'embedssvg' to help script writers;
+    // Safari will have a superflous space before 'embedssvg' if there are no
+    // class names already there, so avoid that.
+    if (flashObj.className == null 
+        || /^\s*$/.test(String(flashObj.className))) {
+      flashObj.className = 'embedssvg';
+    } else {
+      flashObj.className += flashObj.className + ' embedssvg';
+    }
     flashObj.documentElement = this;
   
     return flashObj;
@@ -3094,7 +3155,7 @@ extend(_Document, {
         } else if (ns == '*') { // not supported
           return createNodeList(); // empty []
         } else {
-          var prefix = this._namespaces['_' + ns];  
+          var prefix = this._namespaces['_' + ns]; 
           if (prefix == undefined) {
             return createNodeList(); // empty []
           }
@@ -3166,7 +3227,7 @@ extend(_Document, {
     } else {
       // for IE, the developer will manipulate things through the UI/HTC
       // proxy facade so that we can know about property changes, etc.
-      return node._uiNode;
+      return node._htc;
     }
   },
   
@@ -3193,10 +3254,6 @@ extend(_Document, {
         var m = attr.nodeName.match(/^xmlns:?(.*)$/);
         var prefix = (m[1] ? m[1] : 'xmlns');
         var namespaceURI = attr.nodeValue;
-        
-        if (prefix == 'xmlns') { // default namespace
-          continue;
-        }
         
         results['_' + prefix] = namespaceURI;
         results['_' + namespaceURI] = prefix;

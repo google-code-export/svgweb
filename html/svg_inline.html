@@ -3,10 +3,14 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
+      // if true, we print out each assertion as we run them; helps with
+      // identifying where an assertion failed by printing the ones before it
+      var printAsserts = false;
+    
       svgweb.addOnLoad(function() {
         console.log('developers onload called');
         var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
@@ -14,7 +18,8 @@
         
         var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
             path, gradient, group, child, whitespaceAreNodes, metadata,
-            cc, svg, svgText, textNode, text, desc, title, format, type;
+            cc, svg, svgText, textNode, text, desc, title, format, type,
+            className;
         
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
@@ -185,7 +190,7 @@
                     466.11172, root.width.baseVal.value.toPrecision(8));
         assertEquals("svg11242.height.baseVal.value should be 265.35126", 
                     265.35126, root.height.baseVal.value.toPrecision(8));
-                    
+          
         // SVGUseElement.x, .y, .width, .height
         console.log('Testing SVGUseElement.x, .y, .width, and .height...');
         // TODO
@@ -287,7 +292,7 @@
         assertEquals("sodipodi.getAttribute('newAttribute') == hello world", 
                       'hello world',
                       sodipodi.getAttribute('newAttribute'));
-        
+  
         // childNodes
         console.log('Testing childNodes...');
         
@@ -364,6 +369,7 @@
                      child.nodeName);
         assertEquals('2nd SVG root element.nodeType == 1', 1, child.nodeType);
         assertNull('2nd SVG root element.nodeValue == null', child.nodeValue);
+
         assertEquals('2nd SVG root element.childNodes.length == 19', 19, 
                      child.childNodes.length);
         assertNull('2nd SVG root element.prefix == null', child.prefix);
@@ -391,7 +397,7 @@
         assertEquals('3rd SVG root element.namespaceURI == svgns', svgns,
                      child.namespaceURI);
         assertEquals('3rd SVG root element.getAttribute(id) == svg11242', 
-                     'svg11242', child.getAttribute('id'));             
+                     'svg11242', child.getAttribute('id'));            
 
         root = child;
         assertEquals('root.childNodes.length == 2', 2, root.childNodes.length);
@@ -481,6 +487,7 @@
         
         // element.id syntax
         console.log('Testing element.id...');
+        
         group = document.getElementById('g4743');
         assertExists('SVG g element with ID g4743 should exist', group);
         assertEquals('group.nodeName == g', 'g', group.nodeName);
@@ -496,7 +503,7 @@
         assertEquals('gradient.id == linearGradient2361', 'linearGradient2361',
                      gradient.id);
                      
-        svg = document.body.getElementsByTagNameNS(svgns, 'svg');
+        svg = document.getElementsByTagNameNS(svgns, 'svg');
         assertExists("document.body.getElementsByTagNameNS(svgns, 'svg') "
                      + "should exist", svg);
         assertEquals("document.body.getElementsByTagNameNS(svgns, 'svg').length "
@@ -517,6 +524,7 @@
                             'RDF')[0];
         assertEquals('rdf.ownerDocument == document', document, 
                       rdf.ownerDocument);
+                      
         svgText = document.getElementById('mySVG').childNodes[0].childNodes[1];
         assertExists('svgText should exist', svgText);
         assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
@@ -724,10 +732,12 @@
         // parentNode, firstChild, lastChild, previousSibling, and nextSibling
         console.log('Testing parentNode, firstChild, lastChild, '
                     + 'previousSibling, and nextSibling...');
+                    
         svg = document.getElementById('svg11242');
         div = document.getElementById('test_container');
         assertExists('svg.parentNode should exist', svg.parentNode);
-        if (svg.parentNode.nodeName == 'embed') { // FF and Safari with Flash
+        // FF and Safari with Flash
+        if (svg.parentNode.nodeName.toLowerCase() == 'embed') {
           assertEquals('svg.parentNode.nodeName == embed (non-IE browsers)', 
                        'embed', svg.parentNode.nodeName.toLowerCase());
           assertEquals('svg.parentNode.className == embedssvg '
@@ -753,9 +763,11 @@
           assertEquals('svg.previousSibling.id == svg2', 'svg2',
                        svg.previousSibling.id);
           assertEquals('svg.nextSibling.nodeName == h1', 'h1',
-                       svg.nextSibling.nodeName);
-          assertEquals('svg.nextSibling.data == Test HTML H1', 'Test HTML H1',
-                       svg.nextSibling.data);
+                       svg.nextSibling.nodeName.toLowerCase());
+          assertEquals('svg.nextSibling.childNodes.length == 1', 1,
+                       svg.nextSibling.childNodes.length);
+          assertEquals('svg.nextSibling.childNodes[0].data == Test HTML H1', 
+                       'Test HTML H1', svg.nextSibling.childNodes[0].data);
         }
         
         assertExists('svg.firstChild should exist', svg.firstChild);
@@ -789,6 +801,7 @@
         assertEquals('svg.lastChild == svg.childNodes[last child]',
                      svg.childNodes[svg.childNodes.length - 1],
                      svg.lastChild);
+        
         child = svg.lastChild;
         assertEquals('lastChild.nodeName == g', 'g', child.nodeName);
         assertEquals('lastChild.getAttribute(id) == g4337', 'g4337', 
@@ -807,13 +820,13 @@
                      'path5427', child.firstChild.id);
         assertEquals('lastChild.lastChild.nodeName == g',
                      'g', child.lastChild.nodeName);
-        assertEquals('lastChild.lastChild.id == layer1',
-                     'layer1', child.lastChild.id);
+        assertEquals('lastChild.lastChild.id == layer1A',
+                     'layer1A', child.lastChild.id);
         assertEquals('lastChild.firstChild.parentNode == this (g)',
                      child, child.firstChild.parentNode);
         assertEquals('lastChild.lastChild.parentNode == this (g)',
                      child, child.lastChild.parentNode);
-
+                     
         metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
         svg = document.getElementById('svg2');
         assertEquals('metadata.parentNode == svg2', svg, 
@@ -874,6 +887,7 @@
         assertNull('format.firstChild.nextSibling == null', child.nextSibling);
         assertNull('format.firstChild.nextSibling == null', 
                    child.previousSibling);
+        
         // when we have appendChild working uncomment below and append the
         // node to an SVG node and ensure the values are correct, and when
         // changed pass through to the Flash
@@ -928,41 +942,68 @@
                                                
         // TODO: Test every one of the SVG element types, perhaps
         // creating them dynamically and building up an image; probably
-        // in another file                                   
+        // in another file     
+        
+        // TODO: Do all these tests again, but have some SVG that we
+        // namespace with svg: inside of our SVG SCRIPT block  
+        
+        // TODO: Rename the ID of nodes (including the root) and make sure
+        // things propagate correctly
                                                
         console.log('Finished testing.');
       });
       
       // TODO: replace these with JSUnit's assert functions
       function assertEquals(comment, expected, actual) {
+        if (printAsserts) {
+          console.log("assertEquals('" + comment + "', " + expected + ", "
+                      + actual + ")");
+        }
+        
         if (expected != actual) {    
           var msg = 'assertEquals Failed: ' + comment 
                     + '\n(expected: ' + expected
                     + ', actual: ' + actual + ')';
+          console.log(msg);
           throw new Error(msg);
         }
       }
       
       function assertExists(comment, actual) {
+        if (printAsserts) {
+          console.log("assertExists('" + comment + "', " + actual + ")");
+        }
+        
         if (actual == null || actual == undefined) {
           var msg = 'assertExists failed: ' + comment 
                     + '\n(actual: ' + actual + ')';
+          console.log(msg);
           throw new Error(msg);
         }
       }
       
       function assertNull(comment, actual) {
+        if (printAsserts) {
+          console.log("assertNull('" + comment + "', " + actual + ")");
+        }
+        
         if (actual !== null) {
           var msg = 'assertNull failed: ' + comment 
                     + '\n(actual: ' + actual + ')';
+          console.log(msg);
           throw new Error(msg);
         }
       }
       
       function assertUndefined(comment, actual) {
+        if (printAsserts) {
+          console.log("assertUndefined('" + comment + "', " + actual + ")");
+        }
+        
         if (actual !== undefined) {
           var msg = 'assertNull failed: ' + comment 
                     + '\n(actual: ' + actual + ')';
+          console.log(msg);
           throw new Error(msg);
         }
       }
@@ -3920,7 +3961,7 @@
             </g>
             <g
                transform="matrix(0.8057349,-1.0705499,1.0705499,0.8057349,-463.13727,65.232307)"
-               id="layer1">
+               id="layer1A">
               <g
                  transform="matrix(0.7664195,0,0,0.7664195,-4.7078914,247.90097)"
                  id="g11138">
