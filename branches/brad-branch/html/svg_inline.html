@@ -19,7 +19,8 @@
         var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
-            className, htmlTitle, head;
+            className, htmlTitle, head, circle, lengthBefore, matches, temp,
+            gradient, stop, defs;
         
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
@@ -955,6 +956,385 @@
         assertEquals('After setting .textContent, textNode.textContent == '
                      + 'set through textContent', 'set through textContent',
                      textNode.textContent);  */
+                     
+        // appendChild
+        console.log('Testing appendChild...');
+        
+        // create an SVG visual element circle and attach it to a group,
+        // then retrieve it from the page by ID and make sure it's properties
+        // are present, then change one of them on the circle and make sure
+        // it goes through
+        circle = document.createElementNS(svgns, 'circle');
+        assertExists('circle should exist', circle);
+        assertEquals('circle.nodeType == 1', 1, circle.nodeType);
+        assertNull('circle.prefix == null', circle.prefix);
+        assertEquals('circle.namespaceURI == svgns', svgns, 
+                     circle.namespaceURI);
+        assertEquals('circle.nodeName == circle', 'circle', circle.nodeName);
+        assertEquals('circle.localName == circle', 'circle', circle.localName);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertNull('circle.firstChild == null', circle.firstChild);
+        assertNull('circle.lastChild == null', circle.lastChild);
+        assertNull('circle.nextSibling == null', circle.nextSibling);
+        assertNull('circle.previousSibling == null', circle.previousSibling);
+        assertExists('circle.childNodes should exist', circle.childNodes);
+        assertEquals('circle.childNodes.length == 0', 0, 
+                     circle.childNodes.length);
+        circle.setAttribute('cx', 100);
+        assertEquals('before appending, circle.cx', 100,
+                     circle.getAttribute('cx'));
+        circle.setAttribute('cy', 50);
+        assertEquals('before appending, circle.cy', 50,
+                     circle.getAttribute('cy'));
+        circle.setAttribute('r', 40);
+        assertEquals('before appending, circle.r', 40,
+                     circle.getAttribute('r'));
+        circle.setAttribute('stroke', 'black');
+        assertEquals('before appending, circle.stroke', 'black',
+                     circle.getAttribute('stroke'));
+        circle.setAttribute('stroke-width', 2);
+        assertEquals('before appending, circle.stroke-width', 2,
+                     circle.getAttribute('stroke-width'));
+        circle.setAttribute('fill', 'red');
+        assertEquals('before appending, circle.fill', 'red',
+                     circle.getAttribute('fill'));
+        circle.id = 'myCircle2';
+        assertEquals('circle.id == myCircle2', 'myCircle2', circle.id);
+        assertEquals('circle.getAttribute(id) == myCircle2', 'myCircle2',
+                     circle.getAttribute('id'));
+        circle.setAttribute('id', 'myCircle');
+        assertEquals('circle.id == myCircle', 'myCircle', circle.id);
+        assertEquals('circle.getAttribute(id) == myCircle', 'myCircle',
+                     circle.getAttribute('id'));
+        group = document.getElementById('myGroup');
+        assertExists('myGroup should exist', group);
+        assertEquals('group.id == myGroup', group.getAttribute('id'));
+        lengthBefore = group.childNodes.length;
+        group.appendChild(circle);
+        // test our post-append properties using the circle object reference
+        assertEquals('group.lastChild == circle', group.lastChild,
+                     circle);
+        assertEquals('group.childNodes.length > lengthBefore + 1',
+                     lengthBefore + 1, group.childNodes.length);
+        assertEquals('group.childNodes[last child] == circle',
+                     circle, group.childNodes[group.childNodes.length - 1]);
+        circle.assertEquals('circle.nodeType == 1', 1, circle.nodeType);
+        circle.assertEquals('circle.nodeName == circle', 'circle',
+                            circle.nodeName);
+        circle.assertNull('circle.prefix == null', circle.prefix);
+        circle.assertEquals('circle.namespaceURI == svgns', svgns,
+                            circle.namespaceURI);
+        circle.assertEquals('circle.localName == circle', 'circle',
+                            circle.localName);
+        circle.assertEquals('circle.parentNode == myGroup', group,
+                            circle.parentNode);
+        child = group.childNodes[group.childNodes.length - 2];
+        assertEquals('next to last childNode for group == circle.previousSibling',
+                     child, circle.previousSibling);
+        assertEquals('(next to last childNode for group).nextSibling == circle',
+                     circle, child.nextSibling);
+        assertNull('circle.nextSibling == null', circle.nextSibling);
+        assertNull('circle.firstChild == null', circle.firstChild);
+        assertNull('circle.lastChild == null', circle.lastChild);
+        // now do these post-append circle tests again, but after retrieving 
+        // it by ID
+        circle = document.getElementById('myCircle');
+        assertExists('myCircle should exist', circle);
+        assertEquals('circle.id == myCircle', 'myCircle', circle);
+        assertEquals('group.lastChild == circle', group.lastChild,
+                     circle);
+        assertEquals('group.childNodes.length > lengthBefore + 1',
+                     lengthBefore + 1, group.childNodes.length);
+        assertEquals('group.childNodes[last child] == circle',
+                     circle, group.childNodes[group.childNodes.length - 1]);
+        circle.assertEquals('circle.nodeType == 1', 1, circle.nodeType);
+        circle.assertEquals('circle.nodeName == circle', 'circle',
+                            circle.nodeName);
+        circle.assertNull('circle.prefix == null', circle.prefix);
+        circle.assertEquals('circle.namespaceURI == svgns', svgns,
+                            circle.namespaceURI);
+        circle.assertEquals('circle.localName == circle', 'circle',
+                            circle.localName);
+        circle.assertEquals('circle.parentNode == myGroup', group,
+                            circle.parentNode);
+        child = group.childNodes[group.childNodes.length - 2];
+        assertEquals('next to last childNode for group == circle.previousSibling',
+                     child, circle.previousSibling);
+        assertEquals('(next to last childNode for group).nextSibling == circle',
+                     circle, child.nextSibling);
+        assertNull('circle.nextSibling == null', circle.nextSibling);
+        assertNull('circle.firstChild == null', circle.firstChild);
+        assertNull('circle.lastChild == null', circle.lastChild);
+        // now rename the ID and make sure it takes hold
+        circle.id = 'myCircle3';
+        assertExists('document.getElementById(myCircle3) should exist',
+                     document.getElementById('myCircle3'));
+        assertNull('document.getElementById(myCircle) == null',
+                   document.getElementById('myCircle'));
+        assertNull('document.getElementById(myCircle2) == null',
+                   document.getElementById('myCircle2'));
+        // now make sure we can get the circle through 
+        // getElementsByTagNameNS
+        circle = null;
+        matches = document.getElementsByTagNameNS(svgns, 'circle');
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'myCircle3') {
+            circle = matches[i];
+            break;
+          }
+        }
+        assertExists('circle should exist after getElementsByTagNameNS', 
+                     circle);
+        
+        // create an SVG visual element path and attach it to an
+        // SVG root element. give it no ID, but set a custom attribute
+        // instead. retrieve it from the page by 
+        // getElementsByTagNameNS and make sure it's properties are present, 
+        // then change one of them and make sure it goes through
+        path = document.createElementNS(svgns, 'path');
+        assertExists('path should exist', path);
+        path.setAttribute('d', 'M -20.133478,316.78351 C -2.5343923,300.86446 23.150308,304.80212 43.988839,310.96541 C 64.182313,311.03608 84.995525,308.01108 102.22691,296.84598 C 116.66515,291.19078 133.79301,284.32476 148.30745,293.77777 C 164.10698,306.69071 183.19684,310.30976 201.28953,299.86958 C 220.6633,293.25475 231.73414,283.23716 251.94853,283.33722 C 273.59866,283.44962 280.81344,306.25205 297.64771,310.93883 C 318.87056,316.8474 338.07631,304.09275 351.47223,307.28886 C 365.27894,310.58296 386.98702,326.3148 408.2949,324.48886 C 425.22232,319.70984 428.34402,315.64725 448.13463,315.6678 C 459.12426,315.44023 482.48913,306.95039 477.97163,325.59815 C 478.30341,380.34313 478.63519,424.53633 478.96697,479.2813 C 309.08287,477.17096 139.1988,475.06064 -30.685293,472.9503 C -27.16803,420.89469 -23.650742,368.83911 -20.133478,316.78351 z ');
+        assertEquals('path should have long d attribute',
+                     'M -20.133478,316.78351 C -2.5343923,300.86446 23.150308,304.80212 43.988839,310.96541 C 64.182313,311.03608 84.995525,308.01108 102.22691,296.84598 C 116.66515,291.19078 133.79301,284.32476 148.30745,293.77777 C 164.10698,306.69071 183.19684,310.30976 201.28953,299.86958 C 220.6633,293.25475 231.73414,283.23716 251.94853,283.33722 C 273.59866,283.44962 280.81344,306.25205 297.64771,310.93883 C 318.87056,316.8474 338.07631,304.09275 351.47223,307.28886 C 365.27894,310.58296 386.98702,326.3148 408.2949,324.48886 C 425.22232,319.70984 428.34402,315.64725 448.13463,315.6678 C 459.12426,315.44023 482.48913,306.95039 477.97163,325.59815 C 478.30341,380.34313 478.63519,424.53633 478.96697,479.2813 C 309.08287,477.17096 139.1988,475.06064 -30.685293,472.9503 C -27.16803,420.89469 -23.650742,368.83911 -20.133478,316.78351 z ',
+                     path.getAttribute('d'));
+        // there should be an autogenerated ID by default
+        assertEquals('path.id != null', true, path.id != null);
+        assertEquals('path.id.indexOf(__svg__random__) != -1', true,
+                     path.id.indexOf('__svg__random__') != -1);
+        assertNull('path.getAttribute(fill) before setting == null',
+                   path.getAttribute('fill'));
+        path.setAttribute('fill', '#585a53');
+        assertEquals('path.getAttribute(fill) == #585a53', '#585a53',
+                     path.getAttribute('fill'));
+        assertNull('path.getAttribute(somethingCustom) == null', 
+                   path.getAttribute('somethingCustom'));
+        path.setAttribute('somethingCustom', 'foo');
+        assertEquals('path.getAttribute(somethingCustom) == foo', 'foo',
+                     path.getAttribute('somethingCustom'));
+        assertEquals('path.nodeType == 1', 1, path.nodeType);
+        assertNull('path.prefix == null', path.prefix);
+        assertEquals('path.namespaceURI == svgns', svgns, 
+                     path.namespaceURI);
+        assertEquals('path.nodeName == path', 'path', path.nodeName);
+        assertEquals('path.localName == path', 'path', path.localName);
+        assertNull('path.parentNode == null', path.parentNode);
+        assertNull('path.firstChild == null', path.firstChild);
+        assertNull('path.lastChild == null', path.lastChild);
+        assertNull('path.nextSibling == null', path.nextSibling);
+        assertNull('path.previousSibling == null', path.previousSibling);
+        assertExists('path.childNodes should exist', path.childNodes);
+        assertEquals('path.childNodes.length == 0', 0, 
+                     path.childNodes.length);
+        svg = document.getElementById('mySVG');
+        lengthBefore = svg.childNodes.length;
+        temp = svg.appendChild(path);
+        // make sure appendChild returns good results
+        assertExists('path should exist', temp);
+        assertExists('path should exist', path);
+        assertEquals('path == appendChild result', path, temp);
+        // make sure things really got appended
+        assertEquals('svg.childNodes.length > lengthBefore',
+                     lengthBefore + 1, svg.childNodes.length);
+        assertEquals('svg.lastChild == path', path, lastChild);
+        assertEquals('svg.childNodes[last child] == path', path,
+                     svg.childNodes[svg.childNodes.length - 1]);
+        // check values post-appendChild using object reference
+        assertEquals('path.nodeType == 1', 1, path.nodeType);
+        assertNull('path.prefix == null', path.prefix);
+        assertEquals('path.namespaceURI == svgns', svgns, path.namespaceURI);
+        assertEquals('path.nodeName == path', 'path', path.nodeName);
+        assertEquals('path.localName == path', 'path', path.localName);
+        assertNull('path.parentNode == null', path.parentNode);
+        assertNull('path.firstChild == null', path.firstChild);
+        assertNull('path.lastChild == null', path.lastChild);
+        assertNull('path.nextSibling == null', path.nextSibling);
+        assertNull('path.previousSibling == null', path.previousSibling);
+        assertExists('path.childNodes should exist', path.childNodes);
+        assertEquals('path.childNodes.length == 0', 0, 
+                     path.childNodes.length);
+        assertEquals('path.getAttribute(somethingCustom) == foo', 'foo',
+                     path.getAttribute('somethingCustom'));
+        assertEquals('path.getAttribute(fill) == #585a53', '#585a53',
+                     path.getAttribute('fill'));
+        assertEquals('path.id.indexOf(__svg__random__) != -1', true,
+                      path.id.indexOf('__svg__random__') != -1);
+        // get the element through getElementsByTagNameNS, then check it's
+        // DOM sibling/child properties
+        matches = document.getElementsByTagNameNS(svgns, 'path');
+        path = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('somethingCustom') == 'foo') {
+            path = matches[i];
+            break;
+          }
+        }
+        assertExists('path should exist after getElementsByTagNameNS', path);
+        assertEquals('path.parentNode == svg', svg, path.parentNode);
+        assertNull('path.nextSibling == null', path.nextSibling);
+        child = svg.childNodes[svg.childNodes.length - 2];
+        assertExists('child should exist', child);
+        assertEquals('path.previousSibling == child', child, 
+                     path.previousSibling);
+        assertEquals('child.nextSibling == path', path, child.nextSibling);
+        assertNull('path.firstChild == null', path.firstChild);
+        assertNull('path.lastChild == null', path.lastChild);
+        assertEquals('path.childNodes.length == 0', 0, path.childNodes.length);
+        assertEquals('path.id.indexOf(__svg__random__) != -1', true,
+                      path.id.indexOf('__svg__random__') != -1);
+        path.setAttribute('stroke-width', '5px');
+        assertEquals('path.getAttribute(stroke-width) == 5px', '5px',
+                     path.getAttribute('stroke-width'));
+        
+        // create a metadata node, then create a namespaced dublin core
+        // element, then attach it and attach both to an SVG root element.
+        // make sure to give the dublic core element an ID, then retrieve it
+        // by ID to ensure it shows up in the DOM and is retrievable
+        metadata = document.createElementNS(svgns, 'metadata');
+        assertExists('metadata should exist', metadata);
+        assertEquals('metadata.nodeName == metadata', 'metadata', metadata);
+        metadata.id = 'myMetadata';
+        dc = document.createElementNS(dc_ns, 'dc:creator');
+        assertEquals('dc.nodeName == dc:creator', 'dc:creator', dc.nodeName);
+        assertEquals('dc.nodeType == 1', 1, dc.nodeType);
+        assertEquals('dc.prefix == dc', 'dc', dc.prefix);
+        assertEquals('dc.namespaceURI == dc_ns', dc_ns, dc.namespaceURI);
+        assertEquals('dc.localName == creator', 'creator', dc.localName);
+        assertNull('dc.parentNode == null', dc.parentNode);
+        assertNull('dc.firstChild == null', dc.firstChild);
+        assertNull('dc.lastChild == null', dc.lastChild);
+        assertNull('dc.previousSibling == null', dc.previousSibling);
+        assertNull('dc.nextSibling == null', dc.nextSibling);
+        assertEquals('dc.childNodes.length == 0', 0, dc.childNodes.length);
+        text = document.createTextNode('Brad Neuberg');
+        dc.appendChild(text);
+        assertEquals('text.nodeType == 3', 3, text.nodeType);
+        assertEquals('text.nodeName == #text', '#text', text.nodeName);
+        assertNull('text.prefix == null', text.prefix);
+        assertNull('text.namespaceURI == null', text.namespaceURI);
+        assertEquals('dc.childNodes.length == 1', 1, dc.childNodes.length);
+        dc.setAttribute('id', 'dcCreator');
+        svg = document.getElementById('mySVG');
+        temp = svg.appendChild(metadata);
+        assertEquals('metadata == temp', metadata, temp);
+        // now test values post-appendChild
+        metadata = document.getElementById('myMetadata');
+        assertExists('metadata should exist', metadata);
+        dc = document.getElementById('dcCreator');
+        assertExists('dc:creator should exist', dc);
+        assertEquals('metadata.childNodes.length == 1', 1, 
+                     metadata.childNodes.length);
+        assertEquals('metadata.firstChild == dc', dc, metadata.firstChild);
+        assertEquals('metadata.lastChild == dc', dc, metadata.lastChild);
+        assertEquals('metadata.childNodes[0] == dc', dc, 
+                     metadata.childNodes[0]);
+        dc = metadata.firstChild;
+        assertEquals('dc.nodeName == dc:creator', 'dc:creator', dc.nodeName);
+        assertEquals('dc.nodeType == 1', 1, dc.nodeType);
+        assertEquals('dc.prefix == dc', 'dc', dc.prefix);
+        assertEquals('dc.namespaceURI == dc_ns', dc_ns, dc.namespaceURI);
+        assertEquals('dc.localName == creator', 'creator', dc.localName);
+        assertEquals('dc.parentNode == metadata', metadata, dc.parentNode);
+        text = dc.firstChild;
+        assertExists('text node should exist', text);
+        assertEquals('text.nodeName == #text', '#text', text.nodeName);
+        assertEquals('text.nodeType == 3', 3, text.nodeType);
+        assertEquals('text.data == Brad Neuberg', 'Brad Neuberg', text.data);
+        assertEquals('text.textContent == Brad Neuberg', 'Brad Neuberg', 
+                     text.data);
+        assertEquals('text.nodeValue == Brad Neuberg', 'Brad Neuberg', 
+                     text.nodeValue);
+        assertEquals('text.parentNode == dc', dc, text.parentNode);
+        assertNull('text.firstChild == null', text.firstChild);
+        assertNull('text.lastChild == null', text.lastChild);
+        assertNull('text.nextSibling == null', text.nextSibling);
+        assertNull('text.previousSibling == null', text.previousSibling);
+        assertEquals('text.childNodes.length == 0', 0, text.childNodes.length);
+        assertEquals('dc.firstChild == text node', text, dc.firstChild);
+        assertEquals('dc.lastChild == text node', text, dc.lastChild);
+        assertNull('dc.nextSibling == null', dc.nextSibling);
+        assertNull('dc.previousSibling == null', dc.previousSibling);
+        // change text node value and make sure it maps over
+        text.data = 'James Hight';
+        // make sure it shows up in getElementsByTagNameNS
+        matches = document.getElementsByTagNameNS(dc_ns, 'creator');
+        dc = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].id == 'dcCreator') {
+            dc = matches[i];
+          }
+        }
+        assertExists('dc should exist after getElementsByTagNameNS', dc);
+        assertEquals('dc.nodeName == dc:creator', 'dc:creator', dc.nodeName);
+        text = dc.childNodes[0];
+        assertEquals('text node == James Hight', 'James Hight', 
+                     text.textContent);
+        // change the ID and ensure it maps over
+        dc.id = 'dcCreator2';
+        assertEquals('dc.id == dcCreator2', 'dcCreator2', dc.id);
+        dc = document.getElementById('dcCreator2');
+        assertExists('dcCreator2 should exist', dc);
+        dc = document.getElementById('dcCreator');
+        assertNull('dcCreator should not exist', dc);
+            
+        // create a linearGradient, create its stop elements,
+        // attach it to a defs element, then modify
+        // an existing element to use this linearGradient
+        defs = document.createElementNS(svgns, 'defs');
+        gradient = document.createElementNS(svgns, 'linearGradient');
+        gradient.id = 'myGradient';
+        gradient.setAttribute('x1', '0%');
+        gradient.setAttribute('y1', '0%');
+        gradient.setAttribute('x2', '100%');
+        gradient.setAttribute('y2', '0%');
+        defs.appendChild(gradient);
+        stop = document.createElementNS(svgns, 'stop');
+        stop.setAttribute('stop-color', 'blue');
+        stop.setAttribute('offset', 0);
+        gradient.appendChild(stop);
+        stop = document.createElementNS(svgns, 'stop');
+        stop.setAttribute('stop-color', 'red');
+        stop.setAttribute('offset', 1);
+        gradient.appendChild(stop);
+        svg = document.getElementById('mySVG');
+        svg.appendChild(defs);
+        circle = document.getElementById('myCircle');
+        circle.setAttribute('fill', 'url(#myGradient)');
+        
+        // create a DESC element, then create a text node, and append
+        // both together than append the DESC element to a G element
+        desc = document.createElementNS(svgns, 'desc');
+        text = document.createTextNode('This is a test desc');
+        desc.appendChild(text);
+        group = document.getElementById('layer1');
+        group.appendChild(desc);
+        matches = document.getElementsByTagNameNS(svgns, 'desc');
+        desc = null;
+        for (var i = 0; i < matches.length; i++) {
+          var m = matches[i];
+          if (m.childNodes.length > 0 
+              && m.childNodes[0].data == 'This is a test desc') {
+            desc = matches[i];
+          }
+        }
+        assertExists('desc should exist', desc);
+        assertEquals('desc.parentNode == group', group);
+        assertEquals('desc.childNodes[0] == text', text);
+        
+        // create an SVG TEXT element, append it, then change it's
+        // text value and make sure that shows up
+        text = document.createElementNS(svgns, 'text');
+        text.setAttribute('x', 0);
+        text.setAttribute('y', 300);
+        text.setAttribute('stroke', 'green');
+        textNode = document.createTextNode('You should see this text');
+        text.appendChild(textNode);
+        group = document.getElementById('myGroup');
+        group.appendChild(text);
+        textNode.data = 'Even more text';
+        assertEquals('textNode.data == Even more text', 'Even more text',
+                     document.getElementById('myGroup').lastChild.firstChild.data);
+        
+        // TODO: test dynamically creating an SVG root
                                                
         // TODO: Test every one of the SVG element types, perhaps
         // creating them dynamically and building up an image; probably
