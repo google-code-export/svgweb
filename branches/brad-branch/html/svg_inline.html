@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -19,7 +19,7 @@
         var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
-            className;
+            className, htmlTitle, head;
         
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
@@ -692,9 +692,25 @@
                      'This is a description4', text.textContent);
                      
         title = document.getElementsByTagNameNS(svgns, 'title');
+        assertExists('SVG title should exist', title);
+        // bug test (all browsers and renderers): make sure that it's not the 
+        // HTML title element. On Safari with the native renderer, it changes
+        // the page title. All browsers return a null namespaceURI.
+        // make sure that the HTML page title didn't change (Safari bug)
+        head = document.getElementsByTagName('head')[0];
+        assertExists('head.getElementsByTagName("title")',
+                     head.getElementsByTagName('title'));
+        htmlTitle = head.getElementsByTagName('title');
+        htmlTitle = htmlTitle[0];
+        assertExists('htmlTitle should exist', htmlTitle);
+        assertEquals('htmlTitle.innerHTML != This is a description4', true, 
+                      htmlTitle.innerHTML != 'This is a description4');
         assertExists('There should be a TITLE element', title);
         assertEquals('There should be 1 TITLE element', 1, title.length);
         title = title[0];
+        assertEquals('title.namespaceURI == svgns', svgns,
+                     title.namespaceURI);
+        // end bug test
         assertEquals('title.nodeName == title', 'title', title.nodeName);
         assertNull('title.nodeValue == null', title.nodeValue);
         assertEquals('title.childNodes.length == 1', 1, 
@@ -949,6 +965,11 @@
         
         // TODO: Rename the ID of nodes (including the root) and make sure
         // things propagate correctly
+        
+        // TODO: Put all of this into a separate JavaScript file, then include
+        // it to test it on an XHTML page, a quirks doctype, a standards
+        // doctype, none, etc.; have one page with an HTML TITLE in the 
+        // markup
                                                
         console.log('Finished testing.');
       });

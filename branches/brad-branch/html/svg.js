@@ -585,6 +585,12 @@ not supported. For example, you can not currently do
 document.body.getElementsByTagNameNS(svgns, 'rect') or
 myDiv.getElementsByTagNameNS(svgns, 'ellipse').
 
+* If you have no HTML TITLE element on the page when using the native
+renderer, Safari 3 will incorrectly pick up the first SVG TITLE element 
+instead and set the page title at the top of the browser. To correct this, 
+if you have no HTML TITLE, we automatically place an empty HTML TITLE into 
+the HEAD of the page, which fixes the issue.
+
 What SVG Features Are and Are Not Supported
 -------------------------------------------
 
@@ -901,6 +907,9 @@ extend(SVGWeb, {
     } else if (this.config.use == 'native') {
       this._renderer = NativeHandler;
     }
+    
+    // handle a peculiarity for Safari (see method for details)
+    this._handleHTMLTitleBug();
   
     // now process each of the SVG SCRIPTs and SVG OBJECTs
     this.totalLoaded = 0;
@@ -1251,6 +1260,20 @@ extend(SVGWeb, {
 		  we need a callback. */
   _watchDynamicSVG: function() {
     // TODO
+  },
+  
+  /** Safari 3 has a strange bug where if you have no HTML TITLE element,
+      it will interpret the first SVG TITLE as the HTML TITLE and change
+      the browser's title at the top of the title bar; this only happens
+      with the native handler, but for consistency we insert an empty
+      HTML TITLE into the page if none is present which solves the issue. */
+  _handleHTMLTitleBug: function() {
+    var head = document.getElementsByTagName('head')[0];
+    var title = head.getElementsByTagName('title');
+    if (title.length == 0) {
+      title = document.createElement('title');
+      head.appendChild(title);
+    }
   }
 });
 
@@ -1802,6 +1825,7 @@ extend(NativeHandler, {
     document._getElementsByTagNameNS = document.getElementsByTagNameNS;
     document.getElementsByTagNameNS = function(ns, localName) {
       var result = document._getElementsByTagNameNS(ns, localName);
+      
       // firefox doesn't like if (result)
       if (result != null && result.length != 0) {
         return result;
