@@ -808,6 +808,17 @@ extend(SVGWeb, {
     this._listeners.push(listener);
   },
   
+  /** Returns a string for the given handler for this platform, 'flash' if
+      flash is being used or 'native' if the native capabilities are being
+      used. */
+  getHandlerType: function() {
+    if (this._renderer == FlashHandler) {
+      return 'flash';
+    } else if (this._renderer == NativeHandler) {
+      return 'native';
+    }
+  },
+  
   /** Sets up an onContentLoaded listener */
   _initDomContentLoaded: function() {
     // onDOMContentLoaded code adapted from Dean Edwards/Matthias Miller/
@@ -1757,26 +1768,6 @@ extend(NativeHandler, {
    var importedSVG = document.importNode(xml.documentElement, true);
    scriptNode.parentNode.replaceChild(importedSVG, scriptNode);
    this._svgRoot = importedSVG;
-   
-   // non-SVG elements with IDs don't get registered with 
-   // document.getElementById for some reason (i.e. if
-   // we call it with the ID of a sodipodi:namedview element, for example,
-   // it won't return anything); store a reference to these so we can 
-   // return them properly
-   this._idToNodes = {};
-   for (var i = 0; i < this._namespaces.length; i++) {
-     var ns = this._namespaces[i];
-     if (ns == 'xmlns') {
-       ns = null;
-     }
-     var nodes = document._getElementsByTagNameNS(ns, '*');
-     for (var j = 0; j < nodes.length; j++) {
-       var id = nodes[j].getAttribute('id');
-       if (id) {
-         this._idToNodes['_' + id] = nodes[j];
-       }
-     }
-   }
   },
   
   _patchDocumentObject: function() {
@@ -1798,23 +1789,32 @@ extend(NativeHandler, {
         return result;
       }
       
-      for (var i = 0; i < svgweb.handlers.length; i++) {
-        var handler = svgweb.handlers[i];
-        result = handler._idToNodes['_' + id];  
-        if (result != null && result != undefined) {
-          // double check to make sure this node's ID didn't change
-          // out from under us
-          if (result.getAttribute('id') == id) {
-            return result;
-          } else {
-            handler._idToNodes['_' + id] = undefined;
-            handler._idToNodes['_' + result.getAttribute('id')] = result;
-            continue;
-          }
+      // The id attribute for namespaced, non-SVG and non-HTML nodes
+      // does not get picked up by getElementById, such as 
+      // <sodipodi:namedview id="someID"/>, so we have to use an XPath 
+      // expression
+      result = xpath(document, null, '//*[@id="' + id + '"]');
+      if (result.length) {
+        var node = result[0];
+        
+        // add an .id attribute for non-SVG and non-HTML nodes, which
+        // don't have them by default in order to have parity with the
+        // Flash viewer; note Firefox doesn't like if (node.namespaceURI)
+        // rather than (node.namespaceURI != null)
+        if (node.namespaceURI != null && node.namespaceURI != svgns
+            && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
+          node.__defineGetter__('id', function() {
+            return node.getAttribute('id');
+          });
+          node.__defineSetter__('id', function(newValue) {
+            return node.setAttribute('id', newValue);
+          });
         }
+        
+        return node;
+      } else {
+        return null;
       }
-      
-      return null;
     }
     
     // we also have to patch getElementsByTagNameNS because it does 
@@ -1859,7 +1859,23 @@ extend(NativeHandler, {
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
           for (var j = 0; j < result.length; j++) {
-            xpathResults.push(result[j]);
+            var node = result[j];
+            
+            // add an .id attribute for non-SVG and non-HTML nodes, which
+            // don't have them by default in order to have parity with the
+            // Flash viewer; note Firefox doesn't like if (node.namespaceURI)
+            // rather than (node.namespaceURI != null)
+            if (node.namespaceURI != null && node.namespaceURI != svgns
+                && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
+              node.__defineGetter__('id', function() {
+                return node.getAttribute('id');
+              });
+              node.__defineSetter__('id', function(newValue) {
+                return node.setAttribute('id', newValue);
+              });
+            }
+            
+            xpathResults.push(node);
           }
           
           return xpathResults;
