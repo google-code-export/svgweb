@@ -23,7 +23,6 @@ package com.sgweb.svg.core
 	import com.sgweb.svg.utils.SVGColors;
 	import com.sgweb.svg.utils.SVGUnits;
 	
-	import flash.display.BitmapData;
 	import flash.display.CapsStyle;
 	import flash.display.DisplayObject;
 	import flash.display.JointStyle;
@@ -295,16 +294,32 @@ package com.sgweb.svg.core
                match = attr.match(/url\(\s*#(.*?)\s*\)/si);                
                if (match.length == 2) {
                    attr = match[1];
-                   node = this.svgRoot.getNode(attr);
-                   if (node) {
-                       this.mask = node;                       
-                       node.visible = true;
-                       
-                       this.cacheAsBitmap = true; 
-                       node.cacheAsBitmap = true;                       
+                   node = this.svgRoot.getNode(attr);                   
+                   if (node) {                      
+                       if (node.parent is SVGNode) {
+                       	
+                      	   this.removeMask();
+                      	
+                      	   var newMask:SVGNode = node.clone();
+                           node.parent.addChild(newMask);
+                           
+                           this.mask = newMask;
+                           
+                           newMask.visible = true;
+                           this.cacheAsBitmap = true; 
+                           newMask.cacheAsBitmap = true;
+                           
+                       }                                             
                    }
                }
             }           
+        }
+        
+        protected function removeMask():void {
+        	if (this.mask) {
+                this.mask.parent.removeChild(this.mask);
+                this.mask = null;
+            }
         }
         
         //Used by SVGSVGNode and SVGImageNode
@@ -832,6 +847,7 @@ package com.sgweb.svg.core
             if (this.original) {
                 this.original.unregisterClone(this);
             }
+            this.removeMask();
         }
         
         protected function registerID():void {
@@ -910,7 +926,7 @@ package com.sgweb.svg.core
         protected function _getAttribute(name:String):String {
             var value:String;
             
-            if (this.original && (this.parent is SVGNode)) {
+            if (this.original && (this.parent is SVGUseNode)) {
                 //Node is the top level of a clone
                 //Check for an override value from the parent
                 value = SVGNode(this.parent).getAttribute(name, null, false);
