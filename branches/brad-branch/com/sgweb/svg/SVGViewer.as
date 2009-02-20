@@ -102,8 +102,6 @@ package com.sgweb.svg
             this._svgRoot.svgRoot = this._svgRoot;
             this.addChild(this._svgRoot);
 
-            this.debug('SVGViewer constructor');
-
             this.addEventListener(Event.ADDED_TO_STAGE, addedToStage);
 
         }
@@ -116,6 +114,21 @@ package com.sgweb.svg
                                            { type: 'log',
                                              uniqueId: this.js_uniqueId,
                                              logString: debugMessage
+                                            } );
+                }
+                catch(error:SecurityError) {
+                }
+            }
+        }
+        
+        
+        public function error(message:String):void {
+            if (this.debugEnabled) {            
+                try {
+                    ExternalInterface.call(this.js_handler + 'onMessage', 
+                                           { type: 'error',
+                                             uniqueId: this.js_uniqueId,
+                                             logString: message
                                             } );
                 }
                 catch(error:SecurityError) {
@@ -248,11 +261,11 @@ package com.sgweb.svg
             }
             catch (error:ArgumentError)
             {
-                this.debug("An ArgumentError has occurred.");
+                this.error("An ArgumentError has occurred.");
             }
             catch (error:SecurityError)
             {
-                this.debug("A SecurityError has occurred.");
+                this.error("A SecurityError has occurred.");
             }
         }
 
@@ -265,11 +278,11 @@ package com.sgweb.svg
             }
             catch (error:ArgumentError)
             {
-                this.debug("An ArgumentError has occurred.");
+                this.error("An ArgumentError has occurred.");
             }
             catch (error:SecurityError)
             {
-                this.debug("A SecurityError has occurred.");
+                this.error("A SecurityError has occurred.");
             }
         }
 
@@ -485,13 +498,12 @@ package com.sgweb.svg
         public function js_handleInvoke(jsMsg:Object):Object {
             //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element:SVGNode;
+            var textNode:XMLNode;
+            
             if (jsMsg.method == 'createElementNS') {
                 var xmlString:String = '<' + jsMsg.elementType + ' id="' + jsMsg.elementId +  '" />';
                 var childXML:XML = new XML(xmlString);
                 this.js_createdElements[jsMsg.elementId] = this._svgRoot.parseNode(childXML);
-            }
-            if (jsMsg.method == 'createTextNode') {
-                this.js_createdTextNodes[jsMsg.elementId] = new XMLNode(XMLNodeType.TEXT_NODE, jsMsg.text);
             }
             if (jsMsg.method == 'setTransform') {
                 this.transform.matrix = this._svgRoot.parseTransform(jsMsg.transform); 
@@ -562,27 +574,18 @@ package com.sgweb.svg
                 }
                 // Get the child node
 
-                // If the node is text, then just modify the text xml
-                if (element && element.xml.localName() == 'text') {
-                    var childTextNode:XMLNode;
-                    childTextNode=this.js_createdTextNodes[jsMsg.childId];
-                    if (childTextNode)  {
-                        element.xml.appendChild(childTextNode);
-                        element.invalidateDisplay();
-                    }
+                // Add the SVGNode
+                var childNode:SVGNode;
+                if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
+                    childNode=this.js_createdElements[jsMsg.childId];
                 }
                 else {
-                    // If the node is not text, then add the SVGNode
-                    var childNode:SVGNode;
-                    if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
-                        childNode=this.js_createdElements[jsMsg.childId];
-                    }
-                    else {
-                        childNode = this._svgRoot.getElement(jsMsg.childId);
-                    }
-                    if (element && childNode)  {
-                        element.addChild(childNode);
-                    }
+                    childNode = this._svgRoot.getElement(jsMsg.childId);
+                }
+                
+                if (element && childNode) {
+                    element.addChild(childNode);
+                    element.invalidateDisplay();
                 }
             }
             if (jsMsg.method == 'getRoot') {
@@ -614,11 +617,11 @@ package com.sgweb.svg
                         }
                     }
                     else {
-                        this.debug("error:getAttribute: id not found: " + jsMsg.elementId);
+                        this.error("error:getAttribute: id not found: " + jsMsg.elementId);
                     }
                 }
                 else {
-                    this.debug("error:getAttribute: id not found: " + jsMsg.elementId);
+                    this.error("error:getAttribute: id not found: " + jsMsg.elementId);
                 }
             }
             if (jsMsg.method == 'setAttribute') {
@@ -669,24 +672,23 @@ package com.sgweb.svg
                     }
                 }
                 else {
-                    this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
+                    this.error("error:setAttribute: id not found: " + jsMsg.elementId);
                 }
             }
-            if (jsMsg.method == 'setTextNodeValue') {
+            if (jsMsg.method == 'setText') {
                 // Sets the text node of an element that can have text
                 // node children
-                
-                // Get the parent node
+                   
+                // Get the parent of the text node
                 if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    element=this.js_createdElements[jsMsg.elementId];
+                    element = this.js_createdElements[jsMsg.elementId];
                 }
                 else {
                     element = this._svgRoot.getElement(jsMsg.elementId);
                 }
                 
                 if (element.hasText()) {
-                    element.setText(jsMsg.textContent);
-                    element.invalidateDisplay();
+                    element.setText(jsMsg.text);
                 }
             }
             

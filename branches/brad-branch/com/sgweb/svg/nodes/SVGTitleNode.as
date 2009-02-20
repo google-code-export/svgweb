@@ -40,11 +40,13 @@ package com.sgweb.svg.nodes
         }
         
         override public function getText():String {
-            return this._title;
+            return this._xml.text().toString();
         }
         
         override public function setText(newValue):String {
-            return this._title = newValue;
+            this._xml.setChildren(newValue);
+            this._title = newValue;
+            return newValue;
         }
         
         override public function hasText():Boolean {
@@ -52,13 +54,7 @@ package com.sgweb.svg.nodes
         }
         
         override protected function parse():void {
-            this._title = '';
-            
-            for each(var childXML:XML in this._xml.children()) {
-                if (childXML.nodeKind() == 'text') {
-                    this._title += childXML.toString();
-                }
-            }
+            this._title = this._xml.text().toString();
         }
         
         override protected function setAttributes():void {
