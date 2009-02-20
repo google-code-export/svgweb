@@ -46,6 +46,7 @@
                        
       <method name="setAttribute" />
       <method name="getAttribute" />
+      <method name="appendChild" />
        
       <attach event="oncontentready" onevent="contentReady()" />
       
@@ -60,13 +61,19 @@
     /** Called when the content is ready for some SVG tag in the HTML
         page. This method is called for each individual SVG tag. */
     function contentReady() {
-      // indicate that we are now loaded
-      var msg = { type: 'event', 
-                  eventType: 'onHTCLoaded',
-                  uniqueId: this.id, 
-                  elemDoc: element.document,
-                  htcNode: this };
-      this._handler.onMessage(msg);
+      // are we even attached? This will incorrectly get fired when we create 
+      // and append the HTC node, even if it isn't really appended to our 
+      // actual SVG DOM. Also only fire for SVG root nodes since we don't
+      // really care about this event for other node types.
+      if (this._proxyNode._attached && this._proxyNode.nodeName == 'svg') {
+        // indicate that we are now loaded
+        var msg = { type: 'event', 
+                    eventType: 'onHTCLoaded',
+                    uniqueId: this.id, 
+                    elemDoc: element.document,
+                    htcNode: this };
+        this._handler.onMessage(msg);
+      }
     }
     
     /** Does some magic to have the Flash object show up in our SVG 
@@ -193,6 +200,16 @@
       }
     }
     
+    function appendChild(child) {
+      // _Node.TEXT_NODE is not visible here (global variables aren't
+      // shared between HTC and it's host page)
+      if (this._proxyNode.nodeType == 3) { // text node
+        return undefined;
+      } else {
+        return this._proxyNode.appendChild(child);
+      }
+    }
+    
     // getter/setter accessors; they delegate back into the
     // svg.js _Element and _Node classes
     
@@ -223,8 +240,7 @@
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
       if (this._proxyNode.nodeType == 3) { // text node
-        var test = this._proxyNode._nodeValue;
-        return test;
+        return this._proxyNode._nodeValue;
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
       }
@@ -254,11 +270,11 @@
       }
     }
     
-    function _getId() { 
+    function _getId() {
       if (this._proxyNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode.getAttribute('id'); 
+        return this._proxyNode._getId(); 
       }
     }
     
@@ -266,7 +282,7 @@
       if (this._proxyNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode.setAttribute('id', v); 
+        return this._proxyNode._setId(v); 
       }
     }
     

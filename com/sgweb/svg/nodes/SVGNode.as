@@ -1192,14 +1192,15 @@ package com.sgweb.svg.nodes
          * Returns any text content this node might have as a child.
          */
         public function getText():String {
-            return this._text;
+            return this._xml.text().toString();
         }
         
         /**
          * Sets any text content this node might have as a child.
          */
         public function setText(newValue):String {
-            return this._text = newValue;
+            // subclasses should implement this if they want to have text
+            throw new Error("Unimplemented");
         }
                 
         /**

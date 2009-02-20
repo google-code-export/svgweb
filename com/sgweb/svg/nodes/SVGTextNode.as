@@ -63,8 +63,9 @@ package com.sgweb.svg.nodes
         }
         
         override public function setText(newValue):String {
-            this._text = newValue;
-            return this._text;
+            this._xml.setChildren(newValue);
+            this.invalidateDisplay();
+            return newValue;
         }
         
         /**
@@ -73,15 +74,7 @@ package com.sgweb.svg.nodes
          * Call SVGNode.parse()
          **/
         override protected function parse():void {
-            this._text = '';
-            
-            for each(var childXML:XML in this._xml.children()) {
-                if (childXML.nodeKind() == 'text') {
-                    this._text += childXML.toString();
-                }
-            }
-            
-            if (this._text != '') {
+            if (this._xml.text().toString() != '') {
                 this._textField = new TextField();
                 this._textField.autoSize = TextFieldAutoSize.LEFT;
             }
@@ -115,8 +108,8 @@ package com.sgweb.svg.nodes
                 if (fill != null) {
                     textFormat.color = SVGColors.getColor(fill);
                 }
-                                
-                this._textField.text = this._text;
+                           
+                this._textField.text = this._xml.text().toString();
                 this._textField.setTextFormat(textFormat);
  /*               
                 var bitmapData:BitmapData = new BitmapData(this._textField.width, this._textField.height, true, 0x000000);
