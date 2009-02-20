@@ -25,6 +25,8 @@
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs;
+            
+        var startTime = new Date().getTime();
         
         // TODO: Get these into a separate test page with JSUnit testing
         // to assert correct results
@@ -1188,6 +1190,10 @@
         }
         // get the element through getElementsByTagNameNS, then check it's
         // DOM sibling/child properties
+        // FIXME (IMPORTANT): The following call is way too slow (~850ms);
+        // find out what is going on and optimize, probably because there
+        // are so many PATHs on the page (~450) and each is pretty heavy to 
+        // initialize (about 2 ms to initialize each PATH)
         matches = document.getElementsByTagNameNS(svgns, 'path');
         path = null;
         for (var i = 0; i < matches.length; i++) {
@@ -1414,12 +1420,12 @@
         // TODO: Do all these tests again, but have some SVG that we
         // namespace with svg: inside of our SVG SCRIPT block  
         
-        // TODO: Rename the ID of nodes (including the root) and make sure
+        // TODO: Rename the ID of nodes (including the SVG root) and make sure
         // things propagate correctly
         
         // TODO: Create two adjacent text nodes then test text node
         // equality for nextSibling and previousSibling, which I believe
-        // will currently break 
+        // will currently break and is a known issue
         // (i.e. textNode1.nextSibling == textNode2.previousSibling)
         
         // TODO: Put all of this into a separate JavaScript file, then include
@@ -1428,6 +1434,10 @@
         // markup
         
         // TODO: Have some performance tests with a performance threshold
+        
+        var endTime = new Date().getTime();
+        
+        console.log('total time='+(endTime - startTime) + 'ms');
         
         // set a slight timeout before reporting success in case a flash
         // error occurred
