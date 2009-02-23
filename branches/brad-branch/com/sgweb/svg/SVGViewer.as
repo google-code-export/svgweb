@@ -501,7 +501,16 @@ package com.sgweb.svg
             var textNode:XMLNode;
             
             if (jsMsg.method == 'createElementNS') {
-                var xmlString:String = '<' + jsMsg.elementType + ' id="' + jsMsg.elementId +  '" />';
+                var xmlString:String = '<' + jsMsg.elementType 
+                                           + ' id="' + jsMsg.elementId + '"';
+                if (jsMsg.prefix) {
+                    xmlString += ' xmlns:' + jsMsg.prefix + '="' 
+                                            + jsMsg.namespaceURI + '"';
+                } else {
+                    xmlString += ' xmlns="http://www.w3.org/2000/svg"'
+                               + ' xmlns:xlink="http://www.w3.org/1999/xlink"';
+                }
+                xmlString +=  ' />';
                 var childXML:XML = new XML(xmlString);
                 this.js_createdElements[jsMsg.elementId] = this._svgRoot.parseNode(childXML);
             }

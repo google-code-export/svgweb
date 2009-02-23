@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -981,7 +981,7 @@
         // textContent does not seem to exist on native text DOM nodes. Make
         // sure that setting things through textContent on a native DOM
         // node works
-         
+        
         // appendChild
         console.log('Testing appendChild...');
         
@@ -1437,7 +1437,7 @@
         
         var endTime = new Date().getTime();
         
-        console.log('total time='+(endTime - startTime) + 'ms');
+        console.log('total test time='+(endTime - startTime) + 'ms');
         
         // set a slight timeout before reporting success in case a flash
         // error occurred
@@ -1535,7 +1535,8 @@
       <h1>Tests embedding a single SVG block into a SCRIPT block</h1>
     
       <script type="image/svg+xml">
-        <svg id="mySVG" width="500" height="500">
+        <svg id="mySVG" width="500" height="500"
+             xmlns:dc="http://purl.org/dc/elements/1.1/">
           <g id="myGroup">
             <rect
                id="myRect"

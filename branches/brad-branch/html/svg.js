@@ -644,6 +644,41 @@ XML mixed content in it (which SVG does not have in general).
 * Newly created text nodes with createTextNode have a prefix and
 namespaceURI of undefined on IE but null on other browsers; we don't
 normalize these since it would be more trouble then its worth.
+
+* You should declare all of the namespaces you want to use on one of your 
+SVG root elements before calling createElementNS; unknown namespaces will
+not work afterwards. For example, if you have the following SVG:
+
+<svg id="mySVG" width="500" height="500"><metadata/></svg>
+
+You could not do the following:
+
+var dc = document.createElementNS('http://purl.org/dc/elements/1.1/', 
+                                  'dc:creator');
+var metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+metadata.appendChild(dc);
+
+This is because the DC (Dublic Core) namespace is not declared. To make
+this work, you should have the namespace on your SVG root markup:
+
+<svg id="mySVG" width="500" height="500"
+     xmlns:dc="http://purl.org/dc/elements/1.1/">
+   <metadata/>
+</svg>
+
+Note that this limitation is done on purpose to support existing XHTML
+documents that want to use createElementNS for their own purposes.
+
+* On Internet Explorer we don't support wildcarding a given tag name
+across known namespaces and a given tag:
+
+getElementsByTagNameNS(*, 'someTag');
+
+We _do_ support wildcard calls of the following type:
+
+getElementsByTagNameNS('*', '*');
+getElementsByTagNameNS('someNameSpace', '*');
+getElementsByTagNameNS(null, 'someTag');
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1614,8 +1649,8 @@ function FlashHandler(args) {
   this.type = args.type;
   this._finishedCallback = args.finishedCallback;
   
-  // setup our custom document.getElementById and
-  // document.getElementsByTagNameNS methods
+  // setup our custom document.getElementById, document.getElementsByTagNameNS, 
+  // etc. methods
   this._patchDocumentObject();
   
   if (this.type == 'script') {
@@ -1761,10 +1796,29 @@ extend(FlashHandler, {
     // createElementNS
     document._createElementNS = document.createElementNS;
     document.createElementNS = function(ns, qname) {
-      // TODO: handle browser version of _createElementNS
-      
       if (ns == null || ns == 'http://www.w3.org/1999/xhtml') {
-        return document.createElement(qname);
+        if (isIE) {
+          return document.createElement(qname);
+        } else {
+          return document._createElementNS(ns, qname);
+        }
+      }
+      
+      // someone might be using this library on an XHTML page;
+      // only use our overridden createElementNS if they are using
+      // a namespace we have never seen before
+      if (!isIE) {
+        var namespaceFound = false;
+        for (var i = 0; i < svgweb.handlers.length; i++) {
+          if (svgweb.handlers[i].document._namespaces['_' + ns]) {
+            namespaceFound = true;
+            break;
+          }
+        }
+        
+        if (!namespaceFound) {
+          return document._createElementNS(ns, qname);
+        }
       }
       
       var prefix;
@@ -2201,6 +2255,16 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     this._childNodes = [];
   }
   
+  // We track text nodes with an internal node ID. This is needed so that
+  // we can satisfy some edge conditions around text node equality. 
+  // Unfortunately we can't create an internal node ID for IE, only for
+  // other browsers, as IE doesn't let us set properties on XML text node
+  // objects. This is ok as we have other ways of getting text node
+  // equality on IE.
+  if (!isIE && nodeType == _Node.TEXT_NODE) {
+    this._nodeXML._textNodeID = svgweb._generateID('__svg__random__', '__text');
+  }
+  
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
     this._defineNodeAccessors();
@@ -2240,19 +2304,19 @@ extend(_Node, {
       document.createTextNode. We return either a _Node or an HTC reference
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
-    //console.log('appendChild');
-    // DOM text node created with document.createTextNode?
+    // Is 'child' a DOM text node created with document.createTextNode?
     if (!child._htc && !child._proxyNode && child.nodeType == _Node.TEXT_NODE) {
       var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, child);
       textNode._nodeValue = child.data;
       child = textNode;
-    } else if (!child._htc) { // an HTC node was passed in for IE; get its _Node
+    } else if (isIE && !child._htc) {
+       // an HTC node was passed in for IE; get its _Node
       child = child._proxyNode;
     }
     
     // add the child's XML to our own
     this._importNode(child);
-    
+
     // manually add our child to our internal list of nodes; we can't use the 
     // getter or setter for childNodes yet because we don't have a real handler 
     // since we aren't attached to the DOM
@@ -2263,6 +2327,16 @@ extend(_Node, {
       // to support getter/setter magic for Safari
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
+      
+      // we keep an unattachedChildNodes array around until we are truly
+      // attached that we can depend on to serve out our childNodes; we can't
+      // use this._childNodes since that ends up calling our getter/setter
+      // magic, which depends on having a real Flash handler assigned to
+      // us to do the hard work.
+      if (typeof this._unattachedChildNodes == 'undefined') {
+        this._unattachedChildNodes = [];
+      }
+      this._unattachedChildNodes.push(child);
     }
     
     // process the children (add IDs, add a handler, etc.)
@@ -2528,12 +2602,25 @@ extend(_Node, {
     });
   },
   
+  /** Creates a getter/setter for a childNode at the given index position.
+      We define each one in a separate function so that we don't pull
+      the wrong things into our closure. See _defineNodeAccessors() for
+      details. */
   _defineChildNodeAccessor: function(i) {
     var self = this;
     
     this._childNodes.__defineGetter__(i, function() {
-      var childXML = self._nodeXML.childNodes[i];
-      return self._handler.document._getNode(childXML)
+      if (self._attached) { // we are attached to a real, live DOM
+        var childXML = self._nodeXML.childNodes[i];
+        return self._handler.document._getNode(childXML);
+      } else {
+        // we aren't attached to the DOM yet, and therefore have no
+        // Flash handler we can depend on. We had to build up an
+        // unattachedChildNodes array earlier whenever appendChild
+        // was called that we can depend on until we are attached to a
+        // real, live DOM.
+        return self._unattachedChildNodes[i];
+      }
     });
   },
   
@@ -2655,27 +2742,20 @@ extend(_Node, {
     if (attached && childXML.nodeType == _Node.ELEMENT_NODE) {
       // store a reference to our node so we can return it in the future
       this._handler.document._nodeById['_' + id] = child;
-      
-      // update our list of namespaces if there is a new prefix/namespace
-      // being used
-      var doc = this._handler.document;
-      if (child.prefix && !doc._namespaces['_' + child.prefix]) {
-        doc._namespaces['_' + child.prefix] = child.namespaceURI;
-        doc._namespaces['_' + child.namespaceURI] = child.prefix;
-        doc._namespaces.push(child.namespaceURI);
-      }
-    
+
       // tell Flash about our new element
+      
       // FIXME: I'm sure we can do this much more efficiently then calling
       // Flash over and over; instead, send over a giant String XML
       // representation of the children and parse it on the other side in one
       // shot
-      
       // create the element
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'createElementNS',
                                   elementType: child.nodeName, 
-                                  elementId: id });
+                                  elementId: id,
+                                  prefix: child.prefix,
+                                  namespaceURI: child.namespaceURI });
                                   
       // send over each of our attributes
       for (var i in child._attributes) {
@@ -2697,7 +2777,7 @@ extend(_Node, {
                                     attrName: attrName, 
                                     attrValue: attrValue });
       }
-               
+           
       // now append the element      
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'appendChild',
@@ -2713,19 +2793,56 @@ extend(_Node, {
                                   elementId: parentID,
                                   text: childXML.nodeValue});
     }
-  
+    
     // recursively process each child
-    if (child._childNodes) {
-      for (var i = 0; i < child._childNodes.length; i++) {
-        // this._childNodes is an array of HTC proxies; we want the real
-        // _Node or _Element behind the HTC
-        var proxyNode = child._childNodes[0]._proxyNode;
+    
+    // we get this child's childnodes in a different way based on the
+    // browser; see appendChild() for details on why we need the
+    // unattachedChildNodes structure
+    var children;
+    if (isIE) {
+      children = child._childNodes;
+    } else {
+      children = child._unattachedChildNodes;
+    }
+    
+    if (children) {
+      for (var i = 0; i < children.length; i++) {
+        var proxyNode;
+        
+        if (isIE) {
+          // this._childNodes is an array of HTC proxies for IE; we want the real
+          // _Node or _Element behind the HTC
+          proxyNode = children[0]._proxyNode;
+        } else {
+          proxyNode = children[0];
+        }
+        
         child._processAppendedChildren(proxyNode, attached, passThrough);
       }
     }
     
     child._attached = attached;
     child._passThrough = passThrough;
+    
+    if (attached) {
+      if (!isIE && child._unattachedChildNodes) { 
+        // we don't use the unattachedChildNodes data structure for IE;
+        // see appendChild for details why
+        
+        // keep a pointer to any text nodes we made while unattached
+        // so we can return the same instance later
+        for (var i = 0; i < child._unattachedChildNodes.length; i++) {
+          var currentNode = child._unattachedChildNodes[i];
+          var textNodeID = currentNode._nodeXML._textNodeID;
+          this._handler.document._nodeById['_' + textNodeID] = currentNode;
+        }
+        
+        // clean up our data structure that we used while unattached to
+        // serve our child nodes for non-IE browsers
+        delete child._unattachedChildNodes;
+      }
+    }
   },
   
   /** Imports the given child and all it's children's XML into our XML. 
@@ -2738,9 +2855,9 @@ extend(_Node, {
     // so we have to define it ourselves.
     // Adapted from ALA article:
     // http://www.alistapart.com/articles/crossbrowserscripting
-    var importNodeFunc = doc.importNode;
-    if (!importNodeFunc) {
-      importNodeFunc = function(node, allChildren) {
+    var importedNode;
+    if (typeof doc.importNode == 'undefined') {
+      var importNodeFunc = function(node, allChildren) {
         switch (node.nodeType) {
           case 1: // ELEMENT NODE
             var newNode = doc.createElement(node.nodeName);
@@ -2769,21 +2886,25 @@ extend(_Node, {
             break;
         }
       }
+      
+      // import the node for IE
+      importedNode = importNodeFunc(child._nodeXML, true);
+    } else { // non-IE browsers
+      importedNode = doc.importNode(child._nodeXML, true);
     }
-    
-    // now actually import the nodes
-    var importedNode = importNodeFunc(child._nodeXML, true);
+      
+    // complete the import into ourselves  
     this._nodeXML.appendChild(importedNode);
     
     // replace all of the children's XML with our copy of it now that it 
     // is imported
-    child.importChildXML(importedNode);
+    child._importChildXML(importedNode);
   },
   
   /** Recursively replaces the XML inside of our children with the given
       new XML. Called after we are importing a node into ourselves
       with appendChild. */
-  importChildXML: function(newXML) {
+  _importChildXML: function(newXML) {
     this._nodeXML = newXML;
     
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
@@ -2793,9 +2914,14 @@ extend(_Node, {
       }
       
       currentChild._nodeXML = this._nodeXML.childNodes[i];
-      currentChild.importChildXML(this._nodeXML.childNodes[i]);
+      currentChild._importChildXML(this._nodeXML.childNodes[i]);
     }
-  }
+  },
+  
+  /** A flag we put on our _Nodes and _Elements to indicate they are fake;
+      useful if someone wants to 'break' the abstraction and see if a node
+      is a real DOM node or not (which won't have this flag). */
+  _fake: true
 });
 
 
@@ -2854,6 +2980,12 @@ extend(_Element, {
       }
     } else {
       value = this._nodeXML.getAttribute(attrName);
+      
+      // id property is special; we return empty string instead of null
+      // to mimic native behavior on Firefox and Safari
+      if (attrName == 'id' && !value) {
+        return '';
+      }
     }
     
     if (value == undefined || value == null || /^[ ]*$/.test(value)) {
@@ -3484,7 +3616,8 @@ extend(_SVGSVGElement, {
     @param handler The FlashHandler this document is a part of. */
 function _Document(xml, handler) {
   // superclass constructor
-  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, xml, handler], svgns);
+  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, xml, 
+                     handler], svgns);
   
   this._xml = xml;
   this._handler = handler;
@@ -3543,7 +3676,7 @@ extend(_Document, {
       
       We do support:
       getElementsByTagNameNS('*', '*');
-      getElementsByTagNameNS('somePrefix', '*');
+      getElementsByTagNameNS('someNameSpace', '*');
       getElementsByTagNameNS(null, 'someTag');
   */
   getElementsByTagNameNS: function(ns, localName) /* _NodeList of _Elements */ {
@@ -3635,11 +3768,24 @@ extend(_Document, {
         this._nodeById['_' + elementId] = node;
       }
     } else if (nodeXML.nodeType == _Node.TEXT_NODE) {
-      // we always create these on demand since they have no ID to use
-      // for caching
-      node = new _Node(nodeXML.nodeName, _Node.TEXT_NODE, null, null, nodeXML,
-                       this._handler, false);
-      node._passThrough = true;
+      // for all browsers but IE, we have an internal ID for text nodes that
+      // we use to refetch and return them if they have been created before;
+      // this is because we can set variables on XML text nodes whereas
+      // on IE we can't, so we can't track text nodes on IE unfortunately
+      node = this._nodeById['_' + nodeXML._textNodeID];
+      if (!node) {
+        // we always create these on demand since they have no ID to use
+        // for caching; unfortunately we can't cache an internal ID
+        // on XML text nodes for IE, so we have to just always produce them
+        // on demand
+        node = new _Node(nodeXML.nodeName, _Node.TEXT_NODE, null, null, nodeXML,
+                         this._handler, false);
+        node._passThrough = true;
+        
+        if (!isIE) {
+          this._nodeById['_' + node._nodeXML._textNodeID] = node;
+        }
+      }
     } else {
       throw new Error('Unknown node type given to _getNode: ' 
                       + nodeXML.nodeType);
