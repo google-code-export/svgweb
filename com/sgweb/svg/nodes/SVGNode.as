@@ -95,12 +95,6 @@ package com.sgweb.svg.nodes
          **/
         protected var _invalidDisplay:Boolean = false;
         protected var _parsedChildren:Boolean = false;
-        
-        /**
-         * Hold node's text if any is present.
-         **/
-        protected var _text:String = null;
-        
 
         public var _initialRenderDone:Boolean = false;
 

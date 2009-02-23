@@ -43,6 +43,11 @@
       <property name="y" get="_getY" />
       <property name="width" get="_getWidth" />
       <property name="height" get="_getHeight" />
+      
+      <!-- A flag for someone to query whether a DOM node is one of our
+           own fake ones or a real browser native one. Useful for someone
+           to 'break' the abstraction if needed. -->
+      <property name="_fake" value="true"/>
                        
       <method name="setAttribute" />
       <method name="getAttribute" />

@@ -29,6 +29,10 @@ package com.sgweb.svg.nodes
 {
     public class SVGDescNode extends SVGNode
     {
+        /**
+         * Hold node's text if any is present.
+         **/
+        protected var _text:String = null;
         
         public function SVGDescNode(svgRoot:SVGRoot, xml:XML):void {
             super(svgRoot, xml);
@@ -36,6 +40,15 @@ package com.sgweb.svg.nodes
         
         override public function hasText():Boolean {
             return true;
+        }
+        
+        override public function setText(newValue):String {
+            this._text = newValue;
+            return newValue;
+        }
+        
+        override public function getText():String {
+            return this._text;
         }
         
         /**
