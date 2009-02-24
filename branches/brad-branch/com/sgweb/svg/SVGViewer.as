@@ -97,6 +97,7 @@ package com.sgweb.svg
 
             this._svgRoot = new SVGRoot(null);
             this._svgRoot.debug = this.debug;
+            this._svgRoot.error = this.error;
             this._svgRoot.handleScript = this.handleScript;
             this._svgRoot.handleOnLoad = this.handleOnLoad;
             this._svgRoot.svgRoot = this._svgRoot;
@@ -496,7 +497,7 @@ package com.sgweb.svg
         }
         
         public function js_handleInvoke(jsMsg:Object):Object {
-            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element:SVGNode;
             var textNode:XMLNode;
             
@@ -699,6 +700,59 @@ package com.sgweb.svg
                 if (element.hasText()) {
                     element.setText(jsMsg.text);
                 }
+            }
+            if (jsMsg.method == 'removeChild') {
+                // Removes the element
+                
+                // Get the element to remove if we are dealing with an element
+                // or the parent if we are dealing with a text node
+                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                    element = this.js_createdElements[jsMsg.elementId];
+                }
+                else {
+                    element = this._svgRoot.getElement(jsMsg.elementId);
+                }
+                
+                if (jsMsg.nodeType == 1) { // ELEMENT
+                    element.parent.removeChild(element);
+                } else if (jsMsg.nodeType == 3) { // TEXT
+                    if (element.hasText()) {
+                        element.setText(null);
+                    }
+                }
+            }
+            if (jsMsg.method == 'insertBefore') {
+                // Inserts newChild before refChild
+                
+                // note that newChild can not be a DOM TEXT_NODE at this time,
+                // as we don't support XML Mixed Content yet as SVG doesn't
+                // use it (i.e. content of the form 
+                // TEXT<element>foo</element>TEXT)
+                
+                // Get the newChild and refChild
+                var newChild, refChild;
+                
+                if (typeof(this.js_createdElements[jsMsg.newChildId]) != "undefined") {
+                    newChild = this.js_createdElements[jsMsg.newChildId];
+                }
+                else {
+                    newChild = this._svgRoot.getElement(jsMsg.newChildId);
+                }
+                if (!newChild) {
+                    this.error("error:insertBefore: newChildId not found: " + jsMsg.newChildId);
+                }
+                
+                if (typeof(this.js_createdElements[jsMsg.refChildId]) != "undefined") {
+                    refChild = this.js_createdElements[jsMsg.refChildId];
+                }
+                else {
+                    refChild = this._svgRoot.getElement(jsMsg.refChildId);
+                }
+                if (!refChild) {
+                    this.error("error:insertBefore: refChildId not found: " + jsMsg.refChildId);
+                }
+                
+                refChild.parent.insertBefore(jsMsg.position, newChild, refChild);
             }
             
             //this.debug('Returning jsMsg='+this.debugMsg(jsMsg));

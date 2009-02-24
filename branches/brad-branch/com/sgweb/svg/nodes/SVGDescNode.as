@@ -51,21 +51,6 @@ package com.sgweb.svg.nodes
             return this._text;
         }
         
-        /**
-         * Get any child text (not text inside child nodes)
-         **/
-        override protected function parse():void {
-            this._text = '';
-            
-            for each(var childXML:XML in this._xml.children()) {
-                if (childXML.nodeKind() == 'text') {
-                    this._text += childXML.toString();
-                }
-            }
-            
-            super.parse();
-        }
-        
         override protected function draw():void {
             //Do Nothing
         }

@@ -29,6 +29,9 @@ OTHER DEALINGS IN THE SOFTWARE.
 // TODO: Move a majority of the comment below into the SVG Web documentation
 // and out of here.
 
+// TODO: Document the architecture of the JavaScript portion of the library
+// separately and point to it from here.
+
 /**
 The SVG Web library makes it possible to use SVG across all of the major 
 browsers, including Internet Explorer. Where native SVG support is not 
@@ -2276,6 +2279,15 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     // Flash control inside of _SVGSVGElement
     this._createHTC();
   }
+  
+  // We keep an unattachedChildNodes array around until we are truly
+  // attached that we can depend on to serve out our childNodes; we can't
+  // use this._childNodes since that ends up calling our getter/setter
+  // magic, which depends on having a real Flash handler assigned to
+  // us to do the hard work.
+  if (typeof this._unattachedChildNodes == 'undefined') {
+    this._unattachedChildNodes = [];
+  }
 }
 
 mixin(_Node, {
@@ -2288,15 +2300,227 @@ mixin(_Node, {
 
 extend(_Node, {
   insertBefore: function(newChild /* _Node */, refChild /* _Node */) {
-    /* throws _DOMException, returns _Node */
+    var origNewChild = newChild;
+    
+    // if the children are DOM nodes, turn them into _Node or _Element
+    // references
+    newChild = this._getProxyNode(newChild);
+    refChild = this._getProxyNode(refChild);
+    
+    // TODO: Throw an error if either child is a TEXT_NODE at this time
+    
+    // get an ID for both children
+    var newChildID = this._determineID(newChild);
+    var refChildID = this._determineID(refChild);
+    
+    // add an ID entry for newChild into nodeById
+    if (newChildID && this._attached) {
+      this._handler.document._nodeById['_' + newChildId] = newChild;
+    }
+    
+    // get an index position for where refChild is
+    var findResults = this._findChild(refChild);
+    if (findResults === null) {
+      // TODO: Throw the correct DOM error instead
+      throw new Error('Invalid child passed to insertBefore');
+    }
+    var position = findResults.position;
+    
+    // import newChild into ourselves, insert it into our XML, and process
+    // the newChild and all its descendants
+    var importedNode = this._importNode(newChild, false);
+    this._nodeXML.insertBefore(importedNode, refChild._nodeXML);
+    this._processAppendedChildren(newChild, this._attached, this._passThrough);
+    
+    // update our internal list of childNodes
+    // manually add our child to our internal list of nodes; we can't use the 
+    // getter or setter for childNodes yet because we don't have a real handler 
+    // since we aren't attached to the DOM
+    if (isIE) {
+      if (position >= (this._childNodes.length - 1)) { // oldChild was at end
+        this._childNodes.push(newChild._htc);
+      } else { // oldChild was somwhere at beginning or middle
+        this._childNodes = this._childNodes.splice(position + 1, 0, 
+                                                   newChild._htc);
+      }
+    } else { // non-IE browsers
+      // _childNodes is an object literal instead of an array
+      // to support getter/setter magic for Safari
+      this._defineChildNodeAccessor(this._childNodes.length);
+      this._childNodes.length++;
+      
+      if (!this._attached) {
+        if (position >= (this._unattachedChildNodes.length - 1)) {
+          this._unattachedChildNodes.push(newChild);
+        } else { // oldChild was somwhere at beginning or middle
+          this._unattachedChildNodes = 
+                    this._unattachedChildNodes.splice(position + 1, 0, newChild);
+        }
+      }
+    }
+    
+    // inform Flash about the change
+    if (this._attached && this._passThrough) {
+      this._handler.sendToFlash({ type: 'invoke', 
+                                  method: 'insertBefore',
+                                  newChildId: newChildId,
+                                  refChildId: refChildId,
+                                  position: position});
+    }
+    
+    return origNewChild;
   },
   
   replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
-    /* throws _DOMException, returns _Node */
+    var origOldChild = oldChild;
+    
+    // the children could be DOM nodes; turn them into something we can
+    // work with, such as _Nodes or _Elements
+    newChild = this._getProxyNode(newChild);
+    oldChild = this._getProxyNode(oldChild);
+    
+    // get an ID for the oldChild if one is available
+    var oldChildID = this._determineID(oldChild);
+    
+    // in our XML, find the index position of where oldChild used to be
+    var findResults = this._findChild(oldChild);
+    if (findResults === null) {
+      // TODO: Throw the correct DOM error instead
+      throw new Error('Invalid child passed to removeChild');
+    }
+    var position = findResults.position;
+    
+    // remove oldChild
+    this.removeChild(origOldChild);
+    
+    // manually add our child to our internal list of nodes; we can't use the 
+    // getter or setter for childNodes yet because we don't have a real handler 
+    // since we aren't attached to the DOM
+    if (isIE) {
+      if (position >= (this._childNodes.length - 1)) { // oldChild was at end
+        this._childNodes.push(newChild._htc);
+      } else { // oldChild was somwhere at beginning or middle
+        this._childNodes = this._childNodes.splice(position + 1, 0, 
+                                                   newChild._htc);
+      }
+    } else { // non-IE browsers
+      // _childNodes is an object literal instead of an array
+      // to support getter/setter magic for Safari
+      this._defineChildNodeAccessor(this._childNodes.length);
+      this._childNodes.length++;
+      
+      if (!this._attached) {
+        if (position >= (this._unattachedChildNodes.length - 1)) {
+          this._unattachedChildNodes.push(newChild);
+        } else { // oldChild was somwhere at beginning or middle
+          this._unattachedChildNodes = 
+                    this._unattachedChildNodes.splice(position + 1, 0, newChild);
+        }
+      }
+    }
+    
+    // import newChild into ourselves, telling importNode not to do an
+    // appendChild
+    var importedNode = this._importNode(newChild, false);
+
+    // bring the imported child into our XML where the oldChild used to be
+    if (position >= (this._nodeXML.childNodes.length - 1)) {
+      // old node was at the end -- just do an appendChild
+      this._nodeXML.appendChild(importedNode);
+    } else {
+      // old node is somewhere in the middle or beginning; jump one ahead
+      // from the old position and do an insertBefore
+      var placeBefore = this._nodeXML.childNodes[position + 1];
+      this._nodeXML.insertBefore(importedNode, placeBefore);
+    }
+    
+    // now process the newChild's node
+    this._processAppendedChildren(newChild, this._attached, this._passThrough);
+    
+    return origOldChild;
   },
   
-  removeChild: function(oldChild /* _Node */) {
-    /* throws _DOMException, returns _Node */
+  removeChild: function(child /* _Node or DOM Node */) {
+    var origChild = child;
+    
+    // the child could be a DOM node; turn it into something we can
+    // work with, such as a _Node or _Element
+    child = this._getProxyNode(child);
+    
+    // remove child from our list of XML
+    var findResults = this._findChild(child);
+    if (findResults === null) {
+      // TODO: Throw the correct DOM error instead
+      throw new Error('Invalid child passed to removeChild');
+    }
+    var position = findResults.position;
+    this._nodeXML.removeChild(findResults.node);
+    
+    // remove from our nodeById lookup table
+    var childID = this._determineID(child);
+    if (childID && this._attached) {
+      this._handler.document._nodeById['_' + childID] = undefined;
+    }
+    
+    // if IE, remove HTC node
+    if (child._htc) {
+      child._htc.parentNode.removeChild(child._htc);
+    }
+    
+    // if unattached, remove from unattachedChildNodes array
+    if (!this._attached) {
+      for (var i = 0; i < this._unattachedChildNodes.length; i++) {
+        var node = this._unattachedChildNodes[i];
+        var nodeID;
+        if (node.nodeType == _Node.ELEMENT_NODE) {
+          nodeID = node.getAttribute('id');
+        } else if (node.nodeType == _Node.TEXT_NODE && !isIE
+                   && node._textNodeID) {
+          nodeID = node._textNodeID;
+        }
+
+        if (id && nodeID && id == nodeID) {
+          this._unattachedChildNodes.splice(i, 1);
+          break;
+        } else if (isIE && child.nodeType == _Node.TEXT_NODE
+                   && node.nodeType == _Node.TEXT_NODE) {
+          if (child.nodeValue == node.nodeValue) {
+            this._unattachedChildNodes.splice(i, 1);
+            break;
+          }
+        }
+      }
+    }
+    
+    // on the removed node itself, change it's XML parentNode to be null
+    child._nodeXML.parentNode = null;
+    
+    // remove the getter/setter for this childNode for non-IE browsers
+    if (!isIE) {
+      // just remove the last getter/setter, since they all resolve
+      // to a dynamic function anyway
+      this._childNodes.__defineGetter__(this._childNodes.length - 1, null);
+      this._childNodes.length--;
+    } else {
+      // for IE, remove from _childNodes data structure
+      this._childNodes.splice(position);
+    }
+    
+    // inform Flash about the change
+    if (this._attached && child._passThrough) {
+      if (child.nodeType == _Node.TEXT_NODE) {
+        // use the parent node for the ID, since we will clear it's text
+        id = this._nodeXML.getAttribute('id');
+      }
+      
+      this._handler.sendToFlash({ type: 'invoke', 
+                                  method: 'removeChild',
+                                  elementId: id,
+                                  nodeType: child.nodeType});
+      }
+    }
+      
+    return origChild;
   },
   
   /** Appends the given child. The child can either be _Node, an
@@ -2304,15 +2528,9 @@ extend(_Node, {
       document.createTextNode. We return either a _Node or an HTC reference
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
-    // Is 'child' a DOM text node created with document.createTextNode?
-    if (!child._htc && !child._proxyNode && child.nodeType == _Node.TEXT_NODE) {
-      var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, child);
-      textNode._nodeValue = child.data;
-      child = textNode;
-    } else if (isIE && !child._htc) {
-       // an HTC node was passed in for IE; get its _Node
-      child = child._proxyNode;
-    }
+    // the child could be a DOM node; turn it into something we can
+    // work with, such as a _Node or _Element
+    child = this._getProxyNode(child);
     
     // add the child's XML to our own
     this._importNode(child);
@@ -2328,14 +2546,6 @@ extend(_Node, {
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
       
-      // we keep an unattachedChildNodes array around until we are truly
-      // attached that we can depend on to serve out our childNodes; we can't
-      // use this._childNodes since that ends up calling our getter/setter
-      // magic, which depends on having a real Flash handler assigned to
-      // us to do the hard work.
-      if (typeof this._unattachedChildNodes == 'undefined') {
-        this._unattachedChildNodes = [];
-      }
       this._unattachedChildNodes.push(child);
     }
     
@@ -2349,15 +2559,41 @@ extend(_Node, {
     } 
   },
   
-  hasChildNodes: function() /* Boolean */ {},
+  hasChildNodes: function() /* Boolean */ {
+    return (this._childNodes.length > 0);
+  },
   
   // Note: cloneNode and normalize not supported
   
   isSupported: function(feature /* String */, version /* String */) {
-    /* returns Boolean */
+    if (version == '2.0') {
+      if (feature == 'Core') {
+        // FIXME: There are a number of things we don't yet support in Core,
+        // but we support the bulk of it
+        return true;
+      } else if (feature == 'Events' || feature == 'UIEvents'
+                 || feature == 'MouseEvents') {
+        // FIXME: We plan on supporting most of these interfaces, but not
+        // all of them
+        return true;
+      }
+    } else {
+      return false;
+    }
   },
   
   hasAttributes: function() /* Boolean */ {
+    if (this.nodeType == _Node.ELEMENT_NODE) {
+      for (var i in this._attributes) {
+        if (/^_.*/.test(i) && this._attributes.hasOwnProperty(i)) {
+          return true;
+        }
+      }
+      
+      return false;
+    } else {
+      return false;
+    }
   },
   
   // Note: technically the following attributes should be read-only, 
@@ -2710,6 +2946,23 @@ extend(_Node, {
     return newValue;
   },
   
+  /** For functions like appendChild, insertBefore, removeChild, etc.
+      outside callers can pass in DOM nodes, etc. This function turns
+      this into something we can work with, such as a _Node or _Element. */
+  _getProxyNode: function(child) {
+    // Is 'child' a DOM text node created with document.createTextNode?
+    if (!child._htc && !child._proxyNode && child.nodeType == _Node.TEXT_NODE) {
+      var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, child);
+      textNode._nodeValue = child.data;
+      child = textNode;
+    } else if (isIE && !child._htc) {
+       // an HTC node was passed in for IE; get its _Node
+      child = child._proxyNode;
+    }
+    
+    return child;
+  },
+  
   /** We do a bunch of work in this method in order to append a child to
       ourselves, including: Walking over the child and all of it's children, 
       generating an ID if one is not present; caching the element for future 
@@ -2749,6 +3002,7 @@ extend(_Node, {
       // Flash over and over; instead, send over a giant String XML
       // representation of the children and parse it on the other side in one
       // shot
+      
       // create the element
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'createElementNS',
@@ -2847,8 +3101,18 @@ extend(_Node, {
   
   /** Imports the given child and all it's children's XML into our XML. 
   
-      @param child _Node to import */
-  _importNode: function(child) {
+      @param child _Node to import.
+      @param doAppend Optional. Boolean on whether to actually append
+      the child once it is imported. Useful for functions such as
+      replaceChild that want to do this manually. Defaults to true if not
+      specified.
+      
+      @returns The imported node. */
+  _importNode: function(child, doAppend) {
+    if (typeof doAppend == 'undefined') {
+      doAppend = true;
+    }
+    
     var doc = this._nodeXML.ownerDocument;
     
     // IE does not support document.importNode, even on XML documents, 
@@ -2893,12 +3157,16 @@ extend(_Node, {
       importedNode = doc.importNode(child._nodeXML, true);
     }
       
-    // complete the import into ourselves  
-    this._nodeXML.appendChild(importedNode);
+    // complete the import into ourselves
+    if (doAppend) {
+      this._nodeXML.appendChild(importedNode);
+    }
     
     // replace all of the children's XML with our copy of it now that it 
     // is imported
     child._importChildXML(importedNode);
+    
+    return importedNode;
   },
   
   /** Recursively replaces the XML inside of our children with the given
@@ -2916,6 +3184,81 @@ extend(_Node, {
       currentChild._nodeXML = this._nodeXML.childNodes[i];
       currentChild._importChildXML(this._nodeXML.childNodes[i]);
     }
+  },
+  
+  /** Tries to find the given child in our list of child nodes.
+      
+      @param child A _Node or _Element to search for in our list of
+      childNodes. 
+      
+      @returns An object literal with two values:
+         position The index position of where the child is located.
+         node The node itself
+         
+      If the child is not found then null is returned instead. */
+  _findChild: function(child) {
+    var results = {};
+    
+    // get an ID for the child if one is available
+    var id;
+    if (child.nodeType == _Node.ELEMENT_NODE) {
+      id = child._nodeXML.getAttribute('id');
+    } else if (child.nodeType == _Node.TEXT_NODE && !isIE) {
+      id = child._textNodeID;
+    }
+    
+    // for text nodes on IE, we unfortunately don't have an internal text
+    // node ID for them, so we will have to match on text content
+    
+    // FIXME: If there are multiple text nodes with the same content, and
+    // someone wants to actually find the middle one versus the first one,
+    // this will fail on IE due to using text content versus a hidden
+    // text node ID
+    for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
+      var node = this._nodeXML.childNodes[i];
+      var nodeID;
+      if (node.nodeType == _Node.ELEMENT_NODE) {
+        nodeID = node.getAttribute('id');
+      } else if (node.nodeType == _Node.TEXT_NODE && !isIE
+                 && node._textNodeID) {
+        nodeID = node._textNodeID;
+      }
+      
+      if (id && nodeID && id == nodeID) {
+        results.position = i;
+        results.node = node;
+        return results;
+      } else if (isIE && child.nodeType == _Node.TEXT_NODE
+                 && node.nodeType == _Node.TEXT_NODE) {
+        if (child.nodeValue == node.nodeValue) {
+          results.position = i;
+          results.node = node;
+          return results;
+        }
+      }
+    }
+    
+    return null;
+  },
+  
+  /** Takes a _Node or _Element and returns an ID if available. Used by
+      the various DOM manipulation methods, such as insertBefore, 
+      removeChild, etc. Returns null if no ID is available. 
+      
+      @param child _Node or _Element reference. */
+  _determineID: function(child) {
+    var id = null;
+    if (child.nodeType == _Node.ELEMENT_NODE) {
+      id = child._nodeXML.getAttribute('id');
+    } else if (!isIE && child.nodeType == _Node.TEXT_NODE) {
+      id = child._nodeXML._textNodeID;
+    }
+    
+    if (id === undefined) {
+      id = null;
+    }
+    
+    return id;
   },
   
   /** A flag we put on our _Nodes and _Elements to indicate they are fake;

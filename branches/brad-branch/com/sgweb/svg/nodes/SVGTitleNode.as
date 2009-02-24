@@ -44,9 +44,15 @@ package com.sgweb.svg.nodes
         }
         
         override public function setText(newValue):String {
-            this._xml.setChildren(newValue);
-            this._title = newValue;
-            return newValue;
+            if (newValue !== null) {
+                this._xml.setChildren(newValue);
+                this._title = newValue;
+                return newValue;
+            } else {
+                this._xml.setChildren(null);
+                this._title = "";
+                return "";
+            }
         }
         
         override public function hasText():Boolean {
@@ -54,7 +60,9 @@ package com.sgweb.svg.nodes
         }
         
         override protected function parse():void {
-            this._title = this._xml.text().toString();
+            if (this._xml.text())) {
+                this._title = this._xml.text().toString();
+            }
         }
         
         override protected function setAttributes():void {

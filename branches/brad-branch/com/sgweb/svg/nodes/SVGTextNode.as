@@ -74,7 +74,7 @@ package com.sgweb.svg.nodes
          * Call SVGNode.parse()
          **/
         override protected function parse():void {
-            if (this._xml.text().toString() != '') {
+            if (this._xml.text() && this._xml.text().toString() != '') {
                 this._textField = new TextField();
                 this._textField.autoSize = TextFieldAutoSize.LEFT;
             }
