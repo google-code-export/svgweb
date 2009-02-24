@@ -1407,6 +1407,18 @@
                      node.nodeName.toLowerCase());
         assertEquals('H1 content should be == hello world!', 'hello world!',
                      node.childNodes[0].data);
+                     
+        // TODO: Test removeChild
+        
+        // TODO: Test replaceChild
+        
+        // TODO: Test insertBefore
+        
+        // TODO: Test hasChildNodes
+        
+        // TODO: Test hasAttributes
+        
+        // TODO: Test Node.isSupported
         
         // TODO: Test dynamically creating an SVG root
         
@@ -1434,6 +1446,22 @@
         // markup
         
         // TODO: Have some performance tests with a performance threshold
+        
+        // TODO: Have tests where we pass in various kinds of invalid values:
+        // Have tests where we pass in null, undefined, and non-DOM
+        // or internal _Node or _Element values into our DOM methods; should
+        // throw an explicit exception. Also test trying to append HTML
+        // DOM nodes into an SVG document, which should throw an exception.
+        // Also test trying to attach a node that is already appended, or
+        // calling one of the replaceChild methods with an already appended
+        // node. Test calling removeChild with a node that is not a member
+        // of the given parent node. Have tests where we pass in bad values
+        // to setAttribute.
+        
+        // TODO: I'm not sure if we are correctly handling what should
+        // happen if you pass in null, undefined, or an empty string
+        // into setAttribute; I believe it should clear out that attribute
+        // as if you were deleting it
         
         var endTime = new Date().getTime();
         

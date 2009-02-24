@@ -1288,6 +1288,41 @@ package com.sgweb.svg.nodes
             return child;
         }
         
+        override public function removeChild(child:DisplayObject):DisplayObject {
+            super.removeChild(child);
+            if (child is SVGNode) {
+                // unregister the element
+                var id:String = child._xml.@id;
+                if (id != "") {
+                    this.svgRoot.unregisterElement(id);
+                } else {
+                    this.error('Programming error: ID required for removeChild');
+                    return;
+                }
+                
+                // remove from our XML children
+                child._xml.parentNode.removeChild(child._xml);
+                this.numChildren--;
+                
+                this.invalidateDisplay();
+            }
+            
+            return child;
+        }
+        
+        /**
+         * Adds newChild before refChild. Position is the position of refChild
+         * to add newChild before.
+         */
+        public function insertBefore(position, newChild, refChild) {
+            if (position == 0) {
+                this._xml.*[0] = newChild + this._xml.*[0];
+            } else {
+                this._xml[position - 1] += newChild;
+            }
+            super.addChildAt(newChild, position);
+            this.invalidateDisplay();
+        }
         
         /**
          * Add any assigned filters to node
@@ -1572,6 +1607,9 @@ package com.sgweb.svg.nodes
         public function dbg(debugString:String):void {
             this.svgRoot.debug(debugString);
         }
-
+        
+        public function error(errorString:String):void {
+            this.svgRoot.error(errorString);
+        }
     }
 }
