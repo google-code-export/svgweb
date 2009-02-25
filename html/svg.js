@@ -682,6 +682,12 @@ We _do_ support wildcard calls of the following type:
 getElementsByTagNameNS('*', '*');
 getElementsByTagNameNS('someNameSpace', '*');
 getElementsByTagNameNS(null, 'someTag');
+
+* insertBefore only accepts DOM element nodes for now, not DOM text nodes
+
+* Only DOM element, text, and document type nodes are supported across the
+system; this means you can't dynamically work and insert processing
+instructions, comments, attributes, etc.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------

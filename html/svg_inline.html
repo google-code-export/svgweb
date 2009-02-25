@@ -24,7 +24,7 @@
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
-            gradient, stop, defs;
+            gradient, stop, defs, parent;
             
         var startTime = new Date().getTime();
         
@@ -1408,22 +1408,430 @@
         assertEquals('H1 content should be == hello world!', 'hello world!',
                      node.childNodes[0].data);
                      
-        // TODO: Test removeChild
+        // Test removeChild
+        console.log('Testing removeChild...');
         
-        // TODO: Test replaceChild
+        // remove a normal circle element _before_ appending to DOM that has
+        // no ID
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 100);
+        circle.setAttribute('cy', 50);
+        circle.setAttribute('r', 40);
+        circle.setAttribute('stroke', 'black');
+        circle.setAttribute('stroke-width', 2);
+        circle.setAttribute('fill', 'red');
+        group = document.createElementNS(svgns, 'group');
+        circle.appendChild(group);
+        temp = group.removeChild(circle);
+        assertEquals('group.childNodes.length == 0', 0, 
+                     group.childNodes.length);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('circle == temp', temp, circle);
         
-        // TODO: Test insertBefore
+        // remove a normal circle element _before_ appending to DOM that has
+        // an ID
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 100);
+        circle.setAttribute('cy', 50);
+        circle.setAttribute('r', 40);
+        circle.setAttribute('stroke', 'black');
+        circle.setAttribute('stroke-width', 2);
+        circle.setAttribute('fill', 'red');
+        circle.id = 'myCircle';
+        group = document.createElementNS(svgns, 'group');
+        group.id = 'myGroup';
+        circle.appendChild(group);
+        temp = group.removeChild(circle);
+        assertEquals('group.childNodes.length == 0', 0, 
+                     group.childNodes.length);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('circle == temp', temp, circle);
         
-        // TODO: Test hasChildNodes
+        // remove a normal circle element _after_ appending to DOM
+        // using object reference
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 2);
+        circle.setAttribute('cy', 2);
+        circle.setAttribute('r', 15);
+        circle.setAttribute('stroke', 'green');
+        circle.setAttribute('stroke-width', 1);
+        circle.setAttribute('fill', 'pink');
+        circle.id = 'myCircle5';
+        group = document.getElementById('myGroup');
+        lengthBefore = group.childNodes.length;
+        group.appendChild(circle);
+        temp = group.removeChild(circle);
+        assertEquals('group.childNodes.length == lengthBefore', lengthBefore,
+                      group.childNodes.length);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('circle == temp', temp, circle);
+        assertNull('getElementById(myCircle5) == null',
+                    document.getElementById('myCircle5'));
         
-        // TODO: Test hasAttributes
+        // remove a normal circle element _after_ appending to DOM
+        // using returned object reference
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 2);
+        circle.setAttribute('cy', 2);
+        circle.setAttribute('r', 15);
+        circle.setAttribute('stroke', 'green');
+        circle.setAttribute('stroke-width', 1);
+        circle.setAttribute('fill', 'pink');
+        circle.id = 'myCircle6';
+        group = document.getElementById('myGroup');
+        lengthBefore = group.childNodes.length;
+        circle = group.appendChild(circle);
+        temp = group.removeChild(circle);
+        assertEquals('group.childNodes.length == lengthBefore', lengthBefore,
+                      group.childNodes.length);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('circle == temp', temp, circle);
+        assertNull('getElementById(myCircle6) == null',
+                    document.getElementById('myCircle6'));
         
-        // TODO: Test Node.isSupported
+        // remove a normal circle element _after_ appending to DOM
+        // after getting circle element through getElementById
+        rect = document.getElementById('myRect');
+        parent = rect.parentNode;
+        lengthBefore = parent.childNodes.length;
+        rect.parentNode.removeChild(rect);
+        assertEquals('parent.childNodes.length == lengthBefore',
+                     lengthBefore, parent.childNodes.length);
+        assertNull('rect.parentNode == null', rect.parentNode);
+        assertNull('document.getElementById(myRect) == null',
+                   document.getElementById('myRect'));
+        
+        // remove a normal circle element _after_ appending to DOM
+        // after getting circle element through getElementsByTagNameNS
+        matches = document.getElementsByTagNameNS(svgns, 'text');
+        text = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'myText') {
+            text = matches[i];
+            break;
+          }
+        }
+        assertExists('myText should exist', text);
+        parent = text.parentNode;
+        lengthBefore = text.parentNode.childNodes.length;
+        text.parentNode.removeChild(text);
+        assertEquals('text.parentNode.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, parent.childNodes.length);
+        assertNull('text.parentNode == null', text.parentNode);
+        assertNull('document.getElementById(myText) == null',
+                   document.getElementById('myText'));
+        // SVG text node should now no longer show up in 
+        // getElementsByTagNameNS
+        matches = document.getElementsByTagNameNS(svgns, 'text');
+        text = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'myText') {
+            text = matches[i];
+            break;
+          }
+        }
+        assertNull('text node should be null after removal', text);
+        
+        // remove a text node _before_ appending to DOM on an SVG Title
+        // element
+        textNode = document.createTextNode('text for an svg title element');
+        title = document.createElementNS(svgns, 'title');
+        title.appendChild(textNode);
+        assertEquals('title.firstChild.nodeValue == '
+                     + 'text for an svg title element',
+                     'text for an svg title element',
+                     title.firstChild.nodeValue);
+        temp = textNode.parentNode.removeChild(textNode);
+        assertEquals('title.childNodes.length == 0', 0, 
+                     title.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == text for an svg title element',
+                     'text for an svg title element', textNode.nodeValue);
+        assertNull('title.firstChild == null', title.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        
+        // remove a text node _after_ appending to DOM on an SVG Title
+        // element using object reference
+        textNode = document.createTextNode('text for an svg title element');
+        title = document.createElementNS(svgns, 'title');
+        title.appendChild(textNode);
+        group = document.createElementNS(svgns, 'group');
+        group.appendChild(title);
+        svg = document.getElementById('mySVG');
+        svg.appendChild(group);
+        temp = title.removeChild(textNode);
+        assertEquals('title.childNodes.length == 0', 0, 
+                     title.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == text for an svg title element',
+                     'text for an svg title element', textNode.nodeValue);
+        assertNull('title.firstChild == null', title.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        
+        // remove an element from the SVG root
+        lengthBefore = svg.childNodes.length;
+        temp = svg.lastChild;
+        svg.removeChild(svg.lastChild);
+        assertEquals('svg.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, svg.childNodes.length);
+        assertEquals('group.parentNode == null', group.parentNode);
+        assertEquals('temp.parentNode == null', temp.parentNode);        
+        
+        // remove a text node _before_ appending to DOM on an SVG Desc
+        // element
+        desc = document.createElementNS(svgns, 'desc');
+        textNode = document.createTextNode('desc node content');
+        desc.appendChild(textNode);
+        temp = desc.removeChild(textNode);
+        assertEquals('desc.childNodes.length == 0', 0, 
+                     desc.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == desc node content',
+                     'desc node content', textNode.nodeValue);
+        assertNull('desc.firstChild == null', desc.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        
+        // remove a text node _after_ appending to DOM on an SVG Desc
+        // element; get the element reference by using getElementById
+        desc = document.createElementNS(svgns, 'desc');
+        textNode = document.createTextNode('desc node content');
+        desc.id = 'myDesc2';
+        desc.appendChild(textNode);
+        group = document.createElementNS(svgns, 'group');
+        group.appendChild(desc);
+        svg.appendChild(group);
+        desc = document.getElementById('myDesc2');
+        temp = desc.removeChild(textNode);
+        assertEquals('desc.childNodes.length == 0', 0, 
+                     desc.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == desc node content',
+                     'desc node content', textNode.nodeValue);
+        assertNull('desc.firstChild == null', desc.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        assertEquals('desc.parentNode == group', group, desc.parentNode);
+        
+        // remove a text node _before_ appending to DOM on an SVG Text
+        // element
+        text = document.createElementNS(svgns, 'text');
+        textNode = document.createTextNode('text node content');
+        temp = text.appendChild(textNode);
+        temp = temp.removeChild(textNode);
+        assertEquals('text.childNodes.length == 0', 0, 
+                     text.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == text node content',
+                     'text node content', textNode.nodeValue);
+        assertNull('text.firstChild == null', text.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        
+        // remove a text node _after_ appending to DOM on an SVG Text
+        // element
+        group.appendChild(text);
+        text.appendChild(document.createTextNode('more content'));
+        textNode = text.lastChild;
+        temp = text.removeChild(text.lastChild);
+        assertEquals('text.childNodes.length == 0', 0, 
+                     text.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeValue == more content',
+                     'more content', textNode.nodeValue);
+        assertNull('text.firstChild == null', text.firstChild);
+        assertEquals('textNode == temp', temp, textNode);
+        
+        // remove an element that has multiple levels of nested children
+        lengthBefore = svg.childNodes.length;
+        group.appendChild(document.createElementNS(svgns, 'group'));
+        group.firstChild.appendChild(document.createElementNS(svgns, 'text'));
+        group.firstChild.childNodes[0].appendChild(
+                                    document.createTextNode('hello content!'));
+        group.parentNode.removeChild(svg.lastChild);
+        assertEquals('svg.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, svg.childNodes.length);
+        assertNull('group.parentNode == null', group.parentNode);
+        assertEquals('group.firstChild.nodeName == g', 'g',
+                     group.firstChild.nodeName);
+        assertEquals('group.firstChild.childNodes[0].nodeName == text', 'text',
+                      group.firstChild.childNodes[0].nodeName);
+        assertEquals('text node content == hello content!', 'hello content!',
+                     group.childNodes[0].lastChild.firstChild.data);
+        
+        // remove an SVG TITLE element
+        matches = document.getElementsByTagNameNS(svgns, 'title');
+        lengthBefore = matches.length;
+        assertTrue('title matches > 1', matches.length > 1);
+        title = matches[0];
+        assertTrue('title.parentNode != null', title.parentNode != null);
+        parentNode = title.parentNode;
+        title.parentNode.removeChild(title);
+        assertNull('title.parentNode == null', title.parentNode);
+        assertTrue('parentNode.lastChild != title', 
+                   parentNode.lastChild != title); 
+        matches = document.getElementsByTagNameNS(svgns, 'title');
+        assertEquals('getElementsByTagNameNS(title).length == lengthBefore - 1',
+                     lengthBefore - 1, 
+                     getElementsByTagNameNS(svgns, 'title').length);
+        
+        // remove a namespaced metadata child
+        dc = document.getElementById('myDCType');
+        parentNode = dc.parentNode;
+        lengthBefore = dc.parentNode.childNodes.length;
+        dc.parentNode.removeChild(dc);
+        assertNull('dc.parentNode == null', dc.parentNode);
+        assertEquals('parentNode.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, parentNode.childNodes.length);
+        
+        // remove a namespaced metadata child and text node before appending
+        dc = document.createElementNS(dc_ns, 'dc:creator');
+        text = document.createTextNode('Bryan Neuberg');
+        dc.appendChild(text);
+        temp = dc.removeChild(text);
+        assertEquals('dc.childNodes.length == 0', 0, dc.childNodes.length);
+        assertNull('text.parentNode == null', text.parentNode);
+        assertEquals('temp == text', temp, text);
+        metadata = document.createElementNS(svgns, 'metadata');
+        metadata.appendChild(dc);
+        temp = metadata.removeChild(dc);
+        assertEquals('metadata.childNodes.length == 0', 0, 
+                     metadata.childNodes.length);
+        assertNull('dc.parentNode == null', dc.parentNode);
+        assertEquals('temp == dc', temp, dc);
+        
+        // remove a group and make sure all of it's elements disappear
+        group = document.getElementById('removeMe');
+        group.parentNode.removeChild(group);
+        console.log('Look at the rendered image and make sure that you do not '
+                    + 'see the text "You should not see this" as well as not '
+                    + 'seeing a green rectangle next to it. If they are '
+                    + 'present than removeChild is not working correctly.');
+        
+        // remove a gradient from a DEFS that is depended on by something
+        // else and make sure the gradient disappears
+        var gradient = document.getElementById('linearGradient14971');
+        parentNode = gradient.parentNode;
+        lengthBefore = gradient.parentNode.childNodes.length;
+        temp = gradient.parentNode.removeChild(gradient);
+        assertEquals('gradient.parentNode.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, parentNode.childNodes.length);
+        assertNull('gradient.parentNode == null', gradient.parentNode);
+        assertEquals('temp == gradient', temp, gradient);
+        
+        // remove the STOP element from a gradient
+        matches = document.getElementsByTagNameNS(svgns, 'stop');
+        parentNode = matches[0].parentNode;
+        lengthBefore = parentNode.childNodes.length;
+        temp = matches[0].removeChild(matches[0]);
+        assertEquals('stop.parentNode.childNodes.length == lengthBefore - 1',
+                     lengthBefore - 1, parentNode.childNodes.length);
+        assertNull('stop.parentNode == null', matches[0].parentNode);
+        assertEquals('temp == stop', temp, matches[0]);
+        
+        // Test replaceChild
+        console.log('Testing replaceChild...');
+        
+        // before anything is appended to the DOM, replace an SVG circle
+        // element with an SVG rectangle
+        
+        // after things are appended to the DOM, replace an SVG circle
+        // element with an SVG rectangle
+        
+        // before anything is appended to the DOM, replace the text in an
+        // SVG Title element
+        
+        // after things are appended to the DOM, replace the text in an 
+        // SVG Title element
+        
+        // before anything is appended to the DOM, replace the text in an
+        // SVG Desc element
+        
+        // after things are appended to the DOM, replace the text in an 
+        // SVG Desc element
+        
+        // before anything is appended to the DOM, replace the text in an
+        // SVG Text element
+        
+        // after things are appended to the DOM, replace the text in an 
+        // SVG Text element
+        
+        // before anything is appended to the DOM, replace the text in a
+        // namespaced element inside a METADATA node
+        
+        // after things are appended to the DOM, replace the text in a 
+        // namespaced element inside a METADATA node
+        
+        // before anything is appended to the DOM, replace a namespaced
+        // element with another namespaced element inside a METADATA node
+        
+        // after things are appended to the DOM, replace a namespaced
+        // element with another namespaced element inside a METADATA node
+                
+        // Test insertBefore
+        console.log('Testing insertBefore...');
+        
+        // before anything is appended to the DOM, insert an SVG GROUP
+        // before another SVG GROUP
+        
+        // after things are appended to the DOM, insert an SVG GROUP before
+        // another SVG GROUP
+        
+        // before anything is appended to the DOM, insert an SVG PATH
+        // before an SVG CIRCLE
+        
+        // after things are appended to the DOM, insert an SVG PATH before
+        // an SVG CIRCLE
+        
+        // before anything is appended to the DOM, insert a namespaced
+        // element before another one in the METADATA section
+        
+        // after things are appended to the DOM, insert a namespaced
+        // element before another one in the METADATA section
+        
+        // Test hasChildNodes
+        console.log('Testing hasChildNodes...');
+        
+        // grab a group element from the document that has child nodes
+        
+        // grab a circle element from the document that doesn't have child nodes
+        
+        // grab a text element from the document that doesn't have child nodes
+        
+        // grab a namespaced element from METADATA that has child nodes
+        
+        // grab a namespaced element from METADATA that does not have
+        // child nodes
+        
+        // Test hasAttributes
+        console.log('Testing hasAttributes...');
+        
+        // grab an element from the document that has attributes
+        
+        // grab an element from the document that does not have attributes
+        
+        // grab a text node -- text nodes don't have attributes
+        
+        // grab the SVG root which should have attributes
+        
+        // grab a namespaced element inside METADATA that has attributes
+        
+        // grab a namespaced element inside of METADATA that does not have
+        // attributes
+                
+        // Test Node.isSupported
+        console.log('Testing Node.isSupported...');
+        
+        // test for CORE support - should return true
+        
+        // test for various kinds of EVENT support - should return true
+        
+        // test for other kinds of support -- should return false for 
+        // flash renderer, true for native renderer
         
         // TODO: Test dynamically creating an SVG root
         
         // TODO: Test having a dynamically created SVG root that is nested
         // in some dynamically created HTML, such as a DIV
+        
+        // TODO: Test doing removeChild that removes an SVG root
                                                
         // TODO: Test every one of the SVG element types, perhaps
         // creating them dynamically and building up an image; probably
@@ -1456,7 +1864,10 @@
         // calling one of the replaceChild methods with an already appended
         // node. Test calling removeChild with a node that is not a member
         // of the given parent node. Have tests where we pass in bad values
-        // to setAttribute.
+        // to setAttribute. Append children into places they don't belong,
+        // such as trying to insert a METADATA node into a GROUP. Make sure
+        // insertBefore throws an exception if either node is a text node
+        // for now.
         
         // TODO: I'm not sure if we are correctly handling what should
         // happen if you pass in null, undefined, or an empty string
@@ -1477,6 +1888,7 @@
       });
       
       // TODO: replace these with JSUnit's assert functions
+      
       function assertEquals(comment, expected, actual) {
         // halt if a Flash error has occurred asynchronously
         if (flashError) {
@@ -1555,6 +1967,24 @@
         console.log('assertFailed: ' + msg);
         throw new Error(msg);
       }
+      
+      function assertTrue(comment, expression) {
+        // halt if a Flash error has occurred asynchronously
+        if (flashError) {
+          throw new Error('Halting due to Flash error');
+        }
+        
+        if (printAsserts) {
+          console.log("assertTrue('" + comment + "', " + expression + ")");
+        }
+        
+        if (expression === false) {    
+          var msg = 'assertTrue Failed: ' + comment 
+                    + '\n(expression value: ' + expression + ')';
+          console.log(msg);
+          throw new Error(msg);
+        }
+      }
     </script>
   </head>
 
@@ -1581,6 +2011,10 @@
                   fill="blue">hello world</text>
             <desc>This is a description</desc>
             <title>This is a title</title>
+          </g>
+          <g id="removeMe">
+            <text x="80" y="150">You should not see this</text>
+            <rect x="80" y="190" width="15" height="15" fill="green"/>
           </g>
         </svg>
       </script>
@@ -1636,7 +2070,7 @@
               <cc:Work
                  rdf:about="">
                 <dc:format>image/svg+xml</dc:format>
-                <dc:type
+                <dc:type id="myDCType"
                    rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
               </cc:Work>
             </rdf:RDF>
