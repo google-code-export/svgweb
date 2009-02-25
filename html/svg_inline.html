@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
@@ -25,7 +25,7 @@
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
-            gradient, stop, defs, parent, textNode2, group2;
+            gradient, stop, defs, parent, textNode2, group2, renderer;
             
         var startTime = new Date().getTime();
         
@@ -65,7 +65,7 @@
         rects = document.getElementsByTagNameNS(svgns, 'rect');
         assertExists("document.getElementsByTagNameNS(svgns, 'rect')", rects);
         assertEquals("document.getElementsByTagNameNS(svgns, 'rect').length "
-                     + "should be 10", 10, rects.length);
+                     + "should be 11", 11, rects.length);
         
         sodipodi = document.getElementsByTagNameNS(sodipodi_ns, '*');
         assertExists("document.getElementsByTagNameNS(sodipodi_ns, '*')", 
@@ -370,7 +370,7 @@
                      child.nodeName);
         assertEquals('first SVG root element.nodeType == 1', 1, child.nodeType);
         assertNull('first SVG root element.nodeValue == null', child.nodeValue);
-        assertEquals('first SVG root element.childNodes.length == 1', 1, 
+        assertEquals('first SVG root element.childNodes.length == 2', 2, 
                      child.childNodes.length);
         assertNull('first SVG root element.prefix == null', child.prefix);
         assertEquals('first SVG root element.namespaceURI == svgns', svgns,
@@ -1681,6 +1681,10 @@
         assertNull('dc.parentNode == null', dc.parentNode);
         assertEquals('parentNode.childNodes.length == lengthBefore - 1',
                      lengthBefore - 1, parentNode.childNodes.length);
+        parentNode.appendChild(dc);
+        assertEquals('after reappending, parentNode.childNodes.length == '
+                     + 'lengthBefore', 
+                     lengthBefore, parentNode.childNodes.length);
         
         // remove a namespaced metadata child and text node before appending
         dc = document.createElementNS(dc_ns, 'dc:creator');
@@ -2115,41 +2119,124 @@
         console.log('Testing hasChildNodes...');
         
         // grab a group element from the document that has child nodes
+        group = document.getElementById('layer5');
+        assertTrue('layer5.hasChildNodes() == true', group.hasChildNodes());
         
-        // grab a circle element from the document that doesn't have child nodes
+        // grab a path element from the document that doesn't have child nodes
+        path = document.getElementById('path3913');
+        assertFalse('path3913.hasChildNodes() == false', path.hasChildNodes());
         
-        // grab a text element from the document that doesn't have child nodes
+        // grab a text node from the document that doesn't have child nodes
+        text = document.getElementById('myText');
+        assertExists('myText should exist');
+        assertTrue('text.hasChildNodes() == true', text.hasChildNodes());
+        textNode = text.firstChild;
+        assertExists('text.firstChild should exist');
+        assertFalse('textNode.hasChildNodes() == false', 
+                    textNode.hasChildNodes());
         
         // grab a namespaced element from METADATA that has child nodes
+        cc = document.getElementById('myCCWork');
+        assertExists('myCCWork should exist');
+        assertTrue('myCCWork.hasChildNodes() == true', myCCWork.hasChildNodes());
         
         // grab a namespaced element from METADATA that does not have
         // child nodes
+        dc = document.getElementById('myDCType');
+        assertExists('myDCType should exist', dc);
+        assertFalse('dc.hasChildNodes() == false', dc.hasChildNodes());
+        
+        // test hasChildNodes on an unappended element and text node
+        text = document.createElementNS(svgns, 'text');
+        text.setAttribute('x', 250);
+        text.setAttribute('y', 250);
+        assertFalse('text before append, text.hasChildNodes() == false',
+                   text.hasChildNodes());
+        textNode = document.createTextNode('hello world');
+        text.appendChild(textNode);
+        assertTrue('text before append, text.hasChildNodes() == true',
+                   text.hasChildNodes());
+        assertFalse('textNode before append, textNode.hasChildNodes() == false', 
+                    textNode.hasChildNodes());
+        
+        // test an SVG root node
+        svg = document.getElementById('svg2');
+        assertTrue('svg.hasChildNodes() == true', svg.hasChildNodes());
         
         // Test hasAttributes
         console.log('Testing hasAttributes...');
         
         // grab an element from the document that has attributes
+        path = document.getElementById('path3913');
+        assertTrue('path3913.hasAttributes() == true', path.hasAttributes());
+        
+        // test on an svg root
+        svg = document.getElementById('svg2');
+        assertTrue('svg.hasAttributes() == true', svg.hasAttributes());
         
         // grab an element from the document that does not have attributes
+        group = document.createElementNS(svgns, 'g');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(group);
+        assertFalse('group.hasAttributes() == false', group.hasAttributes());
         
         // grab a text node -- text nodes don't have attributes
+        text = document.createElementNS(svgns, 'text');
+        text.setAttribute('x', 250);
+        text.setAttribute('y', 250);
+        assertTrue('text before append, text.hasAttributes() == true',
+                   text.hasAttributes());
+        textNode = document.createTextNode('hello world');
+        text.appendChild(textNode);
+        assertFalse('textNode before append, textNode.hasAttributes() == false', 
+                    textNode.hasAttributes());
+        text = group.appendChild(text);
+        assertTrue('text after append, text.hasAttributes() == true',
+                   text.hasAttributes());
+        textNode = text.childNodes[0];
+        assertFalse('textNode after append, textNode.hasAttributes() == false', 
+                    textNode.hasAttributes());
         
         // grab the SVG root which should have attributes
+        svg = document.getElementById('mySVG');
+        assertTrue('mySVG.hasAttributes() == true', svg.hasAttributes());
         
         // grab a namespaced element inside METADATA that has attributes
+        cc = document.getElementById('myCCWork');
+        assertTrue('myCCWork.hasAttributes() == true', 
+                   myCCWork.hasAttributes());
         
         // grab a namespaced element inside of METADATA that does not have
         // attributes
+        rdf = document.getElementsByTagNameNS(rdf_ns, 'rdf:RDF')[0];
+        assertFalse('rdf.hasAttributes() == false', rdf.hasAttributes());
                 
         // Test Node.isSupported
         console.log('Testing Node.isSupported...');
         
-        // test for CORE support - should return true
-        
-        // test for various kinds of EVENT support - should return true
-        
-        // test for other kinds of support -- should return false for 
-        // flash renderer, true for native renderer
+        // test various support levels
+        path = document.getElementById('path3913');
+        assertTrue('path.isSupported(Core, 2.0) == true',
+                   path.isSupported('Core', '2.0'));
+        assertFalse('path.isSupported(Core, 2.0) == false',
+                   path.isSupported('Core', '1.0'));
+        assertTrue('path.isSupported(Events, 2.0) == true',
+                   path.isSupported('Events', '2.0'));
+        assertTrue('path.isSupported(UIEvents, 2.0) == true',
+                   path.isSupported('UIEvents', '2.0'));
+        assertTrue('path.isSupported(MouseEvents, 2.0) == true',
+                   path.isSupported('MouseEvents', '2.0'));
+        renderer = svgweb.renderer.toString();
+        assertTrue('renderer == [NativeHandler] || [FlashHandler]',
+                    renderer == '[NativeHandler]' 
+                    || renderer == '[FlashHandler]');
+        if (renderer == '[NativeHandler]') {
+          assertTrue('path.isSupported(HTML, 2.0) == true',
+                       path.isSupported('HTML', '2.0'));
+        } else if (renderer == '[FlashHandler]') {
+          assertFalse('path.isSupported(HTML, 2.0) == false',
+                       path.isSupported('HTML', '2.0'));
+        }
         
         // TODO: Test dynamically creating an SVG root
         
@@ -2313,6 +2400,24 @@
           throw new Error(msg);
         }
       }
+      
+      function assertFalse(comment, expression) {
+        // halt if a Flash error has occurred asynchronously
+        if (flashError) {
+          throw new Error('Halting due to Flash error');
+        }
+        
+        if (printAsserts) {
+          console.log("assertFalse('" + comment + "', " + expression + ")");
+        }
+        
+        if (expression === true) {    
+          var msg = 'assertFalse Failed: ' + comment 
+                    + '\n(expression value: ' + expression + ')';
+          console.log(msg);
+          throw new Error(msg);
+        }
+      }
     </script>
   </head>
 
@@ -2396,7 +2501,8 @@
              id="metadata7">
             <rdf:RDF>
               <cc:Work
-                 rdf:about="">
+                 rdf:about=""
+                 id="myCCWork">
                 <dc:format>image/svg+xml</dc:format>
                 <dc:type id="myDCType"
                    rdf:resource="http://purl.org/dc/dcmitype/StillImage" />

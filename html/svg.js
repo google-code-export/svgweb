@@ -964,9 +964,9 @@ extend(SVGWeb, {
       flash is being used or 'native' if the native capabilities are being
       used. */
   getHandlerType: function() {
-    if (this._renderer == FlashHandler) {
+    if (this.renderer == FlashHandler) {
       return 'flash';
-    } else if (this._renderer == NativeHandler) {
+    } else if (this.renderer == NativeHandler) {
       return 'native';
     }
   },
@@ -1064,11 +1064,11 @@ extend(SVGWeb, {
     
     // setup which renderer we will use
     console.log('this.config.use='+this.config.use);
-    this._renderer;
+    this.renderer;
     if (this.config.use == 'flash') {
-      this._renderer = FlashHandler;
+      this.renderer = FlashHandler;
     } else if (this.config.use == 'native') {
-      this._renderer = NativeHandler;
+      this.renderer = NativeHandler;
     }
     
     // handle a peculiarity for Safari (see method for details)
@@ -1259,7 +1259,7 @@ extend(SVGWeb, {
       self._handleDone(id, type);
     }
     
-    var handler = new this._renderer({type: 'script', 
+    var handler = new this.renderer({type: 'script', 
                                       svgID: rootID,
                                       xml: xml, 
                                       svgString: svg,
@@ -1887,6 +1887,12 @@ extend(FlashHandler, {
     this._onLog(msg);
     svgweb._fireFlashError('FLASH: ' + msg.logString);
     throw 'FLASH: ' + msg.logString;
+  },
+  
+  /** Returns the string '[FlashHandler]' if we are dealing with the Flash 
+      handler. */
+  toString: function() {
+    return '[FlashHandler]';
   }
 });  
 
@@ -2096,6 +2102,12 @@ extend(NativeHandler, {
     }
     
     return results;
+  },
+  
+  /** Returns the string '[NativeHandler]' if we are dealing with the native 
+      handler. */
+  toString: function() {
+    return '[NativeHandler]';
   }
 });
 
@@ -2523,7 +2535,6 @@ extend(_Node, {
                                   method: 'removeChild',
                                   elementId: id,
                                   nodeType: child.nodeType});
-      }
     }
       
     return origChild;
