@@ -25,7 +25,7 @@
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
-            gradient, stop, defs, parent, textNode2;
+            gradient, stop, defs, parent, textNode2, group2;
             
         var startTime = new Date().getTime();
         
@@ -1982,32 +1982,134 @@
         dc.setAttribute('id', 'myDCNode');
         textNode = document.createTextNode('Home boy');
         dc.appendChild(textNode);
+        rdf.id = 'myRDFNode';
+        assertExists('document.getElementById(myRDFNode) should exist',
+                     document.getElementById('myRDFNode'));
         temp = rdf.parentNode.replaceChild(dc, rdf);
         assertEquals('dc.parentNode.nodeName == metadata', 'metadata',
                      dc.parentNode.nodeName);
         assertEquals('temp == rdf', temp, rdf);
         assertNull('rdf.parentNode == null', rdf);
+        assertExists('document.getElementById(myDCNode) should exist',
+                     document.getElementById('myDCNode'));
+        assertNull('document.getElementById(myRDFNode) == null',
+                   document.getElementById('myRDFNode'));
                 
         // Test insertBefore
         console.log('Testing insertBefore...');
         
         // before anything is appended to the DOM, insert an SVG GROUP
         // before another SVG GROUP
+        group = document.createElementNS(svgns, 'g');
+        group.id = 'group1';
+        group2 = document.createElementNS(svgns, 'g');
+        group2.setAttribute('fill', 'red');
+        parentNode = document.createElementNS(svgns, 'g');
+        parentNode.id = 'group2';
+        parentNode.appendChild(group);
+        temp = parentNode.insertBefore(group2, group);
+        assertEquals('parentNode.childNodes.length == 2', 2,
+                     parentNode.childNodes.length);
+        assertEquals('parentNode.childNodes[0] == group2', group2,
+                     parentNode.childNodes[0]);
+        assertEquals('parentNode.childNodes[1] == group', group,
+                     parentNode.childNodes[1]);             
+        assertEquals('group2.parentNode == parentNode', parentNode,
+                     group2.parentNode);
+        assertEquals('group.parentNode == parentNode', parentNode,
+                     group.parentNode);
+        assertEquals('parentNode.firstChild.getAttribute(fill) == red',
+                     'red', parentNode.firstChild.getAttribute('fill'));
+        assertNull('parentNode.lastChild.getAttribute(fill) == null',
+                   parentNode.lastChild.getAttribute('fill'));
         
         // after things are appended to the DOM, insert an SVG GROUP before
         // another SVG GROUP
-        
-        // before anything is appended to the DOM, insert an SVG PATH
-        // before an SVG CIRCLE
+        group = document.getElementById('g3269');
+        group2 = document.getElementById('layer1A');
+        group2.parentNode.removeChild(group2);
+        assertNull('document.getElementById(layer1A) == null',
+                   document.getElementById('layer1A'));
+        assertEquals('group2.parentNode == null', group2.parentNode);
+        temp = group.parentNode.insertBefore(group2, group);
+        parentNode = document.getElementById('g4337');
+        assertEquals('group2.parentNode == parentNode', parentNode,
+                     group2.parentNode);
+        assertEquals('group2.nextSibling == group', group, group2.nextSibling);
+        assertEquals('group.previousSibling == group2', group2,
+                     group.previousSibling);
+        assertExists('document.getElementById(layer1A) should exist',
+                     document.getElementById('layer1A'));
         
         // after things are appended to the DOM, insert an SVG PATH before
         // an SVG CIRCLE
+        path = document.createElementNS(svgns, 'path');
+        path.setAttribute('d', 'M 186.73487,92.490168 C 188.75138,93.498448 192.34333,97.672468 193.37297,99.731747 C 194.46222,101.91025 195.90306,103.46878 197.59721,105.16293 C 199.10496,106.67067 202.59217,108.26386 204.83879,109.38717 C 207.79637,110.86598 211.25854,113.44764 213.89076,115.42183 C 216.93346,117.70386 220.449,120.16967 222.94271,122.66341 C 225.31886,125.03953 228.37059,127.18771 231.39124,128.69804 C 235.10473,130.55479 236.82534,133.28494 241.04666,134.12921 C 245.08284,134.93646 250.95305,138.23826 254.32286,140.16385 C 257.84084,142.17412 262.19671,143.49732 265.18523,144.99159 C 268.45466,146.6263 271.36813,146.8761 273.63373,148.0089 C 275.97169,149.17789 279.04857,149.8193 281.47876,149.8193');
+        path.setAttribute('fill', 'none');
+        path.setAttribute('fill-rule', 'evenodd');
+        path.setAttribute('stroke', '#26241c');
+        path.setAttribute('stroke-width', 2.91826558);
+        path.setAttribute('stroke-linecap', 'butt');
+        path.setAttribute('stroke-linejoin', 'miter');
+        path.setAttribute('stroke-miterlimit', 4);
+        path.setAttribute('stroke-dasharray', 'none');
+        path.setAttribute('stroke-opacity', 1);
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 100);
+        circle.setAttribute('cy', 50);
+        circle.setAttribute('r', 40);
+        circle.setAttribute('stroke', 'black');
+        circle.setAttribute('stroke-width', 2);
+        circle.setAttribute('fill', 'red');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(circle);
+        circle = svg.childNodes[svg.childNodes.length - 1];
+        temp = svg.insertBefore(path, circle);
+        assertEquals('svg.lastChild.nodeName == circle', 'circle',
+                     svg.lastChild.nodeName);
+        assertEquals('svg.lastChild.parentNode == svg', svg,
+                     svg.lastChild.parentNode);
+        assertEquals('temp == path', temp, path);
+        assertNull('temp.parentNode == null', temp);
+        assertNull('path.parentNode == null', path.parentNode);
         
         // before anything is appended to the DOM, insert a namespaced
         // element before another one in the METADATA section
-        
+        rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
+        textNode = document.createTextNode('rdf content');
+        rdf.appendChild(textNode);
+        var metadata = document.createElementNS(svgns, 'metadata');
+        dc = document.createElementNS(dc_ns, 'dc:creator');
+        textNode = document.createTextNode('Home boy2');
+        dc.appendChild(textNode);
+        metadata.appendChild(rdf);
+        temp = metadata.insertBefore(dc, rdf);
+        assertEquals('metadata.childNodes.length == 2', 2,
+                     metadata.childNodes.length);
+        assertEquals('metadata.childNodes[0].nodeName == dc:creator',
+                     'dc:creator', metadata.childNodes[0].nodeName);
+        assertEquals('metadata.childNodes[1].nodeName == rdf:RDF',
+                     'rdf:RDF', metadata.childNodes[1].nodeName);            
+        assertEquals('dc.parentNode == metadata', metadata, dc.parentNode);
+        assertEquals('rdf.parentNode == metadata', metadata, rdf.parentNode);
+        assertEquals('dc.nextSibling == rdf', rdf, dc.nextSibling);
+        assertEquals('rdf.previousSibling == dc', dc, rdf.previousSibling);
+          
         // after things are appended to the DOM, insert a namespaced
         // element before another one in the METADATA section
+        metadata = document.getElementById('metadata7');
+        dc = document.createElementNS(dc_ns, 'dc:description');
+        dc.appendChild(document.createTextNodE('This is a description'));
+        rdf = metadata.firstChild;
+        temp = metadata.insertBefore(rdf, dc);
+        assertEquals('metadata.childNodes.length == 2', 2,
+                     metadata.childNodes.length);
+        assertEquals('rdf.parentNode == metadata', metadata, rdf.parentNode);
+        assertEquals('dc.parentNode == metadata', metadata, dc.parentNode);
+        assertEquals('metadata.firstChild.nodeName == rdf:RDF', 'rdf:RDF',
+                     metadata.firstChild.nodeName);
+        assertEquals('metadata.lastChild.nodeName == dc:description', 
+                     'dc:description', metadata.lastChild.nodeName);
         
         // Test hasChildNodes
         console.log('Testing hasChildNodes...');
