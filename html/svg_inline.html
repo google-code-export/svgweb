@@ -19,12 +19,13 @@
         console.log('developers onload called');
         var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
         var dc_ns = "http://purl.org/dc/elements/1.1/";
+        var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
         
         var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
             path, gradient, group, child, whitespaceAreNodes, metadata,
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
-            gradient, stop, defs, parent;
+            gradient, stop, defs, parent, textNode2;
             
         var startTime = new Date().getTime();
         
@@ -1731,39 +1732,261 @@
         
         // before anything is appended to the DOM, replace an SVG circle
         // element with an SVG rectangle
+        group = document.createElementNS(svgns, 'group');
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 2);
+        circle.setAttribute('cy', 2);
+        circle.setAttribute('r', 15);
+        circle.setAttribute('stroke', 'green');
+        circle.setAttribute('stroke-width', 1);
+        circle.setAttribute('fill', 'pink');
+        group.appendChild(circle);
+        rect = document.createElementNS(svgns, 'rect');
+        rect.setAttribute('x', 5);
+        rect.setAttribute('y', 5);
+        rect.setAttribute('width', 20);
+        rect.setAttribute('height', 20);
+        rect.setAttribute('fill', 'orange');
+        temp = group.replaceChild(rect, circle);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('rect.parentNode == group', group, rect.parentNode);
+        assertEquals('group.childNodes[0] == rect', rect,
+                     group.childNodes[0]);
+        assertEquals('temp == circle', temp, circle);
         
         // after things are appended to the DOM, replace an SVG circle
         // element with an SVG rectangle
+        group = document.createElementNS(svgns, 'group');
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 2);
+        circle.setAttribute('cy', 2);
+        circle.setAttribute('r', 15);
+        circle.setAttribute('stroke', 'green');
+        circle.setAttribute('stroke-width', 1);
+        circle.setAttribute('fill', 'pink');
+        group.appendChild(circle);
+        rect = document.createElementNS(svgns, 'rect');
+        rect.setAttribute('x', 5);
+        rect.setAttribute('y', 5);
+        rect.setAttribute('width', 20);
+        rect.setAttribute('height', 20);
+        rect.setAttribute('fill', 'orange');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(group);
+        temp = group.replaceChild(rect, circle);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('rect.parentNode == group', group, rect.parentNode);
+        assertEquals('group.childNodes[0] == rect', rect,
+                     group.childNodes[0]);
+        assertEquals('temp == circle', temp, circle);
+        
+        // after things are appended to the DOM, replace an SVG circle
+        // element with an SVG rectangle; use getElementById to get the
+        // parent element instance
+        group = document.createElementNS(svgns, 'group');
+        group.id = 'myGroup1';
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 2);
+        circle.setAttribute('cy', 2);
+        circle.setAttribute('r', 15);
+        circle.setAttribute('stroke', 'green');
+        circle.setAttribute('stroke-width', 1);
+        circle.setAttribute('fill', 'pink');
+        group.appendChild(circle);
+        rect = document.createElementNS(svgns, 'rect');
+        rect.setAttribute('x', 5);
+        rect.setAttribute('y', 5);
+        rect.setAttribute('width', 20);
+        rect.setAttribute('height', 20);
+        rect.setAttribute('fill', 'orange');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(group);
+        group = document.getElementById('myGroup1');
+        temp = group.replaceChild(rect, circle);
+        assertNull('circle.parentNode == null', circle.parentNode);
+        assertEquals('rect.parentNode == group', group, rect.parentNode);
+        assertEquals('group.childNodes[0] == rect', rect,
+                     group.childNodes[0]);
+        assertEquals('temp == circle', temp, circle);
         
         // before anything is appended to the DOM, replace the text in an
         // SVG Title element
+        textNode = document.createTextNode('text for an svg title element');
+        title = document.createElementNS(svgns, 'title');
+        title.appendChild(textNode);
+        textNode2 = document.createTextNode('replace text for svg title');
+        temp = title.replaceChild(textNode2, textNode);
+        assertNull('title.parentNode == null', title.parentNode);
+        assertEquals('textNode2.parentNode == title', title, 
+                     textNode2.parentNode);
+        assertEquals('title.childNodes[0] == textNode2', textNode2,
+                     title.childNodes[0]);
+        assertEquals('temp == textNode', temp, textNode);
         
         // after things are appended to the DOM, replace the text in an 
-        // SVG Title element
-        
-        // before anything is appended to the DOM, replace the text in an
-        // SVG Desc element
-        
-        // after things are appended to the DOM, replace the text in an 
-        // SVG Desc element
+        // SVG Title element; get the title we will do replacing on
+        // through getElementsByTagNameNS
+        title = document.createElementNS(svgns, 'title');
+        textNode = document.createTextNode('more text for an svg title element');
+        title.appendChild(textNode);
+        title.id = 'myTitle1';
+        matches = document.getElementsByTagNameNS(svgns, 'g');
+        svg = document.getElementById('mySVG');
+        group = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i] == svg.lastChild) {
+            group = matches[i];
+            break;
+          }
+        }
+        assertExists('group should exist', group);
+        group.appendChild(title);
+        matches = document.getElementsByTagNameNS(svgns, 'title');
+        title = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'myTitle1') {
+            title = matches[i];
+            break;
+          }
+        }
+        assertExists('title should exist', title);
+        lengthBefore = group.childNodes.length;
+        textNode2 = document.createTextNode('more replaced text');
+        textNode = title.firstChild;
+        temp = group.replaceChild(textNode2, title.firstChild);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode == temp', temp, textNode);
+        assertEquals('textNode2.parentNode == title', title, 
+                     textNode2.parentNode);
+        assertEquals('title.firstChild.data = more replaced text',
+                     'more replaced text', title.firstChild.data);
         
         // before anything is appended to the DOM, replace the text in an
         // SVG Text element
-        
+        text = document.createElementNS(svgns, 'text');
+        text.setAttribute('x', 0);
+        text.setAttribute('y', 300);
+        text.setAttribute('fill', 'green');
+        textNode = document.createTextNode('You should see this text');
+        textNode = text.appendChild(textNode);
+        textNode2 = document.createTextNode('Replaced text');
+        temp = text.replaceChild(textNode2, textNode);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode2.parentNode == text', text, 
+                     textNode2.parentNode);
+        assertEquals('text.firstChild == textNode2', textNode2,
+                     text.firstChild);
+        assertEquals('text.firstChild.textContent == Replaced text',
+                     'Replaced text', text.firstChild.textContent);
+                     
         // after things are appended to the DOM, replace the text in an 
         // SVG Text element
+        text = document.createElementNS(svgns, 'text');
+        text.setAttribute('x', 300);
+        text.setAttribute('y', 300);
+        textNode = document.createTextNode('more text for an svg text element');
+        text.appendChild(textNode);
+        text.id = 'myText1';
+        matches = document.getElementsByTagNameNS(svgns, 'g');
+        svg = document.getElementById('mySVG');
+        group = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i] == svg.lastChild) {
+            group = matches[i];
+            break;
+          }
+        }
+        assertExists('group should exist', group);
+        group.appendChild(text);
+        matches = document.getElementsByTagNameNS(svgns, 'text');
+        text = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'myText1') {
+            text = matches[i];
+            break;
+          }
+        }
+        assertExists('text should exist', text);
+        lengthBefore = group.childNodes.length;
+        textNode2 = document.createTextNode('more replaced text');
+        textNode = text.firstChild;
+        temp = group.replaceChild(textNode2, text.firstChild);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode == temp', temp, textNode);
+        assertEquals('textNode2.parentNode == text', text, 
+                     textNode2.parentNode);
+        assertEquals('text.firstChild.data = more replaced text',
+                     'more replaced text', text.firstChild.data);
+        assertEquals('group.childNodes.length == lengthBefore',
+                     lengthBefore, group.childNodes.length);
         
         // before anything is appended to the DOM, replace the text in a
         // namespaced element inside a METADATA node
+        rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
+        textNode = document.createTextNode('Some RDF text');
+        textNode2 = document.createTextNode('Some more RDF text');
+        rdf.appendChild(textNode);
+        var metadata = document.createElementNS(svgns, 'metadata');
+        metadata.appendChild(rdf);
+        temp = rdf.replaceChild(textNode2, textNode);
+        assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
+        assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode2.parentNode == rdf', rdf, textNode2.parentNode);
+        assertEquals('metadata.firstChild == rdf', rdf, metadata.firstChild);
+        assertEquals('metadata.firstChild.lastChild.childNodes[0].data == '
+                     + 'Some more RDF text', 'Some more RDF text',
+                     metadata.firstChild.lastChild.childNodes[0]);
         
         // after things are appended to the DOM, replace the text in a 
         // namespaced element inside a METADATA node
+        svg = document.getElementById('svg11242');
+        svg.appendChild(metadata); 
+        matches = document.getElementsByTagNameNS(rdf_ns, 'rdf:RDF');
+        assertEquals('rdf matches.length == 2', 2, matches.length);
+        rdf = matches[1];
+        assertExists('rdf should exist', rdf);
+        textNode2 = document.createTextNode('Replaced RDF text');
+        textNode = rdf.firstChild;
+        temp = rdf.replaceChild(textNode2, rdf.firstChild);
+        assertNull('textNode.parentNode == null');
+        assertEquals('textNode2.parentNode == rdf', rdf, textNode2.parentNode);
+        assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
+        assertEquals('rdf.childNodes[0].nodeValue == Replaced RDF text',
+                     'Replaced RDF text', rdf.childNodes[0].nodeValue);
         
         // before anything is appended to the DOM, replace a namespaced
         // element with another namespaced element inside a METADATA node
+        rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
+        rdf.appendChild(textNode);
+        var metadata = document.createElementNS(svgns, 'metadata');
+        dc = document.createElementNS(dc_ns, 'dc:creator');
+        textNode = document.createTextNode('Home boy');
+        dc.appendChild(textNode);
+        temp = metadata.replaceChild(dc, rdf);
+        assertNull('rdf.parentNode == null', rdf.parentNode);
+        assertEquals('dc.parentNode == metadata', metadata, dc.parentNode);
+        assertEquals('metadata.lastChild == dc', dc, metadata.lastChild);
+        assertEquals('metadata.childNodes.length == 1', 1,
+                     metadata.childNodes.length);
+        assertEquals('dc.childNodes[0].textContent == Home boy',
+                     'Home boy', dc.childNodes[0].textContent);
+        assertEquals('temp == rdf', temp, rdf);
         
         // after things are appended to the DOM, replace a namespaced
         // element with another namespaced element inside a METADATA node
+        matches = document.getElementsByTagNameNS(rdf_ns, 'rdf:RDF');
+        assertEquals('rdf matches == 2', 2, matches.length);
+        rdf = rdf[1];
+        assertExists('rdf should exist', rdf);
+        dc = document.createElementNS(dc_ns, 'dc:creator');
+        dc.setAttribute('id', 'myDCNode');
+        textNode = document.createTextNode('Home boy');
+        dc.appendChild(textNode);
+        temp = rdf.parentNode.replaceChild(dc, rdf);
+        assertEquals('dc.parentNode.nodeName == metadata', 'metadata',
+                     dc.parentNode.nodeName);
+        assertEquals('temp == rdf', temp, rdf);
+        assertNull('rdf.parentNode == null', rdf);
                 
         // Test insertBefore
         console.log('Testing insertBefore...');
@@ -1873,6 +2096,9 @@
         // happen if you pass in null, undefined, or an empty string
         // into setAttribute; I believe it should clear out that attribute
         // as if you were deleting it
+        
+        // TODO: Add a test where we dynamically add a new namespace onto
+        // an SVG root node, and then be able to use this namespace on a node
         
         var endTime = new Date().getTime();
         
@@ -3764,6 +3990,8 @@
       <script type="image/svg+xml">
         <svg
            xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+           xmlns:dc="http://purl.org/dc/elements/1.1/"
+           xmlns:cc="http://web.resource.org/cc/"
            version="1.0" id="svg11242"
            x="100"
            y="100"
