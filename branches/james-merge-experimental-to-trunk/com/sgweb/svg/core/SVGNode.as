@@ -611,8 +611,15 @@ package com.sgweb.svg.core
                                 nodeMatrix.b = Math.tan(argsArray[0] * Math.PI / 180.0);
                                 break;
                                 
-                            case "rotate":
-                                nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0); 
+                            case "rotate":                                
+                                if (argsArray.length == 3) {
+                                	nodeMatrix.translate(-argsArray[1], -argsArray[2]);
+                                	nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0);
+                                	nodeMatrix.translate(argsArray[1], argsArray[2]); 
+                                }
+                                else {
+                                    nodeMatrix.rotate(Number(argsArray[0])* Math.PI / 180.0);
+                                } 
                                 break;
                                 
                             default:
