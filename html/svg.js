@@ -559,7 +559,8 @@ will show up in the DOM on all browsers except for Internet Explorer.
 
 Known Issues
 ------------
-Most of the known issues are pretty minor and tend to affect edge conditions:
+Most of the known issues are pretty minor and tend to affect edge conditions
+you won't run into often, but they are documented here for reference:
 
 * If you use the Flash viewer on browsers such as Firefox and Safari, rather
 than Internet Explorer, and embed some SVG into a SCRIPT tag, the Flash will 
@@ -688,6 +689,13 @@ getElementsByTagNameNS(null, 'someTag');
 * Only DOM element, text, and document type nodes are supported across the
 system; this means you can't dynamically work and insert processing
 instructions, comments, attributes, etc.
+
+* The isSupported() method on SVG DOM Nodes is not natively supported by Firefox,
+so therefore doesn't work when the Native Handler is being used:
+
+svgPath.isSupported('Core', '2.0')
+
+It works on Safari and when the Flash Handler is being used on all browsers.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -913,6 +921,44 @@ function parseXML(xml) {
   }
   
   return xmlDoc;
+}
+
+/*
+  Useful for closures and event handlers. Instead of having to do
+  this:
+  
+  var self = this;
+  window.onload = function(){
+      self.init();
+  }
+  
+  you can do this:
+  
+  window.onload = hitch(this, 'init');
+  
+  @param context The instance to bind this method to.
+  @param method A string method name or function object to run on context.
+*/
+function hitch(context, method) {
+  if (typeof method == 'string') {
+    method = context[method];
+  }
+  
+  return function() {
+    var args = undefined;
+    if (arguments.length) {
+      args = arguments;
+    }
+    
+    // even though 'args' might be undefined in some cases and it should
+    // be correct to pass in an undefined value to a function, IE
+    // doesn't like it if there is no value and throws an error
+    if (args) {
+      return method.apply(context, args);
+    } else {
+      return method.apply(context);
+    }
+  }
 }
 
 
@@ -1301,7 +1347,8 @@ extend(SVGWeb, {
   /** Walks the SVG DOM, adding automatic generated IDs to those
       elements which don't have them. We need IDs on all elements
       in order to be able to 'shadow' values between them and
-      the SVG DOM inside the Flash viewer. 
+      the SVG DOM inside the Flash viewer; we don't do this for the
+      Native handler.
       
       @returns Parsed DOM XML Document of the SVG with all elements having 
       an ID. */
@@ -1313,7 +1360,8 @@ extend(SVGWeb, {
     // now walk the parsed DOM
     var current = root;
     while (current) {
-      if (current.nodeType == 1 && !current.getAttribute('id')) {
+      if (this.getHandlerType() == 'flash' && current.nodeType == 1 
+          && !current.getAttribute('id')) {
         current.setAttribute('id', this._generateID('__svg__random__', null));
       }
       
@@ -1418,6 +1466,21 @@ extend(SVGWeb, {
       override it to be informed if an error occurs inside the Flash
       so that we can stop the unit test and report the error. */
   _fireFlashError: function(logString) {
+  },
+  
+  /** Add an .id attribute for non-SVG and non-HTML nodes for the Native
+      Handler, which don't have them by default in order to have parity with the
+      Flash viewer. We have this here instead of on the Native Handlers
+      themselves because the method is called by our patched 
+      document.getElementByTagNameNS and we don't want to do any closure
+      magic there to prevent memory leaks. */
+  _exportID: function(node) {
+    node.__defineGetter__('id', function() {
+      return node.getAttribute('id');
+    });
+    node.__defineSetter__('id', function(newValue) {
+      return node.setAttribute('id', newValue);
+    });
   }
 });
 
@@ -1887,12 +1950,6 @@ extend(FlashHandler, {
     this._onLog(msg);
     svgweb._fireFlashError('FLASH: ' + msg.logString);
     throw 'FLASH: ' + msg.logString;
-  },
-  
-  /** Returns the string '[FlashHandler]' if we are dealing with the Flash 
-      handler. */
-  toString: function() {
-    return '[FlashHandler]';
   }
 });  
 
@@ -1976,7 +2033,14 @@ extend(NativeHandler, {
     document.getElementById = function(id) {
       var result = document._getElementById(id);
       if (result != null) { // Firefox doesn't like 'if (result)'
-        return result;
+        // This is to solve an edge bug on Safari 3;
+        // if you do a replaceChild on a non-SVG, non-HTML node,
+        // the element is still returned by getElementById!
+        if (result.parentNode == null) {
+          return null;
+        } else {
+          return result;
+        }
       }
       
       // The id attribute for namespaced, non-SVG and non-HTML nodes
@@ -1993,12 +2057,7 @@ extend(NativeHandler, {
         // rather than (node.namespaceURI != null)
         if (node.namespaceURI != null && node.namespaceURI != svgns
             && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
-          node.__defineGetter__('id', function() {
-            return node.getAttribute('id');
-          });
-          node.__defineSetter__('id', function(newValue) {
-            return node.setAttribute('id', newValue);
-          });
+          svgweb._exportID(node);
         }
         
         return node;
@@ -2019,6 +2078,18 @@ extend(NativeHandler, {
       
       // firefox doesn't like if (result)
       if (result != null && result.length != 0) {
+        if (ns != null && ns != 'http://www.w3.org/1999/xhtml' && ns != svgns) {
+          // add an .id attribute for non-SVG and non-HTML nodes, which
+          // don't have them by default in order to have parity with the
+          // Flash viewer
+          for (var i = 0; i < result.length; i++) {
+            var node = result[i];
+            svgweb._exportID(node);
+          }
+          
+          return result;
+        }
+        
         return result;
       }
       
@@ -2048,8 +2119,8 @@ extend(NativeHandler, {
                              handler._namespaces);
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
-          for (var j = 0; j < result.length; j++) {
-            var node = result[j];
+          for (var j = 0; j < xpathResults.length; j++) {
+            var node = xpathResults[j];
             
             // add an .id attribute for non-SVG and non-HTML nodes, which
             // don't have them by default in order to have parity with the
@@ -2057,18 +2128,13 @@ extend(NativeHandler, {
             // rather than (node.namespaceURI != null)
             if (node.namespaceURI != null && node.namespaceURI != svgns
                 && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
-              node.__defineGetter__('id', function() {
-                return node.getAttribute('id');
-              });
-              node.__defineSetter__('id', function(newValue) {
-                return node.setAttribute('id', newValue);
-              });
+              svgweb._exportID(node);
             }
             
-            xpathResults.push(node);
+            result.push(node);
           }
           
-          return xpathResults;
+          return result;
         }
       }
       
@@ -2102,12 +2168,6 @@ extend(NativeHandler, {
     }
     
     return results;
-  },
-  
-  /** Returns the string '[NativeHandler]' if we are dealing with the native 
-      handler. */
-  toString: function() {
-    return '[NativeHandler]';
   }
 });
 
