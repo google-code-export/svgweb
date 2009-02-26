@@ -60,6 +60,7 @@ package com.sgweb.svg.nodes
 
         public var renderCurrent:Number = 0;
         public var debug:Object;
+        public var error:Object;
         public var handleScript:Object;
         public var handleOnLoad:Object;
         public var firedOnLoad:Boolean;

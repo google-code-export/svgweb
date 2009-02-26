@@ -60,7 +60,7 @@ package com.sgweb.svg.nodes
         }
         
         override protected function parse():void {
-            if (this._xml.text())) {
+            if (this._xml.text().length() > 0) {
                 this._title = this._xml.text().toString();
             }
         }

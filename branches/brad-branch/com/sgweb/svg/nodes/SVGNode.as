@@ -1291,18 +1291,18 @@ package com.sgweb.svg.nodes
         override public function removeChild(child:DisplayObject):DisplayObject {
             super.removeChild(child);
             if (child is SVGNode) {
+                var node:SVGNode = child as SVGNode;
                 // unregister the element
-                var id:String = child._xml.@id;
+                var id:String = node._xml.@id;
                 if (id != "") {
                     this.svgRoot.unregisterElement(id);
                 } else {
-                    this.error('Programming error: ID required for removeChild');
-                    return;
+                    this.err('Programming error: ID required for removeChild');
+                    throw new Error('Programming error: ID required for removeChild');
                 }
                 
                 // remove from our XML children
-                child._xml.parentNode.removeChild(child._xml);
-                this.numChildren--;
+                node._xml.parentNode.removeChild(node._xml);
                 
                 this.invalidateDisplay();
             }
@@ -1608,7 +1608,7 @@ package com.sgweb.svg.nodes
             this.svgRoot.debug(debugString);
         }
         
-        public function error(errorString:String):void {
+        public function err(errorString:String):void {
             this.svgRoot.error(errorString);
         }
     }
