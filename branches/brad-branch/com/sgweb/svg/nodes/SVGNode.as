@@ -895,7 +895,7 @@ package com.sgweb.svg.nodes
 
                 if (childXML.nodeKind() == 'element') {
 
-                    // This handle strange gradient bugs with negative transforms
+                    // This handles strange gradient bugs with negative transforms
                     // by separating the transform from every object
                     if (childXML.@['transform'] != undefined) {
                         var newChildXML:XML = childXML.copy();
@@ -1277,6 +1277,20 @@ package com.sgweb.svg.nodes
             }
         }
         
+        /** Appends an SVGNode both to our display list as well as to our
+          * XML.
+          **/
+        public function appendChild(child:SVGNode):SVGNode {
+            this.dbg('SVGNode.appendChild, child='+child._xml.localName());
+            
+            this._xml.appendChild(child._xml);
+            this._revision++;
+            this.addChild(child);
+            this.invalidateDisplay();
+
+            return child;
+        }
+        
         /**
          *
          **/
@@ -1289,9 +1303,11 @@ package com.sgweb.svg.nodes
         }
         
         override public function removeChild(child:DisplayObject):DisplayObject {
+            this.dbg('SVGNode.removeChild');
             super.removeChild(child);
             if (child is SVGNode) {
                 var node:SVGNode = child as SVGNode;
+                
                 // unregister the element
                 var id:String = node._xml.@id;
                 if (id != "") {
@@ -1302,7 +1318,12 @@ package com.sgweb.svg.nodes
                 }
                 
                 // remove from our XML children
-                node._xml.parentNode.removeChild(node._xml);
+                for (var i = 0; i < this._xml.children().length(); i++) {
+                    if (this._xml.children()[i] == node._xml) {
+                        delete this._xml.children()[i];
+                        break;
+                    }
+                }
                 
                 this.invalidateDisplay();
             }
@@ -1605,11 +1626,15 @@ package com.sgweb.svg.nodes
         }
 
         public function dbg(debugString:String):void {
-            this.svgRoot.debug(debugString);
+            if (this.svgRoot) {
+                this.svgRoot.debug(debugString);
+            }
         }
         
         public function err(errorString:String):void {
-            this.svgRoot.error(errorString);
+            if (this.svgRoot) {
+                this.svgRoot.error(errorString);
+            }
         }
     }
 }
