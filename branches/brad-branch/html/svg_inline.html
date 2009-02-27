@@ -3,13 +3,13 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
       // if true, we print out each assertion as we run them; helps with
       // identifying where an assertion failed by printing the ones before it
-      var printAsserts = false;
+      var printAsserts = true;
       
       // used to record whether a Flash error has occurred asynchronously
       // so we can halt testing and report the failure
@@ -39,6 +39,7 @@
           flashError = true;
           assertFailed(logMessage);
         }
+        
         
         // make sure renderer string gets set
         renderer = svgweb.getHandlerType();
@@ -1454,7 +1455,7 @@
                      node.nodeName.toLowerCase());
         assertEquals('H1 content should be == hello world!', 'hello world!',
                      node.childNodes[0].data);
-                     
+        
         // Test removeChild
         console.log('Testing removeChild...');
         
@@ -1591,6 +1592,8 @@
                      + 'text for an svg title element',
                      'text for an svg title element',
                      title.firstChild.nodeValue);
+        assertEquals('textNode.parentNode == title', title, 
+                     textNode.parentNode);
         temp = textNode.parentNode.removeChild(textNode);
         assertEquals('title.childNodes.length == 0', 0, 
                      title.childNodes.length);
@@ -2349,7 +2352,12 @@
         // getElementsByTagNameNS(rdf_ns, 'rdf:RDF') should throw an exception
         // as the correct usage is getElementsByTagNameNS(rdf_ns, 'RDF') ).
         // For unimplemented methods, add stubs that throw the DOM
-        // not implemented exception.
+        // not implemented exception. Call getElementById with IDs that
+        // are known not to exist, and call getElementsByTagNameNS with
+        // invalid values. Set null property names and values with set
+        // and getAttribute. Repeatedly delete an element, repeatedly
+        // append an element as well as using the other ways to 
+        // append (replaceChild and insertBefore).
         
         // TODO: I'm not sure if we are correctly handling what should
         // happen if you pass in null, undefined, or an empty string
