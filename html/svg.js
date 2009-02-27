@@ -1068,7 +1068,7 @@ extend(SVGWeb, {
   
   /** Fires when the DOM content of the page is ready to be worked with. */
   _onDOMContentLoaded: function() {
-    console.log('onDOMContentLoaded');
+    //console.log('onDOMContentLoaded');
     
     // quit if this function has already been called
     if (arguments.callee.done) {
@@ -2036,6 +2036,9 @@ extend(NativeHandler, {
         // This is to solve an edge bug on Safari 3;
         // if you do a replaceChild on a non-SVG, non-HTML node,
         // the element is still returned by getElementById!
+        // The element has a null parentNode.
+        // TODO: FIXME: Track down whether this is caused by a memory
+        // leak of some kind
         if (result.parentNode == null) {
           return null;
         } else {
@@ -2377,9 +2380,7 @@ mixin(_Node, {
 });
 
 extend(_Node, {
-  insertBefore: function(newChild /* _Node */, refChild /* _Node */) {
-    var origNewChild = newChild;
-    
+  insertBefore: function(newChild /* _Node */, refChild /* _Node */) {   
     // if the children are DOM nodes, turn them into _Node or _Element
     // references
     newChild = this._getProxyNode(newChild);
@@ -2446,12 +2447,14 @@ extend(_Node, {
                                   position: position});
     }
     
-    return origNewChild;
+    if (isIE) {
+      return newChild._htc;
+    } else {
+      return newChild;
+    }
   },
   
   replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
-    var origOldChild = oldChild;
-    
     // the children could be DOM nodes; turn them into something we can
     // work with, such as _Nodes or _Elements
     newChild = this._getProxyNode(newChild);
@@ -2515,12 +2518,18 @@ extend(_Node, {
     // now process the newChild's node
     this._processAppendedChildren(newChild, this._attached, this._passThrough);
     
-    return origOldChild;
+    // recursively set the removed node to be unattached and to not
+    // pass through changes to Flash anymore
+    oldChild._setUnattached();
+    
+    if (isIE) {
+      return oldChild._htc;
+    } else {
+      return oldChild;
+    }
   },
   
   removeChild: function(child /* _Node or DOM Node */) {
-    var origChild = child;
-    
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getProxyNode(child);
@@ -2557,7 +2566,9 @@ extend(_Node, {
           nodeID = node._textNodeID;
         }
 
-        if (id && nodeID && id == nodeID) {
+        // does this node in the unattachedChildNodes array match the
+        // child passed in?
+        if (childID && nodeID && childID == nodeID) {
           this._unattachedChildNodes.splice(i, 1);
           break;
         } else if (isIE && child.nodeType == _Node.TEXT_NODE
@@ -2570,14 +2581,11 @@ extend(_Node, {
       }
     }
     
-    // on the removed node itself, change it's XML parentNode to be null
-    child._nodeXML.parentNode = null;
-    
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
       // just remove the last getter/setter, since they all resolve
       // to a dynamic function anyway
-      this._childNodes.__defineGetter__(this._childNodes.length - 1, null);
+      delete this._childNodes[this._childNodes.length - 1];
       this._childNodes.length--;
     } else {
       // for IE, remove from _childNodes data structure
@@ -2588,16 +2596,24 @@ extend(_Node, {
     if (this._attached && child._passThrough) {
       if (child.nodeType == _Node.TEXT_NODE) {
         // use the parent node for the ID, since we will clear it's text
-        id = this._nodeXML.getAttribute('id');
+        childID = this._nodeXML.getAttribute('id');
       }
       
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'removeChild',
-                                  elementId: id,
+                                  elementId: childID,
                                   nodeType: child.nodeType});
     }
+    
+    // recursively set the removed node to be unattached and to not
+    // pass through changes to Flash anymore
+    child._setUnattached();
       
-    return origChild;
+    if (isIE) {
+      return child._htc;
+    } else {
+      return child;
+    }
   },
   
   /** Appends the given child. The child can either be _Node, an
@@ -2605,6 +2621,8 @@ extend(_Node, {
       document.createTextNode. We return either a _Node or an HTC reference
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
+    var origChild = child;
+    
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getProxyNode(child);
@@ -2849,6 +2867,11 @@ extend(_Node, {
       to a node that is connected to the actual visible DOM, ready to
       be rendered. */
   _attached: true,
+  
+  /** A flag we put on our _Nodes and _Elements to indicate they are fake;
+      useful if someone wants to 'break' the abstraction and see if a node
+      is a real DOM node or not (which won't have this flag). */
+  _fake: true,
   
   /** Do the getter/setter magic for our attributes for non-IE browsers. */
   _defineNodeAccessors: function() {
@@ -3096,7 +3119,7 @@ extend(_Node, {
         
         var attrName = i.replace(/^_/, '');
         // ignore ID and XML namespace declarations
-        if (attrName == 'id' || /^xmlns:/.test(attrName)) {
+        if (attrName == 'id' || /^xmlns:?/.test(attrName)) {
           continue;
         }
         
@@ -3119,6 +3142,7 @@ extend(_Node, {
       // we simply set the value on the parent node since that
       // handles our current use cases
       var parentID = childXML.parentNode.getAttribute('id');
+      
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
                                   elementId: parentID,
@@ -3253,7 +3277,8 @@ extend(_Node, {
     this._nodeXML = newXML;
     
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
-      var currentChild = this._childNodes[i]; 
+      var currentChild = this._childNodes[i];
+      
       if (isIE) { // array of HTC nodes on IE
         currentChild = currentChild._proxyNode;
       }
@@ -3338,10 +3363,35 @@ extend(_Node, {
     return id;
   },
   
-  /** A flag we put on our _Nodes and _Elements to indicate they are fake;
-      useful if someone wants to 'break' the abstraction and see if a node
-      is a real DOM node or not (which won't have this flag). */
-  _fake: true
+  /** After a node is unattached, such as through a removeChild, this method
+      recursively sets _attached and _passThrough to false on this node
+      and all of its children. */
+  _setUnattached: function() {
+    // TODO: Unroll this to be an iterative rather than recursive algorithm
+    // if it is shown that this is a performance block
+    
+    // get the child nodes to work with
+    var children = this._childNodes;
+    if (!this._attached && !isIE) {
+      children = this._unattachedChildNodes;
+    }
+    
+    // build up our unattachedChildNodes array again so that
+    // if someone continues working with us after removal we will function 
+    // as expected
+    var unattachedChildNodes = [];
+
+    // set each child to be unattached, and also capture a reference to it
+    // for later so that we can work with it while unattached
+    for (var i = 0; children && i < children.length; i++) {
+      unattachedChildNodes.push(children[i]);
+      children[i]._setUnattached();
+    }
+    
+    this._attached = false;
+    this._passThrough = false;
+    this._unattachedChildNodes = unattachedChildNodes;
+  }
 });
 
 
