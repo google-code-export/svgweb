@@ -538,6 +538,21 @@ This will return true on all browsers that natively support SVG; we also patch
 things so that true will be returned if we can use Flash to do all the SVG
 hard work.
 
+Text Nodes
+----------
+
+When you create a text node that you know you will append to something within
+your SVG, you need to add an extra parameter to document.createTextNode:
+
+var textNode = document.createTextNode('hello world', true);
+var metadata = document.getElementsByTagNameNS(svgns, 'metadata');
+metadata.appendChild(textNode);
+
+The final argument should be 'true' to indicate that you will use this
+text node in your SVG. This is needed for some internal machinery to work
+correctly. If you don't give the final argument or set it to false then
+you will get a normal text node that you can use with HTML content.
+
 Whitespace Handling
 -------------------
 
@@ -601,28 +616,6 @@ the HEAD of the page, which fixes the issue.
 is used (i.e. if you create an SVG circle and then attach it to the document, 
 a DOM Mutation event will not fire).
 
-* If you change the value of a text node returned from document.createTextNode
-_after_ appending it to an SVG element, the results won't register.
-For example, if you have the following code:
-
-text = document.createElementNS(svgns, 'text');
-textNode = document.createTextNode('You should see this text');
-text.appendChild(textNode);
-
-If you use the textNode reference to try to change the value, it won't pass
-through:
-
-// changing textNode.data won't register the changes anymore
-textNode.data = 'Even more text';
-
-Instead, you should use the results from appendChild to update your reference:
-
-text = document.createElementNS(svgns, 'text');
-textNode = document.createTextNode('You should see this text');
-textNode = text.appendChild(textNode);
-// will work
-textNode.data = 'This works!'
-
 * There is an edge condition around text node equality. If you have
 a text node as a child, such as in an SVG DESC element, and then grab it:
 
@@ -644,10 +637,6 @@ if (textNode1 === textNode2) // incorrectly resolves to false
 
 This is a rare issue, and would only occur if you have SVG that has
 XML mixed content in it (which SVG does not have in general).
-
-* Newly created text nodes with createTextNode have a prefix and
-namespaceURI of undefined on IE but null on other browsers; we don't
-normalize these since it would be more trouble then its worth.
 
 * You should declare all of the namespaces you want to use on one of your 
 SVG root elements before calling createElementNS; unknown namespaces will
@@ -1813,8 +1802,6 @@ extend(FlashHandler, {
       return;
     }
     
-    var self = this;
-    
     // We don't capture the original document functions as a closure, 
     // as Firefox doesn't like this and will fail to run the original. 
     // Instead, we capture the original versions on the document object
@@ -1907,6 +1894,32 @@ extend(FlashHandler, {
 
       var node = new _Element(qname, prefix, ns);
       return node._getProxyNode();
+    }
+      
+    /** createTextNode
+    
+        We patch this to have a second boolean argument that controls whether
+        the resulting text node will be appended within our SVG tree. We need
+        this so we can return one of our magic _Nodes instead of a native
+        DOM node for later appending and tracking. 
+        @param data Text String.
+        @param forSVG Optional boolean on whether node will be attached to
+        SVG sub-tree. Defaults to false. */
+    document._createTextNode = document.createTextNode;
+    document.createTextNode = function(data, forSVG) {
+      if (!forSVG) {
+        return document._createTextNode(data);
+      } else {
+        // just create a real DOM text node in our internal representation for
+        // our nodeXML value; we will import this anyway into whatever parent
+        // we append this to, which will convert it into a real XML type at
+        // that time
+        var nodeXML = document._createTextNode(data);
+        var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
+        textNode._nodeValue = data;
+        
+        return textNode._getProxyNode();
+      }
     }
   },
   
@@ -2335,14 +2348,12 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     this._childNodes = [];
   }
   
-  // We track text nodes with an internal node ID. This is needed so that
-  // we can satisfy some edge conditions around text node equality. 
-  // Unfortunately we can't create an internal node ID for IE, only for
-  // other browsers, as IE doesn't let us set properties on XML text node
-  // objects. This is ok as we have other ways of getting text node
-  // equality on IE.
-  if (!isIE && nodeType == _Node.TEXT_NODE) {
-    this._nodeXML._textNodeID = svgweb._generateID('__svg__random__', '__text');
+  // We track text nodes with an internal node ID.
+  if (nodeType == _Node.TEXT_NODE) {
+    this._textNodeID = svgweb._generateID('__svg__random__', '__text');
+    if (!isIE) { // IE can't add expandos to XML objects
+      this._nodeXML._textNodeID = this._textNodeID;
+    }
   }
   
   // prepare the getter and setter magic for non-IE browsers
@@ -2377,13 +2388,14 @@ mixin(_Node, {
 
 extend(_Node, {
   insertBefore: function(newChild /* _Node */, refChild /* _Node */) {   
+    // TODO: Throw an exception if either child is a text node, either native
+    // or a text _Node
+    
     // if the children are DOM nodes, turn them into _Node or _Element
     // references
     newChild = this._getFakeNode(newChild);
     refChild = this._getFakeNode(refChild);
-    
-    // TODO: Throw an error if either child is a TEXT_NODE at this time
-    
+
     // get an ID for both children
     var newChildID = this._determineID(newChild);
     var refChildID = this._determineID(refChild);
@@ -2514,6 +2526,8 @@ extend(_Node, {
     // pass through changes to Flash anymore
     oldChild._setUnattached();
     
+    // TODO: BUG: Shouldn't we tell Flash about the removal of oldChild?
+    
     return oldChild._getProxyNode();
   },
   
@@ -2587,6 +2601,7 @@ extend(_Node, {
         childID = this._nodeXML.getAttribute('id');
       }
       
+      // TODO: BUG: We also need to delete the text node associated with this
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'removeChild',
                                   elementId: childID,
@@ -2991,7 +3006,9 @@ extend(_Node, {
     // all calls through the HTC, and implement all the real behavior
     // inside ourselves (inside _Element)
     // Note: we do svg: even if we are dealing with a non-SVG node on IE,
-    // such as sodipodi:namedview
+    // such as sodipodi:namedview; this is necessary so that our svg.htc
+    // file gets invoked for all these nodes, which is bound to the 
+    // svg: namespace
     var nodeName = this.nodeName;
     if (nodeName == '#text') {
       nodeName = '__text'; // text nodes
@@ -3012,16 +3029,17 @@ extend(_Node, {
     
     this._nodeValue = newValue;
     if (this._passThrough) {
-      // get the ID of our parent, since text nodes have no id
-      var parentId = this._nodeXML.parentNode.getAttribute('id');
-      if (!parentId 
+      // get the ID of our parent
+      var parentID = this._nodeXML.parentNode.getAttribute('id');
+      if (!parentID 
           || this._nodeXML.parentNode.nodeType != _Node.ELEMENT_NODE) {
         return newValue;
       }
-
+      
       this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'setText',
-                                  elementId: parentId,
+                                  method: 'setTextData',
+                                  parentId: parentID,
+                                  elementId: this._textNodeID,
                                   text: newValue});
     }
 
@@ -3032,13 +3050,8 @@ extend(_Node, {
       outside callers can pass in DOM nodes, etc. This function turns
       this into something we can work with, such as a _Node or _Element. */
   _getFakeNode: function(child) {
-    // Is 'child' a DOM text node created with document.createTextNode?
-    if (!child._htc && !child._fakeNode && child.nodeType == _Node.TEXT_NODE) {
-      var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, child);
-      textNode._nodeValue = child.data;
-      child = textNode;
-    } else if (isIE && !child._htc) {
-       // an HTC node was passed in for IE; get its _Node
+    // Was HTC node was passed in for IE? If so, get its _Node
+    if (isIE && !child._htc) {
       child = child._fakeNode;
     }
     
@@ -3120,15 +3133,18 @@ extend(_Node, {
                                   elementId: this._getId(),
                                   childId: id });
     } else if (attached && childXML.nodeType == _Node.TEXT_NODE) {
-      // tell Flash about our new text node; for text nodes
-      // we simply set the value on the parent node since that
-      // handles our current use cases
+      var textNodeID = child._textNodeID;
+      
+      // store a reference to our node so we can return it in the future
+      this._handler.document._nodeById['_' + textNodeID] = child;
+      
       var parentID = childXML.parentNode.getAttribute('id');
       
+      // tell Flash about our new text node
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
                                   elementId: parentID,
-                                  text: childXML.nodeValue});
+                                  text: childXML.nodeValue });
     }
     
     // recursively process each child
@@ -3291,13 +3307,12 @@ extend(_Node, {
       id = child._textNodeID;
     }
     
-    // for text nodes on IE, we unfortunately don't have an internal text
-    // node ID for them, so we will have to match on text content
-    
     // FIXME: If there are multiple text nodes with the same content, and
     // someone wants to actually find the middle one versus the first one,
-    // this will fail on IE due to using text content versus a hidden
-    // text node ID
+    // this will fail on IE because we find the matching node based on 
+    // text content versus a text node ID. This is because on IE XML
+    // nodes can't have expando properties, so we can't store our generated
+    // text node ID on the XML node itself to find it again later.
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
       var node = this._nodeXML.childNodes[i];
       var nodeID;
@@ -3334,8 +3349,8 @@ extend(_Node, {
     var id = null;
     if (child.nodeType == _Node.ELEMENT_NODE) {
       id = child._nodeXML.getAttribute('id');
-    } else if (!isIE && child.nodeType == _Node.TEXT_NODE) {
-      id = child._nodeXML._textNodeID;
+    } else if (child.nodeType == _Node.TEXT_NODE) {
+      id = child._textNodeID;
     }
     
     if (id === undefined) {
@@ -4115,12 +4130,8 @@ extend(_Document, {
     // TODO; this is for object tags
   },
   
-  createTextNode: function(textXML /* DOM Text Node */) /* _Node */ {
-    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, textXML, 
-                             this._handler);
-    textNode._nodeValue = textXML.data;
-    
-    return textNode;
+  createTextNode: function(text /* DOM Text Node */) /* _Node */ {
+    // TODO; this is for object tags
   },
   
   getElementById: function(id) /* _Element */ {

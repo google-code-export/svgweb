@@ -975,7 +975,7 @@
         
         // append the node to an SVG node and ensure the values are correct, 
         // and when changed pass through to the Flash
-        textNode = document.createTextNode('hello world');
+        textNode = document.createTextNode('hello world', true);
         textNode = format.appendChild(textNode);
         assertExists('svgText should have a DOM TEXT NODE', textNode);
         assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
@@ -1290,15 +1290,12 @@
         assertNull('dc.previousSibling == null', dc.previousSibling);
         assertNull('dc.nextSibling == null', dc.nextSibling);
         assertEquals('dc.childNodes.length == 0', 0, dc.childNodes.length);
-        text = document.createTextNode('Brad Neuberg');
+        text = document.createTextNode('Brad Neuberg', true);
         dc.appendChild(text);
         assertEquals('text.nodeType == 3', 3, text.nodeType);
         assertEquals('text.nodeName == #text', '#text', text.nodeName);
-        // newly created text nodes with createTextNode have a prefix and
-        // namespaceURI of undefined on IE but null on other browsers; we don't
-        // normalize these since it would be more trouble then its worth
-        assertEquals('text.prefix == null', null, text.prefix);
-        assertEquals('text.namespaceURI == null', null, text.namespaceURI);
+        assertNull('text.prefix == null', text.prefix);
+        assertNull('text.namespaceURI == null', text.namespaceURI);
         assertEquals('dc.childNodes.length == 1', 1, dc.childNodes.length);
         dc.setAttribute('id', 'dcCreator');
         svg = document.getElementById('mySVG');
@@ -1394,7 +1391,7 @@
         // create a DESC element, then create a text node, and append
         // both together than append the DESC element to a G element
         desc = document.createElementNS(svgns, 'desc');
-        text = document.createTextNode('This is a test desc');
+        text = document.createTextNode('This is a test desc', true);
         desc.appendChild(text);
         group = document.getElementById('layer1');
         group.appendChild(desc);
@@ -1416,13 +1413,9 @@
         //
         // change the value of the text node through the original object
         // returned from createTextNode
-        //
-        // FIXME: This currently does not work and is a known issue since
-        // changing the value of a text node returned from createTextNode
-        // _after_ being appended to document does not register change
-        //text.nodeValue = 'Changed desc';
-        //assertEquals('desc.childNodes[0].nodeValue == Changed desc',
-        //             'Changed desc', desc.childNodes[0].nodeValue);
+        text.nodeValue = 'Changed desc';
+        assertEquals('desc.childNodes[0].nodeValue == Changed desc',
+                     'Changed desc', desc.childNodes[0].nodeValue);
         
         // create an SVG TEXT element, append it, then change it's
         // text value and make sure that shows up
@@ -1430,7 +1423,7 @@
         text.setAttribute('x', 0);
         text.setAttribute('y', 300);
         text.setAttribute('fill', 'green');
-        textNode = document.createTextNode('You should see this text');
+        textNode = document.createTextNode('You should see this text', true);
         textNode = text.appendChild(textNode);
         group = document.getElementById('myGroup');
         group.appendChild(text);
@@ -1450,6 +1443,18 @@
         node.appendChild(document.createTextNode('hello world!'));
         document.getElementsByTagName('body')[0].appendChild(node);
         node = document.getElementById('testH1');
+        assertExists('H1 node should exist', node);
+        assertEquals('node.nodeName == h1', 'h1', 
+                     node.nodeName.toLowerCase());
+        assertEquals('H1 content should be == hello world!', 'hello world!',
+                     node.childNodes[0].data);
+                     
+        // do same test but use createTextNode(text, false)
+        node = document.createElementNS('http://www.w3.org/1999/xhtml', 'h1');
+        node.setAttribute('id', 'anotherH1');
+        node.appendChild(document.createTextNode('hello world!'), false);
+        document.getElementsByTagName('body')[0].appendChild(node);
+        node = document.getElementById('anotherH1');
         assertExists('H1 node should exist', node);
         assertEquals('node.nodeName == h1', 'h1', 
                      node.nodeName.toLowerCase());
@@ -1585,7 +1590,8 @@
         
         // remove a text node _before_ appending to DOM on an SVG Title
         // element
-        textNode = document.createTextNode('text for an svg title element');
+        textNode = document.createTextNode('text for an svg title element', 
+                                           true);
         title = document.createElementNS(svgns, 'title');
         title.appendChild(textNode);
         assertEquals('title.firstChild.nodeValue == '
@@ -1605,7 +1611,8 @@
         
         // remove a text node _after_ appending to DOM on an SVG Title
         // element using object reference
-        textNode = document.createTextNode('text for an svg title element');
+        textNode = document.createTextNode('text for an svg title element', 
+                                           true);
         title = document.createElementNS(svgns, 'title');
         title.appendChild(textNode);
         group = document.createElementNS(svgns, 'g');
@@ -1633,7 +1640,7 @@
         // remove a text node _before_ appending to DOM on an SVG Desc
         // element
         desc = document.createElementNS(svgns, 'desc');
-        textNode = document.createTextNode('desc node content');
+        textNode = document.createTextNode('desc node content', true);
         desc.appendChild(textNode);
         temp = desc.removeChild(textNode);
         assertEquals('desc.childNodes.length == 0', 0, 
@@ -1647,7 +1654,7 @@
         // remove a text node _after_ appending to DOM on an SVG Desc
         // element; get the element reference by using getElementById
         desc = document.createElementNS(svgns, 'desc');
-        textNode = document.createTextNode('desc node content');
+        textNode = document.createTextNode('desc node content', true);
         desc.id = 'myDesc2';
         desc.appendChild(textNode);
         group = document.createElementNS(svgns, 'g');
@@ -1667,7 +1674,7 @@
         // remove a text node _before_ appending to DOM on an SVG Text
         // element
         text = document.createElementNS(svgns, 'text');
-        textNode = document.createTextNode('text node content');
+        textNode = document.createTextNode('text node content', true);
         text.appendChild(textNode);
         temp = text.removeChild(textNode);
         assertEquals('text.childNodes.length == 0', 0, 
@@ -1681,7 +1688,7 @@
         // remove a text node _after_ appending to DOM on an SVG Text
         // element
         group.appendChild(text);
-        text.appendChild(document.createTextNode('more content'));
+        text.appendChild(document.createTextNode('more content', true));
         textNode = text.lastChild;
         temp = text.removeChild(text.lastChild);
         assertEquals('text.childNodes.length == 0', 0, 
@@ -1697,7 +1704,8 @@
         group.appendChild(document.createElementNS(svgns, 'g'));
         group.lastChild.appendChild(document.createElementNS(svgns, 'text'));
         group.lastChild.childNodes[0].appendChild(
-                                    document.createTextNode('hello content!'));
+                                    document.createTextNode('hello content!',
+                                                            true));
         assertEquals('svg.lastChild == group', group, svg.lastChild);
         group.parentNode.removeChild(svg.lastChild);
         assertEquals('svg.childNodes.length == lengthBefore - 1',
@@ -1743,7 +1751,7 @@
         
         // remove a namespaced metadata child and text node before appending
         dc = document.createElementNS(dc_ns, 'dc:creator');
-        text = document.createTextNode('Bryan Neuberg');
+        text = document.createTextNode('Bryan Neuberg', true);
         dc.appendChild(text);
         temp = dc.removeChild(text);
         assertEquals('dc.childNodes.length == 0', 0, dc.childNodes.length);
@@ -1879,10 +1887,11 @@
         
         // before anything is appended to the DOM, replace the text in an
         // SVG Title element
-        textNode = document.createTextNode('text for an svg title element');
+        textNode = document.createTextNode('text for an svg title element', 
+                                           true);
         title = document.createElementNS(svgns, 'title');
         title.appendChild(textNode);
-        textNode2 = document.createTextNode('replace text for svg title');
+        textNode2 = document.createTextNode('replace text for svg title', true);
         temp = title.replaceChild(textNode2, textNode);
         assertNull('title.parentNode == null', title.parentNode);
         assertEquals('textNode2.parentNode == title', title, 
@@ -1895,7 +1904,8 @@
         // SVG Title element; get the title we will do replacing on
         // through getElementsByTagNameNS
         title = document.createElementNS(svgns, 'title');
-        textNode = document.createTextNode('more text for an svg title element');
+        textNode = document.createTextNode('more text for an svg title element',
+                                           true);
         title.appendChild(textNode);
         title.id = 'myTitle1';
         matches = document.getElementsByTagNameNS(svgns, 'g');
@@ -1919,7 +1929,7 @@
         }
         assertExists('title should exist', title);
         lengthBefore = group.childNodes.length;
-        textNode2 = document.createTextNode('more replaced text');
+        textNode2 = document.createTextNode('more replaced text', true);
         textNode = title.firstChild;
         temp = title.replaceChild(textNode2, title.firstChild);
         assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -1935,9 +1945,9 @@
         text.setAttribute('x', 0);
         text.setAttribute('y', 300);
         text.setAttribute('fill', 'green');
-        textNode = document.createTextNode('You should see this text');
+        textNode = document.createTextNode('You should see this text', true);
         textNode = text.appendChild(textNode);
-        textNode2 = document.createTextNode('Replaced text');
+        textNode2 = document.createTextNode('Replaced text', true);
         temp = text.replaceChild(textNode2, textNode);
         assertNull('textNode.parentNode == null', textNode.parentNode);
         assertEquals('textNode2.parentNode == text', text, 
@@ -1952,7 +1962,8 @@
         text = document.createElementNS(svgns, 'text');
         text.setAttribute('x', 300);
         text.setAttribute('y', 300);
-        textNode = document.createTextNode('more text for an svg text element');
+        textNode = document.createTextNode('more text for an svg text element',
+                                           true);
         text.appendChild(textNode);
         text.id = 'myText1';
         matches = document.getElementsByTagNameNS(svgns, 'g');
@@ -1976,7 +1987,7 @@
         }
         assertExists('text should exist', text);
         lengthBefore = group.childNodes.length;
-        textNode2 = document.createTextNode('more replaced text');
+        textNode2 = document.createTextNode('more replaced text', true);
         textNode = text.firstChild;
         temp = text.replaceChild(textNode2, text.firstChild);
         assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -1991,8 +2002,8 @@
         // before anything is appended to the DOM, replace the text in a
         // namespaced element inside a METADATA node
         rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
-        textNode = document.createTextNode('Some RDF text');
-        textNode2 = document.createTextNode('Some more RDF text');
+        textNode = document.createTextNode('Some RDF text', true);
+        textNode2 = document.createTextNode('Some more RDF text', true);
         rdf.appendChild(textNode);
         var metadata = document.createElementNS(svgns, 'metadata');
         metadata.appendChild(rdf);
@@ -2013,7 +2024,7 @@
         assertEquals('rdf matches.length == 2', 2, matches.length);
         rdf = matches[1];
         assertExists('rdf should exist', rdf);
-        textNode2 = document.createTextNode('Replaced RDF text');
+        textNode2 = document.createTextNode('Replaced RDF text', true);
         textNode = rdf.firstChild;
         temp = rdf.replaceChild(textNode2, rdf.firstChild);
         assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -2029,7 +2040,7 @@
         var metadata = document.createElementNS(svgns, 'metadata');
         metadata.appendChild(rdf);
         dc = document.createElementNS(dc_ns, 'dc:creator');
-        textNode = document.createTextNode('Home boy');
+        textNode = document.createTextNode('Home boy', true);
         dc.appendChild(textNode);
         temp = metadata.replaceChild(dc, rdf);
         assertNull('rdf.parentNode == null', rdf.parentNode);
@@ -2049,7 +2060,7 @@
         assertExists('rdf should exist', rdf);
         dc = document.createElementNS(dc_ns, 'dc:creator');
         dc.setAttribute('id', 'myDCNode');
-        textNode = document.createTextNode('Home boy');
+        textNode = document.createTextNode('Home boy', true);
         dc.appendChild(textNode);
         rdf.id = 'myRDFNode';
         assertExists('document.getElementById(myRDFNode) should exist',
@@ -2145,11 +2156,11 @@
         // before anything is appended to the DOM, insert a namespaced
         // element before another one in the METADATA section
         rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
-        textNode = document.createTextNode('rdf content');
+        textNode = document.createTextNode('rdf content', true);
         rdf.appendChild(textNode);
         var metadata = document.createElementNS(svgns, 'metadata');
         dc = document.createElementNS(dc_ns, 'dc:creator');
-        textNode = document.createTextNode('Home boy2');
+        textNode = document.createTextNode('Home boy2', true);
         dc.appendChild(textNode);
         metadata.appendChild(rdf);
         temp = metadata.insertBefore(dc, rdf);
@@ -2168,7 +2179,7 @@
         // element before another one in the METADATA section
         metadata = document.getElementById('metadata7');
         dc = document.createElementNS(dc_ns, 'dc:description');
-        dc.appendChild(document.createTextNode('This is a description'));
+        dc.appendChild(document.createTextNode('This is a description', true));
         rdf = metadata.firstChild;
         temp = metadata.insertBefore(dc, rdf);
         assertEquals('metadata.childNodes.length == 2', 2,
@@ -2217,7 +2228,7 @@
         text.setAttribute('y', 250);
         assertFalse('text before append, text.hasChildNodes() == false',
                    text.hasChildNodes());
-        textNode = document.createTextNode('hello world');
+        textNode = document.createTextNode('hello world', true);
         text.appendChild(textNode);
         assertTrue('text before append, text.hasChildNodes() == true',
                    text.hasChildNodes());
@@ -2251,7 +2262,7 @@
         text.setAttribute('y', 250);
         assertTrue('text before append, text.hasAttributes() == true',
                    text.hasAttributes());
-        textNode = document.createTextNode('hello world');
+        textNode = document.createTextNode('hello world', true);
         text.appendChild(textNode);
         assertFalse('textNode before append, textNode.hasAttributes() == false', 
                     textNode.hasAttributes());
@@ -2357,7 +2368,9 @@
         // invalid values. Set null property names and values with set
         // and getAttribute. Repeatedly delete an element, repeatedly
         // append an element as well as using the other ways to 
-        // append (replaceChild and insertBefore).
+        // append (replaceChild and insertBefore). Try to append a text
+        // node created incorrectly with document.createTextNode to an SVG
+        // node, which should throw an exception.
         
         // TODO: I'm not sure if we are correctly handling what should
         // happen if you pass in null, undefined, or an empty string
