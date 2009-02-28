@@ -1098,7 +1098,6 @@ extend(SVGWeb, {
     }
     
     // setup which renderer we will use
-    console.log('this.config.use='+this.config.use);
     this.renderer;
     if (this.config.use == 'flash') {
       this.renderer = FlashHandler;
@@ -2336,7 +2335,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   if (passThrough === undefined) {
     passThrough = false;
   }
-  
   this._passThrough = passThrough;
   
   if (!isIE) {
@@ -2347,6 +2345,13 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   } else { // IE
     this._childNodes = [];
   }
+  
+  // We keep an cachedChildNodes array around until we are truly
+  // attached that we can depend on to serve out our childNodes; we can't
+  // use this._childNodes since that ends up calling our getter/setter
+  // magic, which depends on having a real Flash handler assigned to
+  // us to do the hard work.
+  this._cachedChildNodes = [];
   
   // We track text nodes with an internal node ID.
   if (nodeType == _Node.TEXT_NODE) {
@@ -2366,15 +2371,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     // element since that is already a proper Behavior as it embeds our
     // Flash control inside of _SVGSVGElement
     this._createHTC();
-  }
-  
-  // We keep an cachedChildNodes array around until we are truly
-  // attached that we can depend on to serve out our childNodes; we can't
-  // use this._childNodes since that ends up calling our getter/setter
-  // magic, which depends on having a real Flash handler assigned to
-  // us to do the hard work.
-  if (typeof this._cachedChildNodes == 'undefined') {
-    this._cachedChildNodes = [];
   }
 }
 
@@ -2419,31 +2415,19 @@ extend(_Node, {
     this._nodeXML.insertBefore(importedNode, refChild._nodeXML);
     this._processAppendedChildren(newChild, this._attached, this._passThrough);
     
-    // update our internal list of childNodes
-    // manually add our child to our internal list of nodes; we can't use the 
-    // getter or setter for childNodes yet because we don't have a real handler 
-    // since we aren't attached to the DOM
-    if (isIE) {
-      if (position >= (this._childNodes.length - 1)) { // oldChild was at end
-        this._childNodes.push(newChild._htc);
-      } else { // oldChild was somwhere at beginning or middle
-        this._childNodes = this._childNodes.splice(position + 1, 0, 
-                                                   newChild._htc);
-      }
-    } else { // non-IE browsers
+    // add to our cached list of child nodes
+    if (position >= (this._cachedChildNodes.length - 1)) {
+      this._cachedChildNodes.push(newChild);
+    } else { // oldChild was somwhere at beginning or middle
+      this._cachedChildNodes = 
+                this._cachedChildNodes.splice(position + 1, 0, newChild);
+    }
+    
+    if (!isIE) {
       // _childNodes is an object literal instead of an array
       // to support getter/setter magic for Safari
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
-      
-      if (!this._attached) {
-        if (position >= (this._cachedChildNodes.length - 1)) {
-          this._cachedChildNodes.push(newChild);
-        } else { // oldChild was somwhere at beginning or middle
-          this._cachedChildNodes = 
-                    this._cachedChildNodes.splice(position + 1, 0, newChild);
-        }
-      }
     }
     
     // inform Flash about the change
@@ -2478,30 +2462,19 @@ extend(_Node, {
     // remove oldChild
     this.removeChild(origOldChild);
     
-    // manually add our child to our internal list of nodes; we can't use the 
-    // getter or setter for childNodes yet because we don't have a real handler 
-    // since we aren't attached to the DOM
-    if (isIE) {
-      if (position >= (this._childNodes.length - 1)) { // oldChild was at end
-        this._childNodes.push(newChild._htc);
-      } else { // oldChild was somwhere at beginning or middle
-        this._childNodes = this._childNodes.splice(position + 1, 0, 
-                                                   newChild._htc);
-      }
-    } else { // non-IE browsers
+    // add to our cached list of child nodes
+    if (position >= (this._cachedChildNodes.length - 1)) {
+      this._cachedChildNodes.push(newChild);
+    } else { // oldChild was somwhere at beginning or middle
+      this._cachedChildNodes = 
+                this._cachedChildNodes.splice(position + 1, 0, newChild);
+    }
+    
+    if (!isIE) {
       // _childNodes is an object literal instead of an array
       // to support getter/setter magic for Safari
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
-      
-      if (!this._attached) {
-        if (position >= (this._cachedChildNodes.length - 1)) {
-          this._cachedChildNodes.push(newChild);
-        } else { // oldChild was somwhere at beginning or middle
-          this._cachedChildNodes = 
-                    this._cachedChildNodes.splice(position + 1, 0, newChild);
-        }
-      }
     }
     
     // import newChild into ourselves, telling importNode not to do an
@@ -2556,29 +2529,26 @@ extend(_Node, {
       child._htc.parentNode.removeChild(child._htc);
     }
     
-    // if unattached, remove from cachedChildNodes array
-    if (!this._attached) {
-      for (var i = 0; i < this._cachedChildNodes.length; i++) {
-        var node = this._cachedChildNodes[i];
-        var nodeID;
-        if (node.nodeType == _Node.ELEMENT_NODE) {
-          nodeID = node.getAttribute('id');
-        } else if (node.nodeType == _Node.TEXT_NODE && !isIE
-                   && node._textNodeID) {
-          nodeID = node._textNodeID;
-        }
+    for (var i = 0; i < this._cachedChildNodes.length; i++) {
+      var node = this._cachedChildNodes[i];
+      var nodeID;
+      if (node.nodeType == _Node.ELEMENT_NODE) {
+        nodeID = node.getAttribute('id');
+      } else if (node.nodeType == _Node.TEXT_NODE && !isIE
+                 && node._textNodeID) {
+        nodeID = node._textNodeID;
+      }
 
-        // does this node in the cachedChildNodes array match the
-        // child passed in?
-        if (childID && nodeID && childID == nodeID) {
+      // does this node in the cachedChildNodes array match the
+      // child passed in?
+      if (childID && nodeID && childID == nodeID) {
+        this._cachedChildNodes.splice(i, 1);
+        break;
+      } else if (isIE && child.nodeType == _Node.TEXT_NODE
+                 && node.nodeType == _Node.TEXT_NODE) {
+        if (child.nodeValue == node.nodeValue) {
           this._cachedChildNodes.splice(i, 1);
           break;
-        } else if (isIE && child.nodeType == _Node.TEXT_NODE
-                   && node.nodeType == _Node.TEXT_NODE) {
-          if (child.nodeValue == node.nodeValue) {
-            this._cachedChildNodes.splice(i, 1);
-            break;
-          }
         }
       }
     }
@@ -2620,29 +2590,25 @@ extend(_Node, {
       document.createTextNode. We return either a _Node or an HTC reference
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
-    var origChild = child;
-    
+    //console.log('appendChild, child='+child.nodeName+', this='+this.nodeName);  
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
     
     // add the child's XML to our own
     this._importNode(child);
-
-    // manually add our child to our internal list of nodes; we can't use the 
-    // getter or setter for childNodes yet because we don't have a real handler 
-    // since we aren't attached to the DOM
-    if (isIE) {
+    
+    // manually add our child to our internal list of nodes
+    this._cachedChildNodes.push(child);
+    if (this._attached && isIE) {
       this._childNodes.push(child._htc);
-    } else {
+    }
+    
+    if (!isIE) {
       // _childNodes is an object literal instead of an array
       // to support getter/setter magic for Safari
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
-      
-      if (!this._attached) {
-        this._cachedChildNodes.push(child);
-      }
     }
     
     // process the children (add IDs, add a handler, etc.)
@@ -2652,7 +2618,11 @@ extend(_Node, {
   },
   
   hasChildNodes: function() /* Boolean */ {
-    return (this._childNodes.length > 0);
+    if (this._attached) {
+      return (this._childNodes.length > 0);
+    } else {
+      return (this._cachedChildNodes.length > 0);
+    }
   },
   
   // Note: cloneNode and normalize not supported
@@ -2739,15 +2709,8 @@ extend(_Node, {
       return null;
     }
     
-    // see if we have the node cached in our child nodes first; this
-    // is to support an edge case related to text nodes so that
-    // repeated calls to this method getting text nodes will return
-    // identical object references of the text node. We want to 
-    // return cached text nodes rather than recreating them inside
-    // of getNode(); we have no way to add an ID to text nodes to track
-    // them, so this is the best we can do
-    if (this._childNodes[0]) {
-      return this._childNodes[0];
+    if (this._cachedChildNodes[0]) {
+      return this._cachedChildNodes[0]._getProxyNode();
     } else {
       // no node cached
       return this._handler.document._getNode(childXML);
@@ -2764,16 +2727,10 @@ extend(_Node, {
       return null;
     }
     
-    // see if we have the node cached in our child nodes first; this
-    // is to support an edge case related to text nodes so that
-    // repeated calls to this method getting text nodes will return
-    // identical object references of the text node. We want to 
-    // return cached text nodes rather than recreating them inside
-    // of getNode(); we have no way to add an ID to text nodes to track
-    // them, so this is the best we can do
-    if (this._childNodes.length > 0 
-        && this._childNodes[this._childNodes.length - 1]) {
-      return this._childNodes[this._childNodes.length - 1];
+    if (this._cachedChildNodes.length > 0 
+        && this._cachedChildNodes[this._cachedChildNodes.length - 1]) {
+      var child = this._cachedChildNodes[this._cachedChildNodes.length - 1];
+      return child._getProxyNode();
     } else {
       // no node cached
       return this._handler.document._getNode(childXML);
@@ -2943,16 +2900,11 @@ extend(_Node, {
     var self = this;
     
     this._childNodes.__defineGetter__(i, function() {
-      if (self._attached) { // we are attached to a real, live DOM
+      if (self._cachedChildNodes[i]) {
+        return self._cachedChildNodes[i];
+      } else if (self._attached) { // we are attached to a real, live DOM
         var childXML = self._nodeXML.childNodes[i];
         return self._handler.document._getNode(childXML);
-      } else {
-        // we aren't attached to the DOM yet, and therefore have no
-        // Flash handler we can depend on. We had to build up an
-        // cachedChildNodes array earlier whenever appendChild
-        // was called that we can depend on until we are attached to a
-        // real, live DOM.
-        return self._cachedChildNodes[i];
       }
     });
   },
@@ -2973,7 +2925,18 @@ extend(_Node, {
     // our __defineGetter__ magic in _defineNodeAccessors.
     var results = [];
     
-    if (this._nodeXML.childNodes.length == this._childNodes.length) {
+    if (!this._attached) {
+      // we aren't attached to the DOM yet, and therefore have no
+      // Flash handler we can depend on. We had to build up an
+      // cachedChildNodes array earlier whenever appendChild
+      // was called that we can depend on until we are attached to a
+      // real, live DOM.
+      var results = [];
+      for (var i = 0; i < this._cachedChildNodes.length; i++) {
+        results.push(this._cachedChildNodes[i]._htc);
+      }
+      return results;
+    } else if (this._nodeXML.childNodes.length == this._childNodes.length) {
       // we've already processed our childNodes before
       return this._childNodes;
     } else {
@@ -3028,6 +2991,7 @@ extend(_Node, {
     }
     
     this._nodeValue = newValue;
+    
     if (this._passThrough) {
       // get the ID of our parent
       var parentID = this._nodeXML.parentNode.getAttribute('id');
@@ -3037,9 +3001,8 @@ extend(_Node, {
       }
       
       this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'setTextData',
+                                  method: 'setText',
                                   parentId: parentID,
-                                  elementId: this._textNodeID,
                                   text: newValue});
     }
 
@@ -3133,8 +3096,6 @@ extend(_Node, {
                                   elementId: this._getId(),
                                   childId: id });
     } else if (attached && childXML.nodeType == _Node.TEXT_NODE) {
-      var textNodeID = child._textNodeID;
-      
       // store a reference to our node so we can return it in the future
       this._handler.document._nodeById['_' + textNodeID] = child;
       
@@ -3143,57 +3104,26 @@ extend(_Node, {
       // tell Flash about our new text node
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
-                                  elementId: parentID,
+                                  parentId: parentID,
                                   text: childXML.nodeValue });
     }
     
     // recursively process each child
-    
-    // we get this child's childnodes in a different way based on the
-    // browser; see appendChild() for details on why we need the
-    // cachedChildNodes structure
-    var children;
-    if (isIE) {
-      children = child._childNodes;
-    } else {
-      children = child._cachedChildNodes;
-    }
-    
-    if (children) {
-      for (var i = 0; i < children.length; i++) {
-        var fakeNode;
-        
-        if (isIE) {
-          // this._childNodes is an array of HTC proxies for IE; we want the real
-          // _Node or _Element behind the HTC
-          fakeNode = children[0]._fakeNode;
-        } else {
-          fakeNode = children[0];
-        }
-        
-        child._processAppendedChildren(fakeNode, attached, passThrough);
-      }
+    for (var i = 0; i < child._cachedChildNodes.length; i++) {
+      var fakeNode = child._cachedChildNodes[i];
+      child._processAppendedChildren(fakeNode, attached, passThrough);
     }
     
     child._attached = attached;
     child._passThrough = passThrough;
     
-    if (attached) {
-      if (!isIE && child._cachedChildNodes) { 
-        // we don't use the cachedChildNodes data structure for IE;
-        // see appendChild for details why
-        
-        // keep a pointer to any text nodes we made while unattached
-        // so we can return the same instance later
-        for (var i = 0; i < child._cachedChildNodes.length; i++) {
-          var currentNode = child._cachedChildNodes[i];
-          var textNodeID = currentNode._nodeXML._textNodeID;
-          this._handler.document._nodeById['_' + textNodeID] = currentNode;
-        }
-        
-        // clean up our data structure that we used while unattached to
-        // serve our child nodes for non-IE browsers
-        delete child._cachedChildNodes;
+    // keep a pointer to any text nodes we made while unattached
+    // so we can return the same instance later
+    if (attached && !isIE) { // no XML expandos on IE, so can't do this there
+      for (var i = 0; i < child._cachedChildNodes.length; i++) {
+        var currentNode = child._cachedChildNodes[i];
+        var textNodeID = currentNode._nodeXML._textNodeID;
+        this._handler.document._nodeById['_' + textNodeID] = currentNode;
       }
     }
   },
@@ -3255,7 +3185,7 @@ extend(_Node, {
     } else { // non-IE browsers
       importedNode = doc.importNode(child._nodeXML, true);
     }
-      
+    
     // complete the import into ourselves
     if (doAppend) {
       this._nodeXML.appendChild(importedNode);
@@ -3275,12 +3205,7 @@ extend(_Node, {
     this._nodeXML = newXML;
     
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
-      var currentChild = this._childNodes[i];
-      
-      if (isIE) { // array of HTC nodes on IE
-        currentChild = currentChild._fakeNode;
-      }
-      
+      var currentChild = this._cachedChildNodes[i];
       currentChild._nodeXML = this._nodeXML.childNodes[i];
       currentChild._importChildXML(this._nodeXML.childNodes[i]);
     }
@@ -3366,26 +3291,12 @@ extend(_Node, {
   _setUnattached: function() {
     // TODO: Unroll this to be an iterative rather than recursive algorithm
     // if it is shown that this is a performance block
-    
-    // get the child nodes to work with
-    var children = this._childNodes;
-    if (!this._attached && !isIE) {
-      children = this._cachedChildNodes;
-    }
-    
-    // build up our cachedChildNodes array again so that
-    // if someone continues working with us after removal we will function 
-    // as expected
-    var cachedChildNodes = [];
 
     // set each child to be unattached, and also capture a reference to it
     // for later so that we can work with it while unattached
-    for (var i = 0; children && i < children.length; i++) {
-      cachedChildNodes.push(children[i]);
-      children[i]._setUnattached();
+    for (var i = 0; i < this._cachedChildNodes.length; i++) {
+      cachedChildNodes.push(this._cachedChildNodes[i]);
     }
-    
-    this._cachedChildNodes = cachedChildNodes;
     
     this._attached = false;
     this._passThrough = false;
@@ -3774,7 +3685,7 @@ extend(_Style, {
     @param handler The FlashHandler that we are a part of. */
 function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
   // superclass constructor
-  _Element.apply(this, ['svg', null, svgns, nodeXML, handler]);
+  _Element.apply(this, ['svg', null, svgns, nodeXML, handler, true]);
   
   this._nodeXML = nodeXML;
   this._svgString = svgString;

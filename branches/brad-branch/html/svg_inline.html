@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
@@ -1363,6 +1363,9 @@
         assertExists('dcCreator2 should exist', dc);
         dc = document.getElementById('dcCreator');
         assertNull('dcCreator should not exist', dc);
+        
+        // TODO: Create multiple children and append all of them one at a time
+        // to ensure that appending past a first element works
             
         // create a linearGradient, create its stop elements,
         // attach it to a defs element, then modify
@@ -1802,6 +1805,127 @@
         // and its such an edge condition that I doubt it's needed
         assertNull('stop.parentNode == null', stop.parentNode);
         assertEquals('temp == stop', temp, stop);
+        
+        // remove a node then test the firstChild, lastChild, nextSibling,
+        // and previousSibling properties on the removed tree
+        metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+        metadata.parentNode.removeChild(metadata);
+        svg = document.getElementById('svg2');
+        assertNull('metadata.parentNode == null', metadata.parentNode);
+        assertNull('metadata.previousSibling == null', metadata.previousSibling);
+        assertNull('metadata.nextSibling == null', metadata.nextSibling);
+        assertExists('metadata.firstChild should exist', metadata.firstChild);
+        assertExists('metadata.lastChild should exist', metadata.lastChild);
+        assertEquals('metadata.firstChild == metadata.lastChild)',
+                     metadata.lastChild, metadata.firstChild);
+        rdf = metadata.firstChild;
+        assertEquals('metadata.firstChild.nodeName == rdf:RDF', 'rdf:RDF',
+                     rdf.nodeName);
+        assertExists('metadata.firstChild.parentNode', 
+                     rdf.parentNode);
+        assertEquals('metadata.firstChild.parentNode == metadata node',
+                     metadata, rdf.parentNode);
+        assertExists('metadata.firstChild.childNodes[0] should exist',
+                     rdf.childNodes[0]);
+        cc = metadata.firstChild.childNodes[0];
+        assertEquals('cc.nodeName == cc:Work', 'cc:Work', cc.nodeName);
+        assertEquals('cc.parentNode == RDF node', rdf, cc.parentNode);
+        assertExists('cc.firstChild should exist', cc.firstChild);
+        assertExists('cc.lastChild should exist', cc.lastChild);
+        format = cc.firstChild;
+        type = cc.lastChild;
+        assertEquals('cc.firstChild.nodeName == dc:format', 'dc:format',
+                     format.nodeName);
+        assertEquals('cc.lastChild.nodeName == dc:type', 'dc:type',
+                     type.nodeName);
+        assertEquals('cc.firstChild.nextSibling == cc.lastChild',
+                     cc.lastChild, format.nextSibling);
+        assertNull('cc.firstChild.previousSibling == null', 
+                   format.previousSibling);
+        assertEquals('cc.lastChild.previousSibling == cc.firstChild',
+                     cc.firstChild, type.previousSibling);
+        assertNull('cc.lastChild.nextSibling == null', 
+                   type.nextSibling);
+        assertExists('format.firstChild should exist (text node)',
+                     format.firstChild);
+        assertExists('format.lastChild should exist (text node)',
+                     format.lastChild);
+        assertEquals('format.childNodes.length == 1', 1, 
+                     format.childNodes.length);
+        child = format.firstChild;
+        assertEquals('format.firstChild.nodeType == 3', 3, child.nodeType);
+        assertEquals('format.firstChild.data == image/svg+xml', 'image/svg+xml', 
+                     child.data);
+        assertEquals('format.firstChild.parentNode == format', format,
+                     child.parentNode);
+        assertNull('format.firstChild.nextSibling == null', child.nextSibling);
+        assertNull('format.firstChild.nextSibling == null', 
+                   child.previousSibling);
+        // now re-append
+        metadata = svg.appendChild(metadata);
+        assertEquals('metadata.parentNode == svg2', svg, 
+                     metadata.parentNode);
+        assertExists('metadata.previousSibling should exist', 
+                     metadata.previousSibling);
+        assertEquals('metadata.previousSibling.nodeName == sodipodi:namedview',
+                     'sodipodi:namedview', metadata.previousSibling.nodeName);
+        assertExists('metadata.nextSibling should exist', metadata.nextSibling);
+        assertEquals('metadata.nextSibling.nodeName == g', 'g',
+                     metadata.nextSibling.nodeName);
+        assertEquals('metadata.nextSibling.id == layer1', 'layer1',
+                     metadata.nextSibling.id);
+        assertExists('metadata.firstChild should exist', metadata.firstChild);
+        assertExists('metadata.lastChild should exist', metadata.lastChild);
+        assertEquals('metadata.firstChild == metadata.lastChild)',
+                     metadata.lastChild, metadata.firstChild);
+        rdf = metadata.firstChild;
+        assertEquals('metadata.firstChild.nodeName == rdf:RDF', 'rdf:RDF',
+                     rdf.nodeName);
+        assertExists('metadata.firstChild.parentNode', 
+                     rdf.parentNode);
+        assertEquals('metadata.firstChild.parentNode == metadata node',
+                     metadata, rdf.parentNode);
+        assertExists('metadata.firstChild.childNodes[0] should exist',
+                     rdf.childNodes[0]);
+        cc = metadata.firstChild.childNodes[0];
+        assertEquals('cc.nodeName == cc:Work', 'cc:Work', cc.nodeName);
+        assertEquals('cc.parentNode == RDF node', rdf, cc.parentNode);
+        assertExists('cc.firstChild should exist', cc.firstChild);
+        assertExists('cc.lastChild should exist', cc.lastChild);
+        format = cc.firstChild;
+        type = cc.lastChild;
+        assertEquals('cc.firstChild.nodeName == dc:format', 'dc:format',
+                     format.nodeName);
+        assertEquals('cc.lastChild.nodeName == dc:type', 'dc:type',
+                     type.nodeName);
+        assertEquals('cc.firstChild.nextSibling == cc.lastChild',
+                     cc.lastChild, format.nextSibling);
+        assertNull('cc.firstChild.previousSibling == null', 
+                   format.previousSibling);
+        assertEquals('cc.lastChild.previousSibling == cc.firstChild',
+                     cc.firstChild, type.previousSibling);
+        assertNull('cc.lastChild.nextSibling == null', 
+                   type.nextSibling);
+        assertExists('format.firstChild should exist (text node)',
+                     format.firstChild);
+        assertExists('format.lastChild should exist (text node)',
+                     format.lastChild);
+        assertEquals('format.childNodes.length == 1', 1, 
+                     format.childNodes.length);
+        child = format.firstChild;
+        assertEquals('format.firstChild.nodeType == 3', 3, child.nodeType);
+        assertEquals('format.firstChild.data == image/svg+xml', 'image/svg+xml', 
+                     child.data);
+        assertEquals('format.firstChild.parentNode == format', format,
+                     child.parentNode);
+        assertNull('format.firstChild.nextSibling == null', child.nextSibling);
+        assertNull('format.firstChild.nextSibling == null', 
+                   child.previousSibling);
+                   
+        // TODO: Create a test where we remove a child and its subtree, then
+        // later on remove the _parent_ of that child, then test parentNode,
+        // firstChild, etc. on this to make sure that the double removal
+        // hasn't messed things up in terms of cached values
         
         // Test replaceChild
         console.log('Testing replaceChild...');
