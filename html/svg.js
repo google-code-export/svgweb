@@ -2357,13 +2357,13 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     this._createHTC();
   }
   
-  // We keep an unattachedChildNodes array around until we are truly
+  // We keep an cachedChildNodes array around until we are truly
   // attached that we can depend on to serve out our childNodes; we can't
   // use this._childNodes since that ends up calling our getter/setter
   // magic, which depends on having a real Flash handler assigned to
   // us to do the hard work.
-  if (typeof this._unattachedChildNodes == 'undefined') {
-    this._unattachedChildNodes = [];
+  if (typeof this._cachedChildNodes == 'undefined') {
+    this._cachedChildNodes = [];
   }
 }
 
@@ -2425,11 +2425,11 @@ extend(_Node, {
       this._childNodes.length++;
       
       if (!this._attached) {
-        if (position >= (this._unattachedChildNodes.length - 1)) {
-          this._unattachedChildNodes.push(newChild);
+        if (position >= (this._cachedChildNodes.length - 1)) {
+          this._cachedChildNodes.push(newChild);
         } else { // oldChild was somwhere at beginning or middle
-          this._unattachedChildNodes = 
-                    this._unattachedChildNodes.splice(position + 1, 0, newChild);
+          this._cachedChildNodes = 
+                    this._cachedChildNodes.splice(position + 1, 0, newChild);
         }
       }
     }
@@ -2483,11 +2483,11 @@ extend(_Node, {
       this._childNodes.length++;
       
       if (!this._attached) {
-        if (position >= (this._unattachedChildNodes.length - 1)) {
-          this._unattachedChildNodes.push(newChild);
+        if (position >= (this._cachedChildNodes.length - 1)) {
+          this._cachedChildNodes.push(newChild);
         } else { // oldChild was somwhere at beginning or middle
-          this._unattachedChildNodes = 
-                    this._unattachedChildNodes.splice(position + 1, 0, newChild);
+          this._cachedChildNodes = 
+                    this._cachedChildNodes.splice(position + 1, 0, newChild);
         }
       }
     }
@@ -2542,10 +2542,10 @@ extend(_Node, {
       child._htc.parentNode.removeChild(child._htc);
     }
     
-    // if unattached, remove from unattachedChildNodes array
+    // if unattached, remove from cachedChildNodes array
     if (!this._attached) {
-      for (var i = 0; i < this._unattachedChildNodes.length; i++) {
-        var node = this._unattachedChildNodes[i];
+      for (var i = 0; i < this._cachedChildNodes.length; i++) {
+        var node = this._cachedChildNodes[i];
         var nodeID;
         if (node.nodeType == _Node.ELEMENT_NODE) {
           nodeID = node.getAttribute('id');
@@ -2554,15 +2554,15 @@ extend(_Node, {
           nodeID = node._textNodeID;
         }
 
-        // does this node in the unattachedChildNodes array match the
+        // does this node in the cachedChildNodes array match the
         // child passed in?
         if (childID && nodeID && childID == nodeID) {
-          this._unattachedChildNodes.splice(i, 1);
+          this._cachedChildNodes.splice(i, 1);
           break;
         } else if (isIE && child.nodeType == _Node.TEXT_NODE
                    && node.nodeType == _Node.TEXT_NODE) {
           if (child.nodeValue == node.nodeValue) {
-            this._unattachedChildNodes.splice(i, 1);
+            this._cachedChildNodes.splice(i, 1);
             break;
           }
         }
@@ -2626,7 +2626,7 @@ extend(_Node, {
       this._childNodes.length++;
       
       if (!this._attached) {
-        this._unattachedChildNodes.push(child);
+        this._cachedChildNodes.push(child);
       }
     }
     
@@ -2934,10 +2934,10 @@ extend(_Node, {
       } else {
         // we aren't attached to the DOM yet, and therefore have no
         // Flash handler we can depend on. We had to build up an
-        // unattachedChildNodes array earlier whenever appendChild
+        // cachedChildNodes array earlier whenever appendChild
         // was called that we can depend on until we are attached to a
         // real, live DOM.
-        return self._unattachedChildNodes[i];
+        return self._cachedChildNodes[i];
       }
     });
   },
@@ -3135,12 +3135,12 @@ extend(_Node, {
     
     // we get this child's childnodes in a different way based on the
     // browser; see appendChild() for details on why we need the
-    // unattachedChildNodes structure
+    // cachedChildNodes structure
     var children;
     if (isIE) {
       children = child._childNodes;
     } else {
-      children = child._unattachedChildNodes;
+      children = child._cachedChildNodes;
     }
     
     if (children) {
@@ -3163,21 +3163,21 @@ extend(_Node, {
     child._passThrough = passThrough;
     
     if (attached) {
-      if (!isIE && child._unattachedChildNodes) { 
-        // we don't use the unattachedChildNodes data structure for IE;
+      if (!isIE && child._cachedChildNodes) { 
+        // we don't use the cachedChildNodes data structure for IE;
         // see appendChild for details why
         
         // keep a pointer to any text nodes we made while unattached
         // so we can return the same instance later
-        for (var i = 0; i < child._unattachedChildNodes.length; i++) {
-          var currentNode = child._unattachedChildNodes[i];
+        for (var i = 0; i < child._cachedChildNodes.length; i++) {
+          var currentNode = child._cachedChildNodes[i];
           var textNodeID = currentNode._nodeXML._textNodeID;
           this._handler.document._nodeById['_' + textNodeID] = currentNode;
         }
         
         // clean up our data structure that we used while unattached to
         // serve our child nodes for non-IE browsers
-        delete child._unattachedChildNodes;
+        delete child._cachedChildNodes;
       }
     }
   },
@@ -3355,22 +3355,22 @@ extend(_Node, {
     // get the child nodes to work with
     var children = this._childNodes;
     if (!this._attached && !isIE) {
-      children = this._unattachedChildNodes;
+      children = this._cachedChildNodes;
     }
     
-    // build up our unattachedChildNodes array again so that
+    // build up our cachedChildNodes array again so that
     // if someone continues working with us after removal we will function 
     // as expected
-    var unattachedChildNodes = [];
+    var cachedChildNodes = [];
 
     // set each child to be unattached, and also capture a reference to it
     // for later so that we can work with it while unattached
     for (var i = 0; children && i < children.length; i++) {
-      unattachedChildNodes.push(children[i]);
+      cachedChildNodes.push(children[i]);
       children[i]._setUnattached();
     }
     
-    this._unattachedChildNodes = unattachedChildNodes;
+    this._cachedChildNodes = cachedChildNodes;
     
     this._attached = false;
     this._passThrough = false;
