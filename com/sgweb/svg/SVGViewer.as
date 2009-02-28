@@ -744,7 +744,11 @@ package com.sgweb.svg
                         parent = this.js_createdElements[jsMsg.parentId];
                     }
                     else {
-                        parent = this._svgRoot.getElement(jsMsg.elementId);
+                        parent = this._svgRoot.getElement(jsMsg.parentId);
+                    }
+                    
+                    if (!parent) {
+                        this.error("error:setText: parent with ID not found: " + jsMsg.parentId);
                     }
                     
                     if (parent.hasText()) {
