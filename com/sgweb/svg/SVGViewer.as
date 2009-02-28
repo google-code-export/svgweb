@@ -497,7 +497,7 @@ package com.sgweb.svg
         }
         
         public function js_handleInvoke(jsMsg:Object):Object {
-            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element:SVGNode;
             var textNode:XMLNode;
             
