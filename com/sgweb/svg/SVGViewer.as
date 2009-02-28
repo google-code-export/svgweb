@@ -71,7 +71,6 @@ package com.sgweb.svg
         private var js_handler:String = '';
         private var js_uniqueId:String = "";
         private var js_createdElements:Object = {};
-        private var js_createdTextNodes:Object = {};
         private var js_savedXML:String = "";
         private var myXMLLoader:URLLoader= new URLLoader ();
         private var myHTMLLoader:URLLoader= new URLLoader ();
@@ -498,7 +497,7 @@ package com.sgweb.svg
         
         public function js_handleInvoke(jsMsg:Object):Object {
             //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
-            var element:SVGNode;
+            var element:SVGNode, parent:SVGNode;
             var textNode:XMLNode;
             
             try {
@@ -587,11 +586,10 @@ package com.sgweb.svg
                     // Get the child node
 
                     // Add the SVGNode
-                    var childNode:SVGNode;
+                    var childNode;
                     if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
                         childNode=this.js_createdElements[jsMsg.childId];
-                    }
-                    else {
+                    } else {
                         childNode = this._svgRoot.getElement(jsMsg.childId);
                     }
                 
@@ -686,22 +684,6 @@ package com.sgweb.svg
                         this.error("error:setAttribute: id not found: " + jsMsg.elementId);
                     }
                 }
-                if (jsMsg.method == 'setText') {
-                    // Sets the text node of an element that can have text
-                    // node children
-                   
-                    // Get the parent of the text node
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element = this.js_createdElements[jsMsg.elementId];
-                    }
-                    else {
-                        element = this._svgRoot.getElement(jsMsg.elementId);
-                    }
-                
-                    if (element.hasText()) {
-                        element.setText(jsMsg.text);
-                    }
-                }
                 if (jsMsg.method == 'removeChild') {
                     // Removes the element
                 
@@ -714,7 +696,6 @@ package com.sgweb.svg
                         element = this._svgRoot.getElement(jsMsg.elementId);
                     }
                     
-                    var parentNode = element.parent;
                     if (jsMsg.nodeType == 1) { // ELEMENT
                         element.parent.removeChild(element);
                     } else if (jsMsg.nodeType == 3) { // TEXT
@@ -757,6 +738,18 @@ package com.sgweb.svg
                     refChild.parent.insertBefore(jsMsg.position, newChild, refChild);
                     
                     refChild.invalidateDisplay();
+                }
+                if (jsMsg.method == 'setText') {                    
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this._svgRoot.getElement(jsMsg.elementId);
+                    }
+                    
+                    if (parent.hasText()) {
+                        parent.setText(jsMsg.text);
+                    }
                 }
             } catch (err) {
                 this.error("error:" + err);
