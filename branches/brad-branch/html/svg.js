@@ -1906,11 +1906,7 @@ extend(FlashHandler, {
       }
 
       var node = new _Element(qname, prefix, ns);
-      if (isIE) {
-        return node._htc;
-      } else {
-        return node;
-      }
+      return node._getProxyNode();
     }
   },
   
@@ -2447,11 +2443,7 @@ extend(_Node, {
                                   position: position});
     }
     
-    if (isIE) {
-      return newChild._htc;
-    } else {
-      return newChild;
-    }
+    return newChild._getProxyNode();
   },
   
   replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
@@ -2522,11 +2514,7 @@ extend(_Node, {
     // pass through changes to Flash anymore
     oldChild._setUnattached();
     
-    if (isIE) {
-      return oldChild._htc;
-    } else {
-      return oldChild;
-    }
+    return oldChild._getProxyNode();
   },
   
   removeChild: function(child /* _Node or DOM Node */) {
@@ -2609,11 +2597,7 @@ extend(_Node, {
     // pass through changes to Flash anymore
     child._setUnattached();
       
-    if (isIE) {
-      return child._htc;
-    } else {
-      return child;
-    }
+    return child._getProxyNode();  
   },
   
   /** Appends the given child. The child can either be _Node, an
@@ -2649,11 +2633,7 @@ extend(_Node, {
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
     
-    if (isIE) {
-      return child._htc;
-    } else {
-      return child;
-    } 
+    return child._getProxyNode();
   },
   
   hasChildNodes: function() /* Boolean */ {
@@ -3394,6 +3374,21 @@ extend(_Node, {
     
     this._attached = false;
     this._passThrough = false;
+  },
+  
+  /** When we return results to external callers, such as appendChild,
+      we can return one of our fake _Node or _Elements. However, for IE,
+      we have to return the HTC 'proxy' through which callers manipulate
+      things. The HTC is what allows us to override core DOM methods and
+      know when property and style changes have happened, for example. */
+  _getProxyNode: function() {
+    if (!isIE) {
+      return this;
+    } else {
+      // for IE, the developer will manipulate things through the UI/HTC
+      // proxy facade so that we can know about property changes, etc.
+      return this._htc;
+    }
   }
 });
 
@@ -4264,13 +4259,7 @@ extend(_Document, {
                       + nodeXML.nodeType);
     }
     
-    if (!isIE) {
-      return node;
-    } else {
-      // for IE, the developer will manipulate things through the UI/HTC
-      // proxy facade so that we can know about property changes, etc.
-      return node._htc;
-    }
+    return node._getProxyNode();
   },
   
   // Note: createDocumentFragment, createComment, createCDATASection,
