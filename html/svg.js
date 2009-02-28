@@ -2641,7 +2641,9 @@ extend(_Node, {
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
       
-      this._unattachedChildNodes.push(child);
+      if (!this._attached) {
+        this._unattachedChildNodes.push(child);
+      }
     }
     
     // process the children (add IDs, add a handler, etc.)
@@ -3388,9 +3390,10 @@ extend(_Node, {
       children[i]._setUnattached();
     }
     
+    this._unattachedChildNodes = unattachedChildNodes;
+    
     this._attached = false;
     this._passThrough = false;
-    this._unattachedChildNodes = unattachedChildNodes;
   }
 });
 
