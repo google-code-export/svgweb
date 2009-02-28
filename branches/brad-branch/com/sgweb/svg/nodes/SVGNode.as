@@ -1281,8 +1281,6 @@ package com.sgweb.svg.nodes
           * XML.
           **/
         public function appendChild(child:SVGNode):SVGNode {
-            this.dbg('SVGNode.appendChild, child='+child._xml.localName());
-            
             this._xml.appendChild(child._xml);
             this._revision++;
             this.addChild(child);
@@ -1303,7 +1301,6 @@ package com.sgweb.svg.nodes
         }
         
         override public function removeChild(child:DisplayObject):DisplayObject {
-            this.dbg('SVGNode.removeChild');
             super.removeChild(child);
             if (child is SVGNode) {
                 var node:SVGNode = child as SVGNode;

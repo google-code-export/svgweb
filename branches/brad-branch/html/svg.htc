@@ -70,7 +70,7 @@
       // and append the HTC node, even if it isn't really appended to our 
       // actual SVG DOM. Also only fire for SVG root nodes since we don't
       // really care about this event for other node types.
-      if (this._proxyNode._attached && this._proxyNode.nodeName == 'svg') {
+      if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg') {
         // indicate that we are now loaded
         var msg = { type: 'event', 
                     eventType: 'onHTCLoaded',
@@ -188,143 +188,143 @@
     function getAttribute(attrName) { 
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode.getAttribute(attrName);
+        return this._fakeNode.getAttribute(attrName);
       }
     }
     
     function setAttribute(attrName, attrValue) {
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode.setAttribute(attrName, attrValue);
+        return this._fakeNode.setAttribute(attrName, attrValue);
       }
     }
     
     function appendChild(child) {
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode.appendChild(child);
+        return this._fakeNode.appendChild(child);
       }
     }
     
     // getter/setter accessors; they delegate back into the
     // svg.js _Element and _Node classes
     
-    function _getNodeName() { return this._proxyNode.nodeName; }
-    function _getNodeType() { return this._proxyNode.nodeType; }
-    function _getLocalName() { return this._proxyNode.localName; }
-    function _getPrefix() { return this._proxyNode.prefix; }
-    function _getNamespaceURI() { return this._proxyNode.namespaceURI; }
+    function _getNodeName() { return this._fakeNode.nodeName; }
+    function _getNodeType() { return this._fakeNode.nodeType; }
+    function _getLocalName() { return this._fakeNode.localName; }
+    function _getPrefix() { return this._fakeNode.prefix; }
+    function _getNamespaceURI() { return this._fakeNode.namespaceURI; }
     
     function _getChildNodes() {
-      return this._proxyNode._getChildNodes();
+      return this._fakeNode._getChildNodes();
     }
     
-    function _getParentNode() { return this._proxyNode._getParentNode(); }
-    function _getFirstChild() { return this._proxyNode._getFirstChild(); }
-    function _getLastChild() { return this._proxyNode._getLastChild(); }
+    function _getParentNode() { return this._fakeNode._getParentNode(); }
+    function _getFirstChild() { return this._fakeNode._getFirstChild(); }
+    function _getLastChild() { return this._fakeNode._getLastChild(); }
     function _getPreviousSibling() { 
-        return this._proxyNode._getPreviousSibling(); 
+        return this._fakeNode._getPreviousSibling(); 
     }
-    function _getNextSibling() { return this._proxyNode._getNextSibling(); }
+    function _getNextSibling() { return this._fakeNode._getNextSibling(); }
     
-    function _getNodeValue() { return this._proxyNode._nodeValue; }
+    function _getNodeValue() { return this._fakeNode._nodeValue; }
     function _setNodeValue(newValue) {
-      return this._proxyNode._setNodeValue(newValue);
+      return this._fakeNode._setNodeValue(newValue);
     }
     
     function _getTextContent() {
       // _Node.TEXT_NODE is not visible here (global variables aren't
       // shared between HTC and it's host page)
-      if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._nodeValue;
+      if (this._fakeNode.nodeType == 3) { // text node
+        return this._fakeNode._nodeValue;
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
       }
     }
     
     function _setTextContent(newValue) {
-      if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._setNodeValue(newValue);
+      if (this._fakeNode.nodeType == 3) { // text node
+        return this._fakeNode._setNodeValue(newValue);
       } else {
         return ''; // Firefox and Safari return empty strings for .textContent
       }
     }
     
     function _getData() {
-      if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._nodeValue;
+      if (this._fakeNode.nodeType == 3) { // text node
+        return this._fakeNode._nodeValue;
       } else {
         return undefined;
       }
     }
     
     function _setData(newValue) { 
-      if (this._proxyNode.nodeType == 3) { // text node
-        return this._proxyNode._setNodeValue(newValue);
+      if (this._fakeNode.nodeType == 3) { // text node
+        return this._fakeNode._setNodeValue(newValue);
       } else {
         return undefined;
       }
     }
     
     function _getId() {
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._getId(); 
+        return this._fakeNode._getId(); 
       }
     }
     
     function _setId(v) { 
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._setId(v); 
+        return this._fakeNode._setId(v); 
       }
     }
     
-    function _getInnerHTML() { return this._proxyNode._getInnerHTML(); }
-    function _setInnerHTML(v) { return this._proxyNode._setInnerHTML(v); }
+    function _getInnerHTML() { return this._fakeNode._getInnerHTML(); }
+    function _setInnerHTML(v) { return this._fakeNode._setInnerHTML(v); }
     
     // SVGSVGElement and SVGUseElement only properties
     
     function _getX() {
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._getX(); 
+        return this._fakeNode._getX(); 
       }
     }
     
     function _getY() { 
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._getY(); 
+        return this._fakeNode._getY(); 
       }
     }
     
     function _getWidth() { 
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._getWidth(); 
+        return this._fakeNode._getWidth(); 
       }
     }
     
     function _getHeight() { 
-      if (this._proxyNode.nodeType == 3) { // text node
+      if (this._fakeNode.nodeType == 3) { // text node
         return undefined;
       } else {
-        return this._proxyNode._getHeight(); 
+        return this._fakeNode._getHeight(); 
       }
     }
   </script>

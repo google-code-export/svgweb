@@ -2383,8 +2383,8 @@ extend(_Node, {
   insertBefore: function(newChild /* _Node */, refChild /* _Node */) {   
     // if the children are DOM nodes, turn them into _Node or _Element
     // references
-    newChild = this._getProxyNode(newChild);
-    refChild = this._getProxyNode(refChild);
+    newChild = this._getFakeNode(newChild);
+    refChild = this._getFakeNode(refChild);
     
     // TODO: Throw an error if either child is a TEXT_NODE at this time
     
@@ -2457,8 +2457,8 @@ extend(_Node, {
   replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
     // the children could be DOM nodes; turn them into something we can
     // work with, such as _Nodes or _Elements
-    newChild = this._getProxyNode(newChild);
-    oldChild = this._getProxyNode(oldChild);
+    newChild = this._getFakeNode(newChild);
+    oldChild = this._getFakeNode(oldChild);
     
     // get an ID for the oldChild if one is available
     var oldChildID = this._determineID(oldChild);
@@ -2532,7 +2532,7 @@ extend(_Node, {
   removeChild: function(child /* _Node or DOM Node */) {
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
-    child = this._getProxyNode(child);
+    child = this._getFakeNode(child);
     
     // remove child from our list of XML
     var findResults = this._findChild(child);
@@ -2625,7 +2625,7 @@ extend(_Node, {
     
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
-    child = this._getProxyNode(child);
+    child = this._getFakeNode(child);
     
     // add the child's XML to our own
     this._importNode(child);
@@ -3017,7 +3017,7 @@ extend(_Node, {
       nodeName = '__text'; // text nodes
     }
     var htc = document.createElement('svg:' + this.nodeName);
-    htc._proxyNode = this;
+    htc._fakeNode = this;
     htc._handler = this._handler;
     this._htcContainer.appendChild(htc);
     this._htc = htc;
@@ -3051,15 +3051,15 @@ extend(_Node, {
   /** For functions like appendChild, insertBefore, removeChild, etc.
       outside callers can pass in DOM nodes, etc. This function turns
       this into something we can work with, such as a _Node or _Element. */
-  _getProxyNode: function(child) {
+  _getFakeNode: function(child) {
     // Is 'child' a DOM text node created with document.createTextNode?
-    if (!child._htc && !child._proxyNode && child.nodeType == _Node.TEXT_NODE) {
+    if (!child._htc && !child._fakeNode && child.nodeType == _Node.TEXT_NODE) {
       var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, child);
       textNode._nodeValue = child.data;
       child = textNode;
     } else if (isIE && !child._htc) {
        // an HTC node was passed in for IE; get its _Node
-      child = child._proxyNode;
+      child = child._fakeNode;
     }
     
     return child;
@@ -3165,17 +3165,17 @@ extend(_Node, {
     
     if (children) {
       for (var i = 0; i < children.length; i++) {
-        var proxyNode;
+        var fakeNode;
         
         if (isIE) {
           // this._childNodes is an array of HTC proxies for IE; we want the real
           // _Node or _Element behind the HTC
-          proxyNode = children[0]._proxyNode;
+          fakeNode = children[0]._fakeNode;
         } else {
-          proxyNode = children[0];
+          fakeNode = children[0];
         }
         
-        child._processAppendedChildren(proxyNode, attached, passThrough);
+        child._processAppendedChildren(fakeNode, attached, passThrough);
       }
     }
     
@@ -3282,7 +3282,7 @@ extend(_Node, {
       var currentChild = this._childNodes[i];
       
       if (isIE) { // array of HTC nodes on IE
-        currentChild = currentChild._proxyNode;
+        currentChild = currentChild._fakeNode;
       }
       
       currentChild._nodeXML = this._nodeXML.childNodes[i];
@@ -3775,7 +3775,7 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     // that we can kick off the HTC running so that it can insert our Flash
     // as a shadow DOM
     var svgDOM = document.createElement('svg:svg');
-    svgDOM._proxyNode = this;
+    svgDOM._fakeNode = this;
     svgDOM._handler = handler;
     
     // store the real parentNode and sibling info so we can return it; calling
@@ -4235,7 +4235,7 @@ extend(_Document, {
       
         // store a reference to ourselves. 
         // unfortunately IE doesn't support 'expandos' on XML parser objects, 
-        // so we can't just say nodeXML._proxyNode = node, so we have to use a 
+        // so we can't just say nodeXML._fakeNode = node, so we have to use a 
         // lookup table
         var elementId = node._nodeXML.getAttribute('id');
         this._nodeById['_' + elementId] = node;
