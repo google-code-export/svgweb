@@ -2352,6 +2352,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // magic, which depends on having a real Flash handler assigned to
   // us to do the hard work.
   this._cachedChildNodes = [];
+  this._cachedParentNode = null;
   
   // We track text nodes with an internal node ID.
   if (nodeType == _Node.TEXT_NODE) {
@@ -2430,6 +2431,13 @@ extend(_Node, {
       this._childNodes.length++;
     }
     
+    // set our new correct cached next and previous siblings, which we keep
+    // around to hand out in case we become unattached
+    oldChild._cachedPreviousSibling = oldChild._getPreviousSibling();
+    oldChild._cachedNextSibling = oldChild._getNextSibling();
+    newChild._cachedPreviousSibling = newChild._getPreviousSibling();
+    newChild._cachedNextSibling = newChild._getNextSibling();
+    
     // inform Flash about the change
     if (this._attached && this._passThrough) {
       this._handler.sendToFlash({ type: 'invoke', 
@@ -2497,7 +2505,14 @@ extend(_Node, {
     
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
-    oldChild._setUnattached();
+    oldChild._setUnattached(null);
+    
+    // set our new correct cached next and previous siblings, which we keep
+    // around to hand out in case we become unattached
+    oldChild._cachedPreviousSibling = null;
+    oldChild._cachedNextSibling = null;
+    newChild._cachedPreviousSibling = newChild._getPreviousSibling();
+    newChild._cachedNextSibling = newChild._getNextSibling();
     
     // TODO: BUG: Shouldn't we tell Flash about the removal of oldChild?
     
@@ -2529,6 +2544,7 @@ extend(_Node, {
       child._htc.parentNode.removeChild(child._htc);
     }
     
+    // remove from our list of cachedChildNodes
     for (var i = 0; i < this._cachedChildNodes.length; i++) {
       var node = this._cachedChildNodes[i];
       var nodeID;
@@ -2580,7 +2596,12 @@ extend(_Node, {
     
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
-    child._setUnattached();
+    child._setUnattached(null);
+    
+    // set our cached next and previous siblings to null now that we are
+    // unattached
+    child._cachedPreviousSibling = null;
+    child._cachedNextSibling = null;
       
     return child._getProxyNode();  
   },
@@ -2613,6 +2634,11 @@ extend(_Node, {
     
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
+    
+    // set our new correct cached next and previous siblings, which we keep
+    // around to hand out in case we become unattached
+    child._cachedPreviousSibling = child._getPreviousSibling();
+    child._cachedNextSibling = child._getNextSibling();
     
     return child._getProxyNode();
   },
@@ -2696,7 +2722,11 @@ extend(_Node, {
       return null;
     }
     
-    return this._handler.document._getNode(parentXML);
+    if (this._attached) {
+      return this._handler.document._getNode(parentXML);
+    } else {
+      return this._cachedParentNode;
+    }
   },
   
   _getFirstChild: function() {
@@ -2765,8 +2795,11 @@ extend(_Node, {
       return null;
     }
     
-    var elem = this._handler.document._getNode(siblingXML);
-    return elem;
+    if (this._attached) {
+      return this._handler.document._getNode(siblingXML);
+    } else {
+      return this._cachedPreviousSibling;
+    }
   },
   
   _getNextSibling: function() { 
@@ -2795,8 +2828,11 @@ extend(_Node, {
       return null;
     }
     
-    var elem = this._handler.document._getNode(siblingXML);
-    return elem;
+    if (this._attached) {
+      return this._handler.document._getNode(siblingXML);
+    } else {
+      return this._cachedNextSibling;
+    }
   },
   
   // Note: 'attributes' property not supported since we don't support
@@ -2920,6 +2956,10 @@ extend(_Node, {
       @returns An array of either the HTC proxies for our nodes if IE,
       or an array of _Element and _Nodes for other browsers. */
   _getChildNodes: function() {
+    if (!isIE) {
+      return this._childNodes;
+    }
+    
     // NOTE: for IE we return a real Array, while for other browsers
     // our _childNodes array is an object literal in order to do
     // our __defineGetter__ magic in _defineNodeAccessors.
@@ -3116,6 +3156,7 @@ extend(_Node, {
     
     child._attached = attached;
     child._passThrough = passThrough;
+    child._cachedParentNode = this;
     
     // keep a pointer to any text nodes we made while unattached
     // so we can return the same instance later
@@ -3204,10 +3245,16 @@ extend(_Node, {
   _importChildXML: function(newXML) {
     this._nodeXML = newXML;
     
+    var children = this._getChildNodes();
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
-      var currentChild = this._cachedChildNodes[i];
+      var currentChild = children[i];
       currentChild._nodeXML = this._nodeXML.childNodes[i];
       currentChild._importChildXML(this._nodeXML.childNodes[i]);
+    }
+    
+    // copy over our internal _textNodeID to the new XML node for text nodes
+    if (this.nodeType == _Node.TEXT_NODE) {
+      this._nodeXML._textNodeID = this._textNodeID;
     }
   },
   
@@ -3248,7 +3295,7 @@ extend(_Node, {
         nodeID = node._textNodeID;
       }
       
-      if (id && nodeID && id == nodeID) {
+      if (id && nodeID && id === nodeID) {
         results.position = i;
         results.node = node;
         return results;
@@ -3287,19 +3334,33 @@ extend(_Node, {
   
   /** After a node is unattached, such as through a removeChild, this method
       recursively sets _attached and _passThrough to false on this node
-      and all of its children. */
-  _setUnattached: function() {
-    // TODO: Unroll this to be an iterative rather than recursive algorithm
-    // if it is shown that this is a performance block
+      and all of its children. 
+      
+      @param parentNode _Node or _Element. The parent of this child, used so
+      that we can cache the parent and return it if someone calls
+      parentNode on this child while unattached. */
+  _setUnattached: function(parentNode) {   
+    // we cache the parent node and sibling information so it is available 
+    // when unattached
+    this._cachedParentNode = parentNode;
+    this._cachedPreviousSibling = this._getPreviousSibling();
+    this._cachedNextSibling = this._getNextSibling();
 
     // set each child to be unattached, and also capture a reference to it
-    // for later so that we can work with it while unattached
-    for (var i = 0; i < this._cachedChildNodes.length; i++) {
-      cachedChildNodes.push(this._cachedChildNodes[i]);
+    // for later so that we can work with it while unattached. This will also
+    // force all children to be created if they were never fetched before
+    // so we can have a real reference to them.
+    var children = this._getChildNodes();
+    this._cachedChildNodes = [];
+    for (var i = 0; i < children.length; i++) {
+      var child = children[i];
+      child._setUnattached(this);
+      this._cachedChildNodes.push(child);
     }
     
     this._attached = false;
     this._passThrough = false;
+    this._handler = null;
   },
   
   /** When we return results to external callers, such as appendChild,
