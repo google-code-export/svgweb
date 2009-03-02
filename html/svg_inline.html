@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -1937,7 +1937,7 @@
         // later on remove the _parent_ of that child, then test parentNode,
         // firstChild, etc. on this to make sure that the double removal
         // hasn't messed things up in terms of cached values
-        
+        /*
         // Test replaceChild
         console.log('Testing replaceChild...');
         
@@ -2449,7 +2449,7 @@
             assertFalse('path.isSupported(HTML, 2.0) == false',
                          path.isSupported('HTML', '2.0'));
           }
-        }
+        }*/
         
         // TODO: Test dynamically creating an SVG root
         
