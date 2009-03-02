@@ -20,6 +20,7 @@
         var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
         var dc_ns = "http://purl.org/dc/elements/1.1/";
         var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+        var cc_ns = "http://web.resource.org/cc/";
         
         var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
             path, gradient, group, child, whitespaceAreNodes, metadata,
@@ -1809,6 +1810,18 @@
         // remove a node then test the firstChild, lastChild, nextSibling,
         // and previousSibling properties on the removed tree
         metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
+        // restore metadata to it's original state before any modifications
+        // by tests above
+        metadata.removeChild(metadata.childNodes[0]);
+        rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
+        cc = document.createElementNS(cc_ns, 'cc:Work');
+        rdf.appendChild(cc);
+        cc.appendChild(document.createElementNS(dc_ns, 'dc:format'));
+        cc.appendChild(document.createElementNS(dc_ns, 'dc:type'));
+        cc.firstChild.appendChild(
+                                document.createTextNode('image/svg+xml', true));
+        metadata.appendChild(rdf);
+        // now check things after removing the metadata node
         metadata.parentNode.removeChild(metadata);
         svg = document.getElementById('svg2');
         assertNull('metadata.parentNode == null', metadata.parentNode);
@@ -1867,13 +1880,11 @@
                      metadata.parentNode);
         assertExists('metadata.previousSibling should exist', 
                      metadata.previousSibling);
-        assertEquals('metadata.previousSibling.nodeName == sodipodi:namedview',
-                     'sodipodi:namedview', metadata.previousSibling.nodeName);
-        assertExists('metadata.nextSibling should exist', metadata.nextSibling);
-        assertEquals('metadata.nextSibling.nodeName == g', 'g',
-                     metadata.nextSibling.nodeName);
-        assertEquals('metadata.nextSibling.id == layer1', 'layer1',
-                     metadata.nextSibling.id);
+        assertEquals('metadata.previousSibling.nodeName == g',
+                     'g', metadata.previousSibling.nodeName);
+        assertEquals('metadata.previousSibling.id == layer4', 'layer4',
+                     metadata.previousSibling.id);
+        assertNull('metadata.nextSibling == null', metadata.nextSibling);
         assertExists('metadata.firstChild should exist', metadata.firstChild);
         assertExists('metadata.lastChild should exist', metadata.lastChild);
         assertEquals('metadata.firstChild == metadata.lastChild)',
@@ -2145,7 +2156,7 @@
         svg = document.getElementById('svg11242');
         svg.appendChild(metadata);
         matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
-        assertEquals('rdf matches.length == 2', 2, matches.length);
+        assertEquals('rdf matches.length == 3', 3, matches.length);
         rdf = matches[1];
         assertExists('rdf should exist', rdf);
         textNode2 = document.createTextNode('Replaced RDF text', true);
@@ -2179,7 +2190,7 @@
         // after things are appended to the DOM, replace a namespaced
         // element with another namespaced element inside a METADATA node
         matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
-        assertEquals('rdf matches == 2', 2, matches.length);
+        assertEquals('rdf matches == 3', 3, matches.length);
         rdf = matches[1];
         assertExists('rdf should exist', rdf);
         dc = document.createElementNS(dc_ns, 'dc:creator');
@@ -2196,8 +2207,8 @@
         assertNull('rdf.parentNode == null', rdf.parentNode);
         assertExists('document.getElementById(myDCNode) should exist',
                      document.getElementById('myDCNode'));
-        //assertNull('document.getElementById(myRDFNode) == null',
-        //           document.getElementById('myRDFNode'));
+        assertNull('document.getElementById(myRDFNode) == null',
+                   document.getElementById('myRDFNode'));
                    
         // Test insertBefore
         console.log('Testing insertBefore...');
