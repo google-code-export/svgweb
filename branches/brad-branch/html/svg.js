@@ -2523,27 +2523,28 @@ extend(_Node, {
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
-    
+
     // remove child from our list of XML
     var findResults = this._findChild(child);
     if (findResults === null) {
       // TODO: Throw the correct DOM error instead
       throw new Error('Invalid child passed to removeChild');
     }
+
     var position = findResults.position;
     this._nodeXML.removeChild(findResults.node);
-    
+
     // remove from our nodeById lookup table
     var childID = this._determineID(child);
     if (childID && this._attached) {
       this._handler.document._nodeById['_' + childID] = undefined;
     }
-    
+
     // if IE, remove HTC node
-    if (child._htc) {
-      child._htc.parentNode.removeChild(child._htc);
+    if (isIE) {
+      document.getElementById('__htc_container').removeChild(child._htc);
     }
-    
+
     // remove from our list of cachedChildNodes
     for (var i = 0; i < this._cachedChildNodes.length; i++) {
       var node = this._cachedChildNodes[i];
@@ -2562,13 +2563,13 @@ extend(_Node, {
         break;
       } else if (isIE && child.nodeType == _Node.TEXT_NODE
                  && node.nodeType == _Node.TEXT_NODE) {
-        if (child.nodeValue == node.nodeValue) {
+        if (child._nodeValue == node._nodeValue) {
           this._cachedChildNodes.splice(i, 1);
           break;
         }
       }
     }
-    
+
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
       // just remove the last getter/setter, since they all resolve
@@ -2579,7 +2580,7 @@ extend(_Node, {
       // for IE, remove from _childNodes data structure
       this._childNodes.splice(position);
     }
-    
+   
     // inform Flash about the change
     if (this._attached && child._passThrough) {
       if (child.nodeType == _Node.TEXT_NODE) {
@@ -2593,16 +2594,16 @@ extend(_Node, {
                                   elementId: childID,
                                   nodeType: child.nodeType});
     }
-    
+
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
     child._setUnattached(null);
-    
+
     // set our cached next and previous siblings to null now that we are
     // unattached
     child._cachedPreviousSibling = null;
     child._cachedNextSibling = null;
-      
+
     return child._getProxyNode();  
   },
   
@@ -2615,31 +2616,31 @@ extend(_Node, {
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
-    
+
     // add the child's XML to our own
     this._importNode(child);
-    
+
     // manually add our child to our internal list of nodes
     this._cachedChildNodes.push(child);
     if (this._attached && isIE) {
       this._childNodes.push(child._htc);
     }
-    
+
     if (!isIE) {
       // _childNodes is an object literal instead of an array
       // to support getter/setter magic for Safari
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
     }
-    
+
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
-    
+
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
     child._cachedPreviousSibling = child._getPreviousSibling();
     child._cachedNextSibling = child._getNextSibling();
-    
+
     return child._getProxyNode();
   },
   
@@ -2725,7 +2726,7 @@ extend(_Node, {
     if (this._attached) {
       return this._handler.document._getNode(parentXML);
     } else {
-      return this._cachedParentNode;
+      return this._cachedParentNode._getProxyNode();
     }
   },
   
@@ -2802,7 +2803,7 @@ extend(_Node, {
     }
   },
   
-  _getNextSibling: function() { 
+  _getNextSibling: function() {
     if (this.nodeType == _Node.DOCUMENT_NODE) {
       return null;
     }
@@ -3054,7 +3055,7 @@ extend(_Node, {
       this into something we can work with, such as a _Node or _Element. */
   _getFakeNode: function(child) {
     // Was HTC node was passed in for IE? If so, get its _Node
-    if (isIE && !child._htc) {
+    if (isIE && child._fakeNode) {
       child = child._fakeNode;
     }
     
@@ -3226,16 +3227,16 @@ extend(_Node, {
     } else { // non-IE browsers
       importedNode = doc.importNode(child._nodeXML, true);
     }
-    
+
     // complete the import into ourselves
     if (doAppend) {
       this._nodeXML.appendChild(importedNode);
     }
-    
+
     // replace all of the children's XML with our copy of it now that it 
     // is imported
     child._importChildXML(importedNode);
-    
+
     return importedNode;
   },
   
@@ -3244,16 +3245,19 @@ extend(_Node, {
       with appendChild. */
   _importChildXML: function(newXML) {
     this._nodeXML = newXML;
-    
     var children = this._getChildNodes();
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
       var currentChild = children[i];
+      if (isIE && currentChild._fakeNode) { // IE
+        currentChild = currentChild._fakeNode;
+      } 
+      
       currentChild._nodeXML = this._nodeXML.childNodes[i];
       currentChild._importChildXML(this._nodeXML.childNodes[i]);
     }
     
     // copy over our internal _textNodeID to the new XML node for text nodes
-    if (this.nodeType == _Node.TEXT_NODE) {
+    if (!isIE && this.nodeType == _Node.TEXT_NODE) {
       this._nodeXML._textNodeID = this._textNodeID;
     }
   },
@@ -3278,7 +3282,7 @@ extend(_Node, {
     } else if (child.nodeType == _Node.TEXT_NODE && !isIE) {
       id = child._textNodeID;
     }
-    
+
     // FIXME: If there are multiple text nodes with the same content, and
     // someone wants to actually find the middle one versus the first one,
     // this will fail on IE because we find the matching node based on 
@@ -3294,14 +3298,14 @@ extend(_Node, {
                  && node._textNodeID) {
         nodeID = node._textNodeID;
       }
-      
+
       if (id && nodeID && id === nodeID) {
         results.position = i;
         results.node = node;
         return results;
       } else if (isIE && child.nodeType == _Node.TEXT_NODE
                  && node.nodeType == _Node.TEXT_NODE) {
-        if (child.nodeValue == node.nodeValue) {
+        if (child._nodeValue == node.nodeValue) {
           results.position = i;
           results.node = node;
           return results;
@@ -3339,13 +3343,13 @@ extend(_Node, {
       @param parentNode _Node or _Element. The parent of this child, used so
       that we can cache the parent and return it if someone calls
       parentNode on this child while unattached. */
-  _setUnattached: function(parentNode) {   
+  _setUnattached: function(parentNode) {  
     // we cache the parent node and sibling information so it is available 
     // when unattached
     this._cachedParentNode = parentNode;
     this._cachedPreviousSibling = this._getPreviousSibling();
     this._cachedNextSibling = this._getNextSibling();
-
+    
     // set each child to be unattached, and also capture a reference to it
     // for later so that we can work with it while unattached. This will also
     // force all children to be created if they were never fetched before
@@ -3354,10 +3358,12 @@ extend(_Node, {
     this._cachedChildNodes = [];
     for (var i = 0; i < children.length; i++) {
       var child = children[i];
+      if (isIE) {
+        child = child._fakeNode;
+      }
       child._setUnattached(this);
       this._cachedChildNodes.push(child);
     }
-    
     this._attached = false;
     this._passThrough = false;
     this._handler = null;
