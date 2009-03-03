@@ -984,6 +984,13 @@ extend(SVGWeb, {
       collisions. */
   _randomIDs: {},
   
+  /** A data structure that we used to keep track of removed nodes, necessary
+      so we can clean things up and prevent memory leaks on IE on page unload.
+      Unfortunately we have to keep track of this at the global 'svgweb'
+      level rather than on individual handlers because a removed node
+      might have never been associated with a real DOM or a real handler. */
+  _removedNodes: [],
+  
   /** Adds an event listener to know when both the page, the internal SVG
       machinery, and any SVG SCRIPTS or OBJECTS are finished loading.
       Window.onload is not safe, since it can get fired before we are
@@ -1067,8 +1074,22 @@ extend(SVGWeb, {
     // flag this function so we don't do the same thing twice
     arguments.callee.done = true;
     
+    // cleanup onDOMContentLoaded handler to prevent memory leaks on IE
+    var listener = document.getElementById('__ie__svg__onload');
+    if (listener) {
+      listener.parentNode.removeChild(listener);
+      listener.onreadystatechange = null;
+      listener = null;
+    }
+    
     // determine what renderers (native or Flash) to use for which browsers
     this.config = new RenderConfig();
+    
+    // sign up for the onunload event on IE to clean up references that
+    // can cause memory leaks
+    if (isIE) {
+      this._watchUnload();
+    }
     
     // extract any SVG SCRIPTs or OBJECTs
     this._svgScripts = this._getSVGScripts();
@@ -1469,6 +1490,76 @@ extend(SVGWeb, {
     node.__defineSetter__('id', function(newValue) {
       return node.setAttribute('id', newValue);
     });
+  },
+  
+  /** Sign up for the onunload event on IE to clean up references that
+      can cause memory leaks. */
+  _watchUnload: function() {
+    window.attachEvent('onunload', function(evt) {
+      // detach this anonymous listener
+      window.detachEvent('onunload', arguments.callee);
+      
+      // delete the HTC container and all HTC nodes
+      var container = document.getElementById('__htc_container');
+      if (container) {
+        for (var i = 0; i < container.childNodes.length; i++) {
+          var child = container.childNodes[i];
+          child._fakeNode = null;
+          child._handler = null;
+        }
+        container.parentNode.removeChild(container);
+        container = null;
+      }
+
+      // clean up svg:svg root tags
+      for (var i = 0; i < svgweb.handlers.length; i++) {
+        var root = svgweb.handlers[i].document.documentElement._htc;
+        // clean up our hidden HTML DOM and our Flash object
+        var flashObj = root._getFlashObj();
+        flashObj.sendToFlash = null;
+        flashObj.parentNode.removeChild(flashObj);
+        var html = root._doc.getElementsByTagName('html')[0];
+        html.parentNode.removeChild(html);
+        root._doc = null;
+        
+        // remove the root from the DOM
+        root._realParentNode.removeChild(root);
+          
+        // delete object references
+        root._fakeNode = null;
+        root._realParentNode = null;
+        root._realPreviousSibling = null;
+        root._realNextSibling = null;
+        root._handler = null;
+      }
+      roots = null;
+
+      // for all the handlers, remove their reference to the Flash object
+      for (var i = 0; i < svgweb.handlers.length; i++) {
+        var handler = svgweb.handlers[i];
+        handler.flash = null;
+      }
+      svgweb.handlers = null;
+
+      // clean up any nodes that were removed in the past
+      for (var i = 0; i < svgweb._removedNodes.length; i++) {
+        var node = svgweb._removedNodes[i];
+        node._fakeNode = null;
+        node._handler = null;
+      }
+      svgweb._removedNodes = null;
+      
+      // cleanup document patching
+      document.getElementById = null;
+      document._getElementById = null;
+      document.getElementsByTagNameNS = null;
+      document._getElementsByTagNameNS = null;
+      document.createElementNS = null;
+      document._createElementNS = null;
+      document.createTextNode = null;
+      document._createTextNode = null;
+      document._importNodeFunc = null;
+    });
   }
 });
 
@@ -1806,119 +1897,182 @@ extend(FlashHandler, {
     // Instead, we capture the original versions on the document object
     // itself but with a _ prefix.
     
-    // getElementById
     document._getElementById = document.getElementById;
-    document.getElementById = function(id) {
-      var result = document._getElementById(id);
-      if (result != null) { // Firefox doesn't like 'if (result)'
+    document.getElementById = this._getElementById;
+    
+    document._getElementsByTagNameNS = document.getElementsByTagNameNS;
+    document.getElementsByTagNameNS = this._getElementsByTagNameNS;
+    
+    document._createElementNS = document.createElementNS;
+    document.createElementNS = this._createElementNS;
+      
+    document._createTextNode = document.createTextNode;
+    document.createTextNode = this._createTextNode;
+    
+    document._importNodeFunc = this._importNodeFunc;
+  },
+  
+  /** Our implementation of getElementById, which we patch into the 
+      document object. We do it here to prevent a closure and therefore
+      a memory leak on IE. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. */
+  _getElementById: function(id) {
+    var result = document._getElementById(id);
+    if (result != null) { // Firefox doesn't like 'if (result)'
+      return result;
+    }
+    
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      result = svgweb.handlers[i].document.getElementById(id);
+      if (result) {
         return result;
       }
-      
-      for (var i = 0; i < svgweb.handlers.length; i++) {
-        result = svgweb.handlers[i].document.getElementById(id);
-        if (result) {
-          return result;
-        }
-      }
-      
-      return null;
     }
     
-    // getElementsByTagNameNS
-    document._getElementsByTagNameNS = document.getElementsByTagNameNS;
-    document.getElementsByTagNameNS = function(ns, localName) {
-      var results = createNodeList();
+    return null;
+  },
+  
+  /** Our implementation of getElementsByTagNameNS, which we patch into the 
+      document object. We do it here to prevent a closure and therefore
+      a memory leak on IE. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. */
+  _getElementsByTagNameNS: function(ns, localName) {
+    var results = createNodeList();
+    
+    // NOTE: can't use Array.concat to combine our arrays below because 
+    // document._getElementsByTagNameNS results aren't a real Array
+    
+    if (document._getElementsByTagNameNS) {
+      var matches = document._getElementsByTagNameNS(ns, localName);
       
-      // NOTE: can't use Array.concat to combine our arrays below because 
-      // document._getElementsByTagNameNS results aren't a real Array
-      
-      if (document._getElementsByTagNameNS) {
-        var matches = document._getElementsByTagNameNS(ns, localName);
-        
-        for (var j = 0; j < matches.length; j++) {
-          results.push(matches[j]);
-        }
+      for (var j = 0; j < matches.length; j++) {
+        results.push(matches[j]);
       }
-      
-      for (var i = 0; i < svgweb.handlers.length; i++) {
-        var doc = svgweb.handlers[i].document;
-        var matches = doc.getElementsByTagNameNS(ns, localName);
-        for (var j = 0; j < matches.length; j++) {
-          results.push(matches[j]);
-        }
+    }
+    
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      var doc = svgweb.handlers[i].document;
+      var matches = doc.getElementsByTagNameNS(ns, localName);
+      for (var j = 0; j < matches.length; j++) {
+        results.push(matches[j]);
       }
+    }
 
-      return results;
+    return results;
+  },
+  
+  /** Our implementation of createElementNS, which we patch into the 
+      document object. We do it here to prevent a closure and therefore
+      a memory leak on IE. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. */
+  _createElementNS: function(ns, qname) {
+    if (ns == null || ns == 'http://www.w3.org/1999/xhtml') {
+      if (isIE) {
+        return document.createElement(qname);
+      } else {
+        return document._createElementNS(ns, qname);
+      }
     }
     
-    // createElementNS
-    document._createElementNS = document.createElementNS;
-    document.createElementNS = function(ns, qname) {
-      if (ns == null || ns == 'http://www.w3.org/1999/xhtml') {
-        if (isIE) {
-          return document.createElement(qname);
-        } else {
-          return document._createElementNS(ns, qname);
-        }
-      }
-      
-      // someone might be using this library on an XHTML page;
-      // only use our overridden createElementNS if they are using
-      // a namespace we have never seen before
-      if (!isIE) {
-        var namespaceFound = false;
-        for (var i = 0; i < svgweb.handlers.length; i++) {
-          if (svgweb.handlers[i].document._namespaces['_' + ns]) {
-            namespaceFound = true;
-            break;
-          }
-        }
-        
-        if (!namespaceFound) {
-          return document._createElementNS(ns, qname);
-        }
-      }
-      
-      var prefix;
+    // someone might be using this library on an XHTML page;
+    // only use our overridden createElementNS if they are using
+    // a namespace we have never seen before
+    if (!isIE) {
+      var namespaceFound = false;
       for (var i = 0; i < svgweb.handlers.length; i++) {
-        prefix = svgweb.handlers[i].document._namespaces['_' + ns];
-        if (prefix) {
+        if (svgweb.handlers[i].document._namespaces['_' + ns]) {
+          namespaceFound = true;
           break;
         }
       }
       
-      if (prefix == 'xmlns' || !prefix) { // default SVG namespace
-        prefix = null;
+      if (!namespaceFound) {
+        return document._createElementNS(ns, qname);
       }
-
-      var node = new _Element(qname, prefix, ns);
-      return node._getProxyNode();
     }
-      
-    /** createTextNode
     
-        We patch this to have a second boolean argument that controls whether
-        the resulting text node will be appended within our SVG tree. We need
-        this so we can return one of our magic _Nodes instead of a native
-        DOM node for later appending and tracking. 
-        @param data Text String.
-        @param forSVG Optional boolean on whether node will be attached to
-        SVG sub-tree. Defaults to false. */
-    document._createTextNode = document.createTextNode;
-    document.createTextNode = function(data, forSVG) {
-      if (!forSVG) {
-        return document._createTextNode(data);
-      } else {
-        // just create a real DOM text node in our internal representation for
-        // our nodeXML value; we will import this anyway into whatever parent
-        // we append this to, which will convert it into a real XML type at
-        // that time
-        var nodeXML = document._createTextNode(data);
-        var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
-        textNode._nodeValue = data;
-        
-        return textNode._getProxyNode();
+    var prefix;
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      prefix = svgweb.handlers[i].document._namespaces['_' + ns];
+      if (prefix) {
+        break;
       }
+    }
+    
+    if (prefix == 'xmlns' || !prefix) { // default SVG namespace
+      prefix = null;
+    }
+
+    var node = new _Element(qname, prefix, ns);
+    return node._getProxyNode(); 
+  },
+  
+  /** Our implementation of createTextNode, which we patch into the 
+      document object. We do it here to prevent a closure and therefore
+      a memory leak on IE. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. 
+      
+      We patch createTextNode to have a second boolean argument that controls 
+      whether the resulting text node will be appended within our SVG tree. 
+      We need this so we can return one of our magic _Nodes instead of a native
+      DOM node for later appending and tracking. 
+      
+      @param data Text String.
+      @param forSVG Optional boolean on whether node will be attached to
+      SVG sub-tree. Defaults to false. */
+  _createTextNode: function(data, forSVG) {
+    if (!forSVG) {
+      return document._createTextNode(data);
+    } else {
+      // just create a real DOM text node in our internal representation for
+      // our nodeXML value; we will import this anyway into whatever parent
+      // we append this to, which will convert it into a real XML type at
+      // that time
+      var nodeXML = document._createTextNode(data);
+      var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
+      textNode._nodeValue = data;
+      
+      return textNode._getProxyNode();
+    }
+  },
+  
+  /** IE doesn't support the importNode function. We define it on the
+      document object as _importNodeFunc. Unfortunately we need it there
+      since it is a recursive function and needs to call itself, and we
+      don't want to do this on an object instance to avoid memory leaks
+      from closures on IE. Note that this function runs in the global scope
+      so 'this' will point to the Window object. */
+  _importNodeFunc: function(doc, node, allChildren) {
+    switch (node.nodeType) {
+      case 1: // ELEMENT NODE
+        var newNode = doc.createElement(node.nodeName);
+        
+        // does the node have any attributes to add?
+        if (node.attributes && node.attributes.length > 0) {
+          for (var i = 0; i < node.attributes.length; i++) {
+            var attrName = node.attributes[i].nodeName;
+            var attrValue = node.getAttribute(attrName);
+            newNode.setAttribute(attrName, attrValue);
+          }
+        }
+        
+        // are we going after children too, and does the node have any?
+        if (allChildren && node.childNodes && node.childNodes.length > 0) {
+          for (var i = 0; i < node.childNodes.length; i++) {
+            newNode.appendChild(
+                document._importNodeFunc(doc, node.childNodes[i], allChildren));
+          }
+        }
+        
+        return newNode;
+        break;
+      case 3: // TEXT NODE
+        return doc.createTextNode(node.nodeValue);
+        break;
     }
   },
   
@@ -2516,6 +2670,9 @@ extend(_Node, {
     
     // TODO: BUG: Shouldn't we tell Flash about the removal of oldChild?
     
+    // track this removed node so we can clean it up on page unload
+    svgweb._removedNodes.push(oldChild._getProxyNode());
+    
     return oldChild._getProxyNode();
   },
   
@@ -2542,6 +2699,7 @@ extend(_Node, {
 
     // if IE, remove HTC node
     if (isIE) {
+      child._htc._proxyNode = null; // prevent memory leak
       document.getElementById('__htc_container').removeChild(child._htc);
     }
 
@@ -2603,6 +2761,9 @@ extend(_Node, {
     // unattached
     child._cachedPreviousSibling = null;
     child._cachedNextSibling = null;
+    
+    // track this removed node so we can clean it up on page unload
+    svgweb._removedNodes.push(child._getProxyNode());
 
     return child._getProxyNode();  
   },
@@ -3192,38 +3353,8 @@ extend(_Node, {
     // http://www.alistapart.com/articles/crossbrowserscripting
     var importedNode;
     if (typeof doc.importNode == 'undefined') {
-      var importNodeFunc = function(node, allChildren) {
-        switch (node.nodeType) {
-          case 1: // ELEMENT NODE
-            var newNode = doc.createElement(node.nodeName);
-            
-            // does the node have any attributes to add?
-            if (node.attributes && node.attributes.length > 0) {
-              for (var i = 0; i < node.attributes.length; i++) {
-                var attrName = node.attributes[i].nodeName;
-                var attrValue = node.getAttribute(attrName);
-                newNode.setAttribute(attrName, attrValue);
-              }
-            }
-            
-            // are we going after children too, and does the node have any?
-            if (allChildren && node.childNodes && node.childNodes.length > 0) {
-              for (var i = 0; i < node.childNodes.length; i++) {
-                newNode.appendChild(
-                    importNodeFunc(node.childNodes[i], allChildren));
-              }
-            }
-            
-            return newNode;
-            break;
-          case 3: // TEXT NODE
-            return doc.createTextNode(node.nodeValue);
-            break;
-        }
-      }
-      
       // import the node for IE
-      importedNode = importNodeFunc(child._nodeXML, true);
+      importedNode = document._importNodeFunc(doc, child._nodeXML, true);
     } else { // non-IE browsers
       importedNode = doc.importNode(child._nodeXML, true);
     }
