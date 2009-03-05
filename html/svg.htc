@@ -1,124 +1,176 @@
 <html xmlns:svg="http://www.w3.org/2000/svg">
 
 <head>
-  <!-- 
-    The 'lightWeight' attribute below is important for two reasons:
-    * It vastly improves performance
-    * There is a bug that Behaviors are not cached correctly, so without
-      this property the same HTC file will get called for every SVG element
-      on the page over the network rather than from the browser's cache. 
-      The lightWeight property sidesteps this bug.
-  -->
-  <component lightWeight="true">
   
-      <!-- _Node properties -->
-      <property name="nodeName" get="getNodeName" />
-      <property name="nodeType" get="getNodeType" />
-      <property name="nodeValue" get="getNodeValue" 
-                                 put="setNodeValue" />
-      <property name="localName" get="getLocalName" />
-      <property name="prefix" get="getPrefix" />
-      <property name="namespaceURI" get="getNamespaceURI" />
-      
-      <property name="childNodes" get="getChildNodes" />
-      
-      <property name="parentNode" get="getParentNode" />
-      <property name="firstChild" get="getFirstChild" />
-      <property name="lastChild" get="getLastChild" />
-      <property name="previousSibling" get="getPreviousSibling" />
-      <property name="nextSibling" get="getNextSibling" />
-      
-      <property name="textContent" get="getTextContent"
-                                   put="setTextContent" />
-      <property name="data" get="getData" put="setData" />
+<!-- 
+  The 'lightWeight' attribute below is important for two reasons:
+  * It vastly improves performance
+  * There is a bug that Behaviors are not cached correctly, so without
+    this property the same HTC file will get called for every SVG element
+    on the page over the network rather than from the browser's cache. 
+    The lightWeight property sidesteps this bug.
+-->
+<component lightWeight="true">
   
-      <!-- Non-standard defacto properties -->
-      <property name="innerHTML" 
-                       get="getInnerHTML" put="setInnerHTML" />
-                       
-      <!-- _Element properties -->
-      <property name="id" get="getId" put="setId" />
-      
-      <!-- SVGSVGElement and SVGUseElement readonly props -->
-      <property name="x" get="getX" />             
-      <property name="y" get="getY" />
-      <property name="width" get="getWidth" />
-      <property name="height" get="getHeight" />
-      
-      <!-- A flag for someone to query whether a DOM node is one of our
-           own fake ones or a real browser native one. Useful for someone
-           to 'break' the abstraction if needed. -->
-      <property name="_fake" value="true"/>
-                       
-      <method name="setAttribute" />
-      <method name="getAttribute" />
-      <method name="appendChild" />
-      <method name="removeChild" />
-      <method name="replaceChild" />
-      <method name="insertBefore" />
-      
-      <!-- Internal methods that we use for communicating from our svg.js
-           file into the HTC. VBScript can't have preceding _ in method
-           names so we have to use a differentl internalname. -->
-      <method name="setFakeNode_" internalname="setFakeNode" />
-      <method name="setHandler_" internalname="setHandler" />
-       
-      <attach event="oncontentready" onevent="contentReady()" />
-      
-      <defaults tabStop="false" contentEditable="false"
-                        canHaveHTML="true" viewInheritStyle="true"
-                        viewMasterTab="false" viewLinkContent="false"
-                        style="display: block" />
+  <!-- _Node properties -->
+  <property name="nodeName" get="getNodeName" />
+  <property name="nodeType" get="getNodeType" />
+  <property name="nodeValue" get="getNodeValue" 
+                             put="setNodeValue" />
+  <property name="localName" get="getLocalName" />
+  <property name="prefix" get="getPrefix" />
+  <property name="namespaceURI" get="getNamespaceURI" />
+  
+  <property name="childNodes" get="getChildNodes" />
+  
+  <property name="parentNode" get="getParentNode" />
+  <property name="firstChild" get="getFirstChild" />
+  <property name="lastChild" get="getLastChild" />
+  <property name="previousSibling" get="getPreviousSibling" />
+  <property name="nextSibling" get="getNextSibling" />
+  
+  <property name="textContent" get="getTextContent"
+                               put="setTextContent" />
+  <property name="data" get="getData" put="setData" />
 
-  </component>
+  <!-- Non-standard defacto properties -->
+  <property name="innerHTML" 
+                   get="getInnerHTML" put="setInnerHTML" />
+                   
+  <!-- _Element properties -->
+  <property name="id" get="getId" put="setId" />
+  
+  <!-- SVGSVGElement and SVGUseElement readonly props -->
+  <property name="x" get="getX" />             
+  <property name="y" get="getY" />
+  <property name="width" get="getWidth" />
+  <property name="height" get="getHeight" />
+  
+  <!-- A flag for someone to query whether a DOM node is one of our
+       own fake ones or a real browser native one. Useful for someone
+       to 'break' the abstraction if needed. -->
+  <property name="_fake" value="true"/>
+                   
+  <method name="setAttribute" />
+  <method name="getAttribute" />
+  <method name="appendChild" />
+  <method name="removeChild" />
+  <method name="replaceChild" />
+  <method name="insertBefore" />
+  
+  <!-- Internal methods that we use for communicating from our svg.js
+       file into the HTC. VBScript can't have preceding _ in method
+       names so we have to use a differentl internalname. -->
+  <method name="setFakeNode_" internalname="setFakeNode" />
+  <method name="setHandler_" internalname="setHandler" />
+  <method name="insertFlash_" internalname="insertFlash" />
+   
+  <attach event="oncontentready" onevent="contentReady()" />
+  
+  <defaults tabStop="false" contentEditable="false"
+                    canHaveHTML="true" viewInheritStyle="true"
+                    viewMasterTab="false" viewLinkContent="false"
+                    style="display: block" />
 
-  <!-- 
-    Unfortunately IE has a bad bug related to JScript code. The longer
-    your JScript code block, the more memory is used up. When you leave 
-    the page as well the browser will freeze for many seconds, and the more
-    code (and the more HTC behaviors you have) the longer the time the 
-    browser freezes up when you leave the page. Both memory use and 
-    page freezing time go up dramatically with the length of a JScript block
-    quickly, even if you just have a giant JScript comment! The only work
-    around is to do the bulk of our work in here using VBScript, which is
-    much faster when instantiating an HTC, doesn't use much memory, and doesn't 
-    have the page unload freeze issue. The only downside is we have to
-    use VBScript :)
-  -->
-  <script type="text/vbscript">
-    Rem A reference to our fake JavaScript _Node or _Element that does
-    Rem all the hard work
-    Dim fakeNode
-    
-    Rem Our FlashHandler that controls our communication with the Flash viewer
-    Dim handler
-    
-    Rem Note that VBScript can not access JavaScript variables that
-    Rem begin with an underscore, such as fakeNode._attached, so we
-    Rem make our standard internal private variable style to have the 
-    Rem underscore at the end instead, such as fakeNode.attached_
-    
-    Sub contentReady()
-      If (fakeNode.attached_ = True And fakeNode.nodeName = "svg") Then
-        Rem Having a _ at the end of a line is how you do multi-line statements
-        Rem in VBScript
-        Call handler.onHTCMessage("event", "onHTCLoaded", getId(), _
-                                  element.document, element)
-      End If
-    End Sub
-    
-    Sub setFakeNode(Value)
-      Set fakeNode = Value
-    End Sub
-    
-    Sub setHandler(Value)
-      Set handler = Value
-    End Sub
-    
-    Function getId()
-      Rem TODO: Return undefined for text nodes
-      getId = fakeNode.getId_()
-    End Function
-  </script>
+</component>
+
+<!-- 
+  Unfortunately IE has a bad bug related to JScript code. The longer
+  your JScript code block, the more memory is used up. When you leave 
+  the page as well the browser will freeze for many seconds, and the more
+  code (and the more HTC behaviors you have) the longer the time the 
+  browser freezes up when you leave the page. Both memory use and 
+  page freezing time go up dramatically with the length of a JScript block
+  quickly, even if you just have a giant JScript comment! The only work
+  around is to do the bulk of our work in here using VBScript, which is
+  much faster when instantiating an HTC, doesn't use much memory, and doesn't 
+  have the page unload freeze issue. The only downside is we have to
+  use VBScript :)
+  
+  We put most of our comments in here rather than down below as REM statements
+  both because these get stripped out easier, as well as to keep the code
+  size down below as that directly affects memory in a large way.
+  
+  fakeNode - A reference to our fake JavaScript _Node or _Element that does
+  all the hard work
+  
+  handler - Our FlashHandler that controls our communication with the Flash 
+  viewer
+  
+  doc - The shadow HTML document that we created using insertFlashIE_() in
+  our JavaScript file that contains our Flash movie. See insertFlashIE_()
+  for details.
+  
+  Note that VBScript can not access JavaScript variables that begin with an 
+  underscore, such as fakeNode._attached, so we make our standard internal 
+  private variable style to have theunderscore at the end instead, such 
+  as fakeNode.attached_
+  
+  Note that having a _ at the end of a line is how you do multi-line 
+  statements in VBScript
+  
+  fakeNode.nodeType == 3 are DOM Text Nodes
+-->
+<script type="text/vbscript">
+Dim fakeNode, handler, doc
+
+Sub contentReady()
+  If (fakeNode.attached_ = True And fakeNode.nodeName = "svg") Then
+    Call handler.onHTCMessage("event", "onHTCLoaded", getId(), _
+                              element.document, element)
+  End If
+End Sub
+
+Sub setFakeNode(Value)
+  Set fakeNode = Value
+End Sub
+
+Sub setHandler(Value)
+  Set handler = Value
+End Sub
+
+Sub insertFlash(flash)
+  Dim html, body, div
+
+  Set html = element.document.createElement("html")
+  Set body = element.document.createElement("body")
+  Set div = element.document.createElement("div")
+  body.appendChild(div)
+  html.appendChild(body)
+  Set defaults.viewLink = html.document
+  doc = html.document   
+  div.outerHTML = flash
+End Sub
+
+Function getId()
+  If (fakeNode.nodeType = 3) Then
+    getId = empty
+  Else
+    getId = fakeNode.getId_()
+  End If
+End Function
+
+Rem TODO: setId
+
+Function getNodeName()
+  getNodeName = fakeNode.nodeName
+End Function
+
+Function getNodeType()
+  getNodeType = fakeNode.nodeType
+End Function
+
+Function getLocalName()
+  getLocalName = fakeNode.localName
+End Function
+
+Function getPrefix()
+  getPrefix = fakeNode.prefix
+End Function
+
+Function getNamespaceURI()
+  getNamespaceURI = fakeNode.namespaceURI
+End Function
+</script>
 </head>
 </html>

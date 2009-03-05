@@ -1863,9 +1863,13 @@ extend(FlashHandler, {
   /** Called by the VBScript in our HTC. It's difficult and error prone to
       call onMessage, since that takes an object literal. We can simulate
       that with a VBScript Scripting.Dictionary but that has its own issues. */
-  onHTCMessage: function(type, eventType, uniqueId, elemDoc, htcNode) {
-    this.onMessage({ type: type, eventType: eventType, uniqueId: uniqueId,
-                     elemDoc: elemDoc, htcNode: htcNode });
+  onHTCMessage: function(type, eventType, uniqueId, elemDoc, element) {
+    var msg = { type: type, eventType: eventType, uniqueId: uniqueId,
+                elemDoc: elemDoc, element: element };
+    this.onMessage(msg);
+                     
+    // clean up the members of the message to prevent IE memory leaks
+    msg.elemDoc = msg.element = msg = elemDoc = element = null;
   },
   
   onMessage: function(msg) {
@@ -3166,13 +3170,13 @@ extend(Node_, {
   createHTC_: function() {
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
-    if (!this.htc_Container) {
-      this.htc_Container = document.getElementById('_htc__container');
-      if (!this.htc_Container) {
+    if (!this.htc_container_) {
+      this.htc_container_ = document.getElementById('_htc__container');
+      if (!this.htc_container_) {
         var head = document.getElementsByTagName('head')[0];
-        this.htc_Container = document.createElement('div');
-        this.htc_Container.id = '_htc__container';
-        head.appendChild(this.htc_Container);
+        this.htc_container_ = document.createElement('div');
+        this.htc_container_.id = '_htc__container';
+        head.appendChild(this.htc_container_);
       }
     }
     
@@ -3190,7 +3194,7 @@ extend(Node_, {
     var htc = document.createElement('svg:' + this.nodeName);
     htc.fakeNode_ = this;
     htc.handler_ = this.handler_;
-    this.htc_Container.appendChild(htc);
+    this.htc_container_.appendChild(htc);
     this.htc_ = htc;
   },
   
@@ -3952,17 +3956,16 @@ extend(SVGSVGElement_, {
       htcNode A reference to the HTC node itself.
       elemDoc The element.document of the HTC file. */
   onHTCLoaded_: function(msg) {
-    //console.log('onHTCLoaded, msg=' + this.handler_.debugMsg(msg));
+    console.log('onHTCLoaded, msg=' + this.handler_.debugMsg(msg));
     var elemDoc = msg.elemDoc;
-    var htcNode = msg.htcNode;
+    var element = msg.element;
     
     // TODO: We are not handling dynamically created nodes yet
-    
-    if (htcNode.nodeName.toUpperCase() == 'SVG') {
-      this.htcNode_ = htcNode;
+    if (element.nodeName.toUpperCase() == 'SVG') {
+      this.htcNode_ = element;
       
       // now insert our Flash
-      this.setupFlash_(elemDoc, htcNode);
+      this.setupFlash_(elemDoc, element);
     }
   },
   
@@ -3994,7 +3997,8 @@ extend(SVGSVGElement_, {
     this.handler_.fireOnLoad(elementId, 'script');
   },
   
-  setupFlash_: function(doc, htcNode) {
+  setupFlash_: function(doc, element) {
+    console.log('setupFlash');
     // get the size and background color information
     var size = this.determineSize_();  
     var background = this.determineBackground_();
@@ -4005,7 +4009,11 @@ extend(SVGSVGElement_, {
     if (isIE) {
       // have the HTC node insert the actual Flash so that it gets
       // hidden in the HTC's shadow DOM
-      htcNode.insertFlash_(flash, style);
+      this.insertFlashIE_(flash, style, element);
+      
+      // set references to null to prevent IE memory leaks
+      element = null;
+      doc = null;
     } else {
       this.insertFlash_(flash);
     }
@@ -4054,6 +4062,39 @@ extend(SVGSVGElement_, {
     flashObj.documentElement = this;
   
     return flashObj;
+  },
+  
+  /** Inserts our Flash for Internet Explorer.
+  
+      We do some magic to have the Flash object show up in our SVG 
+      root element 'hidden' from the external DOM.
+
+      @param flash Flash object as HTML string.
+      @param style A style string that we can apply to the HTC's element itself
+      to have the correct style on the SVG root tag, since that is what is 
+      visible to the outside DOM. Applying it to the Flash object is not 
+      enough.
+      @param element A reference to the HTC node that we got from the
+      onHTCMessage method that was called by the HTC file itself when done
+      loading. */
+  insertFlashIE_: function(flash, style, element) {
+    console.log('insertFlashIE');
+    // apply our style to ourselves first; we do this here rather than
+    // in the VBScript since it is a pain to do such regular expressions in VB
+    var rules = style.split(';');
+    console.log('element.style='+element.style);
+    for (var i = 0; i < rules.length; i++) {
+      var rule = rules[i].split(':');
+      if (!rules[i] || rules[i].indexOf(':') == -1) {
+        continue;
+      }
+      var propName = rule[0].replace(/^\s*|\s*$/, '');
+      var propValue = rule[1].replace(/^\s*|\s*$/, '');
+      element.style[propName] = propValue;
+    }
+    
+    element.insertFlash_(flash);
+    element = null;
   },
   
   /** Determines a width and height for the parsed SVG XML. Returns an
