@@ -54,6 +54,8 @@
         assertExists('Getting myRect first time', myRect);
         assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
         
+        return;
+        
         myRect = document.getElementById('myRect');
         assertExists('Getting myRect second time', myRect);
         assertEquals('Getting myRect second time, myRect.id should be myRect', 
