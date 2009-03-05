@@ -1860,8 +1860,16 @@ extend(FlashHandler, {
     return this.flash.sendToFlash(msg);
   },
   
+  /** Called by the VBScript in our HTC. It's difficult and error prone to
+      call onMessage, since that takes an object literal. We can simulate
+      that with a VBScript Scripting.Dictionary but that has its own issues. */
+  onHTCMessage: function(type, eventType, uniqueId, elemDoc, htcNode) {
+    this.onMessage({ type: type, eventType: eventType, uniqueId: uniqueId,
+                     elemDoc: elemDoc, htcNode: htcNode });
+  },
+  
   onMessage: function(msg) {
-    //console.log('onMessage, msg='+this.debugMsg(msg));
+    console.log('onMessage, msg='+this.debugMsg(msg));
     if (msg.type == 'event') {
       this.onEvent_(msg);
       return;
@@ -3883,7 +3891,6 @@ extend(Style_, {
     @param scriptNode The script node that contains this SVG. 
     @param handler The FlashHandler that we are a part of. */
 function SVGSVGElement_(nodeXML, svgString, scriptNode, handler) {
-  console.log('SVGSVGElement constructor');
   // superclass constructor
   Element_.apply(this, ['svg', null, svgns, nodeXML, handler, true]);
   
@@ -3897,8 +3904,7 @@ function SVGSVGElement_(nodeXML, svgString, scriptNode, handler) {
     // as a shadow DOM
     var svgDOM = document.createElement('svg:svg');
     svgDOM.setFakeNode_(this);
-    svgDOM.setHandler_(this);
-    console.log('set!');
+    svgDOM.setHandler_(this.handler_);
     
     // store the real parentNode and sibling info so we can return it; calling
     // svgDOM.parentNode, for example, would cause us to recursively call our

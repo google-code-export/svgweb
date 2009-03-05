@@ -100,7 +100,10 @@
     
     Sub contentReady()
       If (fakeNode.attached_ = True And fakeNode.nodeName = "svg") Then
-        console.log("svg contentReady")
+        Rem Having a _ at the end of a line is how you do multi-line statements
+        Rem in VBScript
+        Call handler.onHTCMessage("event", "onHTCLoaded", getId(), _
+                                  element.document, element)
       End If
     End Sub
     
@@ -109,9 +112,13 @@
     End Sub
     
     Sub setHandler(Value)
-      console.log("setHandler called")
       Set handler = Value
     End Sub
+    
+    Function getId()
+      Rem TODO: Return undefined for text nodes
+      getId = fakeNode.getId_()
+    End Function
   </script>
 </head>
 </html>
