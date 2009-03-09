@@ -9,7 +9,7 @@
     <script>
       // if true, we print out each assertion as we run them; helps with
       // identifying where an assertion failed by printing the ones before it
-      var printAsserts = false;
+      var printAsserts = true;
       
       // used to record whether a Flash error has occurred asynchronously
       // so we can halt testing and report the failure
@@ -1935,7 +1935,7 @@
         // later on remove the _parent_ of that child, then test parentNode,
         // firstChild, etc. on this to make sure that the double removal
         // hasn't messed things up in terms of cached values
-        /*
+        
         // Test replaceChild
         console.log('Testing replaceChild...');
         
@@ -2155,12 +2155,13 @@
         svg.appendChild(metadata);
         matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
         assertEquals('rdf matches.length == 3', 3, matches.length);
-        rdf = matches[1];
+        rdf = matches[2];
         assertExists('rdf should exist', rdf);
         textNode2 = document.createTextNode('Replaced RDF text', true);
         textNode = rdf.firstChild;
         temp = rdf.replaceChild(textNode2, rdf.firstChild);
         assertNull('textNode.parentNode == null', textNode.parentNode);
+        assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
         assertEquals('textNode2.parentNode == rdf', rdf, textNode2.parentNode);
         assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
         assertEquals('rdf.childNodes[0].nodeValue == Replaced RDF text',
@@ -2207,7 +2208,7 @@
                      document.getElementById('myDCNode'));
         assertNull('document.getElementById(myRDFNode) == null',
                    document.getElementById('myRDFNode'));
-                   
+        /*           
         // Test insertBefore
         console.log('Testing insertBefore...');
         

@@ -1942,7 +1942,8 @@ extend(FlashHandler, {
     var results = createNodeList();
     
     // NOTE: can't use Array.concat to combine our arrays below because 
-    // document._getElementsByTagNameNS results aren't a real Array
+    // document._getElementsByTagNameNS results aren't a real Array, they
+    // are DOM NodeLists
     
     if (document._getElementsByTagNameNS) {
       var matches = document._getElementsByTagNameNS(ns, localName);
@@ -2604,12 +2605,12 @@ extend(_Node, {
     return newChild._getProxyNode();
   },
   
-  replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
+  replaceChild: function(newChild /* _Node */, oldChild /* _Node */) { 
     // the children could be DOM nodes; turn them into something we can
     // work with, such as _Nodes or _Elements
     newChild = this._getFakeNode(newChild);
     oldChild = this._getFakeNode(oldChild);
-    
+ 
     // get an ID for the oldChild if one is available
     var oldChildID = this._determineID(oldChild);
     
@@ -2622,7 +2623,7 @@ extend(_Node, {
     var position = findResults.position;
     
     // remove oldChild
-    this.removeChild(origOldChild);
+    this.removeChild(oldChild);
     
     // add to our cached list of child nodes
     if (position >= (this._cachedChildNodes.length - 1)) {
@@ -2727,7 +2728,7 @@ extend(_Node, {
         }
       }
     }
-
+    
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
       // just remove the last getter/setter, since they all resolve
@@ -2738,7 +2739,7 @@ extend(_Node, {
       // for IE, remove from _childNodes data structure
       this._childNodes.splice(position);
     }
-   
+     
     // inform Flash about the change
     if (this._attached && child._passThrough) {
       if (child.nodeType == _Node.TEXT_NODE) {
@@ -2752,7 +2753,7 @@ extend(_Node, {
                                   elementId: childID,
                                   nodeType: child.nodeType});
     }
-
+    
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
     child._setUnattached(null);
@@ -2793,7 +2794,7 @@ extend(_Node, {
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
     }
-
+    
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
 
@@ -3474,7 +3475,7 @@ extend(_Node, {
       @param parentNode _Node or _Element. The parent of this child, used so
       that we can cache the parent and return it if someone calls
       parentNode on this child while unattached. */
-  _setUnattached: function(parentNode) {  
+  _setUnattached: function(parentNode) {
     // we cache the parent node and sibling information so it is available 
     // when unattached
     this._cachedParentNode = parentNode;
@@ -3486,15 +3487,17 @@ extend(_Node, {
     // force all children to be created if they were never fetched before
     // so we can have a real reference to them.
     var children = this._getChildNodes();
-    this._cachedChildNodes = [];
+    var cachedChildNodes = [];
     for (var i = 0; i < children.length; i++) {
       var child = children[i];
       if (isIE) {
         child = child._fakeNode;
       }
       child._setUnattached(this);
-      this._cachedChildNodes.push(child);
+      cachedChildNodes.push(child);
     }
+    this._cachedChildNodes = cachedChildNodes;
+    this._childNodes.length = cachedChildNodes.length;
     this._attached = false;
     this._passThrough = false;
     this._handler = null;
@@ -4208,8 +4211,8 @@ extend(_SVGSVGElement, {
     @param handler The FlashHandler this document is a part of. */
 function _Document(xml, handler) {
   // superclass constructor
-  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, xml, 
-                     handler], svgns);
+  _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, 
+                     xml, handler], svgns);
   
   this._xml = xml;
   this._handler = handler;
