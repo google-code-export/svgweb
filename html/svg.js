@@ -2853,11 +2853,7 @@ extend(_Node, {
   },
   
   hasChildNodes: function() /* Boolean */ {
-    if (this._attached) {
-      return (this._childNodes.length > 0);
-    } else {
-      return (this._cachedChildNodes.length > 0);
-    }
+    return (this._getChildNodes().length > 0);
   },
   
   // Note: cloneNode and normalize not supported
@@ -2882,6 +2878,19 @@ extend(_Node, {
   hasAttributes: function() /* Boolean */ {
     if (this.nodeType == _Node.ELEMENT_NODE) {
       for (var i in this._attributes) {
+        // if this is an XMLNS declaration, don't consider it a valid
+        // attribute for hasAttributes
+        if (/^_xmlns/i.test(i)) {
+          continue;
+        }
+        
+        // if there is an ID attribute, but it's one of our randomly generated
+        // ones, then don't consider this a valid attribute for hasAttributes
+        if (i == '_id' && /^__svg__random__/.test(this._attributes[i])) {
+          continue;
+        }
+        
+        // our attributes start with an underscore
         if (/^_.*/.test(i) && this._attributes.hasOwnProperty(i)) {
           return true;
         }
@@ -3185,6 +3194,7 @@ extend(_Node, {
       for (var i = 0; i < this._cachedChildNodes.length; i++) {
         results.push(this._cachedChildNodes[i]._htc);
       }
+      
       return results;
     } else if (this._nodeXML.childNodes.length == this._childNodes.length) {
       // we've already processed our childNodes before

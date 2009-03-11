@@ -55,6 +55,9 @@
       <method name="removeChild" />
       <method name="replaceChild" />
       <method name="insertBefore" />
+      <method name="hasChildNodes" />
+      <method name="hasAttributes" />
+      <method name="isSupported" />
        
       <attach event="oncontentready" onevent="contentReady()" />
       
@@ -209,43 +212,31 @@
     }
     
     function appendChild(child) {
-      // _Node.TEXT_NODE is not visible here (global variables aren't
-      // shared between HTC and it's host page)
-      if (this._fakeNode.nodeType == 3) { // text node
-        return undefined;
-      } else {
-        return this._fakeNode.appendChild(child);
-      }
+      return this._fakeNode.appendChild(child);
     }
     
     function removeChild(child) {
-      // _Node.TEXT_NODE is not visible here (global variables aren't
-      // shared between HTC and it's host page)
-      if (this._fakeNode.nodeType == 3) { // text node
-        return undefined;
-      } else {
-        return this._fakeNode.removeChild(child);
-      }
+      return this._fakeNode.removeChild(child);
     }
     
     function replaceChild(newChild, oldChild) {
-      // _Node.TEXT_NODE is not visible here (global variables aren't
-      // shared between HTC and it's host page)
-      if (this._fakeNode.nodeType == 3) { // text node
-        return undefined;
-      } else {
-        return this._fakeNode.replaceChild(newChild, oldChild);
-      }
+      return this._fakeNode.replaceChild(newChild, oldChild);
     }
     
     function insertBefore(newChild, refChild) {
-      // _Node.TEXT_NODE is not visible here (global variables aren't
-      // shared between HTC and it's host page)
-      if (this._fakeNode.nodeType == 3) { // text node
-        return undefined;
-      } else {
-        return this._fakeNode.insertBefore(newChild, refChild);
-      }
+      return this._fakeNode.insertBefore(newChild, refChild);
+    }
+    
+    function hasChildNodes() {
+      return this._fakeNode.hasChildNodes();
+    }
+    
+    function hasAttributes() {
+      return this._fakeNode.hasAttributes();
+    }
+    
+    function isSupported(feature, version) {
+      return this._fakeNode.isSupported(feature, version);
     }
     
     // getter/setter accessors; they delegate back into the

@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -2346,7 +2346,6 @@
         // next/previous sibling relationships work correctly on all the
         // nodes. Everything should be unattached.
         
-        /*
         // Test hasChildNodes
         console.log('Testing hasChildNodes...');
         
@@ -2471,7 +2470,7 @@
                          path.isSupported('HTML', '2.0'));
           }
         }
-        */
+        
         // BUG TEST: Make sure that getElementsByTagNameNS works correctly
         // after an insertBefore, after a removeChild, and after a replaceChild
         /*svg = document.getElementById('svg11242');
