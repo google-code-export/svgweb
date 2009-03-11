@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -27,7 +27,7 @@
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
-            origText, exp;
+            origText, exp, html, ns;
             
         var startTime = new Date().getTime();
         
@@ -63,8 +63,12 @@
         assertExists('mySVG root should exist', mySVG);
         assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
         
-        // TODO: Test getElementById on normal HTML content to ensure it
+        // test getElementById on normal HTML content to ensure it
         // still works
+        html = document.getElementById('htmlH2');
+        assertExists('H2 element with ID htmlH2 should exist', html);
+        assertEquals('H2.firstChild.nodeValue == This is an HTML H2',
+                     'This is an HTML H2', html.firstChild.nodeValue);
         
         // getElementsByTagNameNS
         console.log('Testing getElementsByTagNameNS...');
@@ -184,8 +188,16 @@
         assertEquals("document.getElementsByTagNameNS(null, 'rect').length "
                      + "should be 0", 0, rects.length);
                      
-        // TODO: Test getElementsByTagNameNS on normal HTML content to
+        // test getElementsByTagNameNS on normal HTML content to
         // ensure it still works
+        // Note: Safari forces all HTML elements into XHTML namespace, while
+        // Firefox doesn't
+        if (!isIE) { // IE doesn't have native getElementsByTagNameNS
+          ns = document.getElementsByTagName('head')[0].namespaceURI;
+          html = document.getElementsByTagNameNS(ns, 'head');
+          assertEquals('There should be one HEAD element after calling '
+                       + 'getElementsByTagNameNS', 1, html.length);
+        }
                      
         // SVGSVGElement.x, .y, .width, .height
         console.log('Testing SVGSVGElement.x, .y, .width, and .height...');
@@ -2727,6 +2739,41 @@
           throw new Error(msg);
         }
       }
+      
+      // browser detection adapted from Dojo
+      var isOpera = false, isSafari = false, isMoz = false, isIE = false, 
+          isAIR = false, isKhtml = false, isFF = false;
+
+      function _detectBrowsers() {
+        var n = navigator,
+            dua = n.userAgent,
+            dav = n.appVersion,
+            tv = parseFloat(dav);
+
+        if (dua.indexOf('Opera') >= 0) { isOpera = tv; }
+        // safari detection derived from:
+        //    http://developer.apple.com/internet/safari/faq.html#anchor2
+        //    http://developer.apple.com/internet/safari/uamatrix.html
+        var index = Math.max(dav.indexOf('WebKit'), dav.indexOf('Safari'), 0);
+        if (index) {
+          // try to grab the explicit Safari version first. If we don't get
+          // one, look for 419.3+ as the indication that we're on something
+          // "Safari 3-ish". Lastly, default to "Safari 2" handling.
+          isSafari = parseFloat(dav.split('Version/')[1]) ||
+            (parseFloat(dav.substr(index + 7)) > 419.3) ? 3 : 2;
+        }
+        if (dua.indexOf('AdobeAIR') >= 0) { isAIR = 1; }
+        if (dav.indexOf('Konqueror') >= 0 || isSafari) { isKhtml =  tv; }
+        if (dua.indexOf('Gecko') >= 0 && !isKhtml) { isMoz = tv; }
+        if (isMoz) {
+          isFF = parseFloat(dua.split('Firefox/')[1]) || undefined;
+        }
+        if (document.all && !isOpera) {
+          isIE = parseFloat(dav.split('MSIE ')[1]) || undefined;
+        }
+      }
+
+      _detectBrowsers();
     </script>
   </head>
 
@@ -5893,4 +5940,6 @@
     
       <h1>Test HTML H1</h1>
     </div> <!-- end test_container -->
+    
+    <h2 id="htmlH2">This is an HTML H2</h2>
   </body></html>
