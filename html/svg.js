@@ -1499,67 +1499,83 @@ extend(SVGWeb, {
       // detach this anonymous listener
       window.detachEvent('onunload', arguments.callee);
       
-      // delete the HTC container and all HTC nodes
-      var container = document.getElementById('__htc_container');
-      if (container) {
-        for (var i = 0; i < container.childNodes.length; i++) {
-          var child = container.childNodes[i];
-          child._fakeNode = null;
-          child._handler = null;
-        }
-        container.parentNode.removeChild(container);
-        container = null;
-      }
-
-      // clean up svg:svg root tags
-      for (var i = 0; i < svgweb.handlers.length; i++) {
-        var root = svgweb.handlers[i].document.documentElement._htc;
-        // clean up our hidden HTML DOM and our Flash object
-        var flashObj = root._getFlashObj();
-        flashObj.sendToFlash = null;
-        flashObj.parentNode.removeChild(flashObj);
-        var html = root._doc.getElementsByTagName('html')[0];
-        html.parentNode.removeChild(html);
-        root._doc = null;
-        
-        // remove the root from the DOM
-        root._realParentNode.removeChild(root);
-          
-        // delete object references
-        root._fakeNode = null;
-        root._realParentNode = null;
-        root._realPreviousSibling = null;
-        root._realNextSibling = null;
-        root._handler = null;
-      }
-      roots = null;
-
-      // for all the handlers, remove their reference to the Flash object
-      for (var i = 0; i < svgweb.handlers.length; i++) {
-        var handler = svgweb.handlers[i];
-        handler.flash = null;
-      }
-      svgweb.handlers = null;
-
-      // clean up any nodes that were removed in the past
-      for (var i = 0; i < svgweb._removedNodes.length; i++) {
-        var node = svgweb._removedNodes[i];
-        node._fakeNode = null;
-        node._handler = null;
-      }
-      svgweb._removedNodes = null;
-      
-      // cleanup document patching
-      document.getElementById = null;
-      document._getElementById = null;
-      document.getElementsByTagNameNS = null;
-      document._getElementsByTagNameNS = null;
-      document.createElementNS = null;
-      document._createElementNS = null;
-      document.createTextNode = null;
-      document._createTextNode = null;
-      document._importNodeFunc = null;
+      // do all the onunload work now
+      svgweb._fireUnload();
     });
+  },
+  
+  /** Called when window unload event fires; putting this in a separate
+      function helps us with unit testing. */
+  _fireUnload: function() {
+    if (!isIE) { // helps with unit testing
+      return;
+    }
+    
+    // delete the HTC container and all HTC nodes
+    var container = document.getElementById('__htc_container');
+    if (container) {
+      for (var i = 0; i < container.childNodes.length; i++) {
+        var child = container.childNodes[i];
+        child._fakeNode._htc = null;
+        child._fakeNode = null;
+        child._handler = null;
+      }
+      container.parentNode.removeChild(container);
+      container = null;
+    }
+
+    // clean up svg:svg root tags
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      var root = svgweb.handlers[i].document.documentElement._htc;
+      // clean up our hidden HTML DOM and our Flash object
+      var flashObj = root._getFlashObj();
+      flashObj.sendToFlash = null;
+      flashObj.parentNode.removeChild(flashObj);
+      var html = root._doc.getElementsByTagName('html')[0];
+      html.parentNode.removeChild(html);
+      root._doc = null;
+      
+      // remove the root from the DOM
+      root._realParentNode.removeChild(root);
+        
+      // delete object references
+      root._fakeNode._htc = null;
+      root._fakeNode = null;
+      root._realParentNode = null;
+      root._realPreviousSibling = null;
+      root._realNextSibling = null;
+      root._handler = null;
+    }
+    roots = null;
+
+    // for all the handlers, remove their reference to the Flash object
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      var handler = svgweb.handlers[i];
+      handler.flash = null;
+    }
+    svgweb.handlers = null;
+
+    // clean up any nodes that were removed in the past
+    for (var i = 0; i < svgweb._removedNodes.length; i++) {
+      var node = svgweb._removedNodes[i];
+      if (node._fakeNode) {
+        node._fakeNode._htc = null;
+      }
+      node._fakeNode = null;
+      node._handler = null;
+    }
+    svgweb._removedNodes = null;
+    
+    // cleanup document patching
+    document.getElementById = null;
+    document._getElementById = null;
+    document.getElementsByTagNameNS = null;
+    document._getElementsByTagNameNS = null;
+    document.createElementNS = null;
+    document._createElementNS = null;
+    document.createTextNode = null;
+    document._createTextNode = null;
+    document._importNodeFunc = null;
   }
 });
 
@@ -2713,6 +2729,7 @@ extend(_Node, {
   },
   
   removeChild: function(child /* _Node or DOM Node */) {
+    //console.log('removeChild, child='+child.nodeName+', this='+this.nodeName);
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
@@ -2731,12 +2748,6 @@ extend(_Node, {
     var childID = this._determineID(child);
     if (childID && this._attached) {
       this._handler.document._nodeById['_' + childID] = undefined;
-    }
-
-    // if IE, remove HTC node
-    if (isIE) {
-      child._htc._proxyNode = null; // prevent memory leak
-      document.getElementById('__htc_container').removeChild(child._htc);
     }
 
     // remove from our list of cachedChildNodes
@@ -2776,7 +2787,7 @@ extend(_Node, {
       // for IE, remove from _childNodes data structure
       this._childNodes.splice(position);
     }
-     
+    
     // inform Flash about the change
     if (this._attached && child._passThrough) {
       if (child.nodeType == _Node.TEXT_NODE) {
@@ -2794,7 +2805,7 @@ extend(_Node, {
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
     child._setUnattached(null);
-
+    
     // set our cached next and previous siblings to null now that we are
     // unattached
     child._cachedPreviousSibling = null;
@@ -2808,7 +2819,7 @@ extend(_Node, {
     
     // track this removed node so we can clean it up on page unload
     svgweb._removedNodes.push(child._getProxyNode());
-
+    
     return child._getProxyNode();  
   },
   
