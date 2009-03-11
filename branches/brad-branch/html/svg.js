@@ -2505,7 +2505,8 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // attached that we can depend on to serve out our childNodes; we can't
   // use this._childNodes since that ends up calling our getter/setter
   // magic, which depends on having a real Flash handler assigned to
-  // us to do the hard work.
+  // us to do the hard work. Once we are attached we clear this data
+  // structure out; if we become unattached we recreate it.
   this._cachedChildNodes = [];
   this._cachedParentNode = null;
   
@@ -2539,7 +2540,7 @@ mixin(_Node, {
 });
 
 extend(_Node, {
-  insertBefore: function(newChild /* _Node */, refChild /* _Node */) {   
+  insertBefore: function(newChild /* _Node */, refChild /* _Node */) {
     // TODO: Throw an exception if either child is a text node, either native
     // or a text _Node
     
@@ -2547,14 +2548,20 @@ extend(_Node, {
     // references
     newChild = this._getFakeNode(newChild);
     refChild = this._getFakeNode(refChild);
-
+    
     // get an ID for both children
     var newChildID = this._determineID(newChild);
     var refChildID = this._determineID(refChild);
     
+    // the new child might not have an ID; generate one if not
+    if (newChildID == null && newChild.nodeType == _Node.ELEMENT_NODE) {
+      newChild._setId(svgweb._generateID('__svg__random__', null));
+      newChildID = newChild._getId();
+    }
+    
     // add an ID entry for newChild into nodeById
     if (newChildID && this._attached) {
-      this._handler.document._nodeById['_' + newChildId] = newChild;
+      this._handler.document._nodeById['_' + newChildID] = newChild;
     }
     
     // get an index position for where refChild is
@@ -2572,11 +2579,16 @@ extend(_Node, {
     this._processAppendedChildren(newChild, this._attached, this._passThrough);
     
     // add to our cached list of child nodes
-    if (position >= (this._cachedChildNodes.length - 1)) {
-      this._cachedChildNodes.push(newChild);
-    } else { // oldChild was somwhere at beginning or middle
-      this._cachedChildNodes = 
-                this._cachedChildNodes.splice(position + 1, 0, newChild);
+    if (!this._attached) {
+      var cachedChildNodes = [];
+      for (var i = 0; i < position; i++) {
+        cachedChildNodes.push(this._cachedChildNodes[i]);
+      }
+      cachedChildNodes.push(newChild);
+      for (var i = position + 1; i <= this._cachedChildNodes.length; i++) {
+        cachedChildNodes.push(this._cachedChildNodes[i - 1]);
+      }
+      this._cachedChildNodes = cachedChildNodes;
     }
     
     if (!isIE) {
@@ -2588,17 +2600,18 @@ extend(_Node, {
     
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
-    oldChild._cachedPreviousSibling = oldChild._getPreviousSibling();
-    oldChild._cachedNextSibling = oldChild._getNextSibling();
-    newChild._cachedPreviousSibling = newChild._getPreviousSibling();
-    newChild._cachedNextSibling = newChild._getNextSibling();
+    if (!this._attached) {
+      this._setupCachedSiblings();
+    }
     
     // inform Flash about the change
     if (this._attached && this._passThrough) {
+      var parentID = this._nodeXML.getAttribute('id');
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'insertBefore',
-                                  newChildId: newChildId,
-                                  refChildId: refChildId,
+                                  newChildId: newChildID,
+                                  refChildId: refChildID,
+                                  parentId: parentID,
                                   position: position});
     }
     
@@ -2611,8 +2624,14 @@ extend(_Node, {
     newChild = this._getFakeNode(newChild);
     oldChild = this._getFakeNode(oldChild);
  
-    // get an ID for the oldChild if one is available
+    // get an ID if one is available
     var oldChildID = this._determineID(oldChild);
+    var newChildID = this._determineID(newChild);
+    
+    // the new child might not have an ID; generate one if not
+    if (newChildID == null && newChild.nodeType == _Node.ELEMENT_NODE) {
+      newChild._setId(svgweb._generateID('__svg__random__', null));
+    }
     
     // in our XML, find the index position of where oldChild used to be
     var findResults = this._findChild(oldChild);
@@ -2626,11 +2645,13 @@ extend(_Node, {
     this.removeChild(oldChild);
     
     // add to our cached list of child nodes
-    if (position >= (this._cachedChildNodes.length - 1)) {
-      this._cachedChildNodes.push(newChild);
-    } else { // oldChild was somwhere at beginning or middle
-      this._cachedChildNodes = 
-                this._cachedChildNodes.splice(position + 1, 0, newChild);
+    if (!this._attached) {
+      if (position >= (this._cachedChildNodes.length - 1)) {
+        this._cachedChildNodes.push(newChild);
+      } else { // oldChild was somwhere at beginning or middle
+        this._cachedChildNodes = 
+                  this._cachedChildNodes.splice(position + 1, 0, newChild);
+      }
     }
     
     if (!isIE) {
@@ -2664,10 +2685,9 @@ extend(_Node, {
     
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
-    oldChild._cachedPreviousSibling = null;
-    oldChild._cachedNextSibling = null;
-    newChild._cachedPreviousSibling = newChild._getPreviousSibling();
-    newChild._cachedNextSibling = newChild._getNextSibling();
+    if (!this._attached) {
+      this._setupCachedSiblings();
+    }
     
     // tell Flash about the removal of oldChild
     if (this._attached) {
@@ -2720,26 +2740,28 @@ extend(_Node, {
     }
 
     // remove from our list of cachedChildNodes
-    for (var i = 0; i < this._cachedChildNodes.length; i++) {
-      var node = this._cachedChildNodes[i];
-      var nodeID;
-      if (node.nodeType == _Node.ELEMENT_NODE) {
-        nodeID = node.getAttribute('id');
-      } else if (node.nodeType == _Node.TEXT_NODE && !isIE
-                 && node._textNodeID) {
-        nodeID = node._textNodeID;
-      }
+    if (!this._attached) {
+      for (var i = 0; i < this._cachedChildNodes.length; i++) {
+        var node = this._cachedChildNodes[i];
+        var nodeID;
+        if (node.nodeType == _Node.ELEMENT_NODE) {
+          nodeID = node.getAttribute('id');
+        } else if (node.nodeType == _Node.TEXT_NODE && !isIE
+                   && node._textNodeID) {
+          nodeID = node._textNodeID;
+        }
 
-      // does this node in the cachedChildNodes array match the
-      // child passed in?
-      if (childID && nodeID && childID == nodeID) {
-        this._cachedChildNodes.splice(i, 1);
-        break;
-      } else if (isIE && child.nodeType == _Node.TEXT_NODE
-                 && node.nodeType == _Node.TEXT_NODE) {
-        if (child._nodeValue == node._nodeValue) {
+        // does this node in the cachedChildNodes array match the
+        // child passed in?
+        if (childID && nodeID && childID == nodeID) {
           this._cachedChildNodes.splice(i, 1);
           break;
+        } else if (isIE && child.nodeType == _Node.TEXT_NODE
+                   && node.nodeType == _Node.TEXT_NODE) {
+          if (child._nodeValue == node._nodeValue) {
+            this._cachedChildNodes.splice(i, 1);
+            break;
+          }
         }
       }
     }
@@ -2766,7 +2788,7 @@ extend(_Node, {
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'removeChild',
                                   elementId: childID,
-                                  nodeType: child.nodeType});
+                                  nodeType: child.nodeType });
     }
     
     // recursively set the removed node to be unattached and to not
@@ -2777,6 +2799,12 @@ extend(_Node, {
     // unattached
     child._cachedPreviousSibling = null;
     child._cachedNextSibling = null;
+    
+    // set our new correct cached next and previous siblings, which we keep
+    // around to hand out in case we become unattached
+    if (!this._attached) {
+      this._setupCachedSiblings();
+    }
     
     // track this removed node so we can clean it up on page unload
     svgweb._removedNodes.push(child._getProxyNode());
@@ -2798,7 +2826,9 @@ extend(_Node, {
     this._importNode(child);
 
     // manually add our child to our internal list of nodes
-    this._cachedChildNodes.push(child);
+    if (!this._attached) {
+      this._cachedChildNodes.push(child);
+    }
     if (this._attached && isIE) {
       this._childNodes.push(child._htc);
     }
@@ -2815,8 +2845,9 @@ extend(_Node, {
 
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
-    child._cachedPreviousSibling = child._getPreviousSibling();
-    child._cachedNextSibling = child._getNextSibling();
+    if (!this._attached) {
+      this._setupCachedSiblings();
+    }
 
     return child._getProxyNode();
   },
@@ -2917,7 +2948,7 @@ extend(_Node, {
       return null;
     }
     
-    if (this._cachedChildNodes[0]) {
+    if (!this._attached && this._cachedChildNodes[0]) {
       return this._cachedChildNodes[0]._getProxyNode();
     } else {
       // no node cached
@@ -2935,7 +2966,8 @@ extend(_Node, {
       return null;
     }
     
-    if (this._cachedChildNodes.length > 0 
+    if (!this._attached 
+        && this._cachedChildNodes.length > 0 
         && this._cachedChildNodes[this._cachedChildNodes.length - 1]) {
       var child = this._cachedChildNodes[this._cachedChildNodes.length - 1];
       return child._getProxyNode();
@@ -3114,7 +3146,7 @@ extend(_Node, {
     var self = this;
     
     this._childNodes.__defineGetter__(i, function() {
-      if (self._cachedChildNodes[i]) {
+      if (!self._attached && self._cachedChildNodes[i]) {
         return self._cachedChildNodes[i];
       } else if (self._attached) { // we are attached to a real, live DOM
         var childXML = self._nodeXML.childNodes[i];
@@ -3327,8 +3359,12 @@ extend(_Node, {
     }
     
     // recursively process each child
-    for (var i = 0; i < child._cachedChildNodes.length; i++) {
-      var fakeNode = child._cachedChildNodes[i];
+    var children = child._getChildNodes();
+    for (var i = 0; i < children.length; i++) {
+      var fakeNode = children[i];
+      if (isIE) {
+        fakeNode = fakeNode._fakeNode;
+      }
       child._processAppendedChildren(fakeNode, attached, passThrough);
     }
     
@@ -3341,9 +3377,16 @@ extend(_Node, {
     if (attached && !isIE) { // no XML expandos on IE, so can't do this there
       for (var i = 0; i < child._cachedChildNodes.length; i++) {
         var currentNode = child._cachedChildNodes[i];
-        var textNodeID = currentNode._nodeXML._textNodeID;
-        this._handler.document._nodeById['_' + textNodeID] = currentNode;
+        if (currentNode.nodeType == _Node.TEXT_NODE) {
+          var textNodeID = currentNode._nodeXML._textNodeID;
+          this._handler.document._nodeById['_' + textNodeID] = currentNode;
+        }
       }
+    }
+    
+    // clear out the cachedChildNodes structure if we are now truly attached
+    if (attached) {
+      child._cachedChildNodes = [];
     }
   },
   
@@ -3538,6 +3581,31 @@ extend(_Node, {
       // for IE, the developer will manipulate things through the UI/HTC
       // proxy facade so that we can know about property changes, etc.
       return this._htc;
+    }
+  },
+  
+  /** Goes through all of our children, setting each of their
+      cachedNextSibling and cachedPreviousSibling to their neighbor's values.
+      This is used after we have changed the ordering of our children, such
+      as with insertBefore(). These cached data structures are used to
+      return our values if we are unattached from the DOM. */
+  _setupCachedSiblings: function() {
+    for (var i = 0; i < this._cachedChildNodes.length; i++) {
+      var currentChild = this._cachedChildNodes[i];
+    
+      if (i == 0) {
+        currentChild._cachedPreviousSibling = null;
+      } else {
+        currentChild._cachedPreviousSibling = 
+                    this._cachedChildNodes[i - 1]._getProxyNode();
+      }
+    
+      if (i == (this._cachedChildNodes.length - 1)) {
+        currentChild._cachedNextSibling = null;
+      } else {
+        currentChild._cachedNextSibling = 
+                    this._cachedChildNodes[i + 1]._getProxyNode();
+      }
     }
   }
 });

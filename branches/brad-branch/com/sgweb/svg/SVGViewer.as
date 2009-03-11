@@ -738,8 +738,8 @@ package com.sgweb.svg
                     // use it (i.e. content of the form 
                     // TEXT<element>foo</element>TEXT)
                 
-                    // Get the newChild and refChild
-                    var newChild, refChild;
+                    // Get the newChild, refChild, and the parent
+                    var newChild, refChild, parent;
                 
                     if (typeof(this.js_createdElements[jsMsg.newChildId]) != "undefined") {
                         newChild = this.js_createdElements[jsMsg.newChildId];
@@ -760,10 +760,19 @@ package com.sgweb.svg
                     if (!refChild) {
                         this.error("error:insertBefore: refChildId not found: " + jsMsg.refChildId);
                     }
-                
-                    refChild.parent.insertBefore(jsMsg.position, newChild, refChild);
                     
-                    refChild.invalidateDisplay();
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this._svgRoot.getElement(jsMsg.parentId);
+                    }
+                    if (!parent) {
+                        this.error("error:insertBefore: parentId not found: " + jsMsg.parentId);
+                    }
+                    
+                    parent.insertBefore(jsMsg.position, newChild, refChild);
+                    parent.invalidateDisplay();
                 }
                 if (jsMsg.method == 'setText') {                    
                     if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
