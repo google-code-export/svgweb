@@ -2669,7 +2669,22 @@ extend(_Node, {
     newChild._cachedPreviousSibling = newChild._getPreviousSibling();
     newChild._cachedNextSibling = newChild._getNextSibling();
     
-    // TODO: BUG: Shouldn't we tell Flash about the removal of oldChild?
+    // tell Flash about the removal of oldChild
+    if (this._attached) {
+      var parentId = this._getId();
+      if (oldChild.nodeType == _Node.ELEMENT_NODE) {
+        this._handler.sendToFlash({ type: 'invoke', 
+                                    method: 'addChildAt',
+                                    elementId: newChild._getId(),
+                                    parentId: parentId,
+                                    position: position });
+      } else if (oldChild.nodeType == _Node.TEXT_NODE) {
+         this._handler.sendToFlash({ type: 'invoke', 
+                                     method: 'setText',
+                                     parentId: parentId,
+                                     text: newChild._nodeValue });
+      }
+    }
     
     // track this removed node so we can clean it up on page unload
     svgweb._removedNodes.push(oldChild._getProxyNode());
@@ -3342,11 +3357,18 @@ extend(_Node, {
       
       @returns The imported node. */
   _importNode: function(child, doAppend) {
+    //console.log('importNode, child='+child.nodeName+', doAppend='+doAppend);
     if (typeof doAppend == 'undefined') {
       doAppend = true;
     }
     
-    var doc = this._nodeXML.ownerDocument;
+    // try to import the node into our _Document's XML object
+    var doc;
+    if (this._attached) {
+      doc = this._handler.document._xml;
+    } else {
+      doc = this._nodeXML.ownerDocument;
+    }
     
     // IE does not support document.importNode, even on XML documents, 
     // so we have to define it ourselves.
@@ -3364,7 +3386,7 @@ extend(_Node, {
     if (doAppend) {
       this._nodeXML.appendChild(importedNode);
     }
-
+    
     // replace all of the children's XML with our copy of it now that it 
     // is imported
     child._importChildXML(importedNode);
@@ -3405,6 +3427,7 @@ extend(_Node, {
          
       If the child is not found then null is returned instead. */
   _findChild: function(child) {
+    //console.log('findChild, child='+child.nodeName);
     var results = {};
     
     // get an ID for the child if one is available
@@ -4280,7 +4303,7 @@ extend(_Document, {
     if (ns == '') {
       ns = null;
     }
-    
+
     // get DOM nodes with the given tag name
     if (this._xml.getElementsByTagNameNS) { // non-IE browsers
       results = this._xml.getElementsByTagNameNS(ns, localName);
@@ -4297,11 +4320,11 @@ extend(_Document, {
         } else if (ns == '*') { // not supported
           return createNodeList(); // empty []
         } else {
-          var prefix = this._namespaces['_' + ns]; 
+          var prefix = this._namespaces['_' + ns];
           if (prefix == undefined) {
             return createNodeList(); // empty []
           }
-        
+          
           if (prefix == undefined) {
             results = [];
           } else if (prefix == 'xmlns') {

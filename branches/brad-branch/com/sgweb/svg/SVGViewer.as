@@ -597,6 +597,32 @@ package com.sgweb.svg
                         element.appendChild(childNode);
                     }
                 }
+                if (jsMsg.method == 'addChildAt') {
+                    // Get the newChild
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element = this.js_createdElements[jsMsg.elementId];
+                    }
+                    else {
+                        element = this._svgRoot.getElement(jsMsg.elementId);
+                    }
+                    
+                    if (!element) {
+                        throw new Error('Programming error: ' 
+                                        + jsMsg.elementId + ' not found');
+                    }
+                    
+                    // Get the parent
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this._svgRoot.getElement(jsMsg.parentId);
+                    }
+                    
+                    // If both children are elements, append things now
+                    parent.addChildAt(element, jsMsg.position);
+                    parent.invalidateDisplay();
+                }
                 if (jsMsg.method == 'getRoot') {
                     if (this._svgRoot._xml.@id) {
                         jsMsg.elementId = this._svgRoot.xml.@id.toString();
