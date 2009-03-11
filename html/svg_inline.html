@@ -3,13 +3,13 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
       // if true, we print out each assertion as we run them; helps with
       // identifying where an assertion failed by printing the ones before it
-      var printAsserts = true;
+      var printAsserts = false;
       
       // used to record whether a Flash error has occurred asynchronously
       // so we can halt testing and report the failure
@@ -2139,6 +2139,7 @@
         textNode2 = document.createTextNode('Some more RDF text', true);
         rdf.appendChild(textNode);
         var metadata = document.createElementNS(svgns, 'metadata');
+        metadata.id = 'svg11242_metadata';
         metadata.appendChild(rdf);
         temp = rdf.replaceChild(textNode2, textNode);
         assertEquals('rdf.childNodes.length == 1', 1, rdf.childNodes.length);
@@ -2208,6 +2209,7 @@
                      document.getElementById('myDCNode'));
         assertNull('document.getElementById(myRDFNode) == null',
                    document.getElementById('myRDFNode'));
+                   
         /*           
         // Test insertBefore
         console.log('Testing insertBefore...');
@@ -2450,6 +2452,30 @@
           }
         }*/
         
+        // BUG TEST: Make sure that getElementsByTagNameNS works correctly
+        // after an insertBefore, after a removeChild, and after a replaceChild
+        /*svg = document.getElementById('svg11242');
+        metadata = document.getElementById('svg11242_metadata');
+        // testing removeChild + getElementsByTagNameNS
+        svg.removeChild(metadata);
+        matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
+        assertEquals('rdf matches.length == 2', 2, matches.length);
+        // testing replaceChild + getElementsByTagNameNS
+        group = document.createElementNS(svgns, 'g');
+        svg.appendChild(group);
+        svg.replaceChild(metadata, group);
+        matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
+        assertEquals('rdf matches.length == 3', 3, matches.length);
+        svg.removeChild(metadata);
+        matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
+        assertEquals('rdf matches.length == 2', 2, matches.length);
+        // testing insertBefore + getElementsByTagNameNS
+        group = document.createElementNS(svgns, 'g');
+        svg.appendChild(group);
+        svg.insertBefore(metadata, group);
+        matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
+        assertEquals('rdf matches.length == 3', 3, matches.length);*/
+        
         // TODO: Test dynamically creating an SVG root
         
         // TODO: Test having a dynamically created SVG root that is nested
@@ -2504,7 +2530,10 @@
         // append an element as well as using the other ways to 
         // append (replaceChild and insertBefore). Try to append a text
         // node created incorrectly with document.createTextNode to an SVG
-        // node, which should throw an exception.
+        // node, which should throw an exception. Insert nodes that aren't
+        // allowed structurally (i.e. more than one metadata element, 
+        // metadata at the end, etc.). Remove children that were never
+        // actually children.
         
         // TODO: I'm not sure if we are correctly handling what should
         // happen if you pass in null, undefined, or an empty string
@@ -4423,6 +4452,7 @@
       <script type="image/svg+xml">
         <svg
            xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+           xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
            xmlns:dc="http://purl.org/dc/elements/1.1/"
            xmlns:cc="http://web.resource.org/cc/"
            version="1.0" id="svg11242"
