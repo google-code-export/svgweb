@@ -1462,6 +1462,11 @@
                      node.nodeName.toLowerCase());
         assertEquals('H1 content should be == hello world!', 'hello world!',
                      node.childNodes[0].data);
+                     
+        // TODO: add a test where have a group with multiple children; then,
+        // do an appendChild and test to make sure that
+        // next/previous sibling relationships work correctly on all the
+        // nodes. Everything should be unattached.
         
         // Test removeChild
         console.log('Testing removeChild...');
@@ -1936,6 +1941,11 @@
         // firstChild, etc. on this to make sure that the double removal
         // hasn't messed things up in terms of cached values
         
+        // TODO: add a test where have a group with multiple children; then,
+        // do an removeChild in the middle and test to make sure that
+        // next/previous sibling relationships work correctly on all the
+        // nodes. Everything should be unattached.
+        
         // Test replaceChild
         console.log('Testing replaceChild...');
         
@@ -2210,18 +2220,22 @@
         assertNull('document.getElementById(myRDFNode) == null',
                    document.getElementById('myRDFNode'));
                    
-        /*           
+        // TODO: add a test where have a group with multiple children; then,
+        // do an replaceChild in the middle and test to make sure that
+        // next/previous sibling relationships work correctly on all the
+        // nodes. Everything should be unattached.
+                   
         // Test insertBefore
         console.log('Testing insertBefore...');
         
         // before anything is appended to the DOM, insert an SVG GROUP
         // before another SVG GROUP
         group = document.createElementNS(svgns, 'g');
-        group.id = 'group1';
+        group.id = 'shouldBeLast';
         group2 = document.createElementNS(svgns, 'g');
+        group2.id = 'shouldBeFirst';
         group2.setAttribute('fill', 'red');
         parentNode = document.createElementNS(svgns, 'g');
-        parentNode.id = 'group2';
         parentNode.appendChild(group);
         temp = parentNode.insertBefore(group2, group);
         assertEquals('parentNode.childNodes.length == 2', 2,
@@ -2326,7 +2340,13 @@
                      metadata.lastChild.nodeName);
         assertEquals('metadata.firstChild.nodeName == dc:description', 
                      'dc:description', metadata.firstChild.nodeName);
+                     
+        // TODO: add a test where have a group with multiple children; then,
+        // do an insertBefore in the middle and test to make sure that
+        // next/previous sibling relationships work correctly on all the
+        // nodes. Everything should be unattached.
         
+        /*
         // Test hasChildNodes
         console.log('Testing hasChildNodes...');
         
@@ -2450,8 +2470,8 @@
             assertFalse('path.isSupported(HTML, 2.0) == false',
                          path.isSupported('HTML', '2.0'));
           }
-        }*/
-        
+        }
+        */
         // BUG TEST: Make sure that getElementsByTagNameNS works correctly
         // after an insertBefore, after a removeChild, and after a replaceChild
         /*svg = document.getElementById('svg11242');

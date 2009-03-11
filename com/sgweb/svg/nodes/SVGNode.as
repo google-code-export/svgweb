@@ -1336,7 +1336,7 @@ package com.sgweb.svg.nodes
             if (position == 0) {
                 this._xml.*[0] = newChild + this._xml.*[0];
             } else {
-                this._xml[position - 1] += newChild;
+                this._xml.*[position - 1] += newChild;
             }
             super.addChildAt(newChild, position);
             this.invalidateDisplay();
