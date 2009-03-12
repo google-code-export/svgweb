@@ -27,7 +27,7 @@
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
-            origText, exp, html, ns;
+            origText, exp, html, ns, nextToLast, paths;
             
         var startTime = new Date().getTime();
         
@@ -1035,11 +1035,6 @@
         assertEquals('After setting .textContent, textNode.textContent == '
                      + 'set through textContent', 'set through textContent',
                      textNode.textContent);
-                     
-        // TODO: create a text node and set its textContent, then append it;
-        // textContent does not seem to exist on native text DOM nodes. Make
-        // sure that setting things through textContent on a native DOM
-        // node works
         
         // appendChild
         console.log('Testing appendChild...');
@@ -1375,8 +1370,41 @@
         dc = document.getElementById('dcCreator');
         assertNull('dcCreator should not exist', dc);
         
-        // TODO: Create multiple children and append all of them one at a time
+        // create multiple children and append all of them one at a time
         // to ensure that appending past a first element works
+        group = document.createElementNS(svgns, 'g');
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'group_path1';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'group_path2';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'group_path3';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'group_path4';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'group_path5';
+        group.appendChild(path);
+        svg = document.getElementById('svg11242');
+        nextToLast = svg.lastChild;
+        svg.appendChild(group);
+        group = nextToLast.nextSibling; // should be our new group
+        assertExists('Group of created paths should exist', group);
+        assertEquals('group.childNodes.length == 5', 5, 
+                     group.childNodes.length);
+        assertEquals('group.childNodes[0].getAttribute(id) == group_path1',
+                     'group_path1', group.childNodes[0].getAttribute('id'));
+        assertEquals('group.childNodes[1].getAttribute(id) == group_path2',
+                     'group_path2', group.childNodes[1].getAttribute('id'));
+        assertEquals('group.childNodes[2].getAttribute(id) == group_path3',
+                     'group_path3', group.childNodes[2].getAttribute('id'));
+        assertEquals('group.childNodes[3].getAttribute(id) == group_path4',
+                     'group_path4', group.childNodes[3].getAttribute('id'));
+        assertEquals('group.childNodes[4].getAttribute(id) == group_path5',
+                     'group_path5', group.childNodes[4].getAttribute('id'));
             
         // create a linearGradient, create its stop elements,
         // attach it to a defs element, then modify
@@ -1475,10 +1503,141 @@
         assertEquals('H1 content should be == hello world!', 'hello world!',
                      node.childNodes[0].data);
                      
-        // TODO: add a test where have a group with multiple children; then,
+        // add a test where have a group with multiple children; then,
         // do an appendChild and test to make sure that
         // next/previous sibling relationships work correctly on all the
         // nodes. Everything should be unattached.
+        group = document.createElementNS(svgns, 'g');
+        paths = [];
+        paths.push(document.createElementNS(svgns, 'path'));
+        // note that we've used this ID before; should be ok and should still
+        // work since this node will remain unattached
+        paths[0].id = 'group_path1';
+        group.appendChild(paths[0]);
+        assertTrue('unattached paths[0].id(group_path1) '
+                    + '!= document.getElementById(group_path1)',
+                    paths[0] != document.getElementById('group_path1'));
+        // change the ID on the unattached node; should not affect the
+        // attached node with same ID
+        paths[0].id = 'group_path100';
+        assertExists('document.getElementById(group_path1)',
+                     document.getElementById('group_path1'));
+        assertNull('document.getElementById(group_path100) == null',
+                     document.getElementById('group_path100'));            
+        // now create the other paths
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[1].id = 'group_path200';
+        group.appendChild(paths[1]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[2].id = 'group_path300';
+        group.appendChild(paths[2]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[3].id = 'group_path400';
+        group.appendChild(paths[3]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[4].id = 'group_path500';
+        group.appendChild(paths[4]);
+        assertExists('Group of created paths should exist', group);
+        assertEquals('group.childNodes.length == 5', 5, 
+                     group.childNodes.length);
+        assertEquals('group.childNodes[0].getAttribute(id) == group_path100',
+                     'group_path100', group.childNodes[0].getAttribute('id'));
+        assertEquals('group.childNodes[1].getAttribute(id) == group_path200',
+                     'group_path200', group.childNodes[1].getAttribute('id'));
+        assertEquals('group.childNodes[2].getAttribute(id) == group_path300',
+                     'group_path300', group.childNodes[2].getAttribute('id'));
+        assertEquals('group.childNodes[3].getAttribute(id) == group_path400',
+                     'group_path400', group.childNodes[3].getAttribute('id'));
+        assertEquals('group.childNodes[4].getAttribute(id) == group_path500',
+                     'group_path500', group.childNodes[4].getAttribute('id'));
+        // nextSibling/previousSibling for group_path100
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertEquals('group_path100.nextSibling == group_path200',
+                     paths[1], paths[0].nextSibling);
+        assertEquals('group_path100.parentNode == group', group,
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100',
+                   paths[0], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400',
+                     paths[3], paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400
+        assertEquals('group_path400.previousSibling == group_path300',
+                   paths[2], paths[3].previousSibling);
+        assertEquals('group_path400.nextSibling == group_path500',
+                     paths[4], paths[3].nextSibling);
+        assertEquals('group_path400.parentNode == group', group,
+                     paths[3].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path400',
+                   paths[3], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
+        // append the group node, then remove it, and make sure all the
+        // sibling information is still correct
+        svg = document.getElementById('svg11242');
+        svg.appendChild(group);
+        group = svg.removeChild(group);
+        assertExists('Group of created paths should exist', group);
+        assertEquals('group.childNodes.length == 5', 5, 
+                     group.childNodes.length);
+        assertEquals('group.childNodes[0].getAttribute(id) == group_path100',
+                     'group_path100', group.childNodes[0].getAttribute('id'));
+        assertEquals('group.childNodes[1].getAttribute(id) == group_path200',
+                     'group_path200', group.childNodes[1].getAttribute('id'));
+        assertEquals('group.childNodes[2].getAttribute(id) == group_path300',
+                     'group_path300', group.childNodes[2].getAttribute('id'));
+        assertEquals('group.childNodes[3].getAttribute(id) == group_path400',
+                     'group_path400', group.childNodes[3].getAttribute('id'));
+        assertEquals('group.childNodes[4].getAttribute(id) == group_path500',
+                     'group_path500', group.childNodes[4].getAttribute('id'));
+        // nextSibling/previousSibling for group_path100
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertEquals('group_path100.nextSibling == group_path200',
+                     paths[1], paths[0].nextSibling);
+        assertEquals('group_path100.parentNode == group', group,
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100',
+                   paths[0], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400',
+                     paths[3], paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400
+        assertEquals('group_path400.previousSibling == group_path300',
+                   paths[2], paths[3].previousSibling);
+        assertEquals('group_path400.nextSibling == group_path500',
+                     paths[4], paths[3].nextSibling);
+        assertEquals('group_path400.parentNode == group', group,
+                     paths[3].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path400',
+                   paths[3], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
         
         // Test removeChild
         console.log('Testing removeChild...');
@@ -1953,10 +2112,178 @@
         // firstChild, etc. on this to make sure that the double removal
         // hasn't messed things up in terms of cached values
         
-        // TODO: add a test where have a group with multiple children; then,
+        // add a test where have a group with multiple children; then,
         // do an removeChild in the middle and test to make sure that
         // next/previous sibling relationships work correctly on all the
         // nodes. Everything should be unattached.
+        group = document.createElementNS(svgns, 'g');
+        paths = [];
+        paths.push(document.createElementNS(svgns, 'path'));
+        // we've used these IDs before; make sure they aren't in the DOM, since
+        // we removed them in the past
+        assertNull('document.getElementById(group_path100) == null',
+                   document.getElementById('group_path100'));
+        assertNull('document.getElementById(group_path200) == null',
+                   document.getElementById('group_path200'));
+        assertNull('document.getElementById(group_path300) == null',
+                   document.getElementById('group_path300'));
+        assertNull('document.getElementById(group_path400) == null',
+                   document.getElementById('group_path400'));
+        assertNull('document.getElementById(group_path500) == null',
+                   document.getElementById('group_path500'));
+        // now create our PATH elements
+        paths[0].id = 'group_path100';
+        group.appendChild(paths[0]);            
+        // now create the other paths
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[1].id = 'group_path200';
+        group.appendChild(paths[1]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[2].id = 'group_path300';
+        group.appendChild(paths[2]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[3].id = 'group_path400';
+        group.appendChild(paths[3]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[4].id = 'group_path500';
+        group.appendChild(paths[4]);
+        // now do a removeChild in the middle and make sure sibling 
+        // relationships still work correctly
+        group.removeChild(paths[3]); // group_path400 removed
+        // nextSibling/previousSibling for group_path100
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertEquals('group_path100.nextSibling == group_path200',
+                     paths[1], paths[0].nextSibling);
+        assertEquals('group_path100.parentNode == group', group,
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100',
+                   paths[0], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path500',
+                     paths[4], paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null',
+                     paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path300',
+                   paths[2], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
+        // now remove the first path (group_path100) and make sure
+        // sibling information is correct
+        group.removeChild(paths[0]); // group_path100 removed
+        // nextSibling/previousSibling for group_path100; removed
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertNull('group_path100.nextSibling == null',
+                     paths[0].nextSibling);
+        assertNull('group_path100.parentNode == null',
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertNull('group_path200.previousSibling == null',
+                   paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path500',
+                     paths[4], paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null',
+                     paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path300',
+                   paths[2], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
+        // now remove the last path (group_path500) and make sure
+        // sibling information is correct
+        group.removeChild(paths[4]); // group_path500 removed
+        // nextSibling/previousSibling for group_path100; removed
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertNull('group_path100.nextSibling == null',
+                     paths[0].nextSibling);
+        assertNull('group_path100.parentNode == null',
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertNull('group_path200.previousSibling == null',
+                   paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertNull('group_path300.nextSibling == null', paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null', paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path500; removed
+        assertNull('group_path500.previousSibling == null',
+                   paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null', paths[4].nextSibling);
+        assertNull('group_path500.parentNode == null', paths[4].parentNode);
+        // append the group node, then remove it, and make sure all the
+        // sibling information is still correct
+        svg = document.getElementById('svg11242');
+        svg.appendChild(group);
+        group = svg.removeChild(group);
+        assertExists('Group of created paths should exist', group);
+        assertEquals('group.childNodes.length == 2', 2, 
+                     group.childNodes.length);
+        assertEquals('group.childNodes[0].getAttribute(id) == group_path200',
+                     'group_path200', group.childNodes[0].getAttribute('id'));
+        assertEquals('group.childNodes[1].getAttribute(id) == group_path300',
+                     'group_path300', group.childNodes[1].getAttribute('id'));
+        // nextSibling/previousSibling for group_path200
+        assertNull('after removal, group_path200.previousSibling == null',
+                   group.childNodes[0].previousSibling);
+        assertEquals('after removal, group_path200.nextSibling == group_path300',
+                     group.childNodes[1], group.childNodes[0].nextSibling);
+        assertEquals('after removal, group_path200.parentNode == group', group,
+                     group.childNodes[0].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('after removal, group_path300.previousSibling == '
+                      + 'group_path200', group.childNodes[0],
+                      group.childNodes[1].previousSibling);
+        assertNull('after removal, group_path300.nextSibling == null',
+                   group.childNodes[1].nextSibling);
+        assertEquals('after removal, group_path300.parentNode == group', group,
+                     group.childNodes[1].parentNode);
         
         // Test replaceChild
         console.log('Testing replaceChild...');
@@ -2232,10 +2559,218 @@
         assertNull('document.getElementById(myRDFNode) == null',
                    document.getElementById('myRDFNode'));
                    
-        // TODO: add a test where have a group with multiple children; then,
+        // add a test where have a group with multiple children; then,
         // do an replaceChild in the middle and test to make sure that
         // next/previous sibling relationships work correctly on all the
         // nodes. Everything should be unattached.
+        group = document.createElementNS(svgns, 'g');
+        paths = [];
+        paths.push(document.createElementNS(svgns, 'path'));
+        // we've used these IDs before; make sure they aren't in the DOM, since
+        // we removed them in the past
+        assertNull('document.getElementById(group_path100) == null',
+                   document.getElementById('group_path100'));
+        assertNull('document.getElementById(group_path200) == null',
+                   document.getElementById('group_path200'));
+        assertNull('document.getElementById(group_path300) == null',
+                   document.getElementById('group_path300'));
+        assertNull('document.getElementById(group_path400) == null',
+                   document.getElementById('group_path400'));
+        assertNull('document.getElementById(group_path500) == null',
+                   document.getElementById('group_path500'));
+        // now create our PATH elements
+        paths[0].id = 'group_path100';
+        group.appendChild(paths[0]);            
+        // now create the other paths
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[1].id = 'group_path200';
+        group.appendChild(paths[1]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[2].id = 'group_path300';
+        group.appendChild(paths[2]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[3].id = 'group_path400';
+        group.appendChild(paths[3]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[4].id = 'group_path500';
+        group.appendChild(paths[4]);
+        // elements that we will use to replace earlier ones with
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[5].id = 'group_path400_replacer';
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[6].id = 'group_path100_replacer';
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[7].id = 'group_path500_replacer';
+        // now do a replaceChild in the middle and make sure sibling 
+        // relationships still work correctly
+        group.replaceChild(paths[5] /* group_path400_replacer */, 
+                           paths[3] /* group_path400 */);
+        // nextSibling/previousSibling for group_path100
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertEquals('group_path100.nextSibling == group_path200',
+                     paths[1], paths[0].nextSibling);
+        assertEquals('group_path100.parentNode == group', group,
+                     paths[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100',
+                   paths[0], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400_replacer',
+                     paths[5] /* group_path400_replacer */, 
+                     paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null',
+                     paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path400_replacer; this replaced
+        // another element
+        assertEquals('group_path400_replacer.previousSibling == group_path300',
+                   paths[2] /* group_path300 */, 
+                   paths[5].previousSibling);
+        assertEquals('group_path400_replacer.nextSibling == '
+                     + 'group_path500',
+                     paths[4] /* group_path500 */, 
+                     paths[5].nextSibling);
+        assertEquals('group_path400_replacer.parentNode == group', group,
+                     paths[5].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path400_replacer',
+                   paths[5], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null', paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
+        // now do a replaceChild at the beginning and make sure sibling 
+        // relationships still work correctly
+        group.replaceChild(paths[6] /* group_path100_replacer */, 
+                           paths[0] /* group_path100 */);
+        // nextSibling/previousSibling for group_path100; this was replaced
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertNull('group_path100.nextSibling == null', paths[0].nextSibling);
+        assertNull('group_path100.parentNode == null', paths[0].parentNode);
+        // nextSibling/previousSibling for group_path100_replacer
+        assertNull('group_path100_replacer.previousSibling == null',
+                   paths[6].previousSibling);
+        assertEquals('group_path100_replacer.nextSibling == group_path200',
+                     paths[1], paths[6].nextSibling);
+        assertEquals('group_path100_replacer.parentNode == group', group,
+                     paths[6].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100_replacer',
+                   paths[6], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400_replacer',
+                     paths[5] /* group_path400_replacer */, 
+                     paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null',
+                     paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path400_replacer; this replaced
+        // another element
+        assertEquals('group_path400_replacer.previousSibling == group_path300',
+                   paths[2] /* group_path300 */, 
+                   paths[5].previousSibling);
+        assertEquals('group_path400_replacer.nextSibling == '
+                     + 'group_path500',
+                     paths[4] /* group_path500 */, 
+                     paths[5].nextSibling);
+        assertEquals('group_path400_replacer.parentNode == group', group,
+                     paths[5].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path400_replacer',
+                   paths[5], paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     paths[4].parentNode);
+        // now do a replaceChild at the end and make sure sibling 
+        // relationships still work correctly
+        group.replaceChild(paths[7] /* group_path500_replacer */, 
+                           paths[4] /* group_path500 */);
+        // nextSibling/previousSibling for group_path100; this was replaced
+        assertNull('group_path100.previousSibling == null',
+                   paths[0].previousSibling);
+        assertNull('group_path100.nextSibling == null', paths[0].nextSibling);
+        assertNull('group_path100.parentNode == null', paths[0].parentNode);
+        // nextSibling/previousSibling for group_path100_replacer
+        assertNull('group_path100_replacer.previousSibling == null',
+                   paths[6].previousSibling);
+        assertEquals('group_path100_replacer.nextSibling == group_path200',
+                     paths[1], paths[6].nextSibling);
+        assertEquals('group_path100_replacer.parentNode == group', group,
+                     paths[6].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100_replacer',
+                   paths[6], paths[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], paths[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     paths[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], paths[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400_replacer',
+                     paths[5] /* group_path400_replacer */, 
+                     paths[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     paths[2].parentNode);
+        // nextSibling/previousSibling for group_path400; this node
+        // was removed
+        assertNull('group_path400.previousSibling == null',
+                   paths[3].previousSibling);
+        assertNull('group_path400.nextSibling == null',
+                     paths[3].nextSibling);
+        assertNull('group_path400.parentNode == null', paths[3].parentNode);
+        // nextSibling/previousSibling for group_path400_replacer; this replaced
+        // another element
+        assertEquals('group_path400_replacer.previousSibling == group_path300',
+                   paths[2] /* group_path300 */, 
+                   paths[5].previousSibling);
+        assertEquals('group_path400_replacer.nextSibling == '
+                     + 'group_path500_replacer',
+                     paths[7] /* group_path500_replacer */, 
+                     paths[5].nextSibling);
+        assertEquals('group_path400_replacer.parentNode == group', group,
+                     paths[5].parentNode);
+        // nextSibling/previousSibling for group_path500; this node was 
+        // removed
+        assertNull('group_path500.previousSibling == null',
+                   paths[4].previousSibling);
+        assertNull('group_path500.nextSibling == null',
+                   paths[4].nextSibling);
+        assertNull('group_path500.parentNode == null', paths[4].parentNode);
+        // nextSibling/previousSibling for group_path500_replacer
+        assertEquals('group_path500_replacer.previousSibling == '
+                    + 'group_path400_replacer',
+                    paths[5], paths[7].previousSibling);
+        assertNull('group_path500_replacer.nextSibling == null',
+                   paths[7].nextSibling);
+        assertEquals('group_path500_replacer.parentNode == group', group,
+                     paths[7].parentNode);
                    
         // Test insertBefore
         console.log('Testing insertBefore...');
@@ -2353,10 +2888,105 @@
         assertEquals('metadata.firstChild.nodeName == dc:description', 
                      'dc:description', metadata.firstChild.nodeName);
                      
-        // TODO: add a test where have a group with multiple children; then,
+        // add a test where have a group with multiple children; then,
         // do an insertBefore in the middle and test to make sure that
         // next/previous sibling relationships work correctly on all the
         // nodes. Everything should be unattached.
+        group = document.createElementNS(svgns, 'g');
+        paths = [];
+        paths.push(document.createElementNS(svgns, 'path'));
+        // we've used these IDs before; make sure they aren't in the DOM, since
+        // we removed them in the past
+        assertNull('document.getElementById(group_path100) == null',
+                   document.getElementById('group_path100'));
+        assertNull('document.getElementById(group_path200) == null',
+                   document.getElementById('group_path200'));
+        assertNull('document.getElementById(group_path300) == null',
+                   document.getElementById('group_path300'));
+        assertNull('document.getElementById(group_path400) == null',
+                   document.getElementById('group_path400'));
+        assertNull('document.getElementById(group_path500) == null',
+                   document.getElementById('group_path500'));
+        assertNull('document.getElementById(group_path100_replacer) == null',
+                   document.getElementById('group_path100_replacer'));
+        assertNull('document.getElementById(group_path400_replacer) == null',
+                   document.getElementById('group_path400_replacer'));
+        assertNull('document.getElementById(group_path500_replacer) == null',
+                   document.getElementById('group_path500_replacer'));
+        // now create our PATH elements
+        paths[0].id = 'group_path100';
+        group.appendChild(paths[0]);      
+        // now create the other paths
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[1].id = 'group_path200';
+        group.appendChild(paths[1]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[2].id = 'group_path300';
+        group.appendChild(paths[2]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[3].id = 'group_path400';
+        group.appendChild(paths[3]);
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[4].id = 'group_path500';
+        group.appendChild(paths[4]);
+        // elements that we will use to insert before earlier ones with
+        paths.push(document.createElementNS(svgns, 'path'));
+        paths[5].id = 'group_path400_insertBefore';
+        paths.push(document.createElementNS(svgns, 'path'));
+        // now do an insertBefore in the middle and make sure sibling 
+        // relationships still work correctly
+        group.insertBefore(paths[5] /* group_path400_insertBefore */, 
+                           paths[3] /* group_path400 */);
+        assertEquals('group.childNodes after insertBefore == 6', 6,
+                     group.childNodes.length);
+        // nextSibling/previousSibling for group_path100
+        assertNull('group_path100.previousSibling == null',
+                   group.childNodes[0].previousSibling);
+        assertEquals('group_path100.nextSibling == group_path200',
+                     paths[1], group.childNodes[0].nextSibling);
+        assertEquals('group_path100.parentNode == group', group,
+                     group.childNodes[0].parentNode);
+        // nextSibling/previousSibling for group_path200
+        assertEquals('group_path200.previousSibling == group_path100',
+                   paths[0], group.childNodes[1].previousSibling);
+        assertEquals('group_path200.nextSibling == group_path300',
+                     paths[2], group.childNodes[1].nextSibling);
+        assertEquals('group_path200.parentNode == group', group,
+                     group.childNodes[1].parentNode);
+        // nextSibling/previousSibling for group_path300
+        assertEquals('group_path300.previousSibling == group_path200',
+                   paths[1], group.childNodes[2].previousSibling);
+        assertEquals('group_path300.nextSibling == group_path400_insertBefore',
+                     paths[5] /* group_path400_insertBefore */, 
+                     group.childNodes[2].nextSibling);
+        assertEquals('group_path300.parentNode == group', group,
+                     group.childNodes[2].parentNode);
+        // nextSibling/previousSibling for group_path400_insertBefore
+        assertEquals('group_path400_insertBefore.previousSibling == group_path300',
+                   paths[2] /* group_path300 */, 
+                   group.childNodes[3].previousSibling);
+        assertEquals('group_path400_insertBefore.nextSibling == '
+                     + 'group_path400',
+                     paths[3] /* group_path400 */, 
+                     group.childNodes[3].nextSibling);
+        assertEquals('group_path400_insertBefore.parentNode == group', group,
+                     group.childNodes[3].parentNode);
+        // nextSibling/previousSibling for group_path400
+        assertEquals('group_path400.previousSibling == group_path400_insertBefore',
+                   paths[5] /* group_path400 */, 
+                   group.childNodes[4].previousSibling);
+        assertEquals('group_path400.nextSibling == group_path500',
+                     paths[4] /* group_path500 */, 
+                     group.childNodes[4].nextSibling);
+        assertEquals('group_path400.parentNode == group', group,
+                     group.childNodes[4].parentNode);
+        // nextSibling/previousSibling for group_path500
+        assertEquals('group_path500.previousSibling == group_path400',
+                   paths[3], group.childNodes[5].previousSibling);
+        assertNull('group_path500.nextSibling == null', 
+                   group.childNodes[5].nextSibling);
+        assertEquals('group_path500.parentNode == group', group,
+                     group.childNodes[5].parentNode);
         
         // Test hasChildNodes
         console.log('Testing hasChildNodes...');
