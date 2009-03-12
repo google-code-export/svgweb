@@ -3267,6 +3267,7 @@ extend(_Node, {
     }
     
     this._nodeValue = newValue;
+    this._nodeXML.nodeValue = newValue;
     
     if (this._passThrough) {
       // get the ID of our parent

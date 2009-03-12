@@ -3248,7 +3248,11 @@
         
         // manually call unload listener to make sure no exceptions fire;
         // on browsers other than Internet Explorer this is a no-op
-        console.log('Testing window.unload listener...');
+        // TODO: commenting out right now because it deletes the SVG rendering
+        // on the screen. Uncomment when we have other tests that do bitmap
+        // testing or visual tests, and we don't need the tests in this file
+        // to be visually inspected.
+        /*console.log('Testing window.unload listener...');
         if (svgweb.getHandlerType() == 'flash') {
           exp = null;
           // save document.getElementById and createTextNode so we can use it 
@@ -3276,7 +3280,7 @@
             console.log(exp.message);
           }
           assertNull('Window.unload should run without an exception', exp);
-        }
+        }*/
         
         var endTime = new Date().getTime();
         
