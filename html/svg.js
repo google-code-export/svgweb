@@ -2634,7 +2634,8 @@ extend(_Node, {
     return newChild._getProxyNode();
   },
   
-  replaceChild: function(newChild /* _Node */, oldChild /* _Node */) { 
+  replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
+    //console.log('replaceChild, newChild='+newChild.id+', oldChild='+oldChild.id);
     // the children could be DOM nodes; turn them into something we can
     // work with, such as _Nodes or _Elements
     newChild = this._getFakeNode(newChild);
@@ -2647,6 +2648,7 @@ extend(_Node, {
     // the new child might not have an ID; generate one if not
     if (newChildID == null && newChild.nodeType == _Node.ELEMENT_NODE) {
       newChild._setId(svgweb._generateID('__svg__random__', null));
+      newChildID = newChild._getId();
     }
     
     // in our XML, find the index position of where oldChild used to be
@@ -2662,12 +2664,15 @@ extend(_Node, {
     
     // add to our cached list of child nodes
     if (!this._attached) {
-      if (position >= (this._cachedChildNodes.length - 1)) {
-        this._cachedChildNodes.push(newChild);
-      } else { // oldChild was somwhere at beginning or middle
-        this._cachedChildNodes = 
-                  this._cachedChildNodes.splice(position + 1, 0, newChild);
+      var cachedChildNodes = [];
+      for (var i = 0; i < position; i++) {
+        cachedChildNodes.push(this._cachedChildNodes[i]);
       }
+      cachedChildNodes.push(newChild);
+      for (var i = position + 1; i <= this._cachedChildNodes.length; i++) {
+        cachedChildNodes.push(this._cachedChildNodes[i - 1]);
+      }
+      this._cachedChildNodes = cachedChildNodes;
     }
     
     if (!isIE) {
@@ -2682,13 +2687,13 @@ extend(_Node, {
     var importedNode = this._importNode(newChild, false);
 
     // bring the imported child into our XML where the oldChild used to be
-    if (position >= (this._nodeXML.childNodes.length - 1)) {
+    if (position >= this._nodeXML.childNodes.length) {
       // old node was at the end -- just do an appendChild
       this._nodeXML.appendChild(importedNode);
     } else {
       // old node is somewhere in the middle or beginning; jump one ahead
       // from the old position and do an insertBefore
-      var placeBefore = this._nodeXML.childNodes[position + 1];
+      var placeBefore = this._nodeXML.childNodes[position];
       this._nodeXML.insertBefore(importedNode, placeBefore);
     }
     
