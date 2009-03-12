@@ -2107,10 +2107,48 @@
         assertNull('format.firstChild.nextSibling == null', 
                    child.previousSibling);
                    
-        // TODO: Create a test where we remove a child and its subtree, then
+        // create a test where we remove a child and its subtree, then
         // later on remove the _parent_ of that child, then test parentNode,
         // firstChild, etc. on this to make sure that the double removal
         // hasn't messed things up in terms of cached values
+        group = document.createElementNS(svgns, 'g');
+        group.id = 'parent_test_group1';
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'subtree_test_path1';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'subtree_test_path2';
+        group.appendChild(path);
+        path = document.createElementNS(svgns, 'path');
+        path.id = 'subtree_test_path3';
+        group.appendChild(path);
+        group2 = document.createElementNS(svgns, 'g');
+        group2.id = 'parent_container_group';
+        group2.appendChild(group);
+        svg = document.getElementById('svg11242');
+        svg.appendChild(group2);
+        // now remove group
+        group.parentNode.removeChild(group);
+        // remove group2 and tests it's various cached sibling info
+        svg.removeChild(svg.lastChild);
+        assertNull('group2.parentNode == null', group2.parentNode);
+        assertNull('group.parentNode == null', group.parentNode);
+        assertEquals('group2.childNodes.length == 0', 0,
+                      group2.childNodes.length);
+        assertEquals('group.childNodes.length == 3', 3,
+                      group.childNodes.length);
+        assertNull('group2.firstChild == null', group2.firstChild);
+        assertNull('group2.lastChild == null', group2.lastChild);
+        assertNull('group2.nextSibling == null', group2.nextSibling);
+        assertNull('group2.previousSibling == null', group2.previousSibling);
+        assertUndefined('group2.childNodes[0] == undefined',
+                        group2.childNodes[0]);
+        assertEquals('group.firstChild.id == subtree_test_path1',
+                     'subtree_test_path1', group.firstChild.id);
+        assertEquals('group.lastChild.id == subtree_test_path3',
+                     'subtree_test_path3', group.lastChild.id);
+        assertEquals('group.childNodes[1].id == subtree_test_path2',
+                     'subtree_test_path2', group.childNodes[1].id);
         
         // add a test where have a group with multiple children; then,
         // do an removeChild in the middle and test to make sure that
