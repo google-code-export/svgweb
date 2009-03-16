@@ -1131,8 +1131,15 @@ package com.sgweb.svg.nodes
             var attrName:String;
             var attrValue:String;
             var style:String;
+            
+            var baseStyles:Array;
+            if (styleValue.indexOf(';') == -1) {
+              // only one style value given, with no trailing semicolon
+              baseStyles = [ this._xml.@style ];
+            } else {
+              baseStyles = this._xml.@style.split(';');
+            }
 
-            var baseStyles:Array = this._xml.@style.split(';');
             for each(style in baseStyles) {
                 styleSet = style.split(':');
                 if (styleSet.length == 2) {
