@@ -3666,7 +3666,7 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   
   // track .style changes
   if (this.namespaceURI == svgns) {
-    this.style = new _Style();
+    this.style = new _Style(this);
   }
   
   // define our accessors if we are not IE; IE does this by using the HTC
@@ -3954,9 +3954,12 @@ extend(_Element, {
 });
 
 
-// not an official DOM interface; used so that we can track changes to
-// the CSS style property of an Element
-function _Style() {
+/** Not an official DOM interface; used so that we can track changes to
+    the CSS style property of an Element
+    @param element The _Element that this Style is attached to. */
+function _Style(element) {
+  this._element = element;
+  this._handler = element._handler;
   this._setup();
 }
 
@@ -3983,15 +3986,191 @@ _Style._allStyles = [
 ];
 
 extend(_Style, {
-  // called when a style change has occurred; called from the Internet
-  // Explorer HTC as well as any getter/setter functions for other
-  // browsers
-  styleChange: function(prop, oldVal, newVal) {
+  /** Called when a style change has occurred; called from the Internet
+      Explorer HTC. */
+  _styleChange: function(styleName, styleValue) {
+    return this._setStyleAttribute(styleName, styleValue);
   },
   
+  /** Initializes our magic getters and setters for non-IE browsers. For IE
+      we set our initial style values on the HTC. */
   _setup: function() {
-    // does the magic for non-IE browsers to create getters and setters
-    // for style properties
+    console.log('start setup');
+    if (!isIE) {
+      // setup getter/setter magic for non-IE browsers
+      for (var i = 0; i < _Style._allStyles.length; i++) {
+        var styleName = _Style._allStyles[i];
+        this._defineAccessor(styleName);
+      }
+    } else {
+      // set our initial style values; we temporarily disable listening
+      // to onpropertychange events in the HTC since we are the ones changing
+      // the value
+      this._element._ignoreStyleChanges = true;
+      
+      // parse style string
+      var parsedStyle = this._fromStyleString();
+      
+      // loop through each one, setting it on our HTC's style object
+      for (var i = 0; i < parsedStyle.length; i++) {
+        var styleName = parsedStyle[i].styleName;
+        var styleValue = parsedStyle[i].styleValue;
+        this._element._htc.style[styleName] = styleValue;
+      }
+      
+      // pay attention to style changes again
+      this._element._ignoreStyleChanges = false;
+    }
+    console.log('end setup');
+  },
+  
+  /** Defines the getter and setter for a single style, such as 'display'. */
+  _defineAccessor: function(styleName) {
+    var self = this;
+    
+    this.__defineGetter__(styleName, function() {
+      return self._getStyleAttribute(styleName);
+    });
+    
+    this.__defineSetter__(styleName, function(styleValue) {
+      return self._setStyleAttribute(styleName, styleValue);
+    });
+  },
+  
+  _setStyleAttribute: function(styleName, styleValue) {
+    console.log('setStyleAttribute, styleName='+styleName+', styleValue='+styleValue);
+    // change our internal attributes to match the style
+    var attrs = this._element._attributes;
+    for (var i in attrs) {
+      var attrName = i.replace(/^_/, '');
+      if (i === styleName) {
+        this._element._attributes[attrName] = styleValue;
+      }
+    }
+    
+    // change our XML attribute value
+    var attrValue = this._element._xml.getAttribute(styleName);
+    if (attrValue !== null && attrValue !== undefined) {
+      this._element._xml.setAttribute(styleName, styleValue);
+    }
+    
+    // change our XML style string value now
+    
+    // parse style string first
+    var parsedStyle = this._fromStyleString();
+    
+    // is our style name there?
+    var foundStyle = false;
+    for (var i = 0; i < parsedStyle.length; i++) {
+      if (parsedStyle[i].styleName === styleName) {
+        parsedStyle[i].styleValue = styleValue;
+        foundStyle = true;
+        break;
+      }
+    }
+    
+    // if we didn't find it above add it
+    parsedStyle.push({ styleName: styleName, styleValue: styleValue });
+    
+    // now turn the style back into a string and set it on our XML
+    var styleString = this._toStyleString(parsedStyle);
+    this._element._xml.setAttribute('style', styleString);
+    
+    // tell Flash about the change
+    if (this._element._attached && this._element._passThrough) {
+      this._handler.sendToFlash({ type: 'invoke', 
+                                  method: 'setAttribute',
+                                  elementId: this._element._getId(),
+                                  applyToStyle: true,
+                                  attrName: styleName, 
+                                  attrValue: styleValue });
+    }
+  },
+  
+  _getStyleAttribute: function(styleName) {
+    console.log('getStyleAttribute, styleName='+styleName);
+    if (this._element._attached && this._element._passThrough) {
+      var returnMsg = this._handler.sendToFlash({ 
+                                        type: 'invoke', 
+                                        method: 'getAttribute',
+                                        elementId: this._element._getId(),
+                                        getFromStyle: true,
+                                        attrName: styleName });
+      if (!returnMsg) {
+         return null;
+      }
+
+      return returnMsg.attrValue;
+    } else {
+      // not attached yet; have to parse it from our local value
+      var parsedStyle = this._fromStyleString();
+
+      for (var i = 0; i < parsedStyle.length; i++) {
+        if (parsedStyle[i].styleName === styleName) {
+          return parsedStyle[i].styleValue;
+        }
+      }
+      
+      return null;
+    }
+  },
+  
+  /** Parses our style string into an array, where each array entry is an
+      object literal with the 'styleName' and 'styleValue', such as:
+      
+      results[0].styleName
+      results[0].styleValue
+      etc. 
+      
+      If there are no results an empty array is returned. */
+  _fromStyleString: function() {
+    var styleValue = this._element._xml.getAttribute('style');
+    
+    if (styleValue === null || styleValue === undefined) {
+      return [];
+    }
+
+    var baseStyles;
+    if (styleValue.indexOf(';') == -1) {
+      // only one style value given, with no trailing semicolon
+      baseStyles = [ styleValue ];
+    } else {
+      baseStyles = styleValue.split(';');
+    }
+    
+    var results = [];
+    for (var i = 0; i < baseStyles.length; i++) {
+      var style = baseStyles[i];
+      var styleSet = style.split(':');
+      if (styleSet.length == 2) {
+        var attrName = styleSet[0];
+        var attrValue = styleSet[1];
+        
+        // trim leading whitespace
+        attrName = attrName.replace(/^\s+/, '');
+        attrValue = attrValue.replace(/^\s+/, '');
+        
+        var entry = { styleName: attrName, styleValue: attrValue };
+        results.push(entry);
+      }
+    }
+    
+    return results;
+  },
+  
+  /** Turns a parsed style into a string.
+  
+      @param parsedStyle An array where each entry is an object literal
+      with two values, 'styleName' and 'styleValue'. Uses same data structure
+      returned from fromStyleString() method above. */
+  _toStyleString: function(parsedStyle) {
+    var results = '';
+    for (var i = 0; i < parsedStyle.length; i++) {
+      results += parsedStyle[i].styleName + ': ';
+      results += parsedStyle[i].styleValue + ';';
+    }
+    
+    return results;
   }
 });
 

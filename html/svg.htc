@@ -60,6 +60,7 @@
       <method name="isSupported" />
        
       <attach event="oncontentready" onevent="contentReady()" />
+      <attach event="onpropertychange" onevent="propertyChange()" />
       
       <defaults tabStop="false" contentEditable="false"
                         canHaveHTML="true" viewInheritStyle="true"
@@ -84,6 +85,30 @@
                     elemDoc: element.document,
                     htcNode: this };
         this._handler.onMessage(msg);
+      }
+    }
+    
+    /** Watch to see when anyone changes a 'style' property so we
+        can mirror it in the Flash control. */
+    function propertyChange() {
+      console.log('onpropertychange');
+      if (this._fakeNode.nodeType != 1) { // only Element nodes
+        return;
+      }
+      
+      // are we ignoring style changes (done when we are initializing the
+      // _Style object the first time)?
+      if (this._fakeNode.style._ignoreStyleChanges) {
+        return;
+      }
+      
+      var prop = window.event.propertyName;
+      if (prop && /^style\./.test(prop)) {
+        var styleName = prop.match(/^style\.(.*)$/)[1];
+        var styleValue = this.style[styleName];
+        
+        // tell our fake node and Flash
+        this._fakeNode.style._styleChange(styleName, styleValue);
       }
     }
     
