@@ -3,13 +3,13 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
       // if true, we print out each assertion as we run them; helps with
       // identifying where an assertion failed by printing the ones before it
-      var printAsserts = false;
+      var printAsserts = true;
       
       // used to record whether a Flash error has occurred asynchronously
       // so we can halt testing and report the failure
@@ -27,7 +27,7 @@
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
-            origText, exp, html, ns, nextToLast, paths;
+            origText, exp, html, ns, nextToLast, paths, styleStr, circle;
             
         var startTime = new Date().getTime();
         
@@ -46,7 +46,7 @@
         assertTrue('renderer == native || flash',
                     renderer == 'native' 
                     || renderer == 'flash');
-        
+        /*
         // getElementById
         console.log('Testing getElementById...');
         
@@ -2641,8 +2641,9 @@
         paths[7].id = 'group_path500_replacer';
         // now do a replaceChild in the middle and make sure sibling 
         // relationships still work correctly
-        group.replaceChild(paths[5] /* group_path400_replacer */, 
-                           paths[3] /* group_path400 */);
+        // paths[5] == group_path400_replacer 
+        // paths[3] == group_path400
+        group.replaceChild(paths[5], paths[3]);
         // nextSibling/previousSibling for group_path100
         assertNull('group_path100.previousSibling == null',
                    paths[0].previousSibling);
@@ -2660,9 +2661,9 @@
         // nextSibling/previousSibling for group_path300
         assertEquals('group_path300.previousSibling == group_path200',
                    paths[1], paths[2].previousSibling);
+        // paths[5] == group_path400_replacer
         assertEquals('group_path300.nextSibling == group_path400_replacer',
-                     paths[5] /* group_path400_replacer */, 
-                     paths[2].nextSibling);
+                     paths[5], paths[2].nextSibling);
         assertEquals('group_path300.parentNode == group', group,
                      paths[2].parentNode);
         // nextSibling/previousSibling for group_path400; this node
@@ -2674,13 +2675,13 @@
         assertNull('group_path400.parentNode == null', paths[3].parentNode);
         // nextSibling/previousSibling for group_path400_replacer; this replaced
         // another element
+        // paths[2] == group_path300
         assertEquals('group_path400_replacer.previousSibling == group_path300',
-                   paths[2] /* group_path300 */, 
-                   paths[5].previousSibling);
+                   paths[2], paths[5].previousSibling);
+        // paths[4] == group_path500
         assertEquals('group_path400_replacer.nextSibling == '
                      + 'group_path500',
-                     paths[4] /* group_path500 */, 
-                     paths[5].nextSibling);
+                     paths[4], paths[5].nextSibling);
         assertEquals('group_path400_replacer.parentNode == group', group,
                      paths[5].parentNode);
         // nextSibling/previousSibling for group_path500
@@ -2691,8 +2692,9 @@
                      paths[4].parentNode);
         // now do a replaceChild at the beginning and make sure sibling 
         // relationships still work correctly
-        group.replaceChild(paths[6] /* group_path100_replacer */, 
-                           paths[0] /* group_path100 */);
+        // paths[6] == group_path100_replacer
+        // paths[0] == group_path100
+        group.replaceChild(paths[6], paths[0]);
         // nextSibling/previousSibling for group_path100; this was replaced
         assertNull('group_path100.previousSibling == null',
                    paths[0].previousSibling);
@@ -2715,9 +2717,9 @@
         // nextSibling/previousSibling for group_path300
         assertEquals('group_path300.previousSibling == group_path200',
                    paths[1], paths[2].previousSibling);
+        // paths[5] == group_path400_replacer
         assertEquals('group_path300.nextSibling == group_path400_replacer',
-                     paths[5] /* group_path400_replacer */, 
-                     paths[2].nextSibling);
+                     paths[5], paths[2].nextSibling);
         assertEquals('group_path300.parentNode == group', group,
                      paths[2].parentNode);
         // nextSibling/previousSibling for group_path400; this node
@@ -2729,13 +2731,13 @@
         assertNull('group_path400.parentNode == null', paths[3].parentNode);
         // nextSibling/previousSibling for group_path400_replacer; this replaced
         // another element
+        // paths[2] == group_path300
         assertEquals('group_path400_replacer.previousSibling == group_path300',
-                   paths[2] /* group_path300 */, 
-                   paths[5].previousSibling);
+                   paths[2], paths[5].previousSibling);
+        // paths[4] == group_path500
         assertEquals('group_path400_replacer.nextSibling == '
                      + 'group_path500',
-                     paths[4] /* group_path500 */, 
-                     paths[5].nextSibling);
+                     paths[4], paths[5].nextSibling);
         assertEquals('group_path400_replacer.parentNode == group', group,
                      paths[5].parentNode);
         // nextSibling/previousSibling for group_path500
@@ -2747,8 +2749,9 @@
                      paths[4].parentNode);
         // now do a replaceChild at the end and make sure sibling 
         // relationships still work correctly
-        group.replaceChild(paths[7] /* group_path500_replacer */, 
-                           paths[4] /* group_path500 */);
+        // paths[7] == group_path500_replacer
+        // paths[4] == group_path500
+        group.replaceChild(paths[7], paths[4]);
         // nextSibling/previousSibling for group_path100; this was replaced
         assertNull('group_path100.previousSibling == null',
                    paths[0].previousSibling);
@@ -2771,9 +2774,9 @@
         // nextSibling/previousSibling for group_path300
         assertEquals('group_path300.previousSibling == group_path200',
                    paths[1], paths[2].previousSibling);
+        // paths[5] == group_path400_replacer
         assertEquals('group_path300.nextSibling == group_path400_replacer',
-                     paths[5] /* group_path400_replacer */, 
-                     paths[2].nextSibling);
+                     paths[5], paths[2].nextSibling);
         assertEquals('group_path300.parentNode == group', group,
                      paths[2].parentNode);
         // nextSibling/previousSibling for group_path400; this node
@@ -2785,13 +2788,13 @@
         assertNull('group_path400.parentNode == null', paths[3].parentNode);
         // nextSibling/previousSibling for group_path400_replacer; this replaced
         // another element
+        // paths[2] == group_path300
         assertEquals('group_path400_replacer.previousSibling == group_path300',
-                   paths[2] /* group_path300 */, 
-                   paths[5].previousSibling);
+                   paths[2], paths[5].previousSibling);
+        // paths[7] == group_path500_replacer
         assertEquals('group_path400_replacer.nextSibling == '
                      + 'group_path500_replacer',
-                     paths[7] /* group_path500_replacer */, 
-                     paths[5].nextSibling);
+                     paths[7], paths[5].nextSibling);
         assertEquals('group_path400_replacer.parentNode == group', group,
                      paths[5].parentNode);
         // nextSibling/previousSibling for group_path500; this node was 
@@ -2973,8 +2976,9 @@
         paths.push(document.createElementNS(svgns, 'path'));
         // now do an insertBefore in the middle and make sure sibling 
         // relationships still work correctly
-        group.insertBefore(paths[5] /* group_path400_insertBefore */, 
-                           paths[3] /* group_path400 */);
+        // paths[5] == group_path400_insertBefore
+        // paths[3] == group_path400
+        group.insertBefore(paths[5], paths[3]);
         assertEquals('group.childNodes after insertBefore == 6', 6,
                      group.childNodes.length);
         // nextSibling/previousSibling for group_path100
@@ -2994,28 +2998,28 @@
         // nextSibling/previousSibling for group_path300
         assertEquals('group_path300.previousSibling == group_path200',
                    paths[1], group.childNodes[2].previousSibling);
+        // paths[5] == group_path400_insertBefore
         assertEquals('group_path300.nextSibling == group_path400_insertBefore',
-                     paths[5] /* group_path400_insertBefore */, 
-                     group.childNodes[2].nextSibling);
+                     paths[5], group.childNodes[2].nextSibling);
         assertEquals('group_path300.parentNode == group', group,
                      group.childNodes[2].parentNode);
         // nextSibling/previousSibling for group_path400_insertBefore
+        // paths[2] == group_path300
         assertEquals('group_path400_insertBefore.previousSibling == group_path300',
-                   paths[2] /* group_path300 */, 
-                   group.childNodes[3].previousSibling);
+                   paths[2], group.childNodes[3].previousSibling);
+        // paths[3] == group_path400
         assertEquals('group_path400_insertBefore.nextSibling == '
                      + 'group_path400',
-                     paths[3] /* group_path400 */, 
-                     group.childNodes[3].nextSibling);
+                     paths[3], group.childNodes[3].nextSibling);
         assertEquals('group_path400_insertBefore.parentNode == group', group,
                      group.childNodes[3].parentNode);
         // nextSibling/previousSibling for group_path400
+        // paths[5] == group_path400
         assertEquals('group_path400.previousSibling == group_path400_insertBefore',
-                   paths[5] /* group_path400 */, 
-                   group.childNodes[4].previousSibling);
+                   paths[5], group.childNodes[4].previousSibling);
+        // paths[4] == group_path500
         assertEquals('group_path400.nextSibling == group_path500',
-                     paths[4] /* group_path500 */, 
-                     group.childNodes[4].nextSibling);
+                     paths[4], group.childNodes[4].nextSibling);
         assertEquals('group_path400.parentNode == group', group,
                      group.childNodes[4].parentNode);
         // nextSibling/previousSibling for group_path500
@@ -3149,7 +3153,258 @@
             assertFalse('path.isSupported(HTML, 2.0) == false',
                          path.isSupported('HTML', '2.0'));
           }
-        }
+        }*/
+        
+        // Test .style property
+        console.log('Testing style property...');
+        
+        // test .style property on unattached nodes:
+        // * set style values that have no attribute values
+        //    * make sure that attribute values don't get updated as well
+        // * get style values that have no attribute values
+        // * set style values that have attributes values
+        //    * ensure style string is consistent
+        // * get style values that have attribute values
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 350);
+        circle.setAttribute('cy', 400);
+        circle.setAttribute('r', 50);
+        circle.style.fill = 'red';
+        circle.style.stroke = 'blue';
+        circle.style.strokeWidth = 10;
+        assertNull('circle.getAttribute(fill) == null', 
+                   circle.getAttribute('fill'));
+        assertNull('circle.getAttribute(stroke) == null', 
+                   circle.getAttribute('stroke'));
+        assertNull('circle.getAttribute(stroke-width) == null', 
+                   circle.getAttribute('stroke-width'));
+        // make sure attributes don't get set
+        // NOTE: Safari transforms color names into their RGB hex
+        // values, so 'red' becomes '#FF0000'. Safari also transforms
+        // unit measurements into their actual types, so '10' becomes '10px'
+        assertEqualsAny('circle.style.fill == red or #FF0000',
+                        ['red', '#FF0000'],
+                        circle.style.fill);
+        assertEqualsAny('circle.style.stroke == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style.stroke);
+        assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
+                        [10, '10px'],
+                        circle.style.strokeWidth);
+        // make sure style[prop] syntax works
+        assertEqualsAny('circle.style[fill] == red or #FF0000', 
+                        ['red', '#FF0000'], 
+                        circle.style['fill']);
+        assertEqualsAny('circle.style[stroke] == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style['stroke']);
+        assertEqualsAny('circle.style[strokeWidth] == 10 or 10px',
+                        [10, '10px'],
+                        circle.style['strokeWidth']);
+        // now set attributes; surprisingly, styles should retain their old
+        // values
+        circle.setAttribute('fill', 'blue');
+        circle.setAttribute('stroke', 'red');
+        circle.setAttribute('stroke-width', 5);
+        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.getAttribute('fill'));
+        assertEqualsAny('circle.style.fill == red or #FF0000',
+                        ['red', '#FF0000'],
+                        circle.style.fill);
+        assertEqualsAny('circle.getAttribute(stroke) == red or #FF0000',
+                        ['red', '#FF0000'],
+                        circle.getAttribute('stroke'));
+        assertEqualsAny('circle.style.stroke == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style.stroke);
+        assertEqualsAny('circle.getAttribute(stroke-width) == 5 or 5px',
+                        [5, '5px'],
+                        circle.getAttribute('stroke-width'));
+        assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
+                        [10, '10px'],
+                        circle.style.strokeWidth);
+        // set style again to see if it overrides attribute setting;
+        // it should _not_ -- XML attributes have precedence over style
+        circle.style.fill = 'green';
+        assertEqualsAny('circle.style.fill == green or #008000',
+                        ['green', '#008000'],
+                        circle.style.fill);
+        // attribute and style have independent values
+        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.getAttribute('fill'));
+        // attach node and make sure it shows up correctly
+        svg = document.getElementById('mySVG');
+        svg.appendChild(circle);
+                     
+        // repeat the above steps, but with a node that is attached
+        circle = document.createElementNS(svgns, 'circle');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(circle);
+        circle.setAttribute('cx', 200);
+        circle.setAttribute('cy', 200);
+        circle.setAttribute('r', 50);
+        circle.style.fill = 'red';
+        circle.style.stroke = 'blue';
+        circle.style.strokeWidth = 10;
+        assertNull('circle.getAttribute(fill) == null', 
+                   circle.getAttribute('fill'));
+        assertNull('circle.getAttribute(stroke) == null', 
+                   circle.getAttribute('stroke'));
+        assertNull('circle.getAttribute(stroke-width) == null', 
+                   circle.getAttribute('stroke-width'));
+        // make sure attributes don't get set
+        assertEqualsAny('circle.style.fill == red or #FF000000', 
+                        ['red', '#FF0000'], 
+                        circle.style.fill);
+        assertEqualsAny('circle.style.stroke == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style.stroke);
+        assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
+                        [10, '10px'],
+                        circle.style.strokeWidth);
+        // make sure style[prop] syntax works
+        assertEqualsAny('circle.style[fill] == red or #FF0000',
+                        ['red', '#FF0000'], 
+                        circle.style['fill']);
+        assertEqualsAny('circle.style[stroke] == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style['stroke']);
+        assertEqualsAny('circle.style[strokeWidth] == 10 or 10px',
+                        [10, '10px'],
+                        circle.style['strokeWidth']);
+        // now set attributes; surprisingly, styles should retain their old
+        // values
+        circle.setAttribute('fill', 'blue');
+        circle.setAttribute('stroke', 'red');
+        circle.setAttribute('stroke-width', 5);
+        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.getAttribute('fill'));
+        assertEqualsAny('circle.style.fill == red or #FF0000',
+                        ['red', '#FF0000'],
+                        circle.style.fill);
+        assertEqualsAny('circle.getAttribute(stroke) == red or #FF0000',
+                        ['red', '#FF0000'],
+                        circle.getAttribute('stroke'));
+        assertEqualsAny('circle.style.stroke == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.style.stroke);
+        assertEqualsAny('circle.getAttribute(stroke-width) == 5 or 5px',
+                        [5, '5px'],
+                        circle.getAttribute('stroke-width'));
+        assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
+                        [10, '10px'],
+                        circle.style.strokeWidth);
+        // set style again to see if it overrides attribute setting;
+        // it should _not_ -- XML attributes have precedence over style
+        circle.style.fill = 'green';
+        assertEqualsAny('circle.style.fill == green or #008000',
+                        ['green', '#008000'],
+                        circle.style.fill);
+        // attribute and style have independent values
+        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
+                        ['blue', '#0000FF'],
+                        circle.getAttribute('fill'));
+                     
+        // remove an element, set and get some styles, then reattach it
+        // and make sure styles show up
+        circle = document.createElementNS(svgns, 'circle');
+        svg = document.getElementById('mySVG');
+        svg.appendChild(circle);
+        circle.style.stroke = 'blue';
+        circle.style.strokeWidth = 10;
+        circle.setAttribute('cx', 100);
+        circle.setAttribute('cy', 250);
+        circle.setAttribute('r', 20);
+        svg.removeChild(circle);
+        circle.style.fill = 'yellow';
+        circle.style.strokeWidth = 15;
+        circle.style.stroke = 'green';
+        svg.appendChild(circle);
+        circle.style.stroke = 'pink';
+        assertEqualsAny('circle.style.fill == yellow or #FFFF00',
+                        ['yellow', '#FFFF00'],
+                        circle.style.fill);
+        assertEqualsAny('circle.style.strokeWidth == 15 or 15px',
+                        [15, '15px'],
+                        circle.style.strokeWidth);             
+        assertEqualsAny('circle.style.stroke == pink or #FFC0CB',
+                        ['pink', '#FFC0CB'],
+                        circle.style.stroke);
+        assertEquals('circle.getAttribute(r) == 20', 20,
+                      circle.getAttribute('r'));
+                            
+        // make sure text nodes don't have .style property
+        textNode = document.createTextNode('hello world', true);
+        assertUndefined('textNode.style == undefined', textNode.style);
+        
+        // test setting and getting common style values across a range of style
+        // attributes across a range of different SVG elements
+        
+        // rectangle
+        
+        // circle
+        
+        // desc
+        
+        // image
+        
+        // line
+        
+        // path
+        
+        // g
+        
+        // linearGradient
+        
+        // text
+        
+        // apply style on a use element that references a rectangle
+        
+        // make sure unknown and unset values have the correct type when
+        // retrieved
+        
+        // test display, visibility, overflow style properties
+        
+        // set a style property with a url() value
+        
+        // set a style property with different CSS color definitions
+        
+        // set style property with different measurement values
+        
+        // test opacity style property
+        
+        // test stop-color and stop-opacity style properties on a gradient
+        
+        // make sure that getAttribute and setAttribute _don't_ work with
+        // when fetching 'style' property
+        
+        // in our XML, have an inline style set on an element. Make sure
+        // that getting these values returns correct results, then set existing
+        // values and then new ones to make sure that works. Test with 
+        // uppercase style names, which is allowed by CSS spec -- make sure
+        // they go lower case for us. Also test with just one style rule
+        // with no trailing semicolon; one style rule WITH a trailing semicolon;
+        // multiple rules with the last element NOT having a trailing 
+        // semicolon; and multiple rules with all having semicolons
+        
+        // make sure that setting and getting style rules from root SVG
+        // element works. Also test display, visibility, and overflow properties
+        // on root SVG element.
+        
+        // test doing the various font style properties on a text element
+        
+        // test using the SVG 'filter' property which potentially conflicts
+        // with IE's proprietary 'filter' CSS property
+        
+        // test style.setProperty, style.getProperty, style.length, 
+        // style.item(), cssText. Add a style and make sure that the length
+        // changes, that the item still works, etc.
+        
+        // null out properties and make sure they change, see if they change
+        // style.length
         
         // TODO: Test dynamically creating an SVG root
         
@@ -3219,6 +3474,7 @@
         // an SVG root node, and then be able to use this namespace on a node
         
         // Test assertions for bug fixes
+        /*
         console.log('Testing bug fixes...');
         
         // make sure that getElementsByTagNameNS works correctly
@@ -3245,7 +3501,7 @@
         matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
         assertEquals('rdf matches.length == 2', 2, matches.length);
         svg.removeChild(metadata);
-        
+        */
         // manually call unload listener to make sure no exceptions fire;
         // on browsers other than Internet Explorer this is a no-op
         // TODO: commenting out right now because it deletes the SVG rendering
@@ -3309,6 +3565,39 @@
         }
         
         if (expected != actual) {    
+          var msg = 'assertEquals Failed: ' + comment 
+                    + '\n(expected: ' + expected
+                    + ', actual: ' + actual + ')';
+          console.log(msg);
+          throw new Error(msg);
+        }
+      }
+      
+      /** Tests the 'actual' value to see if it matches any of the values
+          provided by the expectedArray. Only one is needed for the assertion
+          to pass. */
+      function assertEqualsAny(comment, expectedArray, actual) {
+        // halt if a Flash error has occurred asynchronously
+        if (flashError) {
+          throw new Error('Halting due to Flash error');
+        }
+        
+        var expected = expectedArray.join(' or ');
+        
+        if (printAsserts) {
+          console.log("assertEquals('" + comment + "', " + expected + ", "
+                      + actual + ")");
+        }
+        
+        var matches = false;
+        for (var i = 0; i < expectedArray.length; i++) {
+          if (expectedArray[i] == actual) {
+            matches = true;
+            break;
+          }
+        }
+        
+        if (!matches) {
           var msg = 'assertEquals Failed: ' + comment 
                     + '\n(expected: ' + expected
                     + ', actual: ' + actual + ')';
