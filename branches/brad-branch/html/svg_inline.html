@@ -3344,6 +3344,58 @@
         // attributes across a range of different SVG elements
         
         // rectangle
+        rect = document.createElementNS(svgns, 'rect');
+        svg = document.getElementById('mySVG');
+        rect.setAttribute('x', 400);
+        rect.setAttribute('y', 20);
+        rect.setAttribute('width', 60);
+        rect.setAttribute('height', 60);
+        rect.setAttribute('rx', 3);
+        rect.setAttribute('ry', 5);
+        rect.style.opacity = 0.5;
+        rect.style.fill = '#0000FF';
+        svg.appendChild(rect);
+        rect.style.stroke = 'rgb(0, 255, 0)';
+        rect.style.strokeWidth = '10px';
+        rect.style.strokeOpacity = 0.8;
+        rect.style.strokeLinecap = 'round';
+        rect.style.strokeLinejoin = 'round';
+        rect.style.strokeMiterlimit = 15;
+        rect.style.strokeDasharray = '5,3,2';
+        rect.style.strokeDashoffset = 3;
+        assertEqualsAny('rect.style.opacity == 0.5',
+                        [0.5],
+                        rect.style.opacity);
+        assertEqualsAny('rect.style.stroke == rgb(0, 255, 0) or #00FF00',
+                        ['rgb(0, 255, 0)', '#00FF00'],
+                        rect.style.stroke);
+        assertEqualsAny('rect.style.fill == #0000FF or rgb(0, 0, 255)',
+                        ['#0000FF', 'rgb(0, 0, 255)'],
+                        rect.style.fill);               
+        assertEqualsAny('rect.style.strokeWidth == 10px',
+                        ['10px'],
+                        rect.style.strokeWidth);
+        assertEqualsAny('rect.style.strokeOpacity == 0.8',
+                        [0.8],
+                        rect.style.strokeOpacity);
+        assertEqualsAny('rect.style.strokeLinecap == round',
+                        ['round'],
+                        rect.style.strokeLinecap);
+        assertEqualsAny('rect.style.strokeLinejoin == round',
+                        ['round'],
+                        rect.style.strokeLinejoin);
+        assertEqualsAny('rect.style.strokeMiterlimit == 15',
+                        [15],
+                        rect.style.strokeMiterlimit);
+        // Safari adds pixel info; FF adds spaces to strokeDasharray values
+        assertEqualsAny('rect.style.strokeDasharray == '
+                        + '5,3,2 or 5, 3, 2 or 5px, 3px, 2px',
+                        ['5,3,2', '5, 3, 2', '5px, 3px, 2px'],
+                        rect.style.strokeDasharray);
+        // Safari adds pixel info to strokeDashoffset
+        assertEqualsAny('rect.style.strokeDashoffset == 3 or 3px',
+                        [3, '3px'],
+                        rect.style.strokeDashoffset);
         
         // circle
         
