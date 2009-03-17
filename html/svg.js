@@ -2322,6 +2322,21 @@ extend(NativeHandler, {
       
       return createNodeList();
     }
+    
+    // createElementNS
+    
+    // Surprisingly, Firefox doesn't work when setting 
+    // svgElement.style.property! For example, if you set 
+    // myCircle.style.fill = 'red', nothing happens. You have to do
+    // myCircle.style.setProperty('fill', 'red', null). This issue is 
+    // independent of the fact that we are running in a text/html situation,
+    // and happens in self-contained SVG files as well. To fix this, we have
+    // to override createElementNS and patch in the ability to use the
+    // svgElement.style.* syntax
+    if (isFF) {
+      document._createElementNS = document.createElementNS;
+      document.createElementNS = this._createElementNS;
+    }
   },
   
   /** Extracts any namespaces we might have, creating a prefix/namespaceURI
@@ -2350,6 +2365,71 @@ extend(NativeHandler, {
     }
     
     return results;
+  },
+  
+  /** A patched version of createElementNS necessary for Firefox. See the
+      documentation inside of patchDocumentObject for the reasons why. 
+      Note that this method. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. */
+  _createElementNS: function(ns, qname) {
+    var elem = document._createElementNS(ns, qname);
+    
+    if (ns != svgns) {
+      return elem;
+    }
+    
+    // patch the style object to support style.fill = 'red' type accessing
+    var customStyle = {};
+    var origStyle = elem.style;
+    
+    // define getters and setters for SVG CSS property names
+    for (var i = 0; i < _Style._allStyles.length; i++) {
+      var styleName = _Style._allStyles[i];
+      
+      // convert camel casing (i.e. strokeWidth becomes stroke-width)
+      var stylePropName = styleName.replace(/([A-Z])/g, '-$1').toLowerCase();
+      
+      // Do a trick so that we can have a separate closure for each
+      // iteration of the loop and therefore each separate style name; 
+      // closures are function-level, so doing an anonymous inline function 
+      // will force the closure into just being what we pass into it. If we 
+      // don't this then the closure will actually always simply be the final 
+      // index position when the for loop finishes.
+      
+      (function(origStyle, styleName, stylePropName) {
+        customStyle.__defineSetter__(styleName, function(styleValue) {
+          return origStyle.setProperty(stylePropName, styleValue, null);
+        });
+        customStyle.__defineGetter__(styleName, function() {
+          return origStyle.getPropertyValue(stylePropName);
+        });
+      })(origStyle, styleName, stylePropName); // pass closure values
+    }
+      
+    // define other methods and properties from CSSStyleDeclaration interface
+    customStyle.setProperty = function(styleName, styleValue, priority) {
+      return origStyle.setProperty(styleName, styleValue, priority);
+    }
+    customStyle.getPropertyValue = function(styleName) {
+      return origStyle.getPropertyValue(styleName);
+    }
+    customStyle.item = function(index) {
+      return origStyle.item(index);
+    }
+    customStyle.__defineGetter__('cssText', function() {
+      return origStyle.cssText;
+    });
+    customStyle.__defineGetter__('length', function() {
+      return origStyle.length;
+    });
+    
+    // now override the browser's native style property on our new element
+    elem.__defineGetter__('style', function() {
+      return customStyle; 
+    });
+    
+    return elem;
   }
 });
 
