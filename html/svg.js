@@ -2369,9 +2369,8 @@ extend(NativeHandler, {
   
   /** A patched version of createElementNS necessary for Firefox. See the
       documentation inside of patchDocumentObject for the reasons why. 
-      Note that this method. Note that this function runs in the global
-      scope, so 'this' will not refer to our object instance but rather
-      the window object. */
+      Note that this function runs in the global scope, so 'this' will not 
+      refer to our object instance but rather the window object. */
   _createElementNS: function(ns, qname) {
     var elem = document._createElementNS(ns, qname);
     
@@ -2394,7 +2393,7 @@ extend(NativeHandler, {
       // iteration of the loop and therefore each separate style name; 
       // closures are function-level, so doing an anonymous inline function 
       // will force the closure into just being what we pass into it. If we 
-      // don't this then the closure will actually always simply be the final 
+      // don't do this then the closure will actually always simply be the final 
       // index position when the for loop finishes.
       
       (function(origStyle, styleName, stylePropName) {
@@ -2413,6 +2412,9 @@ extend(NativeHandler, {
     }
     customStyle.getPropertyValue = function(styleName) {
       return origStyle.getPropertyValue(styleName);
+    }
+    customStyle.removeProperty = function(styleName) {
+      return origStyle.removeProperty(styleName);
     }
     customStyle.item = function(index) {
       return origStyle.item(index);
@@ -3426,6 +3428,21 @@ extend(_Node, {
                                   prefix: child.prefix,
                                   namespaceURI: child.namespaceURI });
                                   
+      // send over each of our styles for SVG nodes
+      if (child.namespaceURI == svgns) {
+        for (var i = 0; i < child.style.length; i++) {
+          var styleName = child.style.item(i);
+          var styleValue = child.style.getPropertyValue(styleName);
+          var stylePropName = child.style._fromCamelCase(styleName);
+          this._handler.sendToFlash({ type: 'invoke', 
+                                      method: 'setAttribute',
+                                      elementId: id,
+                                      applyToStyle: true,
+                                      attrName: stylePropName, 
+                                      attrValue: styleValue });
+        }
+      }
+                                  
       // send over each of our attributes
       for (var i in child._attributes) {
         if (!child._attributes.hasOwnProperty(i)) {
@@ -4039,7 +4056,6 @@ extend(_Element, {
     @param element The _Element that this Style is attached to. */
 function _Style(element) {
   this._element = element;
-  this._handler = element._handler;
   this._setup();
 }
 
@@ -4075,13 +4091,16 @@ extend(_Style, {
   /** Initializes our magic getters and setters for non-IE browsers. For IE
       we set our initial style values on the HTC. */
   _setup: function() {
-    console.log('start setup');
     if (!isIE) {
       // setup getter/setter magic for non-IE browsers
       for (var i = 0; i < _Style._allStyles.length; i++) {
         var styleName = _Style._allStyles[i];
         this._defineAccessor(styleName);
       }
+      
+      // CSSStyleDeclaration properties
+      this.__defineGetter__('length', hitch(this, this._getLength));
+      this.__defineGetter__('cssText', hitch(this, this._getCSSText));
     } else {
       // set our initial style values; we temporarily disable listening
       // to onpropertychange events in the HTC since we are the ones changing
@@ -4101,7 +4120,6 @@ extend(_Style, {
       // pay attention to style changes again
       this._element._ignoreStyleChanges = false;
     }
-    console.log('end setup');
   },
   
   /** Defines the getter and setter for a single style, such as 'display'. */
@@ -4118,23 +4136,14 @@ extend(_Style, {
   },
   
   _setStyleAttribute: function(styleName, styleValue) {
-    console.log('setStyleAttribute, styleName='+styleName+', styleValue='+styleValue);
-    // change our internal attributes to match the style
-    var attrs = this._element._attributes;
-    for (var i in attrs) {
-      var attrName = i.replace(/^_/, '');
-      if (i === styleName) {
-        this._element._attributes[attrName] = styleValue;
-      }
-    }
+    //console.log('setStyleAttribute, styleName='+styleName+', styleValue='+styleValue);
+    // Note: .style values and XML attributes have separate values. The XML
+    // attributes always have precedence over any style values.
     
-    // change our XML attribute value
-    var attrValue = this._element._xml.getAttribute(styleName);
-    if (attrValue !== null && attrValue !== undefined) {
-      this._element._xml.setAttribute(styleName, styleValue);
-    }
+    // convert camel casing (i.e. strokeWidth becomes stroke-width)
+    var stylePropName = this._fromCamelCase(styleName);
     
-    // change our XML style string value now
+    // change our XML style string value
     
     // parse style string first
     var parsedStyle = this._fromStyleString();
@@ -4142,7 +4151,7 @@ extend(_Style, {
     // is our style name there?
     var foundStyle = false;
     for (var i = 0; i < parsedStyle.length; i++) {
-      if (parsedStyle[i].styleName === styleName) {
+      if (parsedStyle[i].styleName === stylePropName) {
         parsedStyle[i].styleValue = styleValue;
         foundStyle = true;
         break;
@@ -4150,32 +4159,38 @@ extend(_Style, {
     }
     
     // if we didn't find it above add it
-    parsedStyle.push({ styleName: styleName, styleValue: styleValue });
+    if (!foundStyle) {
+      parsedStyle.push({ styleName: stylePropName, styleValue: styleValue });
+    }
     
     // now turn the style back into a string and set it on our XML
     var styleString = this._toStyleString(parsedStyle);
-    this._element._xml.setAttribute('style', styleString);
+    this._element._nodeXML.setAttribute('style', styleString);
     
     // tell Flash about the change
     if (this._element._attached && this._element._passThrough) {
-      this._handler.sendToFlash({ type: 'invoke', 
+      this._element._handler.sendToFlash({ 
+                                  type: 'invoke', 
                                   method: 'setAttribute',
                                   elementId: this._element._getId(),
                                   applyToStyle: true,
-                                  attrName: styleName, 
+                                  attrName: stylePropName, 
                                   attrValue: styleValue });
     }
   },
   
   _getStyleAttribute: function(styleName) {
-    console.log('getStyleAttribute, styleName='+styleName);
+    //console.log('getStyleAttribute, styleName='+styleName);
+    // convert camel casing (i.e. strokeWidth becomes stroke-width)
+    var stylePropName = this._fromCamelCase(styleName);
+    
     if (this._element._attached && this._element._passThrough) {
-      var returnMsg = this._handler.sendToFlash({ 
-                                        type: 'invoke', 
-                                        method: 'getAttribute',
-                                        elementId: this._element._getId(),
-                                        getFromStyle: true,
-                                        attrName: styleName });
+      var returnMsg = this._element._handler.sendToFlash({ 
+                                              type: 'invoke', 
+                                              method: 'getAttribute',
+                                              elementId: this._element._getId(),
+                                              getFromStyle: true,
+                                              attrName: stylePropName });
       if (!returnMsg) {
          return null;
       }
@@ -4186,7 +4201,7 @@ extend(_Style, {
       var parsedStyle = this._fromStyleString();
 
       for (var i = 0; i < parsedStyle.length; i++) {
-        if (parsedStyle[i].styleName === styleName) {
+        if (parsedStyle[i].styleName === stylePropName) {
           return parsedStyle[i].styleValue;
         }
       }
@@ -4204,7 +4219,7 @@ extend(_Style, {
       
       If there are no results an empty array is returned. */
   _fromStyleString: function() {
-    var styleValue = this._element._xml.getAttribute('style');
+    var styleValue = this._element._nodeXML.getAttribute('style');
     
     if (styleValue === null || styleValue === undefined) {
       return [];
@@ -4248,9 +4263,89 @@ extend(_Style, {
     for (var i = 0; i < parsedStyle.length; i++) {
       results += parsedStyle[i].styleName + ': ';
       results += parsedStyle[i].styleValue + ';';
+      if (i != (parsedStyle.length - 1)) {
+        results += ' ';
+      }
     }
     
     return results;
+  },
+  
+  /** Transforms a camel case style name, such as strokeWidth, into it's
+      dash equivalent, such as stroke-width. */
+  _fromCamelCase: function(styleName) {
+    return styleName.replace(/([A-Z])/g, '-$1').toLowerCase();
+  },
+  
+  /** Transforms a dash style name, such as stroke-width, into it's 
+      camel case equivalent, such as strokeWidth. */
+  _toCamelCase: function(stylePropName) {
+    if (stylePropName.indexOf('-') == -1) {
+      return stylePropName;
+    }
+    
+    var results = '';
+    var sections = stylePropName.split('-');
+    results += sections[0];
+    for (var i = 1; i < sections.length; i++) {
+      results += sections[i].charAt(0).toUpperCase() + sections[i].substring(1);
+    }
+    
+    return results;
+  },
+  
+  // CSSStyleDeclaration interface methods and properties
+  
+  // TODO: removeProperty not supported yet
+  
+  setProperty: function(stylePropName, styleValue, priority) {
+    // TODO: priority not supported for now; not sure if it even makes
+    // sense in this context
+    
+    // convert from dash style to camel casing (i.e. stroke-width becomes
+    // strokeWidth
+    var styleName = this._toCamelCase(stylePropName);
+    
+    this._setStyleAttribute(styleName, styleValue);
+    return styleValue;
+  },
+  
+  getPropertyValue: function(stylePropName) {
+    // convert from dash style to camel casing (i.e. stroke-width becomes
+    // strokeWidth
+    var styleName = this._toCamelCase(stylePropName);
+    
+    return this._getStyleAttribute(styleName);
+  },
+  
+  item: function(index) {
+    // parse style string
+    var parsedStyle = this._fromStyleString();
+    
+    // TODO: Throw exception if index is greater than length of style rules
+    
+    return parsedStyle[index].styleName;
+  },
+  
+  // NOTE: We don't support a setter for cssText for now
+  
+  _getCSSText: function() {
+    var results = '';
+    
+    // parse style string
+    var parsedStyle = this._fromStyleString();
+    
+    for (var i = 0; i < parsedStyle.length; i++) {
+      results += parsedStyle.styleName + ': ' + parsedStyle.styleValue + ';\n';
+    }
+    
+    return results;
+  },
+  
+  _getLength: function() {
+    // parse style string
+    var parsedStyle = this._fromStyleString();
+    return parsedStyle.length;
   }
 });
 

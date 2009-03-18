@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -27,7 +27,8 @@
             cc, svg, svgText, textNode, text, desc, title, format, type,
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
-            origText, exp, html, ns, nextToLast, paths, styleStr, circle;
+            origText, exp, html, ns, nextToLast, paths, styleStr, circle,
+            image;
             
         var startTime = new Date().getTime();
         
@@ -46,7 +47,7 @@
         assertTrue('renderer == native || flash',
                     renderer == 'native' 
                     || renderer == 'flash');
-        /*
+        
         // getElementById
         console.log('Testing getElementById...');
         
@@ -3153,7 +3154,7 @@
             assertFalse('path.isSupported(HTML, 2.0) == false',
                          path.isSupported('HTML', '2.0'));
           }
-        }*/
+        }
         
         // Test .style property
         console.log('Testing style property...');
@@ -3206,7 +3207,7 @@
         circle.setAttribute('fill', 'blue');
         circle.setAttribute('stroke', 'red');
         circle.setAttribute('stroke-width', 5);
-        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
+        assertEqualsAny('1, circle.getAttribute(fill) == blue or #0000FF',
                         ['blue', '#0000FF'],
                         circle.getAttribute('fill'));
         assertEqualsAny('circle.style.fill == red or #FF0000',
@@ -3237,7 +3238,7 @@
         // attach node and make sure it shows up correctly
         svg = document.getElementById('mySVG');
         svg.appendChild(circle);
-                     
+        
         // repeat the above steps, but with a node that is attached
         circle = document.createElementNS(svgns, 'circle');
         svg = document.getElementById('mySVG');
@@ -3307,7 +3308,7 @@
         assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
                         ['blue', '#0000FF'],
                         circle.getAttribute('fill'));
-                     
+                  
         // remove an element, set and get some styles, then reattach it
         // and make sure styles show up
         circle = document.createElementNS(svgns, 'circle');
@@ -3397,11 +3398,10 @@
                         [3, '3px'],
                         rect.style.strokeDashoffset);
         
-        // circle
-        
         // desc
         
         // image
+        // TODO: Can't test yet until we have setAttributeNS support
         
         // line
         
@@ -3451,12 +3451,19 @@
         // test using the SVG 'filter' property which potentially conflicts
         // with IE's proprietary 'filter' CSS property
         
-        // test style.setProperty, style.getProperty, style.length, 
+        // test style.setProperty, style.getPropertyValue, style.length, 
         // style.item(), cssText. Add a style and make sure that the length
         // changes, that the item still works, etc.
         
         // null out properties and make sure they change, see if they change
         // style.length
+        
+        // test CSSStyleDeclaration methods (getPropertyValue, cssText, item) 
+        // etc. on an element with no style setting
+        
+        // test on elements that have style settings in the markup and 
+        // document itself; get style values different ways, set them, 
+        // cssText, etc.
         
         // TODO: Test dynamically creating an SVG root
         
@@ -3516,6 +3523,8 @@
         // allowed structurally (i.e. more than one metadata element, 
         // metadata at the end, etc.). Remove children that were never
         // actually children. Throw exception if SVG root added or deleted.
+        // Throw DOM exception if unknown style name passed to getProperty
+        // on a style object, or if item() is called with an unknown index.
         
         // TODO: I'm not sure if we are correctly handling what should
         // happen if you pass in null, undefined, or an empty string
@@ -3526,7 +3535,7 @@
         // an SVG root node, and then be able to use this namespace on a node
         
         // Test assertions for bug fixes
-        /*
+        
         console.log('Testing bug fixes...');
         
         // make sure that getElementsByTagNameNS works correctly
@@ -3553,7 +3562,7 @@
         matches = document.getElementsByTagNameNS(rdf_ns, 'RDF');
         assertEquals('rdf matches.length == 2', 2, matches.length);
         svg.removeChild(metadata);
-        */
+        
         // manually call unload listener to make sure no exceptions fire;
         // on browsers other than Internet Explorer this is a no-op
         // TODO: commenting out right now because it deletes the SVG rendering

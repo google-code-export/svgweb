@@ -91,7 +91,6 @@
     /** Watch to see when anyone changes a 'style' property so we
         can mirror it in the Flash control. */
     function propertyChange() {
-      console.log('onpropertychange');
       if (this._fakeNode.nodeType != 1) { // only Element nodes
         return;
       }
