@@ -48,7 +48,7 @@
            own fake ones or a real browser native one. Useful for someone
            to 'break' the abstraction if needed. -->
       <property name="_fake" value="true"/>
-                       
+               
       <method name="setAttribute" />
       <method name="getAttribute" />
       <method name="appendChild" />
@@ -58,7 +58,7 @@
       <method name="hasChildNodes" />
       <method name="hasAttributes" />
       <method name="isSupported" />
-       
+
       <attach event="oncontentready" onevent="contentReady()" />
       <attach event="onpropertychange" onevent="propertyChange()" />
       
@@ -85,7 +85,7 @@
                     eventType: 'onHTCLoaded',
                     uniqueId: this.id, 
                     elemDoc: element.document,
-                    htcNode: this };
+                    htcNode: this.element };
         this._handler.onMessage(msg);
       }
     }
