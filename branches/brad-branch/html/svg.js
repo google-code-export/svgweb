@@ -685,6 +685,15 @@ so therefore doesn't work when the Native Handler is being used:
 svgPath.isSupported('Core', '2.0')
 
 It works on Safari and when the Flash Handler is being used on all browsers.
+
+* On Internet Explorer, DOM text nodes created through document.createTextNode
+with the second argument given as 'true':
+
+document.createTextNode('some text', true)
+
+will have a .style property on them as an artifact of how we support
+various things internally. Changing this will have no affect. Technically
+DOM text nodes should not have a .style property.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1516,7 +1525,7 @@ extend(SVGWeb, {
     if (container) {
       for (var i = 0; i < container.childNodes.length; i++) {
         var child = container.childNodes[i];
-        child._fakeNode._htc = null;
+        child._fakeNode._htcNode = null;
         child._fakeNode = null;
         child._handler = null;
       }
@@ -1526,7 +1535,16 @@ extend(SVGWeb, {
 
     // clean up svg:svg root tags
     for (var i = 0; i < svgweb.handlers.length; i++) {
-      var root = svgweb.handlers[i].document.documentElement._htc;
+      var root = svgweb.handlers[i].document.documentElement._htcNode;
+      
+      // remove anything we added to the HTC's style object
+      root.style.item = null;
+      root.style.setProperty = null;
+      root.style.getPropertyValue = null;
+      
+      // remove the root from the DOM
+      root._realParentNode.removeChild(root);
+     
       // clean up our hidden HTML DOM and our Flash object
       var flashObj = root._getFlashObj();
       flashObj.sendToFlash = null;
@@ -1534,12 +1552,9 @@ extend(SVGWeb, {
       var html = root._doc.getElementsByTagName('html')[0];
       html.parentNode.removeChild(html);
       root._doc = null;
-      
-      // remove the root from the DOM
-      root._realParentNode.removeChild(root);
         
       // delete object references
-      root._fakeNode._htc = null;
+      root._fakeNode._htcNode = null;
       root._fakeNode = null;
       root._realParentNode = null;
       root._realPreviousSibling = null;
@@ -1559,7 +1574,7 @@ extend(SVGWeb, {
     for (var i = 0; i < svgweb._removedNodes.length; i++) {
       var node = svgweb._removedNodes[i];
       if (node._fakeNode) {
-        node._fakeNode._htc = null;
+        node._fakeNode._htcNode = null;
       }
       node._fakeNode = null;
       node._handler = null;
@@ -2919,18 +2934,18 @@ extend(_Node, {
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
-
+    
     // add the child's XML to our own
     this._importNode(child);
-
+    
     // manually add our child to our internal list of nodes
     if (!this._attached) {
       this._cachedChildNodes.push(child);
     }
     if (this._attached && isIE) {
-      this._childNodes.push(child._htc);
+      this._childNodes.push(child._htcNode);
     }
-
+    
     if (!isIE) {
       // _childNodes is an object literal instead of an array
       // to support getter/setter magic for Safari
@@ -2940,7 +2955,7 @@ extend(_Node, {
     
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
-
+    
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
     if (!this._attached) {
@@ -3023,10 +3038,10 @@ extend(_Node, {
     
     // are we the root SVG object?
     if (this.nodeName == 'svg') {
-      if (this._htc) { // IE
+      if (this._htcNode) { // IE
         // we stored the realParentNode in the _SVGSVGElement constructor
         // when we created the SVG root
-        return this._htc._realParentNode;
+        return this._htcNode._realParentNode;
       } else { // other browsers
         return this._handler.flash;
       }
@@ -3095,11 +3110,11 @@ extend(_Node, {
     
     // are we the root SVG object?
     if (this.nodeName == 'svg') {
-      if (this._htc) { // IE
+      if (this._htcNode) { // IE
         // we stored the realPreviousSibling in the _SVGSVGElement constructor
-        // when we created the SVG root, otherwise this._htc.previousSibling
+        // when we created the SVG root, otherwise this._htcNode.previousSibling
         // will recursively call ourselves infinitely!
-        return this._htc._realPreviousSibling;
+        return this._htcNode._realPreviousSibling;
       } else { // other browsers
         return this._handler.flash.previousSibling;
       }
@@ -3130,11 +3145,11 @@ extend(_Node, {
     
     // are we the root SVG object?
     if (this.nodeName == 'svg') {
-      if (this._htc) { // IE
+      if (this._htcNode) { // IE
         // we stored the realNextSibling in the _SVGSVGElement constructor
-        // when we created the SVG root, otherwise this._htc.nextSibling
+        // when we created the SVG root, otherwise this._htcNode.nextSibling
         // will recursively call ourselves infinitely!
-        return this._htc._realNextSibling;
+        return this._htcNode._realNextSibling;
       } else { // other browsers
         return this._handler.flash.nextSibling;
       }
@@ -3290,7 +3305,7 @@ extend(_Node, {
       // real, live DOM.
       var results = [];
       for (var i = 0; i < this._cachedChildNodes.length; i++) {
-        results.push(this._cachedChildNodes[i]._htc);
+        results.push(this._cachedChildNodes[i]._htcNode);
       }
       
       return results;
@@ -3316,10 +3331,19 @@ extend(_Node, {
     if (!this._htcContainer) {
       this._htcContainer = document.getElementById('__htc_container');
       if (!this._htcContainer) {
-        var head = document.getElementsByTagName('head')[0];
-        this._htcContainer = document.createElement('div');
-        this._htcContainer.id = '__htc_container';
-        head.appendChild(this._htcContainer);
+        // strangely, onpropertychange does _not_ fire for HTC elements
+        // that are in the HEAD of the document, which is where we used
+        // to put the htc_container. Instead, we have to put it into the BODY
+        // of the document and position it offscreen.
+        var body = document.getElementsByTagName('body')[0];
+        var c = document.createElement('div');
+        c.id = '__htc_container';
+        // NOTE: style.display = 'none' does not work
+        c.style.position = 'absolute';
+        c.style.top = '-5000px';
+        c.style.left = '-5000px';
+        body.appendChild(c);
+        this._htcContainer = c;
       }
     }
     
@@ -3334,11 +3358,11 @@ extend(_Node, {
     if (nodeName == '#text') {
       nodeName = '__text'; // text nodes
     }
-    var htc = document.createElement('svg:' + this.nodeName);
-    htc._fakeNode = this;
-    htc._handler = this._handler;
-    this._htcContainer.appendChild(htc);
-    this._htc = htc;
+    var htcNode = document.createElement('svg:' + this.nodeName);
+    htcNode._fakeNode = this;
+    htcNode._handler = this._handler;
+    this._htcContainer.appendChild(htcNode);
+    this._htcNode = htcNode;
   },
   
   _setNodeValue: function(newValue) {
@@ -3434,6 +3458,7 @@ extend(_Node, {
           var styleName = child.style.item(i);
           var styleValue = child.style.getPropertyValue(styleName);
           var stylePropName = child.style._fromCamelCase(styleName);
+          
           this._handler.sendToFlash({ type: 'invoke', 
                                       method: 'setAttribute',
                                       elementId: id,
@@ -3704,7 +3729,7 @@ extend(_Node, {
     } else {
       // for IE, the developer will manipulate things through the UI/HTC
       // proxy facade so that we can know about property changes, etc.
-      return this._htc;
+      return this._htcNode;
     }
   },
   
@@ -3761,15 +3786,27 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   this._attributes['_id'] = ''; // default id is empty string on FF and Safari
   this._importAttributes(this, this._nodeXML);
   
-  // track .style changes
-  if (this.namespaceURI == svgns) {
-    this.style = new _Style(this);
-  }
-  
   // define our accessors if we are not IE; IE does this by using the HTC
   // file rather than doing it here
   if (!isIE) {
     this._defineAccessors();
+  }
+  
+  // track .style changes
+  if (this.namespaceURI == svgns) {
+    // for IE, don't setup the style object for the SVG root; we do this a bit
+    // later for the SVG root since we initialize the HTC object differently,
+    // which the _Style object depends on during initialization
+    if (!isIE || this.nodeName != 'svg') {
+      this.style = new _Style(this);
+    }
+  }
+  
+  // pay attention to style changes now in the HTC for everything but the
+  // SVG root, which starts paying attention to style changes after the SVG
+  // root has done its works putting the Flash into the page
+  if (isIE && this.nodeName != 'svg' && this.namespaceURI == svgns) {
+    this.style._ignoreStyleChanges = false;
   }
 }
 
@@ -4082,6 +4119,10 @@ _Style._allStyles = [
 ];
 
 extend(_Style, {
+  /** Flag that indicates that the HTC should ignore any property changes
+      due to style changes. Used when we are internally making style changes. */
+  _ignoreStyleChanges: true,
+  
   /** Called when a style change has occurred; called from the Internet
       Explorer HTC. */
   _styleChange: function(styleName, styleValue) {
@@ -4100,25 +4141,37 @@ extend(_Style, {
       
       // CSSStyleDeclaration properties
       this.__defineGetter__('length', hitch(this, this._getLength));
-      this.__defineGetter__('cssText', hitch(this, this._getCSSText));
-    } else {
-      // set our initial style values; we temporarily disable listening
-      // to onpropertychange events in the HTC since we are the ones changing
-      // the value
-      this._element._ignoreStyleChanges = true;
+    } else { // Internet Explorer setup
+      var htcStyle = this._element._htcNode.style;
+      
+      // NOTE: as we manipulate the HTC's style object below, onpropertychange
+      // events will fire each time. We want to ignore this. However, we
+      // can't use our this._ignoreStyleChange property here because we
+      // are run as part of our _Style constructor, and we won't exist yet
+      // when viewed from the HTC's propertyChange() method! Just check there
+      // for the lack of a _Style instance.
       
       // parse style string
       var parsedStyle = this._fromStyleString();
       
       // loop through each one, setting it on our HTC's style object
       for (var i = 0; i < parsedStyle.length; i++) {
-        var styleName = parsedStyle[i].styleName;
+        var styleName = this._toCamelCase(parsedStyle[i].styleName);
         var styleValue = parsedStyle[i].styleValue;
-        this._element._htc.style[styleName] = styleValue;
+        htcStyle[styleName] = styleValue;
       }
       
-      // pay attention to style changes again
-      this._element._ignoreStyleChanges = false;
+      // set initial values for style.length
+      htcStyle.length = 0;
+      
+      // expose .length property on our custom _Style object to aid it 
+      // being used internally
+      this.length = 0;
+      
+      // set CSSStyleDeclaration methods to our implementation
+      htcStyle.item = hitch(this, this.item);
+      htcStyle.setProperty = hitch(this, this.setProperty);
+      htcStyle.getPropertyValue = hitch(this, this.getPropertyValue);
     }
   },
   
@@ -4166,6 +4219,25 @@ extend(_Style, {
     // now turn the style back into a string and set it on our XML
     var styleString = this._toStyleString(parsedStyle);
     this._element._nodeXML.setAttribute('style', styleString);
+    
+    // for IE, update our HTC style object; we can't do magic getters for 
+    // those so have to update and cache the values
+    if (isIE) {
+      var htcStyle = this._element._htcNode.style;
+      
+      // never seen before; bump our style length
+      if (!foundStyle) {
+        htcStyle.length++;
+        this.length++;
+      }
+      
+      // update style value on HTC node so that when the value is fetched
+      // it is correct; ignoreStyleChanges during this or we will get into
+      // an infinite loop
+      this._ignoreStyleChanges = true;
+      htcStyle[styleName] = styleValue;
+      this._ignoreStyleChanges = false;
+    }
     
     // tell Flash about the change
     if (this._element._attached && this._element._passThrough) {
@@ -4221,16 +4293,20 @@ extend(_Style, {
   _fromStyleString: function() {
     var styleValue = this._element._nodeXML.getAttribute('style');
     
-    if (styleValue === null || styleValue === undefined) {
+    if (styleValue == null || styleValue == undefined) {
       return [];
     }
-
+    
     var baseStyles;
     if (styleValue.indexOf(';') == -1) {
       // only one style value given, with no trailing semicolon
       baseStyles = [ styleValue ];
     } else {
-      baseStyles = styleValue.split(';');
+      baseStyles = styleValue.split(/\s*;\s*/);
+      // last style is empty due to split()
+      if (!baseStyles[baseStyles.length - 1]) {
+        baseStyles = baseStyles.slice(0, baseStyles.length - 1);
+      }
     }
     
     var results = [];
@@ -4327,20 +4403,13 @@ extend(_Style, {
     return parsedStyle[index].styleName;
   },
   
-  // NOTE: We don't support a setter for cssText for now
-  
-  _getCSSText: function() {
-    var results = '';
-    
-    // parse style string
-    var parsedStyle = this._fromStyleString();
-    
-    for (var i = 0; i < parsedStyle.length; i++) {
-      results += parsedStyle.styleName + ': ' + parsedStyle.styleValue + ';\n';
-    }
-    
-    return results;
-  },
+  // NOTE: We don't support cssText for now. The reason why is that
+  // IE has a style.cssText property already on our HTC nodes. This
+  // property incorrectly includes some of our custom internal code,
+  // such as 'length' as well as both versions of certain camel cased
+  // properties (like stroke-width and strokeWidth). There is no way 
+  // currently known to work around this. The property is not that important
+  // anyway so it won't currently be supported.
   
   _getLength: function() {
     // parse style string
@@ -4378,9 +4447,13 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     svgDOM._realParentNode = scriptNode.parentNode;
     svgDOM._realPreviousSibling = scriptNode.previousSibling;
     svgDOM._realNextSibling = scriptNode.nextSibling;
+    this._htcNode = svgDOM;
     
+    // track .style changes
+    this.style = new _Style(this);
+    
+    // now kick off replacing the SCRIPT node with a Flash object
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
-    this._htc = svgDOM;
     
     // now wait for the HTC file to load for the SVG root element
   } else { // non-IE browsers; immediately insert the Flash
@@ -4429,6 +4502,9 @@ extend(_SVGSVGElement, {
       
       // now insert our Flash
       this._setupFlash(elemDoc, htcNode);
+      
+      // pay attention to style changes now in the HTC
+      this.style._ignoreStyleChanges = false;
     }
   },
   
@@ -4454,8 +4530,7 @@ extend(_SVGSVGElement, {
   
   /** The Flash is finished rendering. */
   _onRenderingFinished: function(msg) {
-    console.log('onRenderingFinished');
-    
+    //console.log('onRenderingFinished');
     var elementId = this._nodeXML.getAttribute('id');
     this._handler.fireOnLoad(elementId, 'script');
   },
@@ -4805,7 +4880,7 @@ extend(_Document, {
       @param nodeXML XML or HTML DOM node for the element to use when 
       constructing the _Element or _Node.
       
-      @returns If IE, returns the HTC proxy for the node (i.e. node._htc) so
+      @returns If IE, returns the HTC proxy for the node (i.e. node._htcNode) so
       that external callers can manipulate it and have getter/setter
       magic happen; if other browsers, returns the _Node or _Element
       itself. */
