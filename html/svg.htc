@@ -97,6 +97,13 @@
       // svgns property exposed by svg.js not visible here
       var svgns = 'http://www.w3.org/2000/svg';
       
+      // called as the page is unloaded and we clean things up, the fakeNode
+      // will disappear under us as we remove its reference to prevent
+      // memory leaks
+      if (!this._fakeNode) {
+        return;
+      }
+      
       if (this._fakeNode.nodeType != 1
           || this._fakeNode.namespaceURI != svgns) { // only SVG Element nodes
         return;
