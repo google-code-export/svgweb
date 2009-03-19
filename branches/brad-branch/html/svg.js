@@ -694,6 +694,11 @@ document.createTextNode('some text', true)
 will have a .style property on them as an artifact of how we support
 various things internally. Changing this will have no affect. Technically
 DOM text nodes should not have a .style property.
+
+* On Internet Explorer, the cssText property on an SVG node's style object
+should not be set or retrieved; it will have unreliable results. For example,
+calling myCircle.style.cssText will not correctly return the SVG CSS of that
+node.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1542,9 +1547,6 @@ extend(SVGWeb, {
       root.style.setProperty = null;
       root.style.getPropertyValue = null;
       
-      // remove the root from the DOM
-      root._realParentNode.removeChild(root);
-     
       // clean up our hidden HTML DOM and our Flash object
       var flashObj = root._getFlashObj();
       flashObj.sendToFlash = null;
@@ -1560,8 +1562,9 @@ extend(SVGWeb, {
       root._realPreviousSibling = null;
       root._realNextSibling = null;
       root._handler = null;
+      
+      root = null;
     }
-    roots = null;
 
     // for all the handlers, remove their reference to the Flash object
     for (var i = 0; i < svgweb.handlers.length; i++) {
@@ -4447,6 +4450,7 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     svgDOM._realParentNode = scriptNode.parentNode;
     svgDOM._realPreviousSibling = scriptNode.previousSibling;
     svgDOM._realNextSibling = scriptNode.nextSibling;
+    
     this._htcNode = svgDOM;
     
     // track .style changes
