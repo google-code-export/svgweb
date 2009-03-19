@@ -99,7 +99,7 @@
       
       // called as the page is unloaded and we clean things up, the fakeNode
       // will disappear under us as we remove its reference to prevent
-      // memory leaks
+      // memory leaks; detect this and return if so
       if (!this._fakeNode) {
         return;
       }
