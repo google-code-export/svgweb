@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -28,7 +28,7 @@
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
             origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-            image;
+            image, line;
             
         var startTime = new Date().getTime();
         
@@ -3394,20 +3394,63 @@
                         [3, '3px'],
                         rect.style.strokeDashoffset);
         
-        // desc
-        
         // image
         // TODO: Can't test yet until we have setAttributeNS support
         
-        // line
+        // line and g
+        group = document.createElementNS(svgns, 'g');
+        group.id = 'testStyleG';
+        group.style.stroke = 'green'; // should pass to children (i.e. the line)
+        line = document.createElementNS(svgns, 'line');
+        line.id = 'testStyleLine';
+        line.setAttribute('x1', 100);
+        line.setAttribute('y1', 100);
+        line.setAttribute('x2', 200);
+        line.setAttribute('y2', 200);
+        line.style['strokeWidth'] = '5px';
+        line.style.opacity = 0.8;
+        group.appendChild(line);
+        svg = document.getElementById('mySVG');
+        svg.appendChild(group);
+        // get the line and group through getElementsByTagNameNS to make
+        // sure style works from those
+        matches = document.getElementsByTagNameNS(svgns, 'g');
+        group = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'testStyleG') {
+            group = matches[i];
+            break;
+          }
+        }
+        assertExists('testStyleG should exist', group);
+        matches = document.getElementsByTagNameNS(svgns, 'line');
+        line = null;
+        for (var i = 0; i < matches.length; i++) {
+          if (matches[i].getAttribute('id') == 'testStyleLine') {
+            line = matches[i];
+            break;
+          }
+        }
+        assertExists('testStyleLine should exist', line);
+        // now make sure style properties are correct
+        assertEqualsAny('group.style.stroke == green or #008000',
+                        ['green', '#008000'],
+                        group.style.stroke);
+        assertEqualsAny('line.style[opacity] == 0.8',
+                        [0.8],
+                        line.style['opacity']);
+        assertEqualsAny('line.style.strokeWidth == 5 or 5px',
+                        [5, '5px'],
+                        line.style.strokeWidth);
+        console.log('There should be a green line on the screen');
         
         // path
-        
-        // g
         
         // linearGradient
         
         // text
+        
+        // desc
         
         // apply style on a use element that references a rectangle
         
