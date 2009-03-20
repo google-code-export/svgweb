@@ -3618,7 +3618,32 @@
                     + 'balloons in the third SVG');
                 
         // text
-        
+        text = document.createElementNS(svgns, 'text');
+        text.id = 'testStyleText1';
+        text.setAttribute('x', 30);
+        text.setAttribute('y', 400);
+        text.style.fill = 'yellow';
+        text.style.fontSize = '30px';
+        text.style.fontWeight = 'bold';
+        text.appendChild(document.createTextNode('Some bolded text!', true));
+        svg = document.getElementById('mySVG');
+        svg.appendChild(text);
+        // get text node from getElementById to make sure styles work after
+        // that
+        text = document.getElementById('testStyleText1');
+        assertExists('testStyleText1 should exist', text);
+        assertEqualsAny('text.style.fill == yellow or #FFFF00',
+                        ['yellow', '#FFFF00'],
+                        text.style.fill);
+        assertEqualsAny('text.style.fontSize == 30px',
+                        ['30px'],
+                        text.style.fontSize);
+        assertEqualsAny('text.style.fontWeight == bold',
+                        ['bold'],
+                        text.style.fontWeight);
+        console.log('There should be some bolded text that says '
+                    + '"Some bolded text!" in the first SVG');
+                
         // desc
         
         // apply style on a use element that references a rectangle
