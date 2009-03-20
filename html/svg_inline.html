@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
@@ -3645,6 +3645,15 @@
                     + '"Some bolded text!" in the first SVG');
                 
         // desc
+        desc = document.createElementNS(svgns, 'desc');
+        desc.appendChild(document.createTextNode('A desc', true));
+        svg = document.getElementById('mySVG');
+        svg.appendChild(desc);
+        desc.style.fill = 'green'; // nothing should display!
+        desc.style.border = '1px solid black';        
+        
+        // test on elements that have style settings in the markup and 
+        // document itself; get style values different ways, set them, etc.
         
         // apply style on a use element that references a rectangle
         
@@ -3698,9 +3707,6 @@
         
         // test CSSStyleDeclaration methods (getPropertyValue, item) 
         // etc. on an element with no style setting
-        
-        // test on elements that have style settings in the markup and 
-        // document itself; get style values different ways, set them, etc.
         
         // TODO: Test dynamically creating an SVG root
         
