@@ -1133,7 +1133,7 @@ package com.sgweb.svg.nodes
             var style:String;
             
             var baseStyles:Array;
-            if (styleValue.indexOf(';') == -1) {
+            if (this._xml.@style.indexOf(';') == -1) {
               // only one style value given, with no trailing semicolon
               baseStyles = [ this._xml.@style ];
             } else {

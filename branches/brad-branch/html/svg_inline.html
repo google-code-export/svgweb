@@ -28,7 +28,7 @@
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
             origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-            image, line;
+            image, line, defs;
             
         var startTime = new Date().getTime();
         
@@ -3125,6 +3125,8 @@
         // attributes
         dc = document.getElementsByTagNameNS(dc_ns, 'format')[0];
         assertFalse('dc.hasAttributes() == false', dc.hasAttributes());
+        
+        // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
                 
         // Test Node.isSupported
         console.log('Testing Node.isSupported...');
@@ -3256,7 +3258,7 @@
         assertNull('circle.getAttribute(stroke-width) == null', 
                    circle.getAttribute('stroke-width'));
         // make sure attributes don't get set
-        assertEqualsAny('circle.style.fill == red or #FF000000', 
+        assertEqualsAny('circle.style.fill == red or #FF0000', 
                         ['red', '#FF0000'], 
                         circle.style.fill);
         assertEqualsAny('circle.style.stroke == blue or #0000FF',
@@ -3394,9 +3396,6 @@
                         [3, '3px'],
                         rect.style.strokeDashoffset);
         
-        // image
-        // TODO: Can't test yet until we have setAttributeNS support
-        
         // line and g
         group = document.createElementNS(svgns, 'g');
         group.id = 'testStyleG';
@@ -3494,7 +3493,115 @@
         console.log('There should be a red path on the screen');
         
         // linearGradient
-        
+        gradient = document.createElementNS(svgns, 'linearGradient');
+        gradient.id = 'testGradient1';
+        stop = document.createElementNS(svgns, 'stop');
+        stop.style.stopColor = '#ffffff';
+        stop.style.stopOpacity = 1;
+        stop.setAttribute('offset', 0);
+        gradient.appendChild(stop);
+        stop.setAttribute('id', 'testStop1'); // set ID after appending
+        stop = document.createElementNS(svgns, 'stop');
+        stop.style.stopColor = '#bfbfbf';
+        stop.style.stopOpacity = 1;
+        stop.setAttribute('offset', 0.7);
+        gradient.appendChild(stop);
+        stop = document.createElementNS(svgns, 'stop');
+        stop.style.stopColor = '#525252';
+        stop.style.stopOpacity = 1;
+        stop.setAttribute('offset', 1);
+        gradient.appendChild(stop);
+        // get the defs element for mySVG, use NodeList.item() to do so
+        matches = document.getElementsByTagNameNS(svgns, 'defs');
+        defs = null;
+        for (var i = 0; i < matches.length; i++) {
+          assertExists('matches.item(' + i + ') should exist', matches.item(i));
+          if (matches.item(i).parentNode.id == 'svg2') {
+            defs = matches.item(i);
+            break;
+          }
+        }
+        assertExists('defs for svg2 should exist', defs);
+        // add the gradient to the defs section
+        defs.appendChild(gradient);
+        // now create a circle that will use this gradient
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 50);
+        circle.setAttribute('cy', 50);
+        circle.setAttribute('r', 100);
+        circle.style.fill = 'url(#testGradient1)';
+        circle.style.stroke = 'white';
+        circle.style.strokeWidth = '3px';
+        svg = document.getElementById('svg2');
+        svg.appendChild(circle);
+        // test all of our style values
+        // Firefox makes the fill become 'url(#testGradient1) rgb(0, 0, 0)'
+        // for some reason
+        // TODO: investigate if this is something we should do too
+        assertEqualsAny('circle.style.fill == url(#testGradient1) or '
+                        + '"url(#testGradient1) rgb(0, 0, 0)"',
+                        ['url(#testGradient1)', 
+                         'url(#testGradient1) rgb(0, 0, 0)'],
+                        circle.style.fill);
+        assertEqualsAny('circle.style.stroke == white or #FFFFFF',
+                        ['white', '#FFFFFF'],
+                        circle.style.stroke); 
+        // test each of the linearGradient's children using NodeList.item()
+        assertEqualsAny('gradient.childNodes.item(0).style.stopColor == '
+                        + '#ffffff or #FFFFFF or rgb(255, 255, 255)',
+                        ['#ffffff', '#FFFFFF', 'rgb(255, 255, 255)'],
+                        gradient.childNodes.item(0).style.stopColor);
+        assertEqualsAny('gradient.childNodes.item(0).style.stopOpacity == 1',
+                        [1],
+                        gradient.childNodes.item(0).style.stopOpacity);
+        assertEqualsAny('gradient.childNodes.item(1).style.stopColor == '
+                        + '#bfbfbf or #BFBFBF or rgb(191, 191, 191)',
+                        ['#bfbfbf', '#BFBFBF', 'rgb(191, 191, 191)'],
+                        gradient.childNodes.item(1).style.stopColor);
+        assertEqualsAny('gradient.childNodes.item(1).style.stopOpacity == 1',
+                        [1],
+                        gradient.childNodes.item(1).style.stopOpacity);
+        assertEqualsAny('gradient.childNodes.item(2).style.stopColor == '
+                        + '#525252 or rgb(82, 82, 82)',
+                        ['#525252', 'rgb(82, 82, 82)'],
+                        gradient.childNodes.item(2).style.stopColor);
+        assertEqualsAny('gradient.childNodes.item(2).style.stopOpacity == 1',
+                        [1],
+                        gradient.childNodes.item(2).style.stopOpacity);
+        // repeat, but get the first stop node using an ID, then move to the
+        // next using nextSibling to make styles work with sibling navigation
+        stop = document.getElementById('testStop1');
+        assertExists('stop node with ID testStop1 should exist', stop);
+        // first stop node
+        assertEqualsAny('first stop.style.stopColor == '
+                        + '#ffffff or #FFFFFF or rgb(255, 255, 255)',
+                        ['#ffffff', '#FFFFFF', 'rgb(255, 255, 255)'],
+                        stop.style.stopColor);
+        assertEqualsAny('first stop.style.stopOpacity == 1',
+                        [1],
+                        stop.style.stopOpacity);
+        // second stop node
+        stop = stop.nextSibling;
+        assertEqualsAny('second stop.style.stopColor == '
+                        + '#bfbfbf or #BFBFBF or rgb(191, 191, 191)',
+                        ['#bfbfbf', '#BFBFBF', 'rgb(191, 191, 191)'],
+                        stop.style.stopColor);
+        assertEqualsAny('second stop.style.stopOpacity == 1',
+                        [1],
+                        stop.style.stopOpacity);
+        // third stop node
+        stop = stop.nextSibling;
+        assertEqualsAny('third stop.style.stopColor == '
+                        + '#525252 or rgb(82, 82, 82)',
+                        ['#525252', 'rgb(82, 82, 82)'],
+                        stop.style.stopColor);
+        assertEqualsAny('third stop.style.stopOpacity == 1',
+                        [1],
+                        stop.style.stopOpacity);
+             
+        // image
+        // TODO: Can't test yet until we have setAttributeNS support
+                
         // text
         
         // desc

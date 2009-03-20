@@ -682,7 +682,11 @@ package com.sgweb.svg
                                 element._xml.@style = jsMsg.attrName + ": " + jsMsg.attrValue.toString();
                             }
                         }
-                        else {
+                        else if (jsMsg.attrNamespace != null) {
+                            // namespaced attribute, such as xlink:href
+                            var ns = new Namespace(jsMsg.attrNamespace);
+                            element._xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
+                        } else {
                             element._xml.@[jsMsg.attrName] = jsMsg.attrValue.toString();
                         }
 
