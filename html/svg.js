@@ -2608,14 +2608,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   }
   this._passThrough = passThrough;
   
-  if (!isIE) {
-    // NOTE: we make _childNodes an object literal instead of an Array; if
-    // it is an array we can't do __defineGetter__ on each index position on
-    // Safari
-    this._childNodes = {};
-  } else { // IE
-    this._childNodes = [];
-  }
+  this._childNodes = this._createChildNodes();
   
   // We keep an cachedChildNodes array around until we are truly
   // attached that we can depend on to serve out our childNodes; we can't
@@ -3295,10 +3288,13 @@ extend(_Node, {
       return this._childNodes;
     }
     
-    // NOTE: for IE we return a real Array, while for other browsers
+    // NOTE: for IE we return a real full Array, while for other browsers
     // our _childNodes array is an object literal in order to do
-    // our __defineGetter__ magic in _defineNodeAccessors.
-    var results = [];
+    // our __defineGetter__ magic in _defineNodeAccessors. It turns out
+    // that on IE a full array can be returned from the getter, and _then_
+    // the index can get applied (i.e. our array is returned, and then 
+    // [2] might get applied to that array).
+    var results = createNodeList();
     
     if (!this._attached) {
       // we aren't attached to the DOM yet, and therefore have no
@@ -3306,7 +3302,6 @@ extend(_Node, {
       // cachedChildNodes array earlier whenever appendChild
       // was called that we can depend on until we are attached to a
       // real, live DOM.
-      var results = [];
       for (var i = 0; i < this._cachedChildNodes.length; i++) {
         results.push(this._cachedChildNodes[i]._htcNode);
       }
@@ -3538,7 +3533,7 @@ extend(_Node, {
     
     // clear out the cachedChildNodes structure if we are now truly attached
     if (attached) {
-      child._cachedChildNodes = [];
+      child._cachedChildNodes = createNodeList();
     }
   },
   
@@ -3705,7 +3700,7 @@ extend(_Node, {
     // force all children to be created if they were never fetched before
     // so we can have a real reference to them.
     var children = this._getChildNodes();
-    var cachedChildNodes = [];
+    var cachedChildNodes = createNodeList();
     for (var i = 0; i < children.length; i++) {
       var child = children[i];
       if (isIE) {
@@ -3759,6 +3754,33 @@ extend(_Node, {
                     this._cachedChildNodes[i + 1]._getProxyNode();
       }
     }
+  },
+  
+  /** Creates our childNodes data structure in a different way for different
+      browsers. We have this in a separate method so that we avoid forming
+      a closure of elements that could lead to a memory leak in IE. */
+  _createChildNodes: function() {
+    var childNodes;
+    
+    if (!isIE) {
+      // NOTE: we make _childNodes an object literal instead of an Array; if
+      // it is an array we can't do __defineGetter__ on each index position on
+      // Safari
+      childNodes = {};
+      
+      // add the item() method from NodeList to our childNodes instance
+      childNodes.item = function(index) {
+        if (index >= this.length) {
+          return null; // DOM Level 2 spec says return null
+        } else {
+          return this[index];
+        }
+      }
+    } else { // IE
+      childNodes = createNodeList();
+    }
+    
+    return childNodes;
   }
 });
 
@@ -3847,32 +3869,7 @@ extend(_Element, {
   
   setAttribute: function(attrName, attrValue /* String */) /* void */ {
     //console.log('setAttribute, attrName='+attrName+', attrValue='+attrValue);
-    var elementId = this._nodeXML.getAttribute('id');
-    
-    // if id then change node lookup table (only if we are attached to
-    // the DOM however)
-    if (this._attached && attrName == 'id') {
-      var doc = this._handler.document;
-      
-      // old lookup
-      doc._nodeById['_' + elementId] = undefined;
-      // new lookup
-      doc._nodeById['_' + attrValue] = this;
-    }
-    
-    // update our XML
-    this._nodeXML.setAttribute(attrName, attrValue);
-    
-    // update our internal set of attributes
-    this._attributes['_' + attrName] = attrValue;
-    
-    // send to Flash
-    if (this._passThrough) {
-      this._handler.sendToFlash(
-                       { type: 'invoke', method: 'setAttribute',
-                         elementId: elementId, attrName: attrName, 
-                         attrValue: attrValue });
-    }
+    this.setAttributeNS(null, attrName, attrValue);
   },
   
   removeAttribute: function(name) /* void */ {
@@ -3882,9 +3879,42 @@ extend(_Element, {
   getAttributeNS: function(ns, localName) /* String */ {
   },
 
-  setAttributeNS: function(ns, qName, value /* String */)
-    /* void */ {
-      /* throws _DOMException */
+  setAttributeNS: function(ns, qName, attrValue /* String */) /* void */ {
+    var elementId = this._nodeXML.getAttribute('id');
+    
+    // parse out local name of attribute
+    var localName = qName;
+    if (qName.indexOf(':') != -1) {
+      localName = qName.split(':')[1];
+    }
+
+    // if id then change node lookup table (only if we are attached to
+    // the DOM however)
+    if (this._attached && qName == 'id') {
+      var doc = this._handler.document;
+
+      // old lookup
+      doc._nodeById['_' + elementId] = undefined;
+      // new lookup
+      doc._nodeById['_' + attrValue] = this;
+    }
+
+    // update our XML; we store the full qname (i.e. xlink:href)
+    this._nodeXML.setAttribute(qName, attrValue);
+
+    // update our internal set of attributes
+    this._attributes['_' + qName] = attrValue;
+
+    // send to Flash
+    if (this._passThrough) {
+      this._handler.sendToFlash(
+                       { type: 'invoke', 
+                         method: 'setAttribute',
+                         elementId: elementId,
+                         attrNamespace: ns,
+                         attrName: localName, 
+                         attrValue: attrValue });
+    }
   },
   
   removeAttributeNS: function(ns, localName) /* void */ {
@@ -4822,7 +4852,7 @@ extend(_Document, {
       getElementsByTagNameNS(null, 'someTag');
   */
   getElementsByTagNameNS: function(ns, localName) /* _NodeList of _Elements */ {
-    var results = [];
+    var results = createNodeList();
     var matches;
     // DOM Level 2 spec details:
     // if ns is null or '', return elements that have no namespace
@@ -4854,7 +4884,7 @@ extend(_Document, {
           }
           
           if (prefix == undefined) {
-            results = [];
+            results = createNodeList();
           } else if (prefix == 'xmlns') {
             query = localName;
           } else {
@@ -4983,6 +5013,7 @@ function createNodeList() {
       return this[i];
     }
   }
+  
   return results;
 }
 
