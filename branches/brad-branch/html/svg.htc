@@ -47,6 +47,7 @@ The 'lightWeight' attribute below is important for two reasons:
     <property name="_fake" value="true"/>
              
     <method name="setAttribute" />
+    <method name="setAttributeNS" />
     <method name="getAttribute" />
     <method name="appendChild" />
     <method name="removeChild" />
@@ -251,6 +252,16 @@ The 'lightWeight' attribute below is important for two reasons:
       return undefined;
     } else {
       return this._fakeNode.setAttribute(attrName, attrValue);
+    }
+  }
+  
+  function setAttributeNS(ns, qName, attrValue) {
+    // _Node.TEXT_NODE is not visible here (global variables aren't
+    // shared between HTC and it's host page)
+    if (this._fakeNode.nodeType == 3) { // text node
+      return undefined;
+    } else {
+      return this._fakeNode.setAttributeNS(ns, qName, attrValue);
     }
   }
   

@@ -58,16 +58,7 @@ package com.sgweb.svg.nodes
             if (!imageHref) {
                 return;
             }
-
-            if (imageHref.match(/^http:/) && this._xml.@width && this._xml.@height) {
-                var loader:Loader = new Loader();
-                var urlReq:URLRequest = new URLRequest(imageHref);
-                loader.load(urlReq);
-                loader.contentLoaderInfo.addEventListener( Event.COMPLETE, onImageLoaded );
-                this.addChild(loader);
-                return;
-            }
-
+            
             // For data: href, decode the base 64 image and load it
             if (imageHref.match(/^data:[a-z\/]*;base64,/)) {
                 /*  xxx: base64decoder adds about 8.5K to swf file
@@ -82,8 +73,17 @@ package com.sgweb.svg.nodes
                 
                 loadBytes(byteArray);
                 */
+            } else if (this._xml.@width && this._xml.@height) {
+                // TODO: Set loaded image's width and height to the given
+                // width and height if pixels given, or scale it if 
+                // percentages given
+                var loader:Loader = new Loader();
+                var urlReq:URLRequest = new URLRequest(imageHref);
+                loader.load(urlReq);
+                loader.contentLoaderInfo.addEventListener( Event.COMPLETE, onImageLoaded );
+                this.addChild(loader);
+                return;
             }
-
         }
         private function onImageLoaded( event:Event ):void {
             this.imageWidth = event.target.width;

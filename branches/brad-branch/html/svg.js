@@ -3479,10 +3479,31 @@ extend(_Node, {
         }
         
         var attrValue = child._attributes[i];
-      
+        
+        // get a namespace if a prefix is present
+        var ns = null;
+        if (attrName.indexOf(':') != -1) {
+          // get the namespace prefix
+          var prefix = attrName.split(':')[0];
+          
+          // transform the attribute name into a local name 
+          // (i.e. xlink:href becomes just href)
+          attrName = attrName.split(':')[1];
+          
+          // get the actual namespace URI
+          if (this._handler.document._namespaces['_' + prefix]) {
+            ns = this._handler.document._namespaces['_' + prefix];
+          } else {
+            console.debug('Note: no namespace declared for ' + prefix
+                          + ' attribute ' + attrName + '; ignoring');
+            continue;
+          }
+        }
+        
         this._handler.sendToFlash({ type: 'invoke', 
                                     method: 'setAttribute',
-                                    elementId: id, 
+                                    elementId: id,
+                                    attrNamespace: ns,
                                     attrName: attrName, 
                                     attrValue: attrValue });
       }

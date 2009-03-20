@@ -3598,9 +3598,24 @@
         assertEqualsAny('third stop.style.stopOpacity == 1',
                         [1],
                         stop.style.stopOpacity);
+        console.log('There should be a circle with a linear gradient in it '
+                    + 'on the upper left of the second SVG');
              
         // image
-        // TODO: Can't test yet until we have setAttributeNS support
+        image = document.createElementNS(svgns, 'image');
+        image.setAttributeNS(xlinkns, 'xlink:href', 'balloon.jpg');
+        image.setAttribute('x', 20);
+        image.setAttribute('y', 20);
+        image.setAttribute('width', '100px');
+        image.setAttribute('height', '100px');
+        image.style.opacity = 0.8;
+        svg = document.getElementById('svg11242');
+        svg.appendChild(image);
+        assertEqualsAny('svg11242.lastChild.style.opacity == 0.8',
+                        [0.8],
+                        svg.lastChild.style.opacity);
+        console.log('There should be a scaled black and white image of '
+                    + 'balloons in the third SVG');
                 
         // text
         
