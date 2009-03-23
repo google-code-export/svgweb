@@ -1126,32 +1126,35 @@ package com.sgweb.svg.nodes
         public function parseStyle(styleAttr:String):String {
             if (!this._xml.@style)
                 return null;
-
+                
             var styleSet:Array;
             var attrName:String;
             var attrValue:String;
             var style:String;
             
-            var baseStyles:Array;
-            if (this._xml.@style.indexOf(';') == -1) {
+            var baseStyles:Array = [];
+            if (this._xml.@style.length() && this._xml.@style.indexOf(';') == -1) {
               // only one style value given, with no trailing semicolon
               baseStyles = [ this._xml.@style ];
-            } else {
+            } else if (this._xml.@style.length()) {
               baseStyles = this._xml.@style.split(';');
             }
-
+            
             for each(style in baseStyles) {
                 styleSet = style.split(':');
                 if (styleSet.length == 2) {
                     attrName = styleSet[0];
                     attrValue = styleSet[1];
+                    
                     // Trim leading whitespace.
                     attrName = attrName.replace(/^\s+/, '');
                     attrValue = attrValue.replace(/^\s+/, '');
+                    
                     if (attrName == styleAttr)
                         return attrValue;
                 }
             }
+            
             return null;
         }
 

@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     <script src="svg.js"></script>
     
     <script>
@@ -16,7 +16,6 @@
       var flashError = false;
     
       svgweb.addOnLoad(function() {
-        console.log('developers onload called');
         var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
         var dc_ns = "http://purl.org/dc/elements/1.1/";
         var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -3741,13 +3740,13 @@
                           ['#555040'],
                           rect.style.stroke); 
           assertEqualsAny('rect3926.style.strokeWidth == 3.1614 or '
-                          + '3.1614px or 3.16145px',
-                          [3.1614, '3.1614px', '3.16145px'],
+                          + '3.1614px or 3.16145px or 3.16145396',
+                          [3.1614, '3.1614px', '3.16145px', 3.16145396],
                           rect.style.strokeWidth);
-          assertEqualsAny('rect3926.style.strokeWidth == 3.16145396 '
-                          + 'or 3.16145396 or 3.16145px',
-                          [3.16145396, '3.16145396', '3.16145px'],
-                          rect.style.strokeWidth);
+          assertEqualsAny('rect3926.style[strokeWidth] == 3.16145396 '
+                          + 'or 3.16145396 or 3.16145px or 3.16145396',
+                          [3.16145396, '3.16145396', '3.16145px', 3.16145396],
+                          rect.style['strokeWidth']);
           assertEqualsAny('rect3926.style.strokeLinejoin == miter',
                           ['miter'],
                           rect.style.strokeLinejoin);
