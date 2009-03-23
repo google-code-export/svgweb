@@ -28,7 +28,7 @@
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
             origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-            image, line, defs;
+            image, line, defs, runTests, tspan;
             
         var startTime = new Date().getTime();
         
@@ -3650,10 +3650,87 @@
         svg = document.getElementById('mySVG');
         svg.appendChild(desc);
         desc.style.fill = 'green'; // nothing should display!
-        desc.style.border = '1px solid black';        
+        desc.style.border = '1px solid black';
         
-        // test on elements that have style settings in the markup and 
+        // check for some properties that shouldn't be present on certain
+        // elements -- on circle element, look for some text properties
+        
+        // Test default style values for an attached node     
+        
+        // Test on elements that have style settings in the markup and 
         // document itself; get style values different ways, set them, etc.
+        // Read style values off an element first.
+        group = document.getElementById('layer1');
+        assertExists('layer1 should exist', group);
+        assertEqualsAny('layer1.style.opacity == 1',
+                        [1],
+                        group.style.opacity);
+        assertEqualsAny('layer1.style.display == inline',
+                        ['inline'],
+                        group.style.display);
+        // Firefox and Safari put spaces in different places in their
+        // style strings; Safari also doesn't have a trailing semicolon
+        assertTrue('layer1.getAttribute(style) == opacity:1;display:inline;',
+                   /opacity:\s*1;\s*display:\s*inline;?/.test(
+                                      group.getAttribute('style')));
+        // repeat reading style values off another element
+        rect = document.getElementById('rect3926');
+        // NOTE: unfortunately, FF 3 has a bug where it doesn't mirror styles
+        // set with the style="" attribute into the element.style.* namespace!
+        runTests = true;
+        if (isFF && renderer == 'native') {
+          runTests = false;
+        }
+        if (runTests) {
+          assertEqualsAny('rect3926.style.opacity == 1',
+                          [1],
+                          rect.style.opacity);
+          assertEqualsAny('rect3926.style.fill == #c1cfeb or #C1CFEB',
+                          ['#c1cfeb', '#C1CFEB'],
+                          rect.style.fill);
+          assertEqualsAny('rect3926.style.fillOpacity == 1',
+                          [1],
+                          rect.style.fillOpacity);
+          assertEqualsAny('rect3926.style.stroke == #555040',
+                          ['#555040'],
+                          rect.style.stroke); 
+          assertEqualsAny('rect3926.style.strokeWidth == 3.1614 or '
+                          + '3.1614px or 3.16145px',
+                          [3.1614, '3.1614px', '3.16145px'],
+                          rect.style.strokeWidth);
+          assertEqualsAny('rect3926.style.strokeWidth == 3.16145396 '
+                          + 'or 3.16145396 or 3.16145px',
+                          [3.16145396, '3.16145396', '3.16145px'],
+                          rect.style.strokeWidth);
+          assertEqualsAny('rect3926.style.strokeLinejoin == miter',
+                          ['miter'],
+                          rect.style.strokeLinejoin);
+          assertEqualsAny('rect3926.style.strokeDasharray == none',
+                          ['none'],
+                          rect.style.strokeDasharray);
+          assertEqualsAny('rect3926.style.strokeOpacity == 1',
+                          [1],
+                          rect.style.strokeOpacity);
+          assertEqualsAny('rect3926.style.display == inline',
+                          ['inline'],
+                          rect.style.display);   
+          // do a style[] type access
+          assertEqualsAny('rect3926.style[strokeWidth] == 3.16145396 '
+                          + 'or 3.16145396 or 3.16145px',
+                          [3.16145396, '3.16145396', '3.16145px'],
+                          rect.style['strokeWidth']);
+        }
+        // change a CSS value that is also used by HTML and make sure it changes
+        rect.style.display = 'block';
+        assertEqualsAny('rect3926.style.display after changing == block',
+                        ['block'],
+                        rect.style.display);              
+        // change a visible SVG style
+        group = document.getElementById('layer1');
+        group.style.opacity = 0.4;
+        assertEqualsAny('layer1.style.opacity after changing == 0.4',
+                        [0.4],
+                        group.style.opacity); 
         
         // apply style on a use element that references a rectangle
         
@@ -3707,6 +3784,15 @@
         
         // test CSSStyleDeclaration methods (getPropertyValue, item) 
         // etc. on an element with no style setting
+        
+        // TODO STYLE: I believe there are default CSS values that can be 
+        // returned from style, even if they aren't set. Confirm this for 
+        // attached and unattached on FF and Safari and then test these
+        // default values, such as display being inline and opacity being 1.
+        
+        // TODO STYLE: if I call setAttribute('style') with a new style string,
+        // with this clear everything out? How is this handled? Find out
+        // and test.
         
         // TODO: Test dynamically creating an SVG root
         

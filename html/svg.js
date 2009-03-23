@@ -699,6 +699,21 @@ DOM text nodes should not have a .style property.
 should not be set or retrieved; it will have unreliable results. For example,
 calling myCircle.style.cssText will not correctly return the SVG CSS of that
 node.
+
+* The Firefox 3 native implementation of SVG doesn't correctly mirror
+inline style="" attributes into element.style.* values. For example,
+if I have the following SVG element:
+
+<path id="myPath" style="display: block; fill: red; opacity: 0.5" />
+
+and then I access it's style properties:
+
+var myPath = document.getElementById('myPath');
+console.log(myPath.style.fill); // does not print 'red' on Firefox!
+
+Note that this is a bug in the browser itself and not from us. The native
+SVG renderer on Safari does not have this issue. We correctly parse and expose
+our style properties for the above case for the Flash renderer.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
