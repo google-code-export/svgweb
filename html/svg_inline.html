@@ -28,7 +28,24 @@
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
             origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-            image, line, defs, runTests, tspan;
+            image, line, defs, runTests, styleReturned;
+            
+        var allStyles = [
+          'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
+          'fontVariant', 'fontWeight', 'direction', 'letterSpacing', 'textDecoration',
+          'unicodeBidi', 'wordSpacing', 'clip', 'color', 'cursor', 'display', 'overflow',
+          'visibility', 'clipPath', 'clipRule', 'mask', 'opacity', 'enableBackground',
+          'filter', 'floodColor', 'floodOpacity', 'lightingColor', 'stopColor',
+          'stopOpacity', 'pointerEvents', 'colorInterpolation',
+          'colorInterpolationFilters', 'colorProfile', 'colorRendering', 'fill',
+          'fillOpacity', 'fillRule', 'imageRendering', 'marker', 'markerEnd',
+          'markerMid', 'markerStart', 'shapeRendering', 'stroke', 'strokeDasharray',
+          'strokeDashoffset', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit',
+          'strokeOpacity', 'strokeWidth', 'textRendering', 'alignmentBaseline', 
+          'baselineShift', 'dominantBaseline', 'glyphOrientationHorizontal',
+          'glyphOrientationVertical', 'kerning', 'textAnchor',
+          'writingMode'
+        ];
             
         var startTime = new Date().getTime();
         
@@ -3652,131 +3669,37 @@
         desc.style.fill = 'green'; // nothing should display!
         desc.style.border = '1px solid black';
         
-        // Test default style values for unattached nodes
-        
-        // tspan
-        var allStyles = [
-          'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
-          'fontVariant', 'fontWeight', 'direction', 'letterSpacing', 'textDecoration',
-          'unicodeBidi', 'wordSpacing', 'clip', 'color', 'cursor', 'display', 'overflow',
-          'visibility', 'clipPath', 'clipRule', 'mask', 'opacity', 'enableBackground',
-          'filter', 'floodColor', 'floodOpacity', 'lightingColor', 'stopColor',
-          'stopOpacity', 'pointerEvents', 'colorInterpolation',
-          'colorInterpolationFilters', 'colorProfile', 'colorRendering', 'fill',
-          'fillOpacity', 'fillRule', 'imageRendering', 'marker', 'markerEnd',
-          'markerMid', 'markerStart', 'shapeRendering', 'stroke', 'strokeDasharray',
-          'strokeDashoffset', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit',
-          'strokeOpacity', 'strokeWidth', 'textRendering', 'alignmentBaseline', 
-          'baselineShift', 'dominantBaseline', 'glyphOrientationHorizontal',
-          'glyphOrientationVertical', 'kerning', 'textAnchor',
-          'writingMode'
-        ];
-        
-        //baseline-shift=baseline
-        /*tspan = document.createElementNS(svgns, 'tspan');
-        assertEqualsAny('default, tspan.style.baselineShift == baseline',
-                        ['baseline'],
-                        tspan.style.baselineShift);*/
-        
-        // image
-        /*clip=auto
-        color-profile=auto
-        image-rendering=auto*/
-        /*image = document.createElementNS(svgns, 'image');
-        assertEqualsAny('default, image.style.clip == auto',
-                        ['auto'],
-                        image.style.clip);
-        assertEqualsAny('default, image.style.colorProfile == auto',
-                        ['auto'],
-                        image.style.colorProfile);
-        assertEqualsAny('default, image.style.imageRendering == auto',
-                        ['auto'],
-                        image.style.imageRendering);*/
-        
-        // g
-        /*clip-path=none
-        color=use what firefox uses as default
-        color-rendering=auto
-        cursor=auto
-        display=inline
-        enable-background=accumulate
-        mask=none
-        opacity=1
-        visibility=visible*/
-        /*group = document.createElementNS(svgns, 'g');
+        // Test default style values for unattached and attached nodes.
+        // FF and Safari for native handling return empty strings or 
+        // undefined for all of these, so we mimic this behavior
+        group = document.createElementNS(svgns, 'g');
+        styleReturned = false;
+        for (var i = 0; i < allStyles.length; i++) {
+          var styleName = allStyles[i];
+          var styleValue = group.style[styleName];
+          if (styleValue) {
+            styleReturned = true;
+            break;
+          }
+        }
+        assertFalse('unattached group.style.* should be undefined for '
+                    + 'default styles',
+                    styleReturned);
+        // attach node and repeat
         svg = document.getElementById('mySVG');
         svg.appendChild(group);
-        console.log('group!!!');
+        styleReturned = false;
         for (var i = 0; i < allStyles.length; i++) {
-          console.log('group.style.' + allStyles[i] + '=' + group.style[allStyles[i]]);
+          var styleName = allStyles[i];
+          var styleValue = group.style[styleName];
+          if (styleValue) {
+            styleReturned = true;
+            break;
+          }
         }
-        assertEqualsAny('default, group.style.clipPath == none',
-                        ['none'],
-                        group.style.clipPath);
-                        console.log('group.style.color='+group.style.color);*/
-        
-        // text
-        /*direction=ltr
-        display=inline
-        dominant-baseline=auto
-        font-family=use what firefox uses as default
-        font-size=medium
-        font-size-adjust=none
-        font-stretch=normal
-        font-style=normal
-        font-variant=normal
-        font-weight=normal
-        glyph-orientation-horizontal=0deg
-        glyph-orientation-vertical=auto
-        kerning=auto
-        letter-spacing=normal
-        text-anchor=start
-        text-decoration=none
-        text-rendering=none
-        unicode-bidi=none
-        visibility=visible
-        word-spacing=normal
-        writing-mode=lr-tb*/
-        
-        // text element inside clipPath element
-        //clip-rule=nonzero
-        
-        // filter primitive
-        //color-interpolation-filters=linearRGB
-        
-        // circle
-        /*fill=black
-        fill-opacity=1
-        fill-rule=nonzero
-        pointer-events=visiblePainted
-        shape-rendering=auto
-        stroke=none
-        stroke-dasharray=none
-        stroke-dashoffset=0
-        stroke-linecap=butt
-        stroke-linejoin=miter
-        stroke-miterlimit=4
-        stroke-opacity=1
-        stroke-width=1
-        visibility=visible*/
-        
-        // line
-        /*marker-end=none
-        marker-mid=none
-        marker-start=none*/
-        
-        // stop elements
-        /*stop-color=black
-        stop-opacity=1*/
-        
-        // check for some properties that shouldn't be present on certain
-        // elements -- on circle element, look for some text properties
-        
-        // Test default style values for attached nodes   
-        
-        // SVG root
-        /*clip=auto
-        overflow=whatever Firefoxes default is*/
+        assertFalse('attached group.style.* should be undefined for '
+                    + 'default styles',
+                    styleReturned);
         
         // Test on elements that have style settings in the markup and 
         // document itself; get style values different ways, set them, etc.
