@@ -714,6 +714,10 @@ console.log(myPath.style.fill); // does not print 'red' on Firefox!
 Note that this is a bug in the browser itself and not from us. The native
 SVG renderer on Safari does not have this issue. We correctly parse and expose
 our style properties for the above case for the Flash renderer.
+
+* By default the SVG root element has an overflow of hidden. If you make the
+overflow visible, when using the Flash renderer elements will not overflow
+outside of the containing Flash movie.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1974,6 +1978,7 @@ extend(FlashHandler, {
     
     for (var i = 0; i < svgweb.handlers.length; i++) {
       result = svgweb.handlers[i].document.getElementById(id);
+      
       if (result) {
         return result;
       }
@@ -3465,7 +3470,7 @@ extend(_Node, {
                                   prefix: child.prefix,
                                   namespaceURI: child.namespaceURI });
                                   
-      // send over each of our styles for SVG nodes
+      // send over each of our styles for SVG nodes to Flash
       if (child.namespaceURI == svgns) {
         for (var i = 0; i < child.style.length; i++) {
           var styleName = child.style.item(i);
@@ -3934,9 +3939,41 @@ extend(_Element, {
       // new lookup
       doc._nodeById['_' + attrValue] = this;
     }
-
-    // update our XML; we store the full qname (i.e. xlink:href)
-    this._nodeXML.setAttribute(qName, attrValue);
+    
+    /* Safari has a wild bug; If you have an element inside of a clipPath with
+       a style string:
+    
+       <clipPath id="clipPath11119">
+          <rect width="36.416" height="36.416" ry="0" x="247" y="-157"
+                style="opacity:1;fill:#6b6b6b;"
+                id="rect11121" />
+        </clipPath>
+        
+        Then calling setAttribute('style', '') on our nodeXML causes the
+        browser to crash! The workaround is to temporarily remove nodes
+        that have a clipPath parent, set their style, then
+        reattach them (!) */
+    if (isSafari
+        && localName == 'style'
+        && this._nodeXML.parentNode != null 
+        && this._nodeXML.parentNode.nodeName == 'clipPath') {
+      // save our XML position information for later re-inserting
+      var addBeforeXML = this._nodeXML.nextSibling;
+      var origParent = this._nodeXML.parentNode;
+      // remove the node and set style; doing this prevents crash when 
+      // setting style string      
+      this._nodeXML.parentNode.removeChild(this._nodeXML);
+      this._nodeXML.setAttribute('style', attrValue);
+      // re-attach ourselves before our old sibling
+      if (addBeforeXML) {
+        origParent.insertBefore(this._nodeXML, addBeforeXML);
+      } else { // node was at end originally
+        origParent.appendChild(this._nodeXML);
+      }
+    } else { // we are an attrname other than style, or on a non-Safari browser
+      // update our XML; we store the full qname (i.e. xlink:href)
+      this._nodeXML.setAttribute(qName, attrValue);
+    }
 
     // update our internal set of attributes
     this._attributes['_' + qName] = attrValue;
@@ -4029,23 +4066,32 @@ extend(_Element, {
   // SVGSVGElement and SVGUseElement readonly
   
   _getX: function() { /* SVGAnimatedLength */
-    var value = this.getAttribute('x');  
+    var value = this._trimMeasurement(this.getAttribute('x'));
     return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
   },
   
   _getY: function() { /* SVGAnimatedLength */
-    var value = this.getAttribute('y');
+    var value = this._trimMeasurement(this.getAttribute('y'));
     return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
   },
   
   _getWidth: function() { /* SVGAnimatedLength */
-    var value = this.getAttribute('width');
+    var value = this._trimMeasurement(this.getAttribute('width'));
     return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
   },
   
   _getHeight: function() { /* SVGAnimatedLength */
-    var value = this.getAttribute('height');
+    var value = this._trimMeasurement(this.getAttribute('height'));
     return new _SVGAnimatedLength(new _SVGLength(new Number(value)));
+  },
+  
+  /** Extracts the unit value and trims off the measurement type. For example, 
+      if you pass in 14px, this method will return 14. Null will return null. */
+  _trimMeasurement: function(value) {
+    if (value != null) {
+      value = value.replace(/[a-z]/gi, '');
+    }
+    return value;
   },
   
   // many attributes and methods from these two interfaces not here
@@ -4201,6 +4247,12 @@ extend(_Style, {
   /** Initializes our magic getters and setters for non-IE browsers. For IE
       we set our initial style values on the HTC. */
   _setup: function() {
+    // Handle an edge-condition: the SVG spec requires us to support
+    // style="" strings that might have uppercase style names, measurements,
+    // etc. Normalize these here before continuing.
+    this._normalizeStyle();
+    
+    // now handle browser-specific initialization
     if (!isIE) {
       // setup getter/setter magic for non-IE browsers
       for (var i = 0; i < _Style._allStyles.length; i++) {
@@ -4285,9 +4337,11 @@ extend(_Style, {
       parsedStyle.push({ styleName: stylePropName, styleValue: styleValue });
     }
     
-    // now turn the style back into a string and set it on our XML
+    // now turn the style back into a string and set it on our XML and
+    // internal list of attribute values
     var styleString = this._toStyleString(parsedStyle);
     this._element._nodeXML.setAttribute('style', styleString);
+    this._element._attributes['_style'] = styleString;
     
     // for IE, update our HTC style object; we can't do magic getters for 
     // those so have to update and cache the values
@@ -4484,6 +4538,48 @@ extend(_Style, {
     // parse style string
     var parsedStyle = this._fromStyleString();
     return parsedStyle.length;
+  },
+  
+  /** Handles an edge-condition: the SVG spec requires us to support
+      style="" strings that might have uppercase style names, measurements,
+      etc. We normalize these to lower-case in this method. */
+  _normalizeStyle: function() {
+    // style="" attribute?
+    // NOTE: IE doesn't support nodeXML.hasAttribute()
+    if (!this._element._nodeXML.getAttribute('style')) {
+      return;
+    }
+    
+    // no uppercase letters?
+    if (!/[A-Z]/.test(this._element._nodeXML.getAttribute('style'))) {
+      return;
+    }
+    
+    // parse style into it's components
+    var parsedStyle = this._fromStyleString();
+    for (var i = 0; i < parsedStyle.length; i++) {
+      parsedStyle[i].styleName = parsedStyle[i].styleName.toLowerCase();
+      
+      // don't lowercase url() values
+      if (parsedStyle[i].styleValue.indexOf('url(') == -1) {
+        parsedStyle[i].styleValue = parsedStyle[i].styleValue.toLowerCase();
+      }
+    }
+    
+    // turn back into a string
+    var results = '';
+    for (var i = 0; i < parsedStyle.length; i++) {
+      results += parsedStyle[i].styleName + ': ' 
+                 + parsedStyle[i].styleValue + '; ';
+    }
+    
+    // remove trailing space
+    if (results.charAt(results.length - 1) == ' ') {
+      results = results.substring(0, results.length - 1);
+    }
+    
+    // have the element tell Flash about the change if we are attached
+    this._element.setAttribute('style', results);
   }
 });
 
@@ -4965,9 +5061,8 @@ extend(_Document, {
       if (!node) {
         // never seen before -- we'll have to create a new _Element now
         node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
-                            nodeXML.namespaceURI, nodeXML, this._handler, false);
-        node._passThrough = true;
-      
+                            nodeXML.namespaceURI, nodeXML, this._handler, true);
+
         // store a reference to ourselves. 
         // unfortunately IE doesn't support 'expandos' on XML parser objects, 
         // so we can't just say nodeXML._fakeNode = node, so we have to use a 
