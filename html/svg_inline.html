@@ -3,7 +3,7 @@
   <!-- Tests embedding a single SVG block into a SCRIPT block -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     <script src="svg.js"></script>
     
     <script>
@@ -27,7 +27,7 @@
             className, htmlTitle, head, circle, lengthBefore, matches, temp,
             gradient, stop, defs, parent, textNode2, group2, renderer,
             origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-            image, line, defs, runTests, styleReturned;
+            image, line, defs, runTests, styleReturned, use, regExp, split;
             
         var allStyles = [
           'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -3201,21 +3201,21 @@
         // NOTE: Safari transforms color names into their RGB hex
         // values, so 'red' becomes '#FF0000'. Safari also transforms
         // unit measurements into their actual types, so '10' becomes '10px'
-        assertEqualsAny('circle.style.fill == red or #FF0000',
-                        ['red', '#FF0000'],
+        assertEqualsAny('circle.style.fill == red or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'],
                         circle.style.fill);
-        assertEqualsAny('circle.style.stroke == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style.stroke == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style.stroke);
         assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
                         [10, '10px'],
                         circle.style.strokeWidth);
         // make sure style[prop] syntax works
-        assertEqualsAny('circle.style[fill] == red or #FF0000', 
-                        ['red', '#FF0000'], 
+        assertEqualsAny('circle.style[fill] == red or #FF0000 or #ff0000', 
+                        ['red', '#FF0000', '#ff0000'], 
                         circle.style['fill']);
-        assertEqualsAny('circle.style[stroke] == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style[stroke] == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style['stroke']);
         assertEqualsAny('circle.style[strokeWidth] == 10 or 10px',
                         [10, '10px'],
@@ -3225,17 +3225,19 @@
         circle.setAttribute('fill', 'blue');
         circle.setAttribute('stroke', 'red');
         circle.setAttribute('stroke-width', 5);
-        assertEqualsAny('1, circle.getAttribute(fill) == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('1, circle.getAttribute(fill) == blue '
+                        + 'or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.getAttribute('fill'));
-        assertEqualsAny('circle.style.fill == red or #FF0000',
-                        ['red', '#FF0000'],
+        assertEqualsAny('circle.style.fill == red or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'],
                         circle.style.fill);
-        assertEqualsAny('circle.getAttribute(stroke) == red or #FF0000',
-                        ['red', '#FF0000'],
+        assertEqualsAny('circle.getAttribute(stroke) == red '
+                        + 'or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'],
                         circle.getAttribute('stroke'));
-        assertEqualsAny('circle.style.stroke == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style.stroke == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style.stroke);
         assertEqualsAny('circle.getAttribute(stroke-width) == 5 or 5px',
                         [5, '5px'],
@@ -3250,8 +3252,9 @@
                         ['green', '#008000'],
                         circle.style.fill);
         // attribute and style have independent values
-        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.getAttribute(fill) == blue '
+                        + 'or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.getAttribute('fill'));
         // attach node and make sure it shows up correctly
         svg = document.getElementById('mySVG');
@@ -3274,21 +3277,21 @@
         assertNull('circle.getAttribute(stroke-width) == null', 
                    circle.getAttribute('stroke-width'));
         // make sure attributes don't get set
-        assertEqualsAny('circle.style.fill == red or #FF0000', 
-                        ['red', '#FF0000'], 
+        assertEqualsAny('circle.style.fill == red or #FF0000 or #ff0000', 
+                        ['red', '#FF0000', '#ff0000'], 
                         circle.style.fill);
-        assertEqualsAny('circle.style.stroke == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style.stroke == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style.stroke);
         assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
                         [10, '10px'],
                         circle.style.strokeWidth);
         // make sure style[prop] syntax works
-        assertEqualsAny('circle.style[fill] == red or #FF0000',
-                        ['red', '#FF0000'], 
+        assertEqualsAny('circle.style[fill] == red or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'], 
                         circle.style['fill']);
-        assertEqualsAny('circle.style[stroke] == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style[stroke] == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style['stroke']);
         assertEqualsAny('circle.style[strokeWidth] == 10 or 10px',
                         [10, '10px'],
@@ -3298,17 +3301,19 @@
         circle.setAttribute('fill', 'blue');
         circle.setAttribute('stroke', 'red');
         circle.setAttribute('stroke-width', 5);
-        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.getAttribute(fill) == blue '
+                        + 'or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.getAttribute('fill'));
-        assertEqualsAny('circle.style.fill == red or #FF0000',
-                        ['red', '#FF0000'],
+        assertEqualsAny('circle.style.fill == red or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'],
                         circle.style.fill);
-        assertEqualsAny('circle.getAttribute(stroke) == red or #FF0000',
-                        ['red', '#FF0000'],
+        assertEqualsAny('circle.getAttribute(stroke) == red '
+                        + 'or #FF0000 or #ff0000',
+                        ['red', '#FF0000', '#ff0000'],
                         circle.getAttribute('stroke'));
-        assertEqualsAny('circle.style.stroke == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.style.stroke == blue or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.style.stroke);
         assertEqualsAny('circle.getAttribute(stroke-width) == 5 or 5px',
                         [5, '5px'],
@@ -3323,8 +3328,9 @@
                         ['green', '#008000'],
                         circle.style.fill);
         // attribute and style have independent values
-        assertEqualsAny('circle.getAttribute(fill) == blue or #0000FF',
-                        ['blue', '#0000FF'],
+        assertEqualsAny('circle.getAttribute(fill) == blue '
+                        + 'or #0000FF or #0000ff',
+                        ['blue', '#0000FF', '#0000ff'],
                         circle.getAttribute('fill'));
                   
         // remove an element, set and get some styles, then reattach it
@@ -3343,14 +3349,14 @@
         circle.style.stroke = 'green';
         svg.appendChild(circle);
         circle.style.stroke = 'pink';
-        assertEqualsAny('circle.style.fill == yellow or #FFFF00',
-                        ['yellow', '#FFFF00'],
+        assertEqualsAny('circle.style.fill == yellow or #FFFF00 or #ffff00',
+                        ['yellow', '#FFFF00', '#ffff00'],
                         circle.style.fill);
         assertEqualsAny('circle.style.strokeWidth == 15 or 15px',
                         [15, '15px'],
                         circle.style.strokeWidth);             
-        assertEqualsAny('circle.style.stroke == pink or #FFC0CB',
-                        ['pink', '#FFC0CB'],
+        assertEqualsAny('circle.style.stroke == pink or #FFC0CB or #ffc0cb',
+                        ['pink', '#FFC0CB', '#ffc0cb'],
                         circle.style.stroke);
         assertEquals('circle.getAttribute(r) == 20', 20,
                       circle.getAttribute('r'));
@@ -3381,11 +3387,13 @@
         assertEqualsAny('rect.style.opacity == 0.5',
                         [0.5],
                         rect.style.opacity);
-        assertEqualsAny('rect.style.stroke == rgb(0, 255, 0) or #00FF00',
-                        ['rgb(0, 255, 0)', '#00FF00'],
+        assertEqualsAny('rect.style.stroke == rgb(0, 255, 0) '
+                        + 'or #00FF00 or #00ff00',
+                        ['rgb(0, 255, 0)', '#00FF00', '#00ff00'],
                         rect.style.stroke);
-        assertEqualsAny('rect.style.fill == #0000FF or rgb(0, 0, 255)',
-                        ['#0000FF', 'rgb(0, 0, 255)'],
+        assertEqualsAny('rect.style.fill == #0000FF '
+                        + 'or rgb(0, 0, 255) or #0000ff',
+                        ['#0000FF', 'rgb(0, 0, 255)', '#0000ff'],
                         rect.style.fill);               
         assertEqualsAny('rect.style.strokeWidth == 10px',
                         ['10px'],
@@ -3491,8 +3499,9 @@
                         + 'or 1.29999995px or 1.3px or 1.3',
                         [1.29999995, '1.29999995px', '1.3px', '1.3'],
                         path.style.strokeWidth);
-        assertEqualsAny('path.style.stroke == #FF0000 or rgb(255, 0, 0)',
-                        ['#FF0000', 'rgb(255, 0, 0)'],
+        assertEqualsAny('path.style.stroke == #FF0000 '
+                        + 'or rgb(255, 0, 0) or #ff0000',
+                        ['#FF0000', 'rgb(255, 0, 0)', '#ff0000'],
                         path.style.stroke);
         assertEqualsAny('path.style.strokeLinejoin == miter',
                         ['miter'],
@@ -3559,8 +3568,8 @@
                         ['url(#testGradient1)', 
                          'url(#testGradient1) rgb(0, 0, 0)'],
                         circle.style.fill);
-        assertEqualsAny('circle.style.stroke == white or #FFFFFF',
-                        ['white', '#FFFFFF'],
+        assertEqualsAny('circle.style.stroke == white or #FFFFFF or #ffffff',
+                        ['white', '#FFFFFF', '#ffffff'],
                         circle.style.stroke); 
         // test each of the linearGradient's children using NodeList.item()
         assertEqualsAny('gradient.childNodes.item(0).style.stopColor == '
@@ -3648,8 +3657,8 @@
         // that
         text = document.getElementById('testStyleText1');
         assertExists('testStyleText1 should exist', text);
-        assertEqualsAny('text.style.fill == yellow or #FFFF00',
-                        ['yellow', '#FFFF00'],
+        assertEqualsAny('text.style.fill == yellow or #FFFF00 or #ffff00',
+                        ['yellow', '#FFFF00', '#ffff00'],
                         text.style.fill);
         assertEqualsAny('text.style.fontSize == 30px',
                         ['30px'],
@@ -3700,7 +3709,7 @@
                     + 'default styles',
                     styleReturned);
         
-        // Test on elements that have style settings in the markup and 
+        // test on elements that have style settings in the markup and 
         // document itself; get style values different ways, set them, etc.
         // Read style values off an element first.
         group = document.getElementById('layer1');
@@ -3778,39 +3787,246 @@
                         group.style.opacity); 
         
         // apply style on a use element that references a rectangle
+        // * NOTE: Firefox 3's native support has a bug where it doesn't
+        // correctly display the rectangle
+        // * FIXME: This test has a number of issues; see the TODOs below.
+        // With the Flash handler, it also doesn't position correctly
+        // on the screen. I believe these are issues with the Flash USE
+        // code, which is probably fixed on trunk so I am not going to
+        // fix it on my branch. Check after the merge to see if the issue
+        // still stands.
+        defs = document.getElementById('defs4');
+        assertExists('defs4 should exist', defs);
+        // create rectangle in our defs that we will reference
+        rect = document.createElementNS(svgns, 'rect');
+        rect.setAttribute('id', 'bar');
+        rect.setAttribute('width', 196);
+        rect.setAttribute('height', 21);
+        rect.setAttribute('fill', 'brown');
+        rect.style.stroke = 'purple';
+        rect.style.strokeWidth = '5px';
+        defs.appendChild(rect);
+        // now create USE element using this rectangle
+        use = document.createElementNS(svgns, 'use');
+        use.setAttribute('id', 'testUse1');
+        use.setAttributeNS(xlinkns, 'xlink:href', 'bar');
+        // set our USE values
+        use.setAttribute('x', '275px');
+        use.setAttribute('y', '400px');
+        use.setAttribute('width', '50px');
+        use.setAttribute('height', '50px');
+        // * TODO: Should the USE elements 50x50 setting above pass through into
+        // the RECT? It's not on with the native support on Safari nor in our
+        // Flash viewer.
+        // * TODO: I'm confused on whether styles added to the USE element
+        // using use.style should override and apply to the underlying
+        // RECT that is being used. On Safari it _doesn't_, while FF has a
+        // bug that doesn't even ever display the rectangle. Find out 
+        // correct spec behavior and support that with some tests that override
+        // and add new styles.
+        // Add USE to our second SVG; get the second SVG through parentNode
+        // to make sure .id still works for browsers with native handling.
+        svg = defs.parentNode;
+        assertEquals('svg.id == svg2', 'svg2', svg.id);
+        svg.appendChild(use);
+        // get USE element from DOM using getElementById to test that
+        use = document.getElementById('testUse1');
+        assertExists('use should exist', use);
+        // make sure no children show up under USE element
+        assertEquals('use.childNodes.length == 0', 0, use.childNodes.length);
+        assertNull('use.firstChild == null', use.firstChild);
+        // make sure use.x, y, width, and height have correct values
+        assertEquals('use.x == 275', 275, use.x.baseVal.value);
+        assertEquals('use.y == 400', 400, use.y.baseVal.value);
+        assertEquals('use.width == 50', 50, use.width.baseVal.value);
+        assertEquals('use.height == 50', 50, use.height.baseVal.value);
+        // make sure that the rect's styles don't 'leak' through
+        assertNotExists('use.style.stroke should not exist',
+                        use.style.stroke);
+        assertNull('use.getAttribute(fill) == null', use.getAttribute('fill'));
+        console.log('There should be a brown rectangle with 5px stroke on the '
+                    + 'second SVG in the lower right corner of the image');
         
-        // make sure unknown and unset values have the correct type when
-        // retrieved
+        // test display and visibility properties
+        // make some text invisible
+        // * FIXME: the display and visibility tests are not displaying 
+        // correctly for Flash; I believe this is fixed on the trunk 
+        // however so I will not fix it on my branch. After merging re-run 
+        // this test to ensure it displays correctly.
+        text = document.createElementNS(svgns, 'text');
+        text.appendChild(document.createTextNode('This text should be hidden',
+                                                 true));
+        text.setAttribute('x', 50);
+        text.setAttribute('y', 300);
+        svg = document.getElementById('mySVG');
+        svg.appendChild(text);
+        text.style.visibility = 'hidden';
+        assertEquals('text.style.visibility == hidden', 'hidden',
+                     text.style.visibility);
+        console.log('You should _not_ see the text '
+                    + '"This text should be hidden" in the first SVG');
+        // make some text invisible than visible
+        text = document.createElementNS(svgns, 'text');
+        text.appendChild(document.createTextNode('This text should not be '
+                                                 + 'hidden', true));
+        text.setAttribute('x', 50);
+        text.setAttribute('y', 320);
+        text.style.visibility = 'hidden';
+        svg = document.getElementById('mySVG');
+        svg.appendChild(text);
+        text.style.visibility = 'visible';
+        assertEquals('text.style.visibility == visible', 'visible',
+                     text.style.visibility);
+        // apply display: none to a group with a nested circle and text. Use
+        // transform property to move group around, with the circle setting
+        // itself using the group's local coordinate system.
+        group = document.createElementNS(svgns, 'g');
+        circle = document.createElementNS(svgns, 'circle');
+        circle.setAttribute('cx', 0);
+        circle.setAttribute('cy', 0);
+        circle.setAttribute('r', '30px');
+        circle.style.fill = 'rgb(0, 0, 175)';
+        group.appendChild(circle);
+        text = document.createElementNS(svgns, 'text');
+        text.style.color = 'red';
+        text.appendChild(document.createTextNode('Display: none text', true));
+        text.setAttribute('x', 50);
+        text.setAttribute('y', 50);
+        group.appendChild(text);
+        group.setAttribute('transform', 'translate(90, 350)');
+        svg.appendChild(group);
+        // now make the whole group display: none
+        svg.lastChild.style.display = 'none';
+        console.log('You should _not_ see the text "Display: none text" with '
+                    + 'a small circle near it in the first SVG');
+        // check values
+        assertEquals('group.style.display == none', 'none',
+                     svg.lastChild.style.display);
+        assertEqualsAny('circle.style.fill == rgb(0, 0, 175) '
+                        + 'or #0000AF or #0000af',
+                        ['rgb(0, 0, 175)', '#0000AF', '#0000af'],
+                        svg.lastChild.childNodes[0].style.fill);
+        assertEqualsAny('text.style.color == red',
+                        ['red'],
+                        svg.childNodes[svg.childNodes.length - 1]
+                           .childNodes[1].style.color);
+        assertEqualsAny('group.getAttribute(transform) == translate(90, 350)',
+                        ['translate(90, 350)'],
+                        svg.lastChild.getAttribute('transform'));
         
-        // test display, visibility, overflow style properties
+        // TODO: test overflow property
         
-        // set a style property with a url() value
+        // TODO: set a style property with a url() value (both a local ID 
+        // anchor such as #foobar as well as an external reference)
         
-        // set a style property with different CSS color definitions
+        // TODO: set style property with different measurement values
         
-        // set style property with different measurement values
-        
-        // test style[styleName] type way of getting values, including one
-        // that is camelCased
-        
-        // test opacity style property
-        
-        // test stop-color and stop-opacity style properties on a gradient
-        
-        // make sure that getAttribute and setAttribute _don't_ work
-        // when fetching 'style' property
+        // TODO: test stop-color and stop-opacity style properties on a gradient
         
         // try to set or get an unknown property and ensure things are ok
-        
+        circle = document.createElementNS(svgns, 'circle');
+        circle.style.foobar = 'hello world'; // no exception should be thrown
+    
         // in our XML, have an inline style set on an element. Make sure
         // that getting these values returns correct results, then set existing
         // values and then new ones to make sure that works. Test with 
         // uppercase style names, which is allowed by CSS spec -- make sure
-        // they go lower case for us. Also test with just one style rule
-        // with no trailing semicolon; one style rule WITH a trailing semicolon;
-        // multiple rules with the last element NOT having a trailing 
-        // semicolon; and multiple rules with all having semicolons
+        // they go lower case for us.
+        circle = document.getElementById('strangeStyleCircle');
+        // the native SVG renderers don't lower-case the style string; we
+        // do for the Flash renderer though to simplify internal processing
+        regExp = 'fill:\\s*green;\\s*fill-opacity:\\s*1;'
+                 + '\\s*background-image:\\s*url\\(FOOBAR\\.SVG\\);'
+                 + '\\s*stroke:\\s*purple;\\s*stroke-width:\\s*3px;?';
+        if (renderer == 'flash') {
+          // make sure casing is transformed correctly
+          regExp = new RegExp(regExp);
+        } else {
+          regExp = new RegExp(regExp, 'i');
+        }
+        assertTrue('strangeStyleCircle.getAttribute(style) == '
+                  + 'fill: green; fill-opacity:1; '
+                  + 'background-image: url(FOOBAR.SVG); '
+                  + 'stroke: purple; stroke-width:3px;',
+                  regExp.test(circle.getAttribute('style')));
+        // make sure values get passed through correctly to .style member
+        // NOTE: Firefox's native support doesn't parse style="" string
+        // into .style members
+        if (!isFF || renderer == 'flash') {
+          assertEqualsAny('circle.style.fill == green or #008000',
+                          ['green', '#008000'],
+                          circle.style.fill);
+          assertEqualsAny('circle.style.fillOpacity == 1',
+                          [1],
+                          circle.style.fillOpacity);
+          assertEqualsAny('circle.style.stroke == purple or #800080',
+                          ['purple', '#800080'],
+                          circle.style.stroke);
+          assertEqualsAny('circle.style.strokeWidth == 3px',
+                          ['3px'],
+                          circle.style.strokeWidth);
+        }
+        // override some existing styles as well as adding some new ones
+        // and make sure they show up
+        console.log('style before='+circle.getAttribute('style'));
+        circle.style.fill = 'purple';
+        circle.style.stroke = 'green';
+        circle.style.strokeWidth = '8px';
+        circle.style.opacity = 0.5;
+        assertEqualsAny('circle.style.stroke == green or #008000',
+                        ['green', '#008000'],
+                        circle.style.stroke);
+        assertEqualsAny('circle.style.fill == purple or #800080',
+                          ['purple', '#800080'],
+                          circle.style.fill);
+        assertEqualsAny('circle.style.strokeWidth == 8px',
+                          ['8px'],
+                          circle.style.strokeWidth);
+        assertEqualsAny('circle.style.opacity == 0.5',
+                          [0.5],
+                          circle.style.opacity);
+        // Now check style="" string. It should change the style="" string,
+        // as well update the UI with the new values. The different browsers
+        // and renderer configurations return the style values in different
+        // orders. Order alphabetically to ease testing.
+        // NOTE: Sadly, Firefox/Native and Safari/Native have some strange
+        // behavior here. Firefox does not display the newly set fill
+        // and stroke, and also doesn't update the style="" string. Safari
+        // correctly displays the new fill and stroke, but the style="" string
+        // now no longer has the stroke and fill in it.
+        // TODO: FIXME: Confirm what the correct behavior should be.
+        if (renderer == 'flash') {
+          styleStr = circle.getAttribute('style');
+          if (styleStr.charAt(styleStr.length - 1) != ';') {
+            styleStr += ';';
+          }
+          split = circle.getAttribute('style').split(';');
+          split = split.slice(0, split.length - 1);
+          for (var i = 0; i < split.length; i++) {
+            split[i] = split[i].replace(/^\s*/, '');
+            split[i] = split[i].replace(/:\s*/, ':');
+          }
+          split.sort();
+          styleStr = split.join(';');
+          styleStr += ';';
+          // NOTE: Firefox/Native has a bug where the style still has 
+          // 3px for stroke-width rather than 8px in the style string
+          assertTrue('circle.getAttribute(style) == '
+                     + 'background-image:url(FOOBAR.SVG);fill-opacity:1;'
+                     + 'fill:purple;opacity:0.5;stroke-width:(3|8)px;'
+                     + 'stroke:green;',
+                     /background\-image:url\((?:FOOBAR.SVG)?\);fill\-opacity:1;fill:(?:purple|\#008000);opacity:0\.5;stroke\-width:(?:3|8)px;stroke:(?:green|\#800080);/i
+                          .test(styleStr));
+        }
+        console.log('There should be a purple circle with a green outline on '
+                    + 'the first SVG');
         
+        // manually set style="" string on an element with a preexisting
+        // style="" string
+        
+        // manually set style="" string on an element without a preexisting
+        // style="" string
+
         // make sure that setting and getting style rules from root SVG
         // element works. Also test display, visibility, and overflow properties
         // on root SVG element.
@@ -3907,6 +4123,18 @@
         
         // TODO: Add a test where we dynamically add a new namespace onto
         // an SVG root node, and then be able to use this namespace on a node
+        
+        // TODO: Add robust tests for USE element with the different
+        // configurations possible
+        
+        // TODO: It looks like the Flash XML parser parses XML comments
+        // into the XML DOM. Add some inline ones below in our SVG XML and 
+        // make sure we don't barf on them. Filter them out for now.
+        
+        // TODO: Add a test with negative coordinate values. It appears the
+        // Flash renderer can't handle those for now, and ensure that something
+        // doesn't barf on the JS side. Include a test with a negative
+        // value plus coordinate type, such as '-50px'.
         
         // Test assertions for bug fixes
         console.log('Testing bug fixes...');
@@ -4053,6 +4281,24 @@
         
         if (actual === null || actual === undefined) {
           var msg = 'assertExists failed: ' + comment 
+                    + '\n(actual: ' + actual + ')';
+          console.log(msg);
+          throw new Error(msg);
+        }
+      }
+      
+      function assertNotExists(comment, actual) {
+        // halt if a Flash error has occurred asynchronously
+        if (flashError) {
+          throw new Error('Halting due to Flash error');
+        }
+        
+        if (printAsserts) {
+          console.log("assertNotExists('" + comment + "', " + actual + ")");
+        }
+        
+        if (!actual === null && !actual === undefined) {
+          var msg = 'assertNotExists failed: ' + comment 
                     + '\n(actual: ' + actual + ')';
           console.log(msg);
           throw new Error(msg);
@@ -7329,6 +7575,7 @@
                      id="path11123" />
                 </g>
               </g>
+              <circle id="strangeStyleCircle" cx="0" cy="0" r="100" style="FILL: green; FILL-OPACITY:1;background-IMAGE: url(FOOBAR.SVG); stroke:PURPLE;stroke-width:3PX"/>
             </g>
           </g>
         </svg>
