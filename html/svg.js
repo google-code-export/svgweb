@@ -4706,6 +4706,7 @@ extend(_SVGSVGElement, {
     var size = this._determineSize();  
     var background = this._determineBackground();
     var style = this._determineStyle();
+    var className = this._determineClassName();
     
     // get a Flash object and insert it into our document
     var flash = this._createFlash(size, background, style, doc);
@@ -4756,7 +4757,7 @@ extend(_SVGSVGElement, {
         || /^\s*$/.test(String(flashObj.className))) {
       flashObj.className = 'embedssvg';
     } else {
-      flashObj.className += flashObj.className + ' embedssvg';
+      flashObj.className += ' embedssvg';
     }
     flashObj.documentElement = this;
   
@@ -4848,17 +4849,33 @@ extend(_SVGSVGElement, {
     return style;
   },
   
+  /** Determines a class name for the Flash object; we simply copy over
+      any class names on the SVG root object to aid in external styling.
+      
+      @returns Class name string. Returns '' if there is none. */
+  _determineClassName: function() {
+    var className = this._nodeXML.getAttribute('class');
+    if (!className) {
+      return '';
+    } else {
+      return className;
+    }
+  },
+  
   /** Creates a Flash object that embeds the Flash SVG Viewer.
 
       @param size Object literal with width and height.
       @param background Object literal with background color and 
       transparent boolean.
       @param style Style string to copy onto Flash object.
+      @param className The class name to copy into the Flash object. You should
+      not add the internal name 'embedssvg' to this string as we will do
+      that internally later.
       @param doc Either 'document' or element.document if being called
       from the Microsoft Behavior HTC. 
       
       @returns Flash object as HTML string. */ 
-  _createFlash: function(size, background, style, doc) {
+  _createFlash: function(size, background, style, className, doc) {
     var elementId = this._nodeXML.getAttribute('id');
     var flashVars = 
           'uniqueId=' + encodeURIComponent(elementId)
@@ -4886,6 +4903,7 @@ extend(_SVGSVGElement, {
             + 'id="' + this._handler.flashID + '"\n '
             + 'name="' + this._handler.flashID + '"\n '
             + 'style="' + style + '"\n '
+            + 'class="' + className + '"\n '
             + '>\n '
             + '<param name="allowScriptAccess" value="always"></param>\n '
             + '<param name="movie" value="' + src + '"></param>\n '
@@ -4909,7 +4927,8 @@ extend(_SVGSVGElement, {
               + 'pluginspage="'
               + protocol
               +'://www.macromedia.com/go/getflashplayer" '
-              + 'style="' + style + '">\n '
+              + 'style="' + style + '"\n '
+              + 'class="' + className + '"\n '
               + '></embed>'
           + '</object>';
     
