@@ -136,12 +136,22 @@ The 'lightWeight' attribute below is important for two reasons:
       FlashHandler._insertFlash() inside of svg.js.
       
       @param flash Flash object as HTML string.
+      @param size An object literal with two values, width and height,
+      with our width and height either in pixels or percentages.
       @param style A style string that we can apply to ourselves
       to have the correct style on the SVG root tag, since that
       is what is visible to the outside DOM. Applying it to the
-      Flash object is not enough. */
-  this._insertFlash = function(flash, style) {
-    // apply our style to ourselves first
+      Flash object is not enough.
+      @param background Object literal with background color and 
+      transparent boolean.
+      @param className A string of class names to apply to ourselves, null
+      if there is none. */
+  this._insertFlash = function(flash, size, background, style, className) {
+    // apply width and height
+    this.style.width = size.width;
+    this.style.height = size.height;
+    
+    // apply our style to ourselves
     var rules = style.split(';');
     for (var i = 0; i < rules.length; i++) {
       var rule = rules[i].split(':');
@@ -151,6 +161,11 @@ The 'lightWeight' attribute below is important for two reasons:
       var propName = rule[0].replace(/^\s*|\s*$/, '');
       var propValue = rule[1].replace(/^\s*|\s*$/, '');
       this.style[propName] = propValue;
+    }
+    
+    // apply our class name
+    if (className) {
+      this.className = className;
     }
     
     /**
@@ -186,6 +201,14 @@ The 'lightWeight' attribute below is important for two reasons:
     html.appendChild(body);
     defaults.viewLink = html.document; // ViewLink magic
     this._doc = html.document;
+    
+    // If we want to allow the background of the Flash movie to be transparent
+    // and 'show through' HTML elements underneath, then we need to make our
+    // inner shadow document also be transparent; the line below makes this
+    // magic happen 
+    if (background.transparent) {
+      body.style.backgroundColor = 'transparent';
+    }
     
     // We have to use a DIV container for the Flash object; since we don't
     // want this DIV to stay around, acting almost like a DocumentFragment,

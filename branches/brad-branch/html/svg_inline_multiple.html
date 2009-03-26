@@ -1,14 +1,18 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
+
   <!-- 
-    Tests embedding multiple SVGs into SCRIPT blocks onto a page. 
-    We also have an OBJECT tag to embed an SVG URL at the end.
+    Tests embedding multiple SVGs into SCRIPT blocks onto a page.
     Also has an XHTML declaration at the top of the page.
   -->
 
   <head>
 
-    <!--<script src="svg.js"></script>-->
+    <!-- Optional meta tag; if left off, we default to only using the Flash
+         renderer for Internet Explorer and using native support on other
+         browsers. You can force the Flash renderer for all browsers by
+         setting the META tag below to true. -->
+    <meta name="svg.render.forceflash" content="true" />
+    
+    <script src="svg.js"></script>
     
     <style type="text/css">
       body {
@@ -28,7 +32,7 @@
           top: 0%; left: 50%; width: 48%; height: 47%;
           margin: 1% 1% 1% 1%;
       }
-      
+    
       .BottomLeftQuad {
           display: block;
           position: absolute;
@@ -50,13 +54,10 @@
   
   <body>
     
-    <h1>Tests embedding multiple SVGs into SCRIPT blocks onto a page. 
-    We also have an OBJECT tag to embed an SVG URL at the end.
+    <h1>Tests embedding multiple SVGs into SCRIPT blocks onto a page.
     Also has an XHTML declaration at the top of the page.</h1>
 
     <script type="image/svg+xml">
-      <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-      <!-- Created with Inkscape (http://www.inkscape.org/) -->
       <svg
          xmlns:svg="http://www.w3.org/2000/svg"
          xmlns="http://www.w3.org/2000/svg"
@@ -1443,42 +1444,49 @@
         </svg>
       </script>
 
-      <script type="image/svg+xml">
-        <?xml version="1.0"?>
-        <svg id="SVGViewerControlTopRightElement" class="TopRightQuad">
-            <g id="g1">
-              <rect
-                 width="400"
-                 height="50"
-                 ry="0"
-                 x="50"
-                 y="50"
-                 style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:15;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-                 id="rect2" />
-            </g>
-        </svg>
-      </script>
+    <script type="image/svg+xml">
+      <svg id="SVGViewerControlTopRightElement" class="TopRightQuad">
+          <g id="g1">
+            <rect
+               width="400"
+               height="50"
+               ry="0"
+               x="50"
+               y="50"
+               style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:15;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+               id="rect2" />
+          </g>
+      </svg>
+    </script>
 
-      <script type="image/svg+xml">
-        <?xml version="1.0"?>
-        <svg id="SVGViewerControlBottomLeftElement" class="BottomLeftQuad">
-            <g id="g1">
-              <rect
-                 width="500"
-                 height="200"
-                 ry="0"
-                 x="50"
-                 y="50"
-                 style="opacity:1;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:15;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-                 id="rect2" />
-            </g>
-        </svg>
-      </script>
-      
-      <object id="SVGViewerControlBottomRightElement" class="BottomRightQuad"
-              data="scimitar.svg" type="image/svg+xml" 
-              width="466" height="266" viewBox="0 0 233 133">
-      </object>
-
+    <script type="image/svg+xml">
+      <svg id="SVGViewerControlBottomLeftElement" class="BottomLeftQuad">
+          <g id="g2">
+            <rect
+               width="500"
+               height="200"
+               ry="0"
+               x="50"
+               y="50"
+               style="opacity:1;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:15;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+               id="rect3" />
+          </g>
+      </svg>
+    </script>
+    
+    <script type="image/svg+xml">
+      <svg id="SVGViewerControlLastElement">
+          <g id="g3">
+            <rect
+               width="250"
+               height="120"
+               ry="5"
+               x="50"
+               y="50"
+               style="opacity:1;fill:blue;fill-opacity:1;stroke:none;stroke-width:15;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+               id="rect4" />
+          </g>
+      </svg>
+    </script>
   </body>
 </html>

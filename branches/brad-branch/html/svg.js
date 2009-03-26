@@ -966,21 +966,10 @@ function hitch(context, method) {
     method = context[method];
   }
   
-  return function() {
-    var args = undefined;
-    if (arguments.length) {
-      args = arguments;
-    }
-    
-    // even though 'args' might be undefined in some cases and it should
-    // be correct to pass in an undefined value to a function, IE
-    // doesn't like it if there is no value and throws an error
-    if (args) {
-      return method.apply(context, args);
-    } else {
-      return method.apply(context);
-    }
-  }
+  // this method shows up in the style string on IE's HTC object since we
+  // use it to extend the HTC element's style object with methods like
+  // item(), setProperty(), etc., so we want to keep it short
+  return function() { return method.apply(context, (arguments.length) ? arguments : []); }
 }
 
 
@@ -4709,11 +4698,11 @@ extend(_SVGSVGElement, {
     var className = this._determineClassName();
     
     // get a Flash object and insert it into our document
-    var flash = this._createFlash(size, background, style, doc);
+    var flash = this._createFlash(size, background, style, className, doc);
     if (isIE) {
       // have the HTC node insert the actual Flash so that it gets
       // hidden in the HTC's shadow DOM
-      htcNode._insertFlash(flash, style);
+      htcNode._insertFlash(flash, size, background, style, className);
     } else {
       this._insertFlash(flash);
     }
@@ -4931,7 +4920,7 @@ extend(_SVGSVGElement, {
               + 'class="' + className + '"\n '
               + '></embed>'
           + '</object>';
-    
+
     return flash;
   }
 });
