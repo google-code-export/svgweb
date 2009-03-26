@@ -19,6 +19,12 @@ limitations under the License.
 
 Third-Party Licenses, Versions, and Build Information:
 
+* html/balloon.jpg is in the public domain and from
+  http://flickr.com/photos/pingnews/461040378/
+  Public domain details:
+    Berlin Balloon Race from the Bain Collection, 1908 (LOC)
+    Public Domain. Suggested credit: Library of Congress via pingnews.
+
 * utils/yuicompressor-2.4.1.jar - This is the YUI Compressor, version 2.4.1 - http://developer.yahoo.com/yui/compressor/ - BSD License (http://developer.yahoo.com/yui/license.html)
 
 * html/svg.js - Browser detection code at top of file adapted from Dojo 1.1 browser detection code - http://dojotoolkit.org - available under either modified 'new' BSD license or Academic Free License 2.1 (http://trac.dojotoolkit.org/browser/dojo/trunk/LICENSE)
