@@ -8,20 +8,24 @@ COMPRESS=1
 
 all: com/sgweb/svg/build/svg.swf com/sgweb/svg/build/svg.js com/sgweb/svg/build/svg.htc
 	cp html/*.html com/sgweb/svg/build/
+	cp html/*.svg com/sgweb/svg/build/
 	cp samples/*.svg com/sgweb/svg/build/
 	cp com/sgweb/svg/tests/*.svg com/sgweb/svg/build/
 
 com/sgweb/svg/build/svg.swf: com/sgweb/svg/SVGViewerWeb.as com/sgweb/svg/core/*.as com/sgweb/svg/nodes/*.as com/sgweb/svg/utils/*.as
 	@echo Building svg.swf file...
 	(cd com/sgweb/svg;mxmlc -output build/svg.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../../ -- SVGViewerWeb.as)
+	cp com/sgweb/svg/build/svg.swf html/svg.swf
 
 com/sgweb/svg/build/svgflash.swf: com/sgweb/svg/SVGViewerFlash.as com/sgweb/svg/core/*.as com/sgweb/svg/nodes/*.as com/sgweb/svg/utils/*.as
 	@echo Building svgflash.swf file...
 	(cd com/sgweb/svg;mxmlc -output build/svgflash.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../../ -- SVGViewerFlash.as)
+	cp com/sgweb/svg/build/svgflash.swf html/svgflash.swf
 
 com/sgweb/svg/build/svgflex.swf: com/sgweb/svg/SVGViewerFlex.as com/sgweb/svg/core/*.as com/sgweb/svg/nodes/*.as com/sgweb/svg/utils/*.as
 	@echo Building svgflex.swf file...
 	(cd com/sgweb/svg;mxmlc -output build/svgflex.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../../ -- SVGViewerFlex.as)
+	cp com/sgweb/svg/build/svgflex.swf html/svgflex.swf
 
 ifeq ($(COMPRESS), 1)
 com/sgweb/svg/build/svg.js: html/svg.js
@@ -43,7 +47,7 @@ com/sgweb/svg/build/svg.htc: html/svg.htc
 	# shell variables then paste them all together at the end to produce the final
 	# result.
 	(compressed_js=`sed -n -e '/script/, /\/script/ p' -e 's/script//' <html/svg.htc | grep -v 'script>' | grep -v '<script' | java -jar utils/yuicompressor-2.4.1.jar --type js --nomunge --preserve-semi 2>&1`; \
-   top_of_htc=`sed -e '/script/,/<\/html>/ s/^.*$$//' <html/svg.htc | sed '/\<\!\-\-/,/\-\-\>/ s/.*//' | cat -s`; \
+   top_of_htc=`sed -e '/script/,/<\/html>/ s/.*//' <html/svg.htc | sed 's/[ ]*<\!\-\-[^>]*>[ ]*//g;' | sed '/\<\!\-\-/,/\-\-\>/ s/.*//' | cat -s`; \
    echo $$top_of_htc '<script type="text/javascript">' $$compressed_js '</script></body></html>' >com/sgweb/svg/build/svg.htc;)
 	@echo Final size: svg.htc \(`ls -lrt com/sgweb/svg/build/svg.htc | awk '{print $$5}'` bytes\)
 else
