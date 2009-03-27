@@ -17,9 +17,9 @@
  limitations under the License.
 */
 
-package com.sgweb.svg
+package org.svgweb
 {
-    import com.sgweb.svg.core.SVGViewer;
+    import org.svgweb.core.SVGViewer;
 
     public class SVGViewerFlash extends SVGViewer
     {

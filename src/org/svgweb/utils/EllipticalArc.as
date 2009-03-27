@@ -18,7 +18,7 @@
 */
 
 
-package com.sgweb.svg.utils
+package org.svgweb.utils
 {
     /**
     * Functions from degrafa

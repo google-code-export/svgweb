@@ -17,11 +17,11 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
     
-    import com.sgweb.svg.utils.SVGColors;
-    import com.sgweb.svg.core.SVGNode;
+    import org.svgweb.utils.SVGColors;
+    import org.svgweb.core.SVGNode;
     
     import flash.events.Event;
     import flash.utils.getTimer;

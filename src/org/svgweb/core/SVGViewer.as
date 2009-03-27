@@ -1,7 +1,7 @@
-package com.sgweb.svg.core
+package org.svgweb.core
 {
 
-    import com.sgweb.svg.nodes.SVGSVGNode;
+    import org.svgweb.nodes.SVGSVGNode;
 
     import flash.display.Sprite;
     import flash.events.Event;

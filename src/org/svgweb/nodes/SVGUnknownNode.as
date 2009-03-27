@@ -18,7 +18,7 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
     public class SVGUnknownNode extends SVGNode
     {

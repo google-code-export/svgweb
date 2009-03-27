@@ -18,12 +18,12 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.core
+package org.svgweb.core
 {
-    import com.sgweb.svg.core.SVGViewer;
-    import com.sgweb.svg.utils.SVGColors;
-    import com.sgweb.svg.utils.SVGUnits;
-    import com.sgweb.svg.nodes.*;
+    import org.svgweb.core.SVGViewer;
+    import org.svgweb.utils.SVGColors;
+    import org.svgweb.utils.SVGUnits;
+    import org.svgweb.nodes.*;
     
     import flash.display.CapsStyle;
     import flash.display.DisplayObject;

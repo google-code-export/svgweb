@@ -18,11 +18,11 @@
 */
 
 
-package com.sgweb.svg.core
+package org.svgweb.core
 {
-    import com.sgweb.svg.nodes.SVGSVGNode;
-    import com.sgweb.svg.nodes.SVGStopNode;
-    import com.sgweb.svg.utils.SVGColors;
+    import org.svgweb.nodes.SVGSVGNode;
+    import org.svgweb.nodes.SVGStopNode;
+    import org.svgweb.utils.SVGColors;
 
     import flash.display.DisplayObject;
     import flash.display.SpreadMethod;

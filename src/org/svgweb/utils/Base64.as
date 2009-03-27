@@ -23,7 +23,7 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package com.sgweb.svg.utils {
+package org.svgweb.utils {
     
     import flash.utils.ByteArray;
     

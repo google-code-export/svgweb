@@ -18,9 +18,9 @@
 */
 
 
-package com.sgweb.svg.nodes {
-    import com.sgweb.svg.core.SVGNode;
-    import com.sgweb.svg.utils.SVGUnits;
+package org.svgweb.nodes {
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.utils.SVGUnits;
 
     import flash.display.BitmapData;
     import flash.events.Event;
