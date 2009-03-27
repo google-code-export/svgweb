@@ -83,6 +83,10 @@ package com.sgweb.svg.core
         public function debug(debugMessage:String):void {
 
         }
+        
+        public function error(message:String):void {
+            this.debug(message);
+        }
 
     }
 }

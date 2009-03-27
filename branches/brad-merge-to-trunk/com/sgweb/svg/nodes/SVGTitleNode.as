@@ -33,13 +33,31 @@ package com.sgweb.svg.nodes
             super(svgRoot, xml, original);
         }
         
+        override public function getText():String {
+            return this._xml.text().toString();
+        }
+        
+        override public function setText(newValue):String {
+            if (newValue !== null) {
+                this._xml.setChildren(newValue);
+                this._title = newValue;
+                return newValue;
+            } else {
+                this._xml.setChildren(null);
+                this._title = "";
+                return "";
+            }
+        }
+        
+        override public function hasText():Boolean {
+            return true;
+        }
+
         override protected function parse():void {
             this._title = '';
             
-            for each(var childXML:XML in this._xml.children()) {
-                if (childXML.nodeKind() == 'text') {
-                    this._title += childXML.toString();
-                }
+            if (this._xml.text().length() > 0) {
+                this._title = this._xml.text().toString();
             }
         }
         
@@ -47,6 +65,5 @@ package com.sgweb.svg.nodes
             super.setAttributes();
             this.svgRoot.title = this._title;
         }
-        
     }
 }

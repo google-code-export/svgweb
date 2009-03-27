@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg -- http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -34,11 +35,6 @@ package com.sgweb.svg.nodes
     {    
         
         /**
-         * Hold node's text
-         **/
-        private var _text:String = '';
-        
-        /**
          * Hold text path node if text follows a path
          **/
         private var _textPath:SVGNode = null;
@@ -58,15 +54,7 @@ package com.sgweb.svg.nodes
          * Call SVGNode.parse()
          **/
         override protected function parse():void {
-            this._text = '';
-            
-            for each(var childXML:XML in this._xml.children()) {
-                if (childXML.nodeKind() == 'text') {
-                    this._text += childXML.toString();
-                }
-            }
-            
-            if (this._text != '') {
+            if (this._xml.text() && this._xml.text().toString() != '') {
                 this._textField = new TextField();
                 this._textField.autoSize = TextFieldAutoSize.LEFT;
             }
@@ -136,7 +124,7 @@ package com.sgweb.svg.nodes
                     textFormat.bold = true;
                 }
                                 
-                this._textField.text = this._text;
+                this._textField.text = this._xml.text().toString();
                 this._textField.setTextFormat(textFormat);
                 var textLineMetrics:TextLineMetrics = this._textField.getLineMetrics(0);
                 
