@@ -18,10 +18,10 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
-    import com.sgweb.svg.core.SVGNode;
-    import com.sgweb.svg.core.SVGViewer;
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.core.SVGViewer;
     import flash.geom.Matrix;
 
     public class SVGSVGNode extends SVGNode

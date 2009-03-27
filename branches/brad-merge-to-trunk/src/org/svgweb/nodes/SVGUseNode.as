@@ -17,9 +17,9 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
-    import com.sgweb.svg.core.SVGNode;
+    import org.svgweb.core.SVGNode;
     import flash.events.Event;
     
     public class SVGUseNode extends SVGNode

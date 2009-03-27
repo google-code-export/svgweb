@@ -18,8 +18,8 @@
 */
 
 
-package com.sgweb.svg.nodes {
-    import com.sgweb.svg.core.SVGNode;
+package org.svgweb.nodes {
+    import org.svgweb.core.SVGNode;
     
     import flash.events.Event;    
     

@@ -23,8 +23,8 @@ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 OTHER DEALINGS IN THE SOFTWARE.
 */
 
-package com.sgweb.svg.nodes {
-    import com.sgweb.svg.core.SVGNode;
+package org.svgweb.nodes {
+    import org.svgweb.core.SVGNode;
     import flash.events.MouseEvent;
     import flash.net.URLRequest;    
     

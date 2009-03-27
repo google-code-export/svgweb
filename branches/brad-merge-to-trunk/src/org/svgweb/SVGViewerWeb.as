@@ -30,13 +30,13 @@
 */
 
 
-package com.sgweb.svg
+package org.svgweb
 {
     
-    import com.sgweb.svg.core.SVGNode;
-    import com.sgweb.svg.core.SVGViewer;
-    import com.sgweb.svg.nodes.SVGSVGNode;
-    import com.sgweb.svg.nodes.SVGGroupNode;
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.core.SVGViewer;
+    import org.svgweb.nodes.SVGSVGNode;
+    import org.svgweb.nodes.SVGGroupNode;
     
     import flash.display.Sprite;
     import flash.display.StageScaleMode;

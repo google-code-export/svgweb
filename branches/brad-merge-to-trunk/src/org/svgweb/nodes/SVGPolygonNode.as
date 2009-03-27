@@ -17,10 +17,10 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
     import mx.utils.StringUtil;
-    import com.sgweb.svg.core.SVGNode;
+    import org.svgweb.core.SVGNode;
     
     public class SVGPolygonNode extends SVGNode
     {        

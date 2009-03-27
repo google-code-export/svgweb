@@ -17,11 +17,11 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
-    import com.sgweb.svg.core.SVGNode;
-    import com.sgweb.svg.nodes.SVGSVGNode;
-    import com.sgweb.svg.utils.SVGColors;
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.nodes.SVGSVGNode;
+    import org.svgweb.utils.SVGColors;
     
     import flash.filters.BlurFilter;
     import flash.geom.Matrix;

@@ -18,10 +18,10 @@
 */
 
 
-package com.sgweb.svg.nodes {
+package org.svgweb.nodes {
 
-    import com.sgweb.svg.core.SVGNode;
-    import com.sgweb.svg.utils.SVGUnits;
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.utils.SVGUnits;
 
     public class SVGStopNode extends SVGNode {
 

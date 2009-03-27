@@ -17,10 +17,10 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
-    import com.sgweb.svg.utils.Base64;
-    import com.sgweb.svg.core.SVGNode;
+    import org.svgweb.utils.Base64;
+    import org.svgweb.core.SVGNode;
 
     import flash.display.Bitmap;
     import flash.display.BitmapData;

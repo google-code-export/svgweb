@@ -17,10 +17,10 @@
  limitations under the License.
 */
 
-package com.sgweb.svg.nodes
+package org.svgweb.nodes
 {
-    import com.sgweb.svg.utils.EllipticalArc;
-    import com.sgweb.svg.core.SVGNode;
+    import org.svgweb.utils.EllipticalArc;
+    import org.svgweb.core.SVGNode;
     
     import mx.utils.StringUtil;
     

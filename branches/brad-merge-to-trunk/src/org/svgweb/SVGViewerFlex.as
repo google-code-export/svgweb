@@ -17,10 +17,10 @@
  limitations under the License.
 */
 
-package com.sgweb.svg
+package org.svgweb
 {
 
-    import com.sgweb.svg.nodes.SVGSVGNode;
+    import org.svgweb.nodes.SVGSVGNode;
 
     import mx.core.UIComponent;
 
