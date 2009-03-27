@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg -- http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -172,7 +173,7 @@ package com.sgweb.svg.core
                     childNode = new SVGClipPathNode(this.svgRoot, childXML);
                     break;
                 case "desc":
-                    //Do Nothing
+                    childNode = new SVGDescNode(this.svgRoot, childXML);
                     break;
                 case "defs":
                     childNode = new SVGDefsNode(this.svgRoot, childXML);
@@ -254,6 +255,7 @@ package com.sgweb.svg.core
                     
                 default:
                     trace("Unknown Element: " + nodeName);
+                    childNode = new SVGUnknownNode(this.svgRoot, childXML);
                     break;    
             }
             return childNode;
@@ -1126,11 +1128,22 @@ package com.sgweb.svg.core
             var xmlList:XMLList = this._xml.attribute('style');
             if (xmlList.length() > 0) {
                 var styleString:String = xmlList[0].toString();
-                var styles:Array = styleString.split(';');
+                
+                // only one style value given, with no trailing semicolon?
+                if (this._xml.@style.length()  && styleString.indexOf(';') == -1) {
+                    // update our internal string to be correct moving forward
+                    this._xml.@style = styleString + ';';
+                    styleString += ';';
+                }
+                
+                var styles:Array = [] = styleString.split(';');
                 for each(var style:String in styles) {
                     var styleSet:Array = style.split(':');
                     if (styleSet.length == 2) {
-                        this._styles[SVGColors.trim(styleSet[0])] = SVGColors.trim(styleSet[1]);
+                        var attrName = SVGColors.trim(styleSet[0]);
+                        var attrValue = SVGColors.trim(styleSet[1]);
+                        
+                        this._styles[attrName] = attrValue;
                     }
                 }
             }
@@ -1152,6 +1165,29 @@ package com.sgweb.svg.core
             }
             
             this._xml.@style = newStyleString;
+        }
+        
+        /**
+         * Returns true if this node can have text children. Subclasses
+         * should override this if they want to have text node children.
+         */
+        public function hasText():Boolean {
+            return false;
+        }
+        
+        /**
+         * Returns any text content this node might have as a child.
+         */
+        public function getText():String {
+            return this._xml.text().toString();
+        }
+        
+        /**
+         * Sets any text content this node might have as a child.
+         */
+        public function setText(newValue):String {
+            // subclasses should implement this if they want to have text
+            throw new Error("Unimplemented");
         }
 
         /**
@@ -1214,6 +1250,17 @@ package com.sgweb.svg.core
         /*
          * Misc Functions
          */
+         
+        /** Appends an SVGNode both to our display list as well as to our
+          * XML.
+          **/
+        public function appendChild(child:SVGNode):SVGNode {
+            this._xml.appendChild(child._xml);
+            this.addChild(child);
+            this.invalidateDisplay();
+
+            return child;
+        }
 
         /**
          *
@@ -1225,7 +1272,6 @@ package com.sgweb.svg.core
             super.addChild(child);
             return child;
         }
-        
 
         /**
          * Remove all child nodes
@@ -1236,6 +1282,47 @@ package com.sgweb.svg.core
             }
         }
         
+        override public function removeChild(child:DisplayObject):DisplayObject {
+            super.removeChild(child);
+            if (child is SVGNode) {
+                var node:SVGNode = child as SVGNode;
+                
+                // unregister the element
+                var id:String = node._xml.@id;
+                if (id != "") {
+                    this.svgRoot.unregisterNode(id);
+                } else {
+                    this.err('Programming error: ID required for removeChild');
+                    throw new Error('Programming error: ID required for removeChild');
+                }
+                
+                // remove from our XML children
+                for (var i = 0; i < this._xml.children().length(); i++) {
+                    if (this._xml.children()[i] == node._xml) {
+                        delete this._xml.children()[i];
+                        break;
+                    }
+                }
+                
+                this.invalidateDisplay();
+            }
+            
+            return child;
+        }
+        
+        /**
+         * Adds newChild before refChild. Position is the position of refChild
+         * to add newChild before.
+         */
+        public function insertBefore(position, newChild, refChild) {
+            if (position == 0) {
+                this._xml.*[0] = newChild + this._xml.*[0];
+            } else {
+                this._xml.*[position - 1] += newChild;
+            }
+            super.addChildAt(newChild, position);
+            this.invalidateDisplay();
+        }
 
         public function getWidth():Number {
             var parentWidth:Number=0;
@@ -1323,8 +1410,15 @@ package com.sgweb.svg.core
 
 
         public function dbg(debugString:String):void {
-            this.svgRoot.debug(debugString);
+            if (this.svgRoot) {
+                this.svgRoot.debug(debugString);
+            }
         }
-
+        
+        public function err(errorString:String):void {
+            if (this.svgRoot) {
+                this.svgRoot.error(errorString);
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg - http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -56,23 +57,22 @@ package com.sgweb.svg
 
     [SWF(frameRate="24", width="2048", height="1024")]
     /**
-     * Flex container for the SVG Renderer
+     * Web container for the SVG Renderer
      **/
     public class SVGViewerWeb extends SVGViewer
     {
+        private var js_handler:String = '';
         private var js_uniqueId:String = "";
         private var js_createdElements:Object = {};
-        private var js_createdTextNodes:Object = {};
         private var js_savedXML:String = "";
         protected var svgIdParam:String = "";
         public var scaleModeParam:String = "showAll_svg";
         protected var scriptSentToJS:Boolean = false;
 
         protected var renderStartTime:Number;
-        protected var debugEnabled:Boolean = false;
+        protected var debugEnabled:Boolean = true;
 
         public function SVGViewerWeb():void {
-
             this.setupJavaScriptInterface();
             this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
             super();
@@ -147,10 +147,11 @@ package com.sgweb.svg
             }
 
 
-            // notify browser javascript that we are started and ready
+            // notify browser javascript that we are loaded
             try {
-                var result:Object = ExternalInterface.call("receiveFromFlash",
-                    { type: 'event', eventType: 'onStartup', uniqueId: this.js_uniqueId } );
+                var result:Object = ExternalInterface.call(
+                    this.js_handler + "onMessage", 
+                    { type: 'event', eventType: 'onLoad', uniqueId: this.js_uniqueId } );
             }
             catch(error:SecurityError) {
                 var debugstr:String = "Security Error on ExternalInterface.call(...). ";
@@ -246,6 +247,8 @@ package com.sgweb.svg
             for (item in paramsObj) {
                 if (item == "uniqueId") {
                     this.js_uniqueId = paramsObj[item];
+                    this.js_handler = 'svgweb.handlers["' + this.js_uniqueId 
+                                    + '"].';
                 }
                 if (item == "debug") {
                     if (paramsObj[item] == 'true') {
@@ -294,8 +297,9 @@ package com.sgweb.svg
                 onLoadHandler = this.svgRoot.xml.@onload;
             }
             try {
-                ExternalInterface.call("receiveFromFlash", { type: 'event',
-                                                             eventType: "onLoad",
+                ExternalInterface.call(this.js_handler + "onMessage",  
+                                                           { type: 'event',
+                                                             eventType: "onRenderingFinished",
                                                              width: this.svgRoot.getWidth(),
                                                              height: this.svgRoot.getHeight(),
                                                              uniqueId: this.js_uniqueId,
@@ -313,7 +317,8 @@ package com.sgweb.svg
                 script = script.replace(/<svg:script.*/, '');
                 script = script.replace(/]].*$/, '');
                 try {
-                    ExternalInterface.call("receiveFromFlash", { type: 'script',
+                    ExternalInterface.call(this.js_handler + "onMessage",  
+                                                               { type: 'script',
                                                                  uniqueId: this.js_uniqueId,
                                                                  script: script } );
                 }
@@ -338,130 +343,245 @@ package com.sgweb.svg
         }
 
         public function js_handleInvoke(jsMsg:Object):Object {
-            var element:SVGNode;
-            if (jsMsg.method == 'createElementNS') {
-                var xmlString:String = '<' + jsMsg.elementType + ' id="' + jsMsg.elementId +  '" />';
-                var childXML:XML = new XML(xmlString);
-                this.js_createdElements[jsMsg.elementId] = this.svgRoot.parseNode(childXML);
-            }
-            if (jsMsg.method == 'createTextNode') {
-                this.js_createdTextNodes[jsMsg.elementId] = new XMLNode(XMLNodeType.TEXT_NODE, jsMsg.text);
-            }
-            if (jsMsg.method == 'getElementById') {
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    return jsMsg;
-                }
-                if (!this.svgRoot.getNode(jsMsg.elementId)) {
-                    this.debug("getElem:not found: " + jsMsg.elementId);
-                    return null;
-                }
-            }
-            if (jsMsg.method == 'addEventListener') {
-                // Get the parent node
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    element=this.js_createdElements[jsMsg.elementId];
-                }
-                else {
-                    element = this.svgRoot.getNode(jsMsg.elementId);
-                }
-                if (element) {
-                    if (jsMsg.eventType == 'mouseup') {
-                        element.addEventListener(MouseEvent.MOUSE_UP, handleAction);
+            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            var element:SVGNode, parent:SVGNode;
+            var textNode:XMLNode;
+            
+            try {
+                if (jsMsg.method == 'createElementNS') {       
+                    var xmlString:String = '<' + jsMsg.elementType 
+                                               + ' id="' + jsMsg.elementId + '"';
+                    if (jsMsg.prefix) {
+                        xmlString += ' xmlns:' + jsMsg.prefix + '="' 
+                                                + jsMsg.namespaceURI + '"';
+                    } else {
+                        xmlString += ' xmlns="http://www.w3.org/2000/svg"'
+                                   + ' xmlns:xlink="http://www.w3.org/1999/xlink"';
                     }
-                    if (jsMsg.eventType == 'mousedown') {
-                        element.addEventListener(MouseEvent.MOUSE_DOWN, handleAction);
-                    }
-                    if (jsMsg.eventType == 'mousemove') {
-                        element.addEventListener(MouseEvent.MOUSE_MOVE, handleAction);
-                    }
-                    if (jsMsg.eventType == 'mouseover') {
-                        element.addEventListener(MouseEvent.MOUSE_OVER, handleAction);
-                    }
-                    if (jsMsg.eventType == 'mouseout') {
-                        element.addEventListener(MouseEvent.MOUSE_OUT, handleAction);
-                    }
+                    xmlString +=  ' />';
+                    var childXML:XML = new XML(xmlString);
+                    this.js_createdElements[jsMsg.elementId] = this.svgRoot.parseNode(childXML);
                 }
-                else {
-                    this.debug("AddEvent:not found: " + jsMsg.elementId);
-                }
-            }
-            if (jsMsg.method == 'appendChild') {
-                // Get the parent node
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    element=this.js_createdElements[jsMsg.elementId];
-                }
-                else {
-                    element = this.svgRoot.getNode(jsMsg.elementId);
-                }
-                // Get the child node
-
-                // If the node is text, then just modify the text xml
-                if (element && element.xml.localName() == 'text') {
-                    var childTextNode:XMLNode;
-                    childTextNode=this.js_createdTextNodes[jsMsg.childId];
-                    if (childTextNode)  {
-                        element.xml.appendChild(childTextNode);
-                        element.invalidateDisplay();
-                    }
-                }
-                else {
-                    // If the node is not text, then add the SVGNode
-                    var childNode:SVGNode;
-                    if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
-                        childNode=this.js_createdElements[jsMsg.childId];
+                if (jsMsg.method == 'addEventListener') {
+                    // Get the parent node
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element=this.js_createdElements[jsMsg.elementId];
                     }
                     else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    if (element) {
+                        if (jsMsg.eventType == 'mouseup') {
+                            element.addEventListener(MouseEvent.MOUSE_UP, handleAction);
+                        }
+                        if (jsMsg.eventType == 'mousedown') {
+                            element.addEventListener(MouseEvent.MOUSE_DOWN, handleAction);
+                        }
+                        if (jsMsg.eventType == 'mousemove') {
+                            element.addEventListener(MouseEvent.MOUSE_MOVE, handleAction);
+                        }
+                        if (jsMsg.eventType == 'mouseover') {
+                            element.addEventListener(MouseEvent.MOUSE_OVER, handleAction);
+                        }
+                        if (jsMsg.eventType == 'mouseout') {
+                            element.addEventListener(MouseEvent.MOUSE_OUT, handleAction);
+                        }
+                    }
+                    else {
+                        this.debug("AddEvent:not found: " + jsMsg.elementId);
+                    }
+                }
+                if (jsMsg.method == 'appendChild') {
+                    // Get the parent node
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element=this.js_createdElements[jsMsg.elementId];
+                    }
+                    else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    
+                    // Get the child node
+
+                    // Add the SVGNode
+                    var childNode;
+                    if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
+                        childNode=this.js_createdElements[jsMsg.childId];
+                    } else {
                         childNode = this.svgRoot.getNode(jsMsg.childId);
                     }
-                    if (element && childNode)  {
-                        element.addChild(childNode);
+                
+                    if (element && childNode) {
+                        element.appendChild(childNode);
                     }
                 }
-            }
-            if (jsMsg.method == 'getRoot') {
-                if (this.svgRoot.xml.@id) {
-                    jsMsg.elementId = this.svgRoot.xml.@id.toString();
+                if (jsMsg.method == 'addChildAt') {
+                    // Get the newChild
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element = this.js_createdElements[jsMsg.elementId];
+                    }
+                    else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    
+                    if (!element) {
+                        throw new Error('Programming error: ' 
+                                        + jsMsg.elementId + ' not found');
+                    }
+                    
+                    // Get the parent
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this.svgRoot.getNode(jsMsg.parentId);
+                    }
+                    
+                    // If both children are elements, append things now
+                    parent.addChildAt(element, jsMsg.position);
+                    parent.invalidateDisplay();
                 }
-                else {
-                    this.debug("SVGViewer: root id not found");
-                }
-            }
-            if (jsMsg.method == 'getXML') {
-                jsMsg.xmlString = this.js_savedXML.split('\\n').join(';_SVGNL_;');
-            }
-            if (jsMsg.method == 'getAttribute') {
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    element=this.js_createdElements[jsMsg.elementId];
-                }
-                else {
-                    element = this.svgRoot.getNode(jsMsg.elementId);
-                }
-                if (element) {
-                    jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
-                }
-                else {
-                    this.debug("error:getAttribute: id not found: " + jsMsg.elementId);
-                }
-            }
-            if (jsMsg.method == 'setAttribute') {
-                if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                    element=this.js_createdElements[jsMsg.elementId];
-                }
-                else {
-                    element = this.svgRoot.getNode(jsMsg.elementId);
-                }
-                if (element) {
-                    element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
-
-                    if (jsMsg.attrName == 'id') {
-                        this.js_createdElements[jsMsg.attrValue] = element;
+                if (jsMsg.method == 'getRoot') {
+                    if (this.svgRoot.xml.@id) {
+                        jsMsg.elementId = this.svgRoot.xml.@id.toString();
+                    }
+                    else {
+                        this.debug("SVGViewer: root id not found");
                     }
                 }
-                else {
-                    this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
+                if (jsMsg.method == 'getXML') {
+                    jsMsg.xmlString = this.js_savedXML.split('\\n').join(';_SVGNL_;');
                 }
-            }
+                if (jsMsg.method == 'getAttribute') {
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element=this.js_createdElements[jsMsg.elementId];
+                    }
+                    else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    if (element) {
+                        jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
+                    }
+                    else {
+                        this.error("error:getAttribute: id not found: " + jsMsg.elementId);
+                    }
+                }
+                if (jsMsg.method == 'setAttribute') {
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element=this.js_createdElements[jsMsg.elementId];
+                        
+                        if (jsMsg.attrName == 'id') {
+                            this.js_createdElements[element.id] = undefined;
+                            this.svgRoot.unregisterNode(element.id);
+                        }
+                    }
+                    else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    
+                    if (element) {
+                        if (jsMsg.attrNamespace != null) {
+                            // namespaced attribute, such as xlink:href
+                            var ns = new Namespace(jsMsg.attrNamespace);
+                            element._xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
+                        } else {
+                            element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
+                        }
 
+                        if (jsMsg.attrName == 'id') {
+                            this.js_createdElements[jsMsg.attrValue] = element;
+                            this.svgRoot.registerNode(jsMsg.attrValue, element);
+                        }
+                    }
+                    else {
+                        this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
+                    }
+                }
+                if (jsMsg.method == 'removeChild') {
+                    // Removes the element
+                
+                    // Get the element to remove if we are dealing with an element
+                    // or the parent if we are dealing with a text node
+                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
+                        element = this.js_createdElements[jsMsg.elementId];
+                    }
+                    else {
+                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    }
+                    
+                    if (jsMsg.nodeType == 1) { // ELEMENT
+                        element.parent.removeChild(element);
+                    } else if (jsMsg.nodeType == 3) { // TEXT
+                        if (element.hasText()) {
+                            element.setText(null);
+                        }
+                    }
+                }
+                if (jsMsg.method == 'insertBefore') {
+                    // Inserts newChild before refChild
+                
+                    // note that newChild can not be a DOM TEXT_NODE at this time,
+                    // as we don't support XML Mixed Content yet as SVG doesn't
+                    // use it (i.e. content of the form 
+                    // TEXT<element>foo</element>TEXT)
+                
+                    // Get the newChild, refChild, and the parent
+                    var newChild, refChild, parent;
+                
+                    if (typeof(this.js_createdElements[jsMsg.newChildId]) != "undefined") {
+                        newChild = this.js_createdElements[jsMsg.newChildId];
+                    }
+                    else {
+                        newChild = this.svgRoot.getNode(jsMsg.newChildId);
+                    }
+                    if (!newChild) {
+                        this.error("error:insertBefore: newChildId not found: " + jsMsg.newChildId);
+                    }
+                
+                    if (typeof(this.js_createdElements[jsMsg.refChildId]) != "undefined") {
+                        refChild = this.js_createdElements[jsMsg.refChildId];
+                    }
+                    else {
+                        refChild = this.svgRoot.getNode(jsMsg.refChildId);
+                    }
+                    if (!refChild) {
+                        this.error("error:insertBefore: refChildId not found: " + jsMsg.refChildId);
+                    }
+                    
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this.svgRoot.getNode(jsMsg.parentId);
+                    }
+                    if (!parent) {
+                        this.error("error:insertBefore: parentId not found: " + jsMsg.parentId);
+                    }
+                    
+                    parent.insertBefore(jsMsg.position, newChild, refChild);
+                    parent.invalidateDisplay();
+                }
+                if (jsMsg.method == 'setText') {                    
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent = this.js_createdElements[jsMsg.parentId];
+                    }
+                    else {
+                        parent = this.svgRoot.getNode(jsMsg.parentId);
+                    }
+                    
+                    if (!parent) {
+                        this.error("error:setText: parent with ID not found: " + jsMsg.parentId);
+                    }
+                    
+                    if (parent.hasText()) {
+                        parent.setText(jsMsg.text);
+                    }
+                }
+            } catch (err) {
+                this.error("error:" + err);
+                throw err;
+            }
+            
+            //this.debug('Returning jsMsg='+this.debugMsg(jsMsg));
             return jsMsg;
         }
 
@@ -494,7 +614,7 @@ package com.sgweb.svg
         public function js_sendMouseEvent(event:MouseEvent):void {
             try {
                 if (event.target is SVGNode && event.currentTarget is SVGNode) {
-                    ExternalInterface.call("receiveFromFlash",
+                    ExternalInterface.call(this.js_handler + "onMessage",
                                              { type: 'event',
                                                uniqueId: this.js_uniqueId,
                                                targetId: SVGNode(event.target).id,
@@ -537,17 +657,48 @@ package com.sgweb.svg
         }
 
         override public function debug(debugMessage:String):void {
-            if (this.debugEnabled) {
+            if (this.debugEnabled) {            
                 try {
-                    ExternalInterface.call("receiveFromFlash", { type: 'log',
-                                                                 uniqueId: this.js_uniqueId,
-                                                                 logString: debugMessage
-                                                               } );
+                    ExternalInterface.call(this.js_handler + 'onMessage', 
+                                           { type: 'log',
+                                             uniqueId: this.js_uniqueId,
+                                             logString: debugMessage
+                                            } );
                 }
                 catch(error:SecurityError) {
                 }
             }
         }
+        
+        override public function error(message:String):void {
+            if (this.debugEnabled) {            
+                try {
+                    ExternalInterface.call(this.js_handler + 'onMessage', 
+                                           { type: 'error',
+                                             uniqueId: this.js_uniqueId,
+                                             logString: message
+                                            } );
+                }
+                catch(error:SecurityError) {
+                }
+            }
+        }
+        
+        /**
+            Stringifies the msg object sent back from the Flash SVG renderer
+            to help with debugging.
+        */
+        public function debugMsg(msg:Object):String {
+            if (this.debugEnabled) {
+                var result = [];
+                for (var i in msg) {
+                    result.push(i + ': ' + msg[i]);
+                }
+                result = result.join(', ');
 
-    }
+                return '{' + result + '}';
+            } else {
+                return null;
+            }
+        }
 }

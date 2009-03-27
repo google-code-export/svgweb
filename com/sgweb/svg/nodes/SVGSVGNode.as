@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg -- http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -42,13 +43,17 @@ package com.sgweb.svg.nodes
             super(this, xml, original);
         }
 
-        public override function set xml(value:XML):void {        
+        public override function set xml(value:XML):void {
+            default xml namespace = svg;        
             this._nodeLookup = new Object();
             this._referersById = new Object();    
             super.xml = value;
 
             // If this is the top SVG element, then start the render tracking process.
             if (this.parentSVGRoot == null) {
+                if (this.xml.@id) {
+                    this._nodeLookup[this.xml.@id] = this;
+                }
                 this._pendingRenderCount = 1;
             }
         }

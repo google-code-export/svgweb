@@ -36,10 +36,5 @@ package com.sgweb.svg.nodes {
             this.visible = false;
             this.svgRoot.renderFinished();
        }
-       
-       override protected function parse():void {
-            //Do not parse child XML
-       }
-        
     }
 }
