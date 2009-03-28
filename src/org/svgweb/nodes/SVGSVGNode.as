@@ -235,5 +235,13 @@ package org.svgweb.nodes
             }
         }
 
+        public function error(message:String):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.error(message);
+            }
+            else if (this.parent is SVGViewer) {
+                SVGViewer(this.parent).error(message);
+            }
+        }
     }
 }

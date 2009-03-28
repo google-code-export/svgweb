@@ -471,7 +471,7 @@ package org.svgweb
                         
                         if (jsMsg.attrName == 'id') {
                             this.js_createdElements[element.id] = undefined;
-                            this.svgRoot.unregisterNode(element.id);
+                            this.svgRoot.unregisterNode(element);
                         }
                     }
                     else {
@@ -482,14 +482,14 @@ package org.svgweb
                         if (jsMsg.attrNamespace != null) {
                             // namespaced attribute, such as xlink:href
                             var ns = new Namespace(jsMsg.attrNamespace);
-                            element._xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
+                            element.xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
                         } else {
                             element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
                         }
 
                         if (jsMsg.attrName == 'id') {
                             this.js_createdElements[jsMsg.attrValue] = element;
-                            this.svgRoot.registerNode(jsMsg.attrValue, element);
+                            this.svgRoot.registerNode(element);
                         }
                     }
                     else {
@@ -701,4 +701,5 @@ package org.svgweb
                 return null;
             }
         }
+    }
 }
