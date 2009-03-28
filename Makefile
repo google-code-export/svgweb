@@ -10,13 +10,16 @@ COMPRESS=1
 COPY_TESTS=0
 
 ifeq ($(COPY_TESTS), 1)
-all: build/src/svg.swf build/src/svg.js build/src/svg.htc
-	cp -fr samples/* build/samples/
-	cp -fr tests/ build/tests/
+all: build/ build/src/svg.swf build/src/svg.js build/src/svg.htc
+	cp -r samples/ build/samples/
+	cp -r tests/ build/tests/
 else
 all: build/src/svg.swf build/src/svg.js build/src/svg.htc
-	cp -fr samples/* build/samples/
+	cp -r samples/ build/samples/
 endif
+
+build/:
+	mkdir -p build/ build/samples build/tests build/src
 
 build/src/svg.swf: src/org/svgweb/SVGViewerWeb.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as
 	@echo Building svg.swf file...
@@ -40,7 +43,7 @@ build/src/svg.js: src/svg.js
 	@echo Final size: svg.js \(`ls -lrt build/src/svg.js | awk '{print $$5}'` bytes\)
 else
 build/src/svg.js: src/svg.js
-	cp build/src/svg.js build/src/
+	cp src/svg.js build/src/svg.js
 endif
 
 ifeq ($(COMPRESS), 1)
@@ -58,7 +61,7 @@ build/src/svg.htc: src/svg.htc
 	@echo Final size: svg.htc \(`ls -lrt build/src/svg.htc | awk '{print $$5}'` bytes\)
 else
 build/src/svg.htc: src/svg.htc
-	cp src/svg.htc build/src/
+	cp src/svg.htc build/src/svg.htc
 endif
 
 size: build/src/svg.swf build/src/svg.js build/src/svg.htc
