@@ -11,11 +11,11 @@ COPY_TESTS=0
 
 ifeq ($(COPY_TESTS), 1)
 all: build/ build/src/svg.swf build/src/svg.js build/src/svg.htc
-	cp -r samples/ build/samples/
-	cp -r tests/ build/tests/
+	svn export samples/ build/samples/
+	svn export tests/ build/tests/
 else
 all: build/src/svg.swf build/src/svg.js build/src/svg.htc
-	cp -r samples/ build/samples/
+	svn export samples/ build/samples/
 endif
 
 build/:
