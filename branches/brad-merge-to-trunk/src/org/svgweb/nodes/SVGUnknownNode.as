@@ -20,10 +20,14 @@
 
 package org.svgweb.nodes
 {
+    
+    import org.svgweb.core.SVGNode;
+    import org.svgweb.nodes.SVGSVGNode;
+    
     public class SVGUnknownNode extends SVGNode
     {
         
-        public function SVGUnknownNode(svgRoot:SVGRoot, xml:XML):void {
+        public function SVGUnknownNode(svgRoot:SVGSVGNode, xml:XML):void {
             super(svgRoot, xml);
         }
         

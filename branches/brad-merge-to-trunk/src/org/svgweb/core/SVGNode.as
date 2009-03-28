@@ -1136,7 +1136,7 @@ package org.svgweb.core
                     styleString += ';';
                 }
                 
-                var styles:Array = [] = styleString.split(';');
+                var styles:Array = styleString.split(';');
                 for each(var style:String in styles) {
                     var styleSet:Array = style.split(':');
                     if (styleSet.length == 2) {
@@ -1290,7 +1290,7 @@ package org.svgweb.core
                 // unregister the element
                 var id:String = node._xml.@id;
                 if (id != "") {
-                    this.svgRoot.unregisterNode(id);
+                    this.svgRoot.unregisterNode(node);
                 } else {
                     this.err('Programming error: ID required for removeChild');
                     throw new Error('Programming error: ID required for removeChild');
