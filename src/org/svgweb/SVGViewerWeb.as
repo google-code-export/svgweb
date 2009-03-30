@@ -111,14 +111,14 @@ package org.svgweb
                     this.svgIdParam = paramsObj[item];
                 }
             }
-
+            
             if (sourceTypeParam == 'url_svg') {
                 this.loadURL(svgURLParam);
             }
             if (sourceTypeParam == 'url_script') {
                 this.loadHTMLURL(svgURLParam);
             }
-
+            
             if (sourceTypeParam == "inline_script") {
                 this.debug("Inline URL parameter specified: " + svgURLParam);
                 this.debug("The SWF file URL is: " + this.root.loaderInfo.loaderURL);
@@ -146,12 +146,11 @@ package org.svgweb
                 }
             }
 
-
             // notify browser javascript that we are loaded
             try {
                 var result:Object = ExternalInterface.call(
                     this.js_handler + "onMessage", 
-                    { type: 'event', eventType: 'onLoad', uniqueId: this.js_uniqueId } );
+                    { type: 'event', eventType: 'onFlashLoaded', uniqueId: this.js_uniqueId } );
             }
             catch(error:SecurityError) {
                 var debugstr:String = "Security Error on ExternalInterface.call(...). ";

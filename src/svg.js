@@ -1096,6 +1096,9 @@ extend(SVGWeb, {
     // flag this function so we don't do the same thing twice
     arguments.callee.done = true;
     
+    // start tracking total startup time
+    this._startTime = new Date().getTime();
+    
     // cleanup onDOMContentLoaded handler to prevent memory leaks on IE
     var listener = document.getElementById('__ie__svg__onload');
     if (listener) {
@@ -1241,6 +1244,11 @@ extend(SVGWeb, {
     // start watching to see if dynamic SVG has been created; see the method
     // itself for details why
     //this._watchDynamicSVG();
+    
+    // report total startup time
+    this._endTime = new Date().getTime();
+    console.log('Total JS plus Flash startup time: ' 
+                    + (this._endTime - this._startTime) + 'ms');
     
     // we do a slight timeout so that if exceptions get thrown inside the
     // developers onload methods they will correctly show up and get reported
@@ -2121,7 +2129,8 @@ extend(FlashHandler, {
   },
   
   _handleScript: function() {
-    // create proxy objects representing the Document and SVG root
+    // create proxy objects representing the Document and SVG root; these
+    // kick off creating the Flash internally
     this.document = new _Document(this._xml, this);
     this.document.documentElement = 
             new _SVGSVGElement(this._xml.documentElement, this._svgString,
@@ -2137,6 +2146,7 @@ extend(FlashHandler, {
   },
   
   _onEvent: function(msg) {
+    //console.log('onEvent');
     if (msg.eventType.substr(0, 5) == 'mouse') {
       this._onMouseEvent(msg);
       return;

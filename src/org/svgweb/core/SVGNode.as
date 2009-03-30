@@ -1410,15 +1410,11 @@ package org.svgweb.core
 
 
         public function dbg(debugString:String):void {
-            if (this.svgRoot) {
-                this.svgRoot.debug(debugString);
-            }
+            this.svgRoot.debug(debugString);
         }
         
         public function err(errorString:String):void {
-            if (this.svgRoot) {
-                this.svgRoot.error(errorString);
-            }
+            this.svgRoot.error(errorString);
         }
     }
 }
