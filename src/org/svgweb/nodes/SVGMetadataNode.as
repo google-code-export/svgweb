@@ -28,13 +28,5 @@ package org.svgweb.nodes {
        public function SVGMetadataNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null) {
            super(svgRoot, xml, original);
        }
-        
-       override protected function drawNode(event:Event=null):void {
-            this.removeEventListener(Event.ENTER_FRAME, drawNode);    
-            this._invalidDisplay = false;
-            
-            this.visible = false;
-            this.svgRoot.renderFinished();
-       }
     }
 }
