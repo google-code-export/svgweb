@@ -19,7 +19,6 @@ package org.svgweb.core
         public function SVGViewer() {
             XML.ignoreProcessingInstructions = false;
             XML.ignoreComments = false;
-
             super();
             svgRoot = new SVGSVGNode();
             this.addChild(svgRoot);

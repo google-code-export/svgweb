@@ -51,7 +51,7 @@ package org.svgweb.nodes
 
             // If this is the top SVG element, then start the render tracking process.
             if (this.parentSVGRoot == null) {
-                if (this.xml.@id) {
+                if (this.xml && this.xml.@id) {
                     this._nodeLookup[this.xml.@id] = this;
                 }
                 this._pendingRenderCount = 1;
