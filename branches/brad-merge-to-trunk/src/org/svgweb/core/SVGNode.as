@@ -202,9 +202,6 @@ package org.svgweb.core
                 case "metadata":
                     childNode = new SVGMetadataNode(this.svgRoot, childXML);
                     break;
-                case "namedview":
-                    //Add Handling 
-                    break;
                 case "pattern":
                     childNode = new SVGPatternNode(this.svgRoot, childXML);
                     break;
