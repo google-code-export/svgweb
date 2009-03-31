@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg -- http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -58,7 +59,6 @@ package org.svgweb.core
         }
 
         public function getStopData(line_alpha:Number = 1):Object {
-
             var href:String = this.getAttribute("href");
 
             if (href) {
@@ -79,7 +79,6 @@ package org.svgweb.core
             var ratio:String;
             var alpha:String;
             var ratioNum:Number;
-
 
             var match:Array;
             var child:DisplayObject;
@@ -119,7 +118,6 @@ package org.svgweb.core
          *
          **/
         override protected function _getAttribute(name:String):String {
-
             var value:String = super._getAttribute(name);
             if (value) {
                 return value;
@@ -148,9 +146,44 @@ package org.svgweb.core
                 // No href, just return value for this node
                 return value;
             }
-
         }
+        
+        /**
+         *
+         * This method supports href inheritence of styles from base nodes of the same type.
+         *
+         **/
+        override protected function _getStyle(name:String):* {
+            var value = super._getStyle(name);
+            if (value != null) {
+                return value;
+            }
+            
+            var href:String = this._xml.@xlink::href;
+            if (!href || href=='') {
+                href = this._xml.@href;
+            }
 
+            if (href && href != '') {
+                href = href.replace(/^#/,'');
 
+                var baseNode:SVGNode = this.svgRoot.getNode(href);
+                if (baseNode) {
+                    // Return value from href base node, perhaps recursively.
+                    // XXX possible circular reference problem.
+                    value = baseNode.getStyle(name);
+                    return value;
+                }
+                else {
+                    // Href is not (yet) parsed
+                    return value;
+                }
+            }
+            else {
+                // No href
+                return value;
+            }
+        }
+        
     }
 }

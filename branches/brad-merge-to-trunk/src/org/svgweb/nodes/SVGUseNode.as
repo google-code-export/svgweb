@@ -3,6 +3,7 @@
 
  * James Hight (http://labs.zavoo.com/)
  * Richard R. Masters
+ * Google Inc. (Brad Neuberg -- http://codinginparadise.org)
 
  Licensed under the Apache License, Version 2.0 (the "License");
  you may not use this file except in compliance with the License.
@@ -52,7 +53,6 @@ package org.svgweb.nodes
             super.setAttribute(name, value);
             this.invalidateChildren();
         }
-
     }
 }
 

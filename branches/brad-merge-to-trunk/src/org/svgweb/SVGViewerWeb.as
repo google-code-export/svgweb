@@ -472,7 +472,7 @@ package org.svgweb
                                 }
                             }
                             else {
-                                jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
+                                jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false);
                             }
                         }
                         else {
