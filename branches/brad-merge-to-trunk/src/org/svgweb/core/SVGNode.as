@@ -1166,7 +1166,8 @@ package org.svgweb.core
          *  the fill style to 'red', the XML fill attribute will remain with
          *  its old value. 
          *
-         *  @param name The style name, such as fill or stroke-width.
+         *  @param name The style name, such as fill or stroke-width. Dashed
+         *  style names will automatically be converted into camel case.
          *  @param defaultValue The default value to return if none is present.
          *  Defaults to null.
          *  @param inherit Whether to look up the inheritance chain if this
@@ -1184,7 +1185,19 @@ package org.svgweb.core
                 if (value) {
                     return value;
                 }
-            } 
+            }
+            
+            // convert dashed styles into camel case (i.e. stroke-width 
+            // becomes strokeWidth)
+            if (name.indexOf('-') != -1) {
+                var results:String = '';
+                var sections:Array = name.split('-');
+                results += sections[0];
+                for (var i = 1; i < sections.length; i++) {
+                  results += sections[i].charAt(0).toUpperCase() 
+                                                + sections[i].substring(1);
+                }
+            }
                      
             if (_styles.hasOwnProperty(name)) {
                 value = _styles[name];
