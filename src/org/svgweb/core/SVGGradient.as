@@ -88,9 +88,9 @@ package org.svgweb.core
             for (var i:uint = 0; i < this.numChildren; i++) {
                 child = this.getChildAt(i);
                 if (child is SVGStopNode) {
-                    color = SVGStopNode(child).getAttribute('stop-color');
+                    color = SVGStopNode(child).getStyleOrAttr('stop-color');
                     ratio = SVGStopNode(child).getAttribute('offset');
-                    alpha = SVGStopNode(child).getAttribute('stop-opacity', 1);
+                    alpha = SVGStopNode(child).getStyleOrAttr('stop-opacity', 1);
 
                     match = ratio.match(/([^%]+)%/s);
                     if (match) {
