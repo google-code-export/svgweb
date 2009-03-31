@@ -51,6 +51,7 @@ package org.svgweb.nodes
             this.removeEventListener(Event.ENTER_FRAME, drawNode);
 
             this.setAttributes();
+            this.setStyles();
             this.transformNode();
             this.generateGraphicsCommands();
             this.draw();
