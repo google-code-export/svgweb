@@ -1219,10 +1219,7 @@ package org.svgweb.core
             var newStyleString:String = '';
             
             for (var key:String in this._styles) {
-                if (newStyleString.length > 0) {
-                    newStyleString += ';';
-                }
-                newStyleString += key + ':' + this._styles[key];
+                newStyleString += key + ':' + this._styles[key] + ';';
             }
             
             this._xml.@style = newStyleString;
