@@ -102,7 +102,7 @@ release: clean all
 install:
 	# Set SVGSRV to the server and directory target for the rsync.
 	# Example: make SVGSRV='codinginparadise.org:~/codinginparadise.org/html/projects/svg-web/' install
-	rsync --recursive --delete --exclude=*svn* org/svgweb/build/* $(SVGSRV)
+	rsync --recursive --delete --exclude=*svn* build/* $(SVGSRV)
 
 clean:
 	rm -fr build/
