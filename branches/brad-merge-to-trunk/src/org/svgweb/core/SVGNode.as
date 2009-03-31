@@ -938,7 +938,7 @@ package org.svgweb.core
          * Add any assigned filters to node
          **/
         protected function setupFilters():void {
-            var filterName:String = this.getAttribute('filter');
+            var filterName:String = this.getStyleOrAttr('filter');
             if ((filterName != null)
                 && (filterName != null)) {
                 var matches:Array = filterName.match(/url\(#([^\)]+)\)/si);
