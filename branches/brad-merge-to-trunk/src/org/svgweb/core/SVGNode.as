@@ -271,6 +271,7 @@ package org.svgweb.core
 
                     // sets x, y, rotate, and opacity
                     this.setAttributes();
+                    this.setStyles();
 
                     if (this.getStyleOrAttr('display') == 'none') {
                         this.visible = false;
@@ -312,7 +313,26 @@ package org.svgweb.core
             this.loadAttribute('x');
             this.loadAttribute('y');
             this.loadAttribute('rotate','rotation');
-            this.loadAttribute('opacity','alpha');
+        }
+        
+        protected function setStyles():void {
+            this.loadStyle('opacity', 'alpha');
+        }
+        
+        /**
+         * Load an SVG style into the current node
+         * 
+         * @param name Name of the SVG style to load
+         * @param field Name of the node field to set. If null, the value of name will be used as the field attribute.
+         **/ 
+        protected function loadStyle(name:String, field:String = null):void {
+            if (field == null) {
+                field = name;
+            }
+            var tmp:String = this.getStyle(name);
+            if (tmp != null) {
+                this[field] = tmp;
+            }
         }
 
         /**
@@ -624,7 +644,7 @@ package org.svgweb.core
             if (miterLimit == null) {
                 miterLimit = '4';
             }
-
+            
             this.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
                                     capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
 
