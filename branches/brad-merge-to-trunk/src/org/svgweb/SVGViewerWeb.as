@@ -461,12 +461,15 @@ package org.svgweb
                         if (  (typeof(element.xml.@[jsMsg.attrName]) != 'undefined')
                            && (element.xml.@[jsMsg.attrName] != null) ) {
                             if (jsMsg.getFromStyle) {
-                                // Firefox and Safari both return undefined for
+                                // Firefox and Safari both return '' for
                                 // default inherited styles (i.e. if I check
-                                // someNode.style.display, I get undefined
+                                // someNode.style.display, I get an empty string
                                 // rather than 'inline'), so only get 
                                 // explicitly set styles on this node
                                 jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
+                                if (jsMsg.attrValue == null) {
+                                    jsMsg.attrValue = '';
+                                }
                             }
                             else {
                                 jsMsg.attrValue = element.getAttribute(jsMsg.attrName);

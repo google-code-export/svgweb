@@ -30,6 +30,8 @@ package org.svgweb.nodes
     import flash.text.TextFormat;
     import flash.text.TextLineMetrics;
     
+    import flash.filters.GlowFilter;
+    
     /** SVG Text element node **/
     public class SVGTextNode extends SVGNode
     {    
@@ -78,7 +80,6 @@ package org.svgweb.nodes
          * Render text to a bitmap and add bitmap to node
          **/
         override protected function setAttributes():void {
-            
             super.setAttributes();
             
             if (this._textField != null) {
@@ -112,7 +113,6 @@ package org.svgweb.nodes
                     
                     _textField.scaleX = fontScale;
                     _textField.scaleY = fontScale;
-                    
                 }
                       
                 if (fill != null) {
@@ -161,13 +161,33 @@ package org.svgweb.nodes
                         break;
                 }
                 
+                
+                if (this.getStyleOrAttr('visibility') == 'hidden') {
+                    this.setVisibility('hidden');
+                }
+                
                 // SVG Text elements position y attribute as baseline of text,
                 // not the top
                 this._textField.y = 0 - textLineMetrics.ascent - 1;
-               
             }
-        }    
+        }
         
+        override protected function setVisibility(visible:String, 
+                                                  recursive:Boolean = false)
+                                                                        :void {
+            // Surprisingly, this.alpha does not work as expected on
+            // text system fonts; a work around is needed. See
+            // http://oddhammer.com/tutorials/alpha_dynamic_text/
+            // for details. Basically you have to embed the text into
+            // a filter which turns it into a bitmap, and then apply the
+            // alpha!
+            if (visible == 'hidden') {
+                var filter:GlowFilter = new GlowFilter(0x000000, .1, 16, 16, 
+                                                       0, 3, false, false);
+                this.filters = new Array(filter);
+                this.alpha = 0;
+            }
+        }
         /**
          * 
          **/
@@ -175,7 +195,7 @@ package org.svgweb.nodes
             super.draw();
 
             if (this._textField != null) {
-                this.addChild(this._textField);            
+                this.addChild(this._textField);         
             }            
         }             
     }
