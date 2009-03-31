@@ -44,8 +44,7 @@ package org.svgweb.nodes
          **/
         public function getFilters(objectToFilter:SVGNode):Array {
             var nodeFilters:Array = new Array();
-            var list:XMLList =     this._xml.svg::feGaussianBlur;
-
+            var list:XMLList = this._xml.svg::feGaussianBlur;
 
             var svgNode:SVGNode = objectToFilter;
             var concatMatrix:Matrix = new Matrix();

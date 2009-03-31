@@ -41,6 +41,10 @@ package org.svgweb.core
     /** Base node extended by all other SVG Nodes **/
     public class SVGNode extends Sprite
     {
+        public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
+                                                'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
+        
+        
         public namespace xlink = 'http://www.w3.org/1999/xlink';
         public namespace svg = 'http://www.w3.org/2000/svg';
         
@@ -89,15 +93,12 @@ package org.svgweb.core
             this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
         }
 
-
         /**
          * Parse the SVG XML.
          * This handles creation of child nodes.
          **/
         protected function parse():void {
-            
-            for each (var childXML:XML in this._xml.children()) {    
-
+            for each (var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'element') {
                     // This handle strange gradient bugs with negative transforms
                     // by separating the transform from every object
@@ -1042,17 +1043,29 @@ package org.svgweb.core
          * @param name XML attribute to retrieve from SVG XML.
          * @param defaultValue Default value to return if this attribute is
          * not defined. Defaults to null.
+         * @param inherit Whether to look up the inheritance chain if this
+         * property is inherited. Defaults to true.
          * 
          * @return Returns the XML attribute value, or the defaultValue.
          **/
-        public function getAttribute(name:String, defaultValue:* = null):* {            
+        public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {            
             var value:String = this._getAttribute(name);
             
             if (value) {
                 return value;
-            } else {
-                return defaultValue;
-            }           
+            }
+            
+            if (inherit) {
+                if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
+                    return defaultValue;        
+                }
+
+                if ((this.parent is SVGNode)) {
+                    return SVGNode(this.parent).getAttribute(name, defaultValue);
+                }
+            }
+            
+            return defaultValue;         
         }
         
         /**
@@ -1176,15 +1189,9 @@ package org.svgweb.core
          *  @return The style value, or null if it is not present.
          **/
         public function getStyle(name:String, defaultValue:* = null, inherit:Boolean = true):* {
-            var value;
-            
-            if (this.original && (this.parent is SVGUseNode)) {
-                //Node is the top level of a clone
-                //Check for an override value from the parent
-                value = SVGNode(this.parent).getStyle(name, null, false);
-                if (value) {
-                    return value;
-                }
+            var value = this._getStyle(name);
+            if (value != null) {
+                return value;
             }
                      
             if (_styles.hasOwnProperty(name)) {
@@ -1195,7 +1202,7 @@ package org.svgweb.core
                 value = null;
             }
             
-            if (value) {
+            if (value != null) {
                 return value;
             }
             
@@ -1204,6 +1211,50 @@ package org.svgweb.core
             }
             
             return defaultValue;
+        }
+        
+        /** This method retrieves the style from the current node only and is
+         *  used as a helper for getStyle. 
+         **/
+        protected function _getStyle(name:String):* {
+            var value:String;
+            
+            // If we are rendering a mask, then use a simple black fill.
+            if (this.getMaskAncestor() != null) {
+                if ((name == 'opacity')
+                    || (name == 'fill-opacity')
+                    || (name == 'stroke-width')
+                    || (name == 'stroke-opacity') ) {
+                    return '1';
+                }
+
+                if (name == 'fill') {
+                    return 'black';
+                }
+
+                if (name == 'stroke') {
+                    return 'none';
+                }
+
+                if (name == 'filter') {
+                    return null;
+                }
+            }
+            
+            if (this.original && (this.parent is SVGUseNode)) {
+                //Node is the top level of a clone
+                //Check for an override value from the parent
+                value = SVGNode(this.parent).getStyle(name, null, false);
+                if (value != null) {
+                    return value;
+                }
+            }
+                     
+            if (_styles.hasOwnProperty(name)) {
+                return (_styles[name]);
+            }
+ 
+            return null;
         }
         
         /** Retrieves a property from either the style or attribute values,
