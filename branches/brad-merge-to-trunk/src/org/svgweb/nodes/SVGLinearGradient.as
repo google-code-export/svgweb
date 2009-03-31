@@ -59,7 +59,7 @@ package org.svgweb.nodes
             var matrix = this.getMatrix(node);
 
             if (stopData.colors.length == 1) { //Solid color fill
-                node.graphics.lineStyle(node.getAttribute('stroke-width'), stopData.colors[stopData.colors.length-1], stopData.alphas[stopData.colors.length-1]);
+                node.graphics.lineStyle(node.getStyleOrAttr('stroke-width'), stopData.colors[stopData.colors.length-1], stopData.alphas[stopData.colors.length-1]);
             }
             else if (stopData.colors.length > 0) { //Don't fill if there are no stops
                 node.graphics.lineGradientStyle(GradientType.LINEAR, stopData.colors, stopData.alphas, stopData.ratios, matrix, spreadMethod, InterpolationMethod.RGB);
@@ -69,17 +69,17 @@ package org.svgweb.nodes
 
         protected function getMatrix(node:SVGNode):Matrix {
             var matrGrTr:Matrix = this.parseTransform(this.getAttribute('gradientTransform'));
-            var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox', false);
+            var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox');
 
-            var xString:Number = node.getAttribute('x', '0', false);
+            var xString:Number = node.getAttribute('x', '0');
             var objectX:Number = Math.round(SVGColors.cleanNumber2(xString, SVGNode(node.parent).getWidth()));
-            var yString:Number = node.getAttribute('y', '0', false);
+            var yString:Number = node.getAttribute('y', '0');
             var objectY:Number = Math.round(SVGColors.cleanNumber2(yString, SVGNode(node.parent).getHeight()));
 
-            var x1String:String = this.getAttribute('x1', '0%', false);
-            var x2String:String = this.getAttribute('x2', '100%', false);         
-            var y1String:String = this.getAttribute('y1', '0%', false);
-            var y2String:String = this.getAttribute('y2', '0%', false);
+            var x1String:String = this.getAttribute('x1', '0%');
+            var x2String:String = this.getAttribute('x2', '100%');         
+            var y1String:String = this.getAttribute('y1', '0%');
+            var y2String:String = this.getAttribute('y2', '0%');
 
             if (gradientUnits == 'userSpaceOnUse') {
                 var x1:Number = Math.round(SVGColors.cleanNumber2(x1String, SVGNode(node.parent).getWidth()));

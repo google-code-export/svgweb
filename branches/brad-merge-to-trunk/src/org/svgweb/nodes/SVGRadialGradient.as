@@ -57,16 +57,16 @@ package org.svgweb.nodes
 
         public function getMatrix(node:SVGNode):Matrix {
             var matrGrTr:Matrix = this.parseTransform(this.getAttribute('gradientTransform'));
-            var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox', false);
+            var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox');
 
-            var xString:Number = node.getAttribute('x', '0', false);
+            var xString:Number = node.getAttribute('x', '0');
             var objectX:Number = Math.round(SVGColors.cleanNumber2(xString, SVGNode(node.parent).getWidth()));
-            var yString:Number = node.getAttribute('y', '0', false);
+            var yString:Number = node.getAttribute('y', '0');
             var objectY:Number = Math.round(SVGColors.cleanNumber2(yString, SVGNode(node.parent).getHeight()));
 
-            var cxString:String = this.getAttribute('cx', '50%', false);
-            var cyString:String = this.getAttribute('cy', '50%', false);
-            var rString:String = this.getAttribute('r', '50%', false);
+            var cxString:String = this.getAttribute('cx', '50%');
+            var cyString:String = this.getAttribute('cy', '50%');
+            var rString:String = this.getAttribute('r', '50%');
 
             if (gradientUnits == 'userSpaceOnUse') {
                 var cx:Number = Math.round(SVGColors.cleanNumber2(cxString, SVGNode(node.parent).getWidth()));

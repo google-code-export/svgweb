@@ -113,7 +113,7 @@ package org.svgweb.nodes
                 var oldAspectRes:Number = this.imageWidth / this.imageHeight;
                 var newAspectRes:Number = canvasWidth /  canvasHeight;
 
-                var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet', false);
+                var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio', 'xMidYMid meet');
                 var alignMode:String = preserveAspectRatio.substr(0,8);
 
                 var meetOrSlice:String = 'meet';

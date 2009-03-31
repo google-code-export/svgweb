@@ -32,8 +32,7 @@ package org.svgweb.nodes
          * Generate graphics commands to draw a rectangle
          **/
         protected override function generateGraphicsCommands():void {
-            
-            this._graphicsCommands = new  Array();
+            this._graphicsCommands = new Array();
             
             var widthStr:String = this.getAttribute('width','0');
             var heightStr:String = this.getAttribute('height','0');
@@ -41,7 +40,7 @@ package org.svgweb.nodes
             var height:Number = SVGColors.cleanNumber2(heightStr, getHeight());
             
             var rx:String = this.getAttribute('rx');
-            var ry:String = this.getAttribute('ry');            
+            var ry:String = this.getAttribute('ry');
             
             if ((rx != null) && (ry == null)) {
                 ry = rx;

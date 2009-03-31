@@ -41,10 +41,6 @@ package org.svgweb.core
     /** Base node extended by all other SVG Nodes **/
     public class SVGNode extends Sprite
     {
-        public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
-                                        'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
-
-
         public namespace xlink = 'http://www.w3.org/1999/xlink';
         public namespace svg = 'http://www.w3.org/2000/svg';
         
@@ -103,7 +99,6 @@ package org.svgweb.core
             for each (var childXML:XML in this._xml.children()) {    
 
                 if (childXML.nodeKind() == 'element') {
-
                     // This handle strange gradient bugs with negative transforms
                     // by separating the transform from every object
                     if (String(childXML.@['transform']) != "") {
@@ -263,7 +258,6 @@ package org.svgweb.core
          * Redraws node graphics if _invalidDisplay == true
          **/
         protected function drawNode(event:Event = null):void {
-
             if ( (this.parent != null) && (this._invalidDisplay) ) {
                 this._invalidDisplay = false;
                 if (this._xml != null) {
@@ -278,7 +272,7 @@ package org.svgweb.core
                     // sets x, y, rotate, and opacity
                     this.setAttributes();
 
-                    if (this.getAttribute('display') == 'none') {
+                    if (this.getStyleOrAttr('display') == 'none') {
                         this.visible = false;
                     }
                     else {
@@ -347,8 +341,8 @@ package org.svgweb.core
 
         // <svg> and <image> nodes get an implicit mask of their height and width
         public function applyDefaultMask():void {
-            if (   (this.getAttribute('width') != null)
-                && (this.getAttribute('height') != null) ) {
+            if (   (this.getStyleOrAttr('width') != null)
+                && (this.getStyleOrAttr('height') != null) ) {
                 if (this.mask == null) {
                     var myMask:Shape = new Shape();
                     this.parent.addChild(myMask);
@@ -556,8 +550,8 @@ package org.svgweb.core
             var color_alpha:Number = 0;
             var fill_alpha:Number = 0;
 
-            var fill:String = this.getAttribute('fill');
-            if ( (fill != 'none') && (fill != '') && (this.getAttribute('visibility') != 'hidden') ) {
+            var fill:String = this.getStyleOrAttr('fill');
+            if ( (fill != 'none') && (fill != null) && (this.getStyleOrAttr('visibility') != 'hidden') ) {
                 var matches:Array = fill.match(/url\(#([^\)]+)\)/si);
                 if (matches != null && matches.length > 0) {
                     var fillName:String = matches[1];
@@ -578,7 +572,11 @@ package org.svgweb.core
                     color_and_alpha = SVGColors.getColorAndAlpha(fill);
                     color_core = color_and_alpha[0];
                     color_alpha = color_and_alpha[1];
-                    fill_alpha = SVGColors.cleanNumber( this.getAttribute('fill-opacity') ) * color_alpha;
+                    if (this.getStyleOrAttr('fill-opacity') != null) {
+                        fill_alpha = SVGColors.cleanNumber( this.getStyleOrAttr('fill-opacity') ) * color_alpha;
+                    } else {
+                        fill_alpha = color_alpha;
+                    }
                     this.graphics.beginFill(color_core, fill_alpha);
                 }
             }
@@ -588,19 +586,19 @@ package org.svgweb.core
             var line_alpha:Number;
             var line_width:Number;
 
-            var stroke:String = this.getAttribute('stroke');
-            if ( (stroke == 'none') || (stroke == '') || (this.getAttribute('visibility') == 'hidden') ) {
+            var stroke:String = this.getStyleOrAttr('stroke');
+            if ( (stroke == 'none') || (stroke == '') || (this.getStyleOrAttr('visibility') == 'hidden') ) {
                 line_alpha = 0;
                 line_color = 0;
                 line_width = 0;
             }
             else {
                 line_color = SVGColors.cleanNumber(SVGColors.getColor(stroke));
-                line_alpha = SVGColors.cleanNumber(this.getAttribute('stroke-opacity'));
-                line_width = SVGColors.cleanNumber(this.getAttribute('stroke-width'));
+                line_alpha = SVGColors.cleanNumber(this.getStyleOrAttr('stroke-opacity'));
+                line_width = SVGColors.cleanNumber(this.getStyleOrAttr('stroke-width'));
             }
 
-            var capsStyle:String = this.getAttribute('stroke-linecap');
+            var capsStyle:String = this.getStyleOrAttr('stroke-linecap');
             if (capsStyle == 'round'){
                 capsStyle = CapsStyle.ROUND;
             }
@@ -611,7 +609,7 @@ package org.svgweb.core
                 capsStyle = CapsStyle.NONE;
             }
             
-            var jointStyle:String = this.getAttribute('stroke-linejoin');
+            var jointStyle:String = this.getStyleOrAttr('stroke-linejoin');
             if (jointStyle == 'round'){
                 jointStyle = JointStyle.ROUND;
             }
@@ -622,7 +620,7 @@ package org.svgweb.core
                 jointStyle = JointStyle.MITER;
             }
             
-            var miterLimit:String = this.getAttribute('stroke-miterlimit');
+            var miterLimit:String = this.getStyleOrAttr('stroke-miterlimit');
             if (miterLimit == null) {
                 miterLimit = '4';
             }
@@ -630,7 +628,7 @@ package org.svgweb.core
             this.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
                                     capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
 
-            if ( (stroke != 'none') && (stroke != '')  && (this.getAttribute('visibility') != 'hidden') ) {
+            if ( (stroke != 'none') && (stroke != null)  && (this.getStyleOrAttr('visibility') != 'hidden') ) {
                 var strokeMatches:Array = stroke.match(/url\(#([^\)]+)\)/si);
                 if (strokeMatches != null && strokeMatches.length > 0) {
                     var strokeName:String = strokeMatches[1];
@@ -645,7 +643,6 @@ package org.svgweb.core
                     }
                 }
             }
-
         }
         
         /** 
@@ -885,7 +882,7 @@ package org.svgweb.core
         protected function setupFilters():void {
             var filterName:String = this.getAttribute('filter');
             if ((filterName != null)
-                && (filterName != '')) {
+                && (filterName != null)) {
                 var matches:Array = filterName.match(/url\(#([^\)]+)\)/si);
                 if (matches.length > 0) {
                     filterName = matches[1];
@@ -904,27 +901,27 @@ package org.svgweb.core
         protected function attachEventListeners():void {
             var action:String;
 
-            action = this.getAttribute("onclick", null, false);
+            action = this.getAttribute("onclick");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.CLICK, this);
 
-            action = this.getAttribute("onmousedown", null, false);
+            action = this.getAttribute("onmousedown");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_DOWN, this);
 
-            action = this.getAttribute("onmouseup", null, false);
+            action = this.getAttribute("onmouseup");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_UP, this);
 
-            action = this.getAttribute("onmousemove", null, false);
+            action = this.getAttribute("onmousemove");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_MOVE, this);
 
-            action = this.getAttribute("onmouseover", null, false);
+            action = this.getAttribute("onmouseover");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_OVER, this);
 
-            action = this.getAttribute("onmouseout", null, false);
+            action = this.getAttribute("onmouseout");
             if (action)
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_OUT, this);
 
@@ -981,35 +978,23 @@ package org.svgweb.core
          * Attribute Handling
          */
 
-        /**
-         * @param attribute Attribute to retrieve from SVG XML
+        /** 
+         * Gets an XML attribute from this node
+         *
+         * @param name XML attribute to retrieve from SVG XML.
+         * @param defaultValue Default value to return if this attribute is
+         * not defined. Defaults to null.
          * 
-         * @param defaultValue Value to return if attribute is not found
-         * 
-         * @param inherit If attribute is not set in this node try to retrieve it from the parent node
-         * 
-         * @return Returns the value of defaultValue
+         * @return Returns the XML attribute value, or the defaultValue.
          **/
-        public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {            
+        public function getAttribute(name:String, defaultValue:* = null):* {            
             var value:String = this._getAttribute(name);
-            
-            if (value == "inherit") {
-                value = null;
-            }
             
             if (value) {
                 return value;
-            }
-            
-            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
-                return defaultValue;        
-            }
-            
-            if (inherit && (this.parent is SVGNode)) {
-                return SVGNode(this.parent).getAttribute(name, defaultValue);
-            }
-            
-            return defaultValue;            
+            } else {
+                return defaultValue;
+            }           
         }
         
         /**
@@ -1023,7 +1008,6 @@ package org.svgweb.core
             
             // If we are rendering a mask, then use a simple black fill.
             if (this.getMaskAncestor() != null) {
-
                 if (  (name == 'opacity')
                     || (name == 'fill-opacity')
                     || (name == 'stroke-width')
@@ -1055,7 +1039,7 @@ package org.svgweb.core
             if (this.original && (this.parent is SVGUseNode)) {
                 //Node is the top level of a clone
                 //Check for an override value from the parent
-                value = SVGNode(this.parent).getAttribute(name, null, false);
+                value = SVGNode(this.parent).getAttribute(name);
                 if (value) {
                     return value;
                 }
@@ -1065,16 +1049,10 @@ package org.svgweb.core
             
             if (xmlList.length() > 0) {
                 return xmlList[0].toString();
-            }   
-                     
-            if (_styles.hasOwnProperty(name)) {
-                return (_styles[name]);
             }
  
             return null;
-        }
-
-
+        }  
 
         public function setAttribute(name:String, value:String):void {
             if (name == "style") {
@@ -1082,13 +1060,7 @@ package org.svgweb.core
                 this.parseStyle();
             }
             else {
-                if (this._styles.hasOwnProperty(name)) {
-                    this._styles[name] = value;
-                    updateStyle();
-                }
-                else {
-                    this._xml.@[name] = value;
-                }
+                this._xml.@[name] = value;
             }
             
             switch (name) {
@@ -1115,7 +1087,90 @@ package org.svgweb.core
             if (getPatternAncestor() != null) {
                 this.svgRoot.invalidateReferers(getPatternAncestor().id);
             }
-
+        }
+        
+        /** Sets a style attribute in the style="" string. Note that this
+         *  leaves XML attributes alone. For examle, if you set 
+         *  the fill style to 'red', the XML fill attribute will remain with
+         *  its old value. 
+         **/
+        public function setStyle(name:String, value:String):void {
+            this._styles[name] = value;
+            updateStyle();
+            parseStyle();
+        }
+        
+        /** Gets a style attribute from the style="" string. Note that this
+         *  leaves XML attributes alone. For examle, if you set 
+         *  the fill style to 'red', the XML fill attribute will remain with
+         *  its old value. 
+         *
+         *  @param name The style name, such as fill or stroke-width.
+         *  @param defaultValue The default value to return if none is present.
+         *  Defaults to null.
+         *  @param inherit Whether to look up the inheritance chain if this
+         *  property is inherited. Defaults to true.
+         *
+         *  @return The style value, or null if it is not present.
+         **/
+        public function getStyle(name:String, defaultValue:* = null, inherit:Boolean = true):* {
+            var value;
+            
+            if (this.original && (this.parent is SVGUseNode)) {
+                //Node is the top level of a clone
+                //Check for an override value from the parent
+                value = SVGNode(this.parent).getStyle(name, null, false);
+                if (value) {
+                    return value;
+                }
+            } 
+                     
+            if (_styles.hasOwnProperty(name)) {
+                value = _styles[name];
+            }
+            
+            if (value == "inherit") {
+                value = null;
+            }
+            
+            if (value) {
+                return value;
+            }
+            
+            if (inherit && (this.parent is SVGNode)) {
+                return SVGNode(this.parent).getStyle(name, defaultValue);
+            }
+            
+            return defaultValue;
+        }
+        
+        /** Retrieves a property from either the style or attribute values,
+         *  determine the correct one to use. 
+         *
+         *  @param name The style or XML attribute name, such as fill or 
+         *  stroke-width.
+         *  @param defaultValue The default value to return if none is present.
+         *  Defaults to null.
+         *  @param inherit Whether to look up the inheritance chain if this
+         *  property is inherited. Defaults to true.
+         *
+         *  @return The style or XML attribute value, or null if it is 
+         *  not present.
+         **/
+        public function getStyleOrAttr(name:String, defaultValue:* = null, inherit:Boolean = true):* {
+            // Firefox and Safari gives style="" values precedence over XML
+            // values
+            var value = this.getStyle(name);
+            if (value != null) {
+                return value;
+            }
+            
+            value = this.getAttribute(name);
+            if (value != null) {
+                return value;
+            }
+            
+            return defaultValue;
         }
 
         private function parseStyle():void {
@@ -1329,8 +1384,8 @@ package org.svgweb.core
             if (this.parent is SVGNode) {
                 parentWidth=SVGNode(this.parent).getWidth();
             }
-            if (this.getAttribute('width') != null) {
-                return SVGColors.cleanNumber2(this.getAttribute('width'), parentWidth);
+            if (this.getStyleOrAttr('width') != null) {
+                return SVGColors.cleanNumber2(this.getStyleOrAttr('width'), parentWidth);
             }
 
             // defaults to 100%
@@ -1345,8 +1400,8 @@ package org.svgweb.core
             if (this.parent is SVGNode) {
                 parentHeight=SVGNode(this.parent).getHeight();
             }
-            if (this.getAttribute('height') != null) {
-                return SVGColors.cleanNumber2(this.getAttribute('height'), parentHeight);
+            if (this.getStyleOrAttr('height') != null) {
+                return SVGColors.cleanNumber2(this.getStyleOrAttr('height'), parentHeight);
             }
 
             // defaults to 100%

@@ -58,19 +58,10 @@ package org.svgweb.nodes
             }
         }
 
-        override public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {
-
+        override public function getAttribute(name:String, defaultValue:* = null):* {
             var value:String = this._getAttribute(name);
             if (value) {
                 return value;
-            }
-
-            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {
-                return defaultValue;
-            }
-
-            if (inherit && (this.parent is SVGNode)) {
-                return SVGNode(this.parent).getAttribute(name, defaultValue, inherit);
             }
 
             if ((name == 'opacity') 

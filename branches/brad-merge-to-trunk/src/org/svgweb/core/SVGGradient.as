@@ -137,7 +137,7 @@ package org.svgweb.core
                 if (baseNode) {
                     // Return value from href base node, perhaps recursively.
                     // XXX possible circular reference problem.
-                    return baseNode.getAttribute(name, null, false);
+                    return baseNode.getAttribute(name);
                 }
                 else {
                     // Href is not (yet) parsed, just return value for this node
