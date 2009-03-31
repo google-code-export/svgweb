@@ -48,6 +48,16 @@ package org.svgweb.nodes
             super(svgRoot, xml, original);
         }
         
+        override public function hasText():Boolean {
+            return true;
+        }
+        
+        override public function setText(newValue):String {
+            this._xml.setChildren(newValue);
+            this.invalidateDisplay();
+            return newValue;
+        }
+        
         /**
          * Get any child text (not text inside child nodes)
          * If this node has any text create a TextField at this._textField
