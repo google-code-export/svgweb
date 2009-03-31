@@ -3421,7 +3421,7 @@
         assertEqualsAny('rect.style.strokeDashoffset == 3 or 3px',
                         [3, '3px'],
                         rect.style.strokeDashoffset);
-        
+       
         // line and g
         group = document.createElementNS(svgns, 'g');
         group.id = 'testStyleG';
@@ -3970,7 +3970,6 @@
         }
         // override some existing styles as well as adding some new ones
         // and make sure they show up
-        console.log('style before='+circle.getAttribute('style'));
         circle.style.fill = 'purple';
         circle.style.stroke = 'green';
         circle.style.strokeWidth = '8px';
@@ -4132,6 +4131,10 @@
         // TODO: Add a bunch of tests around A hyperlink elements, including
         // working with existing ones, creating new ones, etc.
         
+        // TODO: Have tests around CSS inherited styles, as well as forcing
+        // inheritance using 'inherit' keyword. Make sure things show up
+        // visually correctly
+        
         // Test assertions for bug fixes
         console.log('Testing bug fixes...');
         
@@ -4166,7 +4169,7 @@
         // on the screen. Uncomment when we have other tests that do bitmap
         // testing or visual tests, and we don't need the tests in this file
         // to be visually inspected.
-        /*
+        
         console.log('Testing window.unload listener...');
         if (svgweb.getHandlerType() == 'flash') {
           exp = null;
@@ -4195,7 +4198,7 @@
             console.log(exp.message);
           }
           assertNull('Window.unload should run without an exception', exp);
-        }*/
+        }
         
         var endTime = new Date().getTime();
         
