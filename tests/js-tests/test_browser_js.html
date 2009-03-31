@@ -3850,11 +3850,34 @@
                     + 'second SVG in the lower right corner of the image');
         
         // test display and visibility properties
+        
+        // make a rectangle invisible
+        rect = document.createElementNS(svgns, 'rect');
+        svg = document.getElementById('mySVG');
+        rect.setAttribute('x', 380);
+        rect.setAttribute('y', 100);
+        rect.setAttribute('width', 30);
+        rect.setAttribute('height', 30);
+        rect.setAttribute('rx', 3);
+        rect.setAttribute('ry', 5);
+        rect.style.opacity = 0.5;
+        rect.style.fill = '#0000FF';
+        svg.appendChild(rect);
+        assertEquals('rect.style.visibility == ""', '', 
+                        rect.style.visibility); 
+        rect.style.visibility = 'hidden';
+        rect.style.stroke = 'rgb(0, 255, 0)';
+        rect.style.strokeWidth = '10px';
+        rect.style.strokeOpacity = 0.8;
+        rect.style.strokeLinecap = 'round';
+        rect.style.strokeLinejoin = 'round';
+        rect.style.strokeMiterlimit = 15;
+        assertEquals('rect.style.visibility == hidden', 'hidden',
+                     rect.style.visibility);
+        console.log('You should _not_ see a small light blue rectangle with '
+                    + 'curved corners in the upper right of the first SVG');
+
         // make some text invisible
-        // * FIXME: the display and visibility tests are not displaying 
-        // correctly for Flash; I believe this is fixed on the trunk 
-        // however so I will not fix it on my branch. After merging re-run 
-        // this test to ensure it displays correctly.
         text = document.createElementNS(svgns, 'text');
         text.appendChild(document.createTextNode('This text should be hidden',
                                                  true));
@@ -3867,6 +3890,7 @@
                      text.style.visibility);
         console.log('You should _not_ see the text '
                     + '"This text should be hidden" in the first SVG');
+
         // make some text invisible than visible
         text = document.createElementNS(svgns, 'text');
         text.appendChild(document.createTextNode('This text should not be '
@@ -3915,6 +3939,11 @@
         assertEqualsAny('group.getAttribute(transform) == translate(90, 350)',
                         ['translate(90, 350)'],
                         svg.lastChild.getAttribute('transform'));
+                        
+        // TODO: have a test where we set a group to visibility hidden, but
+        // have an element inside it that we explicity set to visibility 
+        // visible -- that element should still show, while everything else
+        // should hide
         
         // TODO: test overflow property
         
@@ -3924,6 +3953,8 @@
         // TODO: set style property with different measurement values
         
         // TODO: test stop-color and stop-opacity style properties on a gradient
+        
+        // TODO: test visibility=hidden and display=none on root SVG element
         
         // try to set or get an unknown property and ensure things are ok
         circle = document.createElementNS(svgns, 'circle');

@@ -261,7 +261,6 @@ package org.svgweb.core
             if ( (this.parent != null) && (this._invalidDisplay) ) {
                 this._invalidDisplay = false;
                 if (this._xml != null) {
-                
                     this.graphics.clear();
                     
                     if (!this._parsedChildren) {
@@ -272,7 +271,16 @@ package org.svgweb.core
                     // sets x, y, rotate, and opacity
                     this.setAttributes();
                     this.setStyles();
-
+                    
+                    if (this.getStyleOrAttr('visibility') == 'hidden') {
+                        // SVG spec says visibility='hidden' should fully draw
+                        // the shape with full stroke widths, etc., 
+                        // just make it invisible. It also states that
+                        // all children should be invisible _unless_ they
+                        // explicitly have a visibility set to 'visible'.
+                        this.setVisibility('hidden');
+                    }
+                    
                     if (this.getStyleOrAttr('display') == 'none') {
                         this.visible = false;
                     }
@@ -358,6 +366,36 @@ package org.svgweb.core
                 this[field] = SVGColors.cleanNumber(tmp);
             }
         } 
+
+        /** Sets this node and all its children to the given visibility value.
+            If a child has an explicit visibility setting then that is retained
+            independent of what we set here.
+            
+            @param visible - If 'visible', sets this node to be visible. 
+            The value 'hidden' will hide it.
+            @param recursive - Internal variable. Should not set. */
+        protected function setVisibility(visible:String, 
+                                         recursive:Boolean = false):void {
+            // ignore if we have our own visibility value and we are a recursive
+            // call
+            if (this.getStyleOrAttr('visibility') == null 
+                || recursive == false) {
+                if (visible == 'visible') {
+                    this.alpha = 1;
+                } else {
+                    this.alpha = 0;
+                }
+            }
+            
+            // set on all our children
+            var child:DisplayObject;
+            for (var i:uint = 0; i < this.numChildren; i++) {
+                child = this.getChildAt(i);
+                if (child is SVGNode) {
+                    SVGNode(child).setVisibility(visible, true);
+                }
+            }
+        }
 
         // <svg> and <image> nodes get an implicit mask of their height and width
         public function applyDefaultMask():void {
@@ -607,7 +645,7 @@ package org.svgweb.core
             var line_width:Number;
 
             var stroke:String = this.getStyleOrAttr('stroke');
-            if ( (stroke == 'none') || (stroke == '') || (this.getStyleOrAttr('visibility') == 'hidden') ) {
+            if ( (stroke == 'none') || (stroke == '')) {
                 line_alpha = 0;
                 line_color = 0;
                 line_width = 0;
@@ -1115,9 +1153,12 @@ package org.svgweb.core
          *  its old value. 
          **/
         public function setStyle(name:String, value:String):void {
+            //this.dbg('setStyle, name='+name+', value='+value);
             this._styles[name] = value;
             updateStyle();
             parseStyle();
+            
+            this.updateClones();
         }
         
         /** Gets a style attribute from the style="" string. Note that this
