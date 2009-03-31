@@ -1186,18 +1186,6 @@ package org.svgweb.core
                     return value;
                 }
             }
-            
-            // convert dashed styles into camel case (i.e. stroke-width 
-            // becomes strokeWidth)
-            if (name.indexOf('-') != -1) {
-                var results:String = '';
-                var sections:Array = name.split('-');
-                results += sections[0];
-                for (var i = 1; i < sections.length; i++) {
-                  results += sections[i].charAt(0).toUpperCase() 
-                                                + sections[i].substring(1);
-                }
-            }
                      
             if (_styles.hasOwnProperty(name)) {
                 value = _styles[name];
