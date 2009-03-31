@@ -342,6 +342,9 @@ package org.svgweb.utils
          * @return Numeric value of string will all characters removed except '0-9', '.', and '-'
          **/
         static public function cleanNumber(num:*):Number {
+            if (num == null) {
+                return null;
+            }
             var numString:String = String(num);
             numString = numString.replace(/[^0-9\.-]+/sig,'');
             return Number(numString);

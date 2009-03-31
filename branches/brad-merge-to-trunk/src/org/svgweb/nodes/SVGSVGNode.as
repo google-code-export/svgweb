@@ -58,8 +58,8 @@ package org.svgweb.nodes
             }
         }
 
-        override public function getAttribute(name:String, defaultValue:* = null):* {
-            var value:String = this._getAttribute(name);
+        public override function getStyle(name:String, defaultValue:* = null, inherit:Boolean = false):* {
+            var value:String = super.getStyle(name, null, false);
             if (value) {
                 return value;
             }
