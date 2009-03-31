@@ -461,7 +461,12 @@ package org.svgweb
                         if (  (typeof(element.xml.@[jsMsg.attrName]) != 'undefined')
                            && (element.xml.@[jsMsg.attrName] != null) ) {
                             if (jsMsg.getFromStyle) {
-                                jsMsg.attrValue = element.getStyle(jsMsg.attrName);
+                                // Firefox and Safari both return undefined for
+                                // default inherited styles (i.e. if I check
+                                // someNode.style.display, I get undefined
+                                // rather than 'inline'), so only get 
+                                // explicitly set styles on this node
+                                jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
                             }
                             else {
                                 jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
@@ -490,6 +495,7 @@ package org.svgweb
                     if (element) {
                         if (jsMsg.applyToStyle) {
                             element.setStyle(jsMsg.attrName, jsMsg.attrValue);
+                            element.invalidateDisplay();
                         }
                         else if (jsMsg.attrNamespace != null) {
                             // namespaced attribute, such as xlink:href

@@ -1160,12 +1160,21 @@ package org.svgweb.core
         public function getStyleOrAttr(name:String, defaultValue:* = null, inherit:Boolean = true):* {
             // Firefox and Safari gives style="" values precedence over XML
             // values
-            var value = this.getStyle(name);
+            
+            // start with non-inherited explicitly set styles
+            var value = this.getStyle(name, null, false);
             if (value != null) {
                 return value;
             }
             
+            // otherwise see if there is an explicit XML attribute
             value = this.getAttribute(name);
+            if (value != null) {
+                return value;
+            }
+            
+            // finally see if there is an inherited style
+            value = this.getStyle(name);
             if (value != null) {
                 return value;
             }
