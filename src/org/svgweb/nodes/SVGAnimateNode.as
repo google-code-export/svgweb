@@ -37,6 +37,7 @@ package org.svgweb.nodes
         private var _state:int;
         
         private var _field:String;
+        private var _attributeType:String;
         
         private var _fromValString:String;
         private var _toValString:String;
@@ -61,6 +62,10 @@ package org.svgweb.nodes
         
         override protected function draw():void {        
             this._field = this.getAttribute('attributeName');
+            this._attributeType = this.getAttribute('attributeType');
+            if (!this._attributeType) {
+                this._attributeType = 'XML';
+            }
                         
             this._fromValString = this.getAttribute('from');
             this._toValString = this.getAttribute('to');
@@ -127,12 +132,26 @@ package org.svgweb.nodes
             if (runTime < this._duration) {
                 var factor:Number = runTime / this._duration;
                 newVal = this._fromVal + (factor * this._valSpan);
-                SVGNode(this.parent).setAttribute(this._field, newVal.toString());
+                // FIXME: Does SMIL actually change the CSS or XML value
+                // as it animates, or does it keep the animated value
+                // in a separate place? BradN.
+                if (this._attributeType == 'XML') {
+                    SVGNode(this.parent).setAttribute(this._field, newVal.toString());
+                } else if (this._attributeType == 'CSS') {
+                    SVGNode(this.parent).setStyle(this._field, newVal.toString());
+                }
             }
             else {
                 newVal = this._toVal;
                 if (this._state == this.STATE_RUN) {
-                    SVGNode(this.parent).setAttribute(this._field, newVal.toString());                    
+                    // FIXME: Does SMIL actually change the CSS or XML value
+                    // as it animates, or does it keep the animated value
+                    // in a separate place? BradN.
+                    if (this._attributeType == 'XML') {
+                        SVGNode(this.parent).setAttribute(this._field, newVal.toString());
+                    } else if (this._attributeType == 'CSS') {
+                        SVGNode(this.parent).setStyle(this._field, newVal.toString());
+                    }                    
                 }
                 this._state = this.STATE_END;
                 if (timeElapsed > this._end) {

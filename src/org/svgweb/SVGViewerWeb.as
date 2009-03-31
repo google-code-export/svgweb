@@ -458,7 +458,18 @@ package org.svgweb
                         element = this.svgRoot.getNode(jsMsg.elementId);
                     }
                     if (element) {
-                        jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
+                        if (  (typeof(element.xml.@[jsMsg.attrName]) != 'undefined')
+                           && (element.xml.@[jsMsg.attrName] != null) ) {
+                            if (jsMsg.getFromStyle) {
+                                jsMsg.attrValue = element.getStyle(jsMsg.attrName);
+                            }
+                            else {
+                                jsMsg.attrValue = element.getAttribute(jsMsg.attrName);
+                            }
+                        }
+                        else {
+                            this.error("error:getAttribute: id not found: " + jsMsg.elementId);
+                        }
                     }
                     else {
                         this.error("error:getAttribute: id not found: " + jsMsg.elementId);
@@ -476,9 +487,11 @@ package org.svgweb
                     else {
                         element = this.svgRoot.getNode(jsMsg.elementId);
                     }
-                    
                     if (element) {
-                        if (jsMsg.attrNamespace != null) {
+                        if (jsMsg.applyToStyle) {
+                            element.setStyle(jsMsg.attrName, jsMsg.attrValue);
+                        }
+                        else if (jsMsg.attrNamespace != null) {
                             // namespaced attribute, such as xlink:href
                             var ns = new Namespace(jsMsg.attrNamespace);
                             element.xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
