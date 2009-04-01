@@ -1,3 +1,11 @@
+// if true, we print out each assertion as we run them; helps with
+// identifying where an assertion failed by printing the ones before it
+var printAsserts = true;
+
+// used to record whether a Flash error has occurred asynchronously
+// so we can halt testing and report the failure
+var _flashError = false;
+
 function runTests(embedTypes) {
   var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
   var dc_ns = "http://purl.org/dc/elements/1.1/";
@@ -42,7 +50,7 @@ function runTests(embedTypes) {
   // override svgweb._fireFlashError so we can know when errors
   // have occurred
   svgweb._fireFlashError = function(logMessage) {
-    flashError = true;
+    _flashError = true;
     assertFailed(logMessage);
   }
   
@@ -4257,7 +4265,7 @@ function runTests(embedTypes) {
   // set a slight timeout before reporting success in case a flash
   // error occurred
   window.setTimeout(function() {
-    if (!flashError) {
+    if (!_flashError) {
       console.log('All tests passed');
     }
   }, 200);
