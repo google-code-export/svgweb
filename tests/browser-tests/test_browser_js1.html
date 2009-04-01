@@ -20,7 +20,17 @@
     
       svgweb.addOnLoad(function() {
         var startTime = new Date().getTime();
-        runTests();
+        
+        // specify how each of our SVG images is embedded to help the unit
+        // tests run correctly
+        var embedTypes = {};
+        embedTypes['mySVG'] = 'script';
+        embedTypes['svg2'] = 'script';
+        embedTypes['svg11242'] = 'script';
+        
+        // run the tests
+        runTests(embedTypes);
+        
         var endTime = new Date().getTime();
         console.log('total test time='+(endTime - startTime) + 'ms');
       });
@@ -30,7 +40,7 @@
   <body>
     <div id="test_container">
       <h1>Runs a suite of unit tests against our JavaScript SVG DOM and 
-          CSS API</h1>
+          CSS API on a normal text/html page using directly embedded SVG</h1>
     
       <script type="image/svg+xml">
         <svg id="mySVG" width="500" height="500"

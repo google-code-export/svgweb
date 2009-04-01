@@ -1,8 +1,15 @@
-function runTests() {
+function runTests(embedTypes) {
   var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
   var dc_ns = "http://purl.org/dc/elements/1.1/";
   var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
   var cc_ns = "http://web.resource.org/cc/";
+  
+  // did we embed any of the SVG using OBJECTs?
+  var hasEmbedObjects = false;
+  if (embedTypes['mySVG'] == 'object' || embedTypes['svg2'] == 'object'
+      || embedTypes['svg11242'] == 'object') {
+    hasEmbedObjects = true;
+  }
   
   var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
       path, gradient, group, child, whitespaceAreNodes, metadata,
@@ -44,6 +51,39 @@ function runTests() {
   assertTrue('renderer == native || flash',
               renderer == 'native' 
               || renderer == 'flash');
+  
+  // contentDocument, getSVGDocument(), contentDocument.rootElement, and
+  // contentDocument.documentElement
+  if (hasEmbedObjects) {
+    console.log('Testing contentDocument, getSVGDocument(), rootElement, and '
+                + 'documentElement...');
+    svg = document.getElementById('mySVG');
+    assertExists('OBJECT with ID "svg" should exist', svg);
+    assertExists('svg.contentDocument should exist', svg.contentDocument);
+    assertExists('svg.getSVGDocument should exist', svg.getSVGDocument);
+    assertExists('svg.getSVGDocument() should return something', 
+                 svg.getSVGDocument());
+    assertEquals('svg.contentDocument == svg.getSVGDocument()',
+                 svg.contentDocument, svg.getSVGDocument());
+    assertExists('svg.contentDocument.rootElement should exist',
+                 svg.contentDocument.rootElement);
+    assertExists('svg.contentDocument.documentElement should exist',
+                 svg.contentDocument.documentElement);
+    assertExists('svg.getSVGDocument().rootElement should exist',
+                 svg.contentDocument.rootElement);
+    assertExists('svg.getSVGDocument().documentElement should exist',
+                 svg.contentDocument.documentElement);
+    assertEquals('svg.contentDocument.rootElement.getAttribute(id) == mySVG',
+                 'mySVG', svg.contentDocument.rootElement.getAttribute('id'));
+    assertEquals('svg.contentDocument.rootElement.id == mySVG',
+                 'mySVG', svg.contentDocument.rootElement.id);
+    assertEquals('svg.contentDocument.documentElement.getAttribute(id) == mySVG',
+                 'mySVG', svg.contentDocument.rootElement.getAttribute('id'));
+    assertEquals('svg.contentDocument.documentElement.id == mySVG',
+                 'mySVG', svg.contentDocument.rootElement.id);
+    assertEquals('svg.contentDocument.rootElement.nodeName == svg',
+                 'svg', svg.contentDocument.rootElement.nodeName);
+  }
   
   // getElementById
   console.log('Testing getElementById...');
