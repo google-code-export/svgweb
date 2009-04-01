@@ -2,13 +2,34 @@
   <!-- Tests using the OBJECT syntax to embed an SVG file -->
     
   <head>
+    
+    <!-- Optional meta tag; if left off, we default to only using the Flash
+         renderer for Internet Explorer and using native support on other
+         browsers. You can force the Flash renderer for all browsers by
+         setting the META tag below to true. -->
+    <meta name="svg.render.forceflash" content="false" />
+    
     <script src="../../src/svg.js" data-path="../../src/"></script>
+    
+    <script>
+      svgweb.addOnLoad(function() {
+        alert('developers onload fired!');
+      });
+    </script>
   </head>
   
   <body>
     <h1>Tests using the OBJECT syntax to embed an SVG file</h1>
     
-    <object data="scimitar.svg" type="image/svg+xml" 
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
+            id="testSVG" width="1250" height="750">
+    </object>
+    
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
+            id="testSVG" width="1250" height="750">
+    </object>
+    
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
             id="testSVG" width="1250" height="750">
     </object>
     

@@ -1,0 +1,63 @@
+<html>
+
+  <!-- Runs a suite of unit tests against our JavaScript SVG DOM and CSS API -->
+
+  <head>
+    <meta name="svg.render.forceflash" content="false" />
+    
+    <script src="../../src/svg.js" data-path="../../src"></script>
+    <script src="test_browser_js.js"></script>
+    <script src="testUtil.js"></script>
+    
+    <script>
+      // if true, we print out each assertion as we run them; helps with
+      // identifying where an assertion failed by printing the ones before it
+      var printAsserts = true;
+      
+      // used to record whether a Flash error has occurred asynchronously
+      // so we can halt testing and report the failure
+      var flashError = false;
+    
+      svgweb.addOnLoad(function() {
+        var startTime = new Date().getTime();
+        
+        // specify how each of our SVG images is embedded to help the unit
+        // tests run correctly
+        var embedTypes = {};
+        embedTypes['mySVG'] = 'object';
+        embedTypes['svg2'] = 'object';
+        embedTypes['svg11242'] = 'object';
+        
+        // run the tests
+        runTests(embedTypes);
+        
+        var endTime = new Date().getTime();
+        console.log('total test time='+(endTime - startTime) + 'ms');
+      });
+    </script>
+  </head>
+
+  <body>
+    <div id="test_container">
+      <h1>Runs a suite of unit tests against our JavaScript SVG DOM and 
+          CSS API on a normal text/html page using OBJECTs to embed the
+          SVG</h1>
+      
+      <!-- Specify no width and height. Should propagate from internal
+           SVG to have the right dimensions. -->    
+      <object id="mySVG" data="embed1.svg" type="image/svg+xml"></object>
+      
+      <!-- Specify exact width and height -->
+      <object id="svg2" data="embed2.svg" type="image/svg+xml" 
+              width="450" height="450"></object>
+              
+      <!-- Specify width and height that is smaller than the one in the SVG
+           file. Horizontal and vertical scroll bars should appear. -->
+      <object id="svg11242" data="embed3.svg" type="image/svg+xml" 
+              width="200" height="200"></object>
+    
+      <h1>Test HTML H1</h1>
+    </div> <!-- end test_container -->
+    
+    <h2 id="htmlH2">This is an HTML H2</h2>
+  </body></html>

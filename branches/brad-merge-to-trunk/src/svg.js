@@ -2,7 +2,8 @@
 Copyright (c) 2009 Google Inc.
 
 Portions Copyright (c) 2008 Rick Masters
-Portions Copyright (c) 2008 The Dojo Foundation
+Portions Copyright (c) 2008 Others (see COPYING.txt for details on
+third party code)
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation
@@ -572,6 +573,41 @@ whitespace behavior of the browser itself. For example, if you have a BODY
 tag with some nested SVG and are calling BODY.childNodes, whitespace elements 
 will show up in the DOM on all browsers except for Internet Explorer.
 
+Knowing Which Renderer is Being Used and Which Nodes Are Fake
+-------------------------------------------------------------
+
+If you want to know from your JavaScript which renderer is being used, you
+can call svgweb.getHandlerType(). This will return the string 'flash' if the
+Flash renderer is being used and 'native' if the native renderer is being used.
+
+You can also detect whether a given DOM node that you are using is a real
+browser DOM node or a 'fake' one created and maintained by the SVG Web
+toolkit. All of our take nodes have a 'fake' property that will return true.
+Other nodes will simply not have this property. For example:
+
+var circle = document.createElementNS(svgns, 'circle');
+alert(circle.fake); // will alert(true)
+var h1 = document.createElement('h1');
+alert(h1.fake); // will alert(undefined)
+
+Manipulating SVG Objects on the Page
+------------------------------------
+
+If you embed SVG objects into your page using the OBJECT element, you can
+navigate into the SVG inside the OBJECT element using contentDocument:
+
+<object data="scimitar.svg" type="image/svg+xml" 
+        id="testSVG" width="1250" height="750">
+</object>
+
+var obj = document.getElementById('testSVG');
+var doc = obj.contentDocument;
+var myCircle = doc.getElementById('myCircle');
+
+We also support the non-standard getSVGDocument() method that the Adobe
+SVG Viewer introduced, even if you are using native SVG support (we patch
+it in).
+
 Known Issues
 ------------
 Most of the known issues are pretty minor and tend to affect edge conditions
@@ -718,17 +754,25 @@ our style properties for the above case for the Flash renderer.
 * By default the SVG root element has an overflow of hidden. If you make the
 overflow visible, when using the Flash renderer elements will not overflow
 outside of the containing Flash movie.
+
+* If you are using the Flash renderer on a browser that has native SVG
+support, and use the OBJECT tag to embed an SVG file, the browser's native
+support will render the OBJECT tag first, followed by our Flash renderer taking
+over and then rendering things. This might result in a slight flash, or your
+embedded SVG file having it's onload() event fired twice.
+
+* If you have SVG OBJECTs on your page and have an onload listener on the
+HTML page itself, your onload listener might get called before all of the
+SVG content inside each of the OBJECTs is finished loading. This is true
+for native SVG support as well, as onload ordering for this is browser
+specific. In this scenario, you should have your SVG content inside each
+OBJECT signal to the outside page somehow that it is loaded (such as calling
+back and flagging a variable or method in the containing HTML page).
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
 
 TODO: Fill this in
-
-Supported:
-
-Not Currently Supported:
-* SMIL
-* Percentage values for the width and height of an SVG root element
 
 */
 
@@ -1356,6 +1400,33 @@ extend(SVGWeb, {
     this.handlers.push(handler);                          
   },
   
+  /** Extracts or autogenerates an ID for the object and then creates the
+      correct Flash or Native handler to do the hard work. */
+  _processSVGObject: function(obj) {
+    var objID = obj.getAttribute('id');
+    // extract an ID from the OBJECT tag; generate a random ID if needed
+    if (!objID) {
+      obj.setAttribute('id', svgweb._generateID('__svg__random__', '__object'));
+      objID = obj.getAttribute('id');
+    }
+    
+    // create the correct handler
+    var self = this;
+    var finishedCallback = function(id, type){
+      self._handleDone(id, type);
+    }
+    
+    var handler = new this.renderer({type: 'object', 
+                                      objID: objID,
+                                      objNode: obj,
+                                      finishedCallback: finishedCallback});
+                                      
+    // NOTE: FIXME: If someone chooses a objID that starts with a number
+    // this will break
+    this.handlers[objID] = handler;
+    this.handlers.push(handler);
+  },
+  
   /** Generates a random SVG ID. It is recommended that you use the prefix
       and postfix; we keep a lookup table of all random IDs we have ever
       generated to prevent collisions, and using these increases the chance
@@ -1431,21 +1502,6 @@ extend(SVGWeb, {
     }
     
     return xmlDoc;
-  },
-  
-  /** Extracts or autogenerates an ID for the object and then creates the
-      correct Flash or Native handler to do the hard work. */
-  _processSVGObject: function(obj) {
-    // TODO: Implement
-    
-    // extract an ID from the OBJECT tag
-    
-    // if there is none, generate a random ID
-    
-    // place it back into the OBJECT tag
-    
-    // create the correct handler; null out 'obj' to prevent IE memory
-    // leaks on the finishedCallback
   },
   
   /** Called when an SVG SCRIPT or OBJECT is done loading. If we are finished
@@ -2203,7 +2259,8 @@ function NativeHandler(args) {
     // these are just handled by the browser; just add an onload handler
     // to know when they are done and save any old one that might be present
     this.id = args.objID;
-    this._watchObjectLoad();
+    this._patchSVGObject(args.objNode);
+    this._watchObjectLoad(args.objNode);
   } else if (this.type == 'script') {
     this.id = args.svgID;
     this._namespaces = this._getNamespaces();
@@ -2214,16 +2271,26 @@ function NativeHandler(args) {
 }
 
 extend(NativeHandler, {
-  /** Fired when the page and all SVG elements are done and loaded. */
-  fireOnLoad: function() {
-    // fire any developer onload listeners that might have been on an SVG
-    // OBJECT
+  /** Patches an SVG object to have some extra methods. */
+  _patchSVGObject: function(obj) {
+    // added because so many scripts use getSVGDocument() from the Adobe
+    // SVG Viewer
+    obj.getSVGDocument = function() {
+      return obj.contentDocument;
+    }
   },
   
   /** Capture any old developer onload listeners that might be on this object,
       and then add our own. */
-  _watchObjectLoad: function() {
-    // TODO
+  _watchObjectLoad: function(obj) {
+    // NOTE: on Firefox and Safari, object.onload will correctly fire _after_
+    // the containing SVG's onload listener has fired. Opera unfortunately
+    // doesn't, which means that our external svgweb addOnLoad listener will
+    // fire _before_ the SVG objects are finished loading.
+    var self = this;
+    obj.addEventListener('load', function() {
+      self._finishedCallback(self.id, 'object');
+    }, false);
   },
   
   /** Inserts the SVG back into the HTML page with the correct namespace. */
@@ -2573,6 +2640,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   this.nodeName = nodeName;
   this._nodeXML = nodeXML;
   this._handler = handler;
+  this.fake = true;
   
   // handle nodes that were created with createElementNS but are not yet
   // attached to the document yet
