@@ -334,7 +334,7 @@ Knowing When Your SVG Is Loaded
 -------------------------------
 
 If you want to know when your SVG and the entire page is done loading, you 
-must usesvgweb.addOnLoad() instead of window.onload or 
+must use svgweb.addOnLoad() instead of window.onload or 
 window.addEventListener('onload, ...). Example:
 
 svgweb.addOnLoad(function() {
@@ -608,10 +608,12 @@ We also support the non-standard getSVGDocument() method that the Adobe
 SVG Viewer introduced, even if you are using native SVG support (we patch
 it in).
 
-Known Issues
-------------
+Known Issues and Errata
+-----------------------
+
 Most of the known issues are pretty minor and tend to affect edge conditions
-you won't run into often, but they are documented here for reference:
+you won't run into often, but they are documented here for reference if
+you find that you are running into an issue:
 
 * If you use the Flash viewer on browsers such as Firefox and Safari, rather
 than Internet Explorer, and embed some SVG into a SCRIPT tag, the Flash will 
@@ -760,6 +762,40 @@ support, and use the OBJECT tag to embed an SVG file, the browser's native
 support will render the OBJECT tag first, followed by our Flash renderer taking
 over and then rendering things. This might result in a slight flash, or your
 embedded SVG file having it's onload() event fired twice.
+
+* This is an issue that affects native SVG support for OBJECT tags. If you 
+have an SVG file that you bring in using the OBJECT tag, and have some
+non-SVG, non-HTML nodes inside of it such as in a METADATA element that have
+IDs:
+
+<metadata
+   id="metadata7">
+  <rdf:RDF>
+    <cc:Work
+       rdf:about=""
+       id="myCCWork">
+      <dc:format id="foo">image/svg+xml</dc:format>
+      <dc:type id="myDCType"
+         rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+    </cc:Work>
+  </rdf:RDF>
+</metadata>
+
+getElementById() will not return any elements from non-SVG/non-HTML nodes,
+such as the cc:Work element with id 'myCCWork'. This is technically not
+a bug, but has to do with XML ID handling. If you want to retrieve these
+nodes you will have to use XPath. In addition, using the .id way to retrieve
+the ID from a node, such as myCCWork.id will return undefined in these
+scenarios; you should use myCCWork.getAttribute('id').
+
+Note that the Flash renderer however will correctly work with these kinds of 
+non-SVG/non-HTML nodes and the ID attribute, including having .id work.
+
+Note that when you directly embed SVG into your page using the SCRIPT tag,
+the SVGWeb library actually makes getElementById() work with these kinds of
+nodes; we can not provide the same fixes when inside of a self-contained
+SVG file pulled in with an OBJECT tag. .id access also works in this scenario
+since we patch that in.
 
 * If you have SVG OBJECTs on your page and have an onload listener on the
 HTML page itself, your onload listener might get called before all of the
@@ -2283,12 +2319,14 @@ extend(NativeHandler, {
   /** Capture any old developer onload listeners that might be on this object,
       and then add our own. */
   _watchObjectLoad: function(obj) {
-    // NOTE: on Firefox and Safari, object.onload will correctly fire _after_
-    // the containing SVG's onload listener has fired. Opera unfortunately
-    // doesn't, which means that our external svgweb addOnLoad listener will
-    // fire _before_ the SVG objects are finished loading.
     var self = this;
     obj.addEventListener('load', function() {
+      // NOTE: on Firefox and Safari, object.onload will correctly fire _after_
+      // the containing SVG's onload listener has fired. Opera unfortunately
+      // doesn't, which means that our external svgweb addOnLoad listener will
+      // fire _before_ the SVG objects are finished loading.
+
+      // indicate that we are done with this particular SVG object
       self._finishedCallback(self.id, 'object');
     }, false);
   },

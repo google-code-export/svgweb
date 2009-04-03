@@ -1,10 +1,10 @@
-<?xml version="1.0"?>
+<?xml version="1.0" standalone="no"?>
 
 <svg xmlns="http://www.w3.org/2000/svg" 
  xmlns:xlink="http://www.w3.org/1999/xlink"
  xmlns:svg="http://www.w3.org/2000/svg"
  id="canvas"
- onload="doload()">
+ onload="doload();">
 
   <script type="text/javascript"><![CDATA[
       const SVG = "http://www.w3.org/2000/svg";
@@ -16,7 +16,7 @@
       function doload() {
           var images;
 
-          // Load a few images; some extra stuff here for make
+          // Load a few images; some extra stuff here to make
           // testing from file:// URLs easier -- it will load
           // standard wallpapers on OSX or Vista.
         try {

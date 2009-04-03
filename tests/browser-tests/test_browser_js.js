@@ -25,7 +25,7 @@ function runTests(embedTypes) {
       className, htmlTitle, head, circle, lengthBefore, matches, temp,
       gradient, stop, defs, parent, textNode2, group2, renderer,
       origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-      image, line, defs, runTests, styleReturned, use, regExp, split;
+      image, line, defs, runTests, styleReturned, use, regExp, split, doc;
       
   var allStyles = [
     'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -96,18 +96,56 @@ function runTests(embedTypes) {
   // getElementById
   console.log('Testing getElementById...');
   
-  myRect = document.getElementById('myRect');
-  assertExists('Getting myRect first time', myRect);
-  assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
+  if (!hasEmbedObjects) {
+    myRect = document.getElementById('myRect');
+    assertExists('Getting myRect first time', myRect);
+    assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
   
-  myRect = document.getElementById('myRect');
-  assertExists('Getting myRect second time', myRect);
-  assertEquals('Getting myRect second time, myRect.id should be myRect', 
-               'myRect', myRect.id);
+    myRect = document.getElementById('myRect');
+    assertExists('Getting myRect second time', myRect);
+    assertEquals('Getting myRect second time, myRect.id should be myRect', 
+                 'myRect', myRect.id);
+                 
+    // get non-SVG node
+    cc = document.getElementById('myCCWork');
+    assertExists('myCCWork should exist', cc);
+  }
   
   mySVG = document.getElementById('mySVG');
   assertExists('mySVG root should exist', mySVG);
   assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
+  
+  if (hasEmbedObjects) {
+    // make sure getElementById works inside of nested SVG OBJECT document
+    doc = document.getElementById('mySVG').contentDocument;
+    svg = doc.getElementById('mySVG');
+    assertExists('Getting mySVG from contentDocument should exist', svg);
+    rect = doc.getElementById('myRect');
+    assertExists('Getting myRect from contentDocument should exist', rect);
+    
+    // get non-SVG node
+    // NOTE: Due to issues around xml:id handling in browser's with native
+    // SVG support getElementById() not supported on non-SVG/non-HTML
+    // elements inside SVG OBJECT tags
+    if (renderer == 'flash') {
+      cc = document.getElementById('svg2').contentDocument
+                                                .getElementById('myCCWork');
+    } else {
+      doc = document.getElementById('svg2').contentDocument;
+      cc = getElementById_xml('myCCWork', doc);
+    }
+    
+    assertExists('myCCWork from contentDocument should exist', cc);
+    assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
+                 cc.getAttribute('id'));
+                 
+    // NOTE: .id does not work on non-SVG/non-HTML nodes for native handler
+    // for SVG embedded into an OBJECT tag
+    if (renderer == 'flash') {
+      assertEquals('myCCWork.id == myCCWork', 'myCCWork',
+                   cc.id);
+    }
+  }
   
   // test getElementById on normal HTML content to ensure it
   // still works
