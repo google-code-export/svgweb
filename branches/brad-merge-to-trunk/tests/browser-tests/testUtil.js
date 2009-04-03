@@ -2,7 +2,7 @@
 
 function assertEquals(comment, expected, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -25,7 +25,7 @@ function assertEquals(comment, expected, actual) {
     to pass. */
 function assertEqualsAny(comment, expectedArray, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -55,7 +55,7 @@ function assertEqualsAny(comment, expectedArray, actual) {
 
 function assertExists(comment, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -73,7 +73,7 @@ function assertExists(comment, actual) {
 
 function assertNotExists(comment, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -91,7 +91,7 @@ function assertNotExists(comment, actual) {
 
 function assertNull(comment, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -109,7 +109,7 @@ function assertNull(comment, actual) {
 
 function assertUndefined(comment, actual) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -125,6 +125,78 @@ function assertUndefined(comment, actual) {
   }
 }
 
+/** Finds an element with the given ID. Needed so that we can get elements by
+    ID for non-SVG/non-HTML and do testing on them. Only needed for testing
+    the native handler when dealing with SVGs loaded inside OBJECTs.
+    
+    @id ID to find.
+    @doc Document to execute XPath against. */
+
+function getElementById_xml(id, doc) {
+  var results = xpath(doc, null, '//*[@id="' + id + '"]');
+  if (results.length) {
+    return results[0];
+  } else {
+    return null;
+  }
+}
+
+/** Utility function to do XPath cross browser.
+
+    @param doc Either HTML or XML document to work with.
+    @param context DOM node context to restrict the xpath executing 
+    against; can be null, which defaults to doc.documentElement.
+    @param expr String XPath expression to execute.
+    @param namespaces Optional; an array that contains prefix to namespace
+    lookups.
+    
+    @returns Array with results, empty array if there are none. */
+function xpath(doc, context, expr, namespaces) {
+  if (!context) {
+    context = doc.documentElement;
+  }
+  
+  if (typeof XPathEvaluator != 'undefined') { // non-IE browsers
+    var evaluator = new XPathEvaluator();
+    var resolver = doc.createNSResolver(context);
+    var result = evaluator.evaluate(expr, context, resolver, 0, null);
+    var found = [], current;
+    while (current = result.iterateNext()) {
+      found.push(current);
+    }
+    
+    return found;
+  } else { // IE
+    doc.setProperty('SelectionLanguage', 'XPath');
+    
+    if (namespaces) {
+      var allNamespaces = '';
+      for (var i = 0; i < namespaces.length; i++) {
+        var namespaceURI = namespaces[i];
+        var prefix = namespaces['_' + namespaceURI];
+        if (prefix == 'xmlns') {
+          continue;
+        }
+        allNamespaces += 'xmlns:' + prefix + '="' + namespaceURI + '" ';
+      }
+      doc.setProperty("SelectionNamespaces",  allNamespaces);
+    }
+    
+    var found = context.selectNodes(expr);
+    if (found == null || typeof found == 'undefined') {
+      found = createNodeList();
+    }
+    
+    // found is not an Array; it is a NodeList -- turn it into an Array
+    var results = createNodeList();
+    for (var i = 0; i < found.length; i++) {
+      results.push(found[i]);
+    }
+    
+    return results;
+  }
+}
+
 function assertFailed(msg) {
   console.log('assertFailed: ' + msg);
   throw new Error(msg);
@@ -132,7 +204,7 @@ function assertFailed(msg) {
 
 function assertTrue(comment, expression) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
@@ -150,7 +222,7 @@ function assertTrue(comment, expression) {
 
 function assertFalse(comment, expression) {
   // halt if a Flash error has occurred asynchronously
-  if (flashError) {
+  if (_flashError) {
     throw new Error('Halting due to Flash error');
   }
   
