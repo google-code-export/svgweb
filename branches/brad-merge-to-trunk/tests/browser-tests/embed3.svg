@@ -10,7 +10,28 @@
    x="100"
    y="100"
    width="466.11172"
-   height="265.35126">
+   height="265.35126"
+   onload="loaded()">
+   
+  <script type="text/javascript"><![CDATA[
+    function loaded() {
+      console.log('internal onload function');
+      // change onloadFunc to point to your real onload function that you
+      // want called when the page is truly ready
+      var onloadFunc = testLoaded;
+      
+      if (top.svgweb != undefined) {
+        top.svgweb.addOnLoad(onloadFunc, true, this);
+      } else {
+        onloadFunc();
+      }
+    }
+    
+    function testLoaded() {
+      top.svgweb._objectLoaded(2);
+    }
+  ]]></script>
+  
   <defs
      id="defs3">
     <linearGradient

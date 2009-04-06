@@ -4,7 +4,7 @@
  xmlns:xlink="http://www.w3.org/1999/xlink"
  xmlns:svg="http://www.w3.org/2000/svg"
  id="canvas"
- onload="doload();">
+ onload="loaded()">
 
   <script type="text/javascript"><![CDATA[
       const SVG = "http://www.w3.org/2000/svg";
@@ -13,35 +13,47 @@
 
       var currentTransform = null;
 
+      function loaded() {
+          // change onloadFunc to point to your real onload function that you
+          // want called when the page is truly ready
+          var onloadFunc = doload;
+        
+          if (top.svgweb != undefined) {
+            top.svgweb.addOnLoad(onloadFunc, true, this);
+          } else {
+            onloadFunc();
+          }
+      }   
+
       function doload() {
           var images;
 
           // Load a few images; some extra stuff here to make
           // testing from file:// URLs easier -- it will load
           // standard wallpapers on OSX or Vista.
-        try {
-          if (document.location.toString().indexOf("http") != -1) {
-              images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg",
-                         "http://farm2.static.flickr.com/1159/534271166_db0f114a5d_o.jpg",
-                         "http://farm1.static.flickr.com/120/313853602_d759910c1e_b.jpg",
-                         "http://farm1.static.flickr.com/122/313940834_8bf97d364e_b.jpg" ];
-          } else if (document.location.toString().toLowerCase().indexOf("users") != -1) {
-              images = ["file:///Library/Desktop Pictures/Nature/Flowing Rock.jpg",
-                        "file:///Library/Desktop Pictures/Nature/Stones.jpg",
-                        "file:///Library/Desktop Pictures/Plants/Lotus.jpg",
-                        "file:///Library/Desktop Pictures/Plants/Dandelion.jpg" ];
-          } else {
-              images = ["file:///c:/Windows/Web/Wallpaper/img9.jpg",
-                        "file:///c:/Windows/Web/Wallpaper/img7.jpg",
-                        "file:///c:/Windows/Web/Wallpaper/img11.jpg",
-                        "file:///c:/Windows/Web/Wallpaper/img10.jpg"];
+          try {
+            if (document.location.toString().indexOf("http") != -1) {
+                images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg",
+                           "http://farm2.static.flickr.com/1159/534271166_db0f114a5d_o.jpg",
+                           "http://farm1.static.flickr.com/120/313853602_d759910c1e_b.jpg",
+                           "http://farm1.static.flickr.com/122/313940834_8bf97d364e_b.jpg" ];
+            } else if (document.location.toString().toLowerCase().indexOf("users") != -1) {
+                images = ["file:///Library/Desktop Pictures/Nature/Flowing Rock.jpg",
+                          "file:///Library/Desktop Pictures/Nature/Stones.jpg",
+                          "file:///Library/Desktop Pictures/Plants/Lotus.jpg",
+                          "file:///Library/Desktop Pictures/Plants/Dandelion.jpg" ];
+            } else {
+                images = ["file:///c:/Windows/Web/Wallpaper/img9.jpg",
+                          "file:///c:/Windows/Web/Wallpaper/img7.jpg",
+                          "file:///c:/Windows/Web/Wallpaper/img11.jpg",
+                          "file:///c:/Windows/Web/Wallpaper/img10.jpg"];
+            }
+          } catch (e) {
+            images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg",
+                       "http://farm2.static.flickr.com/1159/534271166_db0f114a5d_o.jpg",
+                       "http://farm1.static.flickr.com/120/313853602_d759910c1e_b.jpg",
+                       "http://farm1.static.flickr.com/122/313940834_8bf97d364e_b.jpg" ];
           }
-        } catch (e) {
-          images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg",
-                     "http://farm2.static.flickr.com/1159/534271166_db0f114a5d_o.jpg",
-                     "http://farm1.static.flickr.com/120/313853602_d759910c1e_b.jpg",
-                     "http://farm1.static.flickr.com/122/313940834_8bf97d364e_b.jpg" ];
-        }
 
           // Load the images in the background, and only add them once they're
           // loaded (and, presumably, cached by the broser)

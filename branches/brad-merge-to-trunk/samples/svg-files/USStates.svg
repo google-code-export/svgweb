@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg onload="Init()" xmlns="http://www.w3.org/2000/svg"  width="1000" height="600">
+<svg onload="loaded()" xmlns="http://www.w3.org/2000/svg"  width="1000" height="600">
 
 <title>The United States of America</title>
 <desc>
@@ -28,6 +28,18 @@ var CorrectNode=null;
 var Feedback;
 var Score=0;
 var TopScore=0;
+
+function loaded() {
+  // change onloadFunc to point to your real onload function that you
+  // want called when the page is truly ready
+  var onloadFunc = Init;
+  
+  if (top.svgweb != undefined) {
+    top.svgweb.addOnLoad(onloadFunc, true, this);
+  } else {
+    onloadFunc();
+  }
+}
 
 function Init()
   {

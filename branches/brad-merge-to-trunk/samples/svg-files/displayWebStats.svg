@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Aspect ratio is 1.75:1 -->
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:drag="http://www.codedread.com/dragsvg" id="svgsvg" version="1.1" viewBox="-50 -30 800 450" onload="initializeDraggableElements(); init();" smiling="fake">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:drag="http://www.codedread.com/dragsvg" id="svgsvg" version="1.1" viewBox="-50 -30 800 450" onload="loaded();" smiling="fake">
   <title>Interactive Web Statistics via SVG</title>
 
-  <script xlink:href="lib/smil.user.js"/>
-  <script xlink:href="webstats-data.php"/>
-  <script xlink:href="webstats-points-of-interest.js"/>
-  <script xlink:href="dragsvg.js"/>
-  <script xlink:href="webstats2.js"/>
+  <script xlink:href="webstats/smil.user.js"/>
+  <script xlink:href="webstats/webstats-data.php"/>
+  <script xlink:href="webstats/webstats-points-of-interest.js"/>
+  <script xlink:href="webstats/dragsvg.js"/>
+  <script xlink:href="webstats/webstats2.js"/>
 
   <defs>
     <!-- Background Gradients -->

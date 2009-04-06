@@ -260,15 +260,17 @@ work correctly on _all browsers_ with the Flash renderer as well:
 
 On all browsers, including Internet Explorer, an SVG OBJECT tag can be 
 manipulated by external JavaScript as normal by using the getSVGDocument()
-method:
+method or the contentDocument property:
 
 <object data="scimitar.svg" type="image/svg+xml" 
         id="testSVG" width="1250" height="750">
 </object>
 
 <script>
-  window.onload = function() {
+  svgweb.addOnLoad() {
     var doc = document.getElementById('testSVG').getSVGDocument();
+    // also works:
+    doc = document.getElementById('testSVG').contentDocument;
     var rect = doc.getElementsByTagNameNS(svgns, 'rect')[0];
   }
 </script>
@@ -357,6 +359,59 @@ root.addEventListener('SVGLoad', function(evt) {
 
 'load' and 'SVGLoad' are synonomous and are both supported.
 
+If you are loading an SVG file using the OBJECT tag and have an onload="" 
+attribute, such as:
+
+<object data="photos.svg" type="image/svg+xml"></object>
+
+photos.svg:
+
+<svg onload="doload()">
+  <script type="text/javascript"><![CDATA[
+     function doload() {
+        // developers onload handler
+     }
+  ]]>
+</svg>
+
+Then you will have to modify your onload="" attribute a little bit to help the 
+SVG Web framework; you must add some code telling SVG Web that you
+are loaded, and SVG Web will call you when things are truly ready to be used. 
+You should change the above to:
+
+<svg onload="loaded()">
+  <script type="text/javascript"><![CDATA[
+      function loaded() {
+        // change onloadFunc to point to your real onload function that you
+        // want called when the page is truly ready
+        var onloadFunc = doload;
+        
+        if (top.svgweb) {
+          top.svgweb.addOnLoad(onloadFunc, true, this);
+        } else {
+          onloadFunc();
+        }
+      }   
+      
+     function doload() {
+        // developers original onload handler
+     }
+  ]]>
+</svg>
+
+Note the new loaded() function above and that we've changed onload="" to run
+it instead of our own function; you should call loaded() instead, and copy
+the code in that function into your .svg file. Notice the following line:
+
+// change onloadFunc to point to your real onload function that you
+// want called when the page is truly ready
+var onloadFunc = doload;
+
+Change this variable to be your original onload function, such as doload
+in the example above. Notice that we pass a reference to the function
+and _don't_ have () at the end -- i.e. it is 'var onloadFunc = doload' NOT
+'var onloadFunc = doload()'.
+
 Compression
 -----------
 
@@ -400,6 +455,7 @@ Percentage values for the width and height for the SVG are supported, including
 the 'auto' keyword. We do not currently handle a width and height of 0
 (FIXME: I believe according to the spec a width and height of 0 should have
 the SVG have a visibility of 'none').
+TODO: I think we might support this now; double check.
 
 CSS Support
 -----------
@@ -407,8 +463,8 @@ CSS Support
 This section only concerns the Flash renderer. Native SVG support works as
 normal.
 
-For the Flash renderer, SVG STYLE elements inside inside of an SVG block are
-supported:
+For the Flash renderer, SVG STYLE elements inside of an SVG block are
+supported (FIXME: Not true yet).
 
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink" 
@@ -457,22 +513,19 @@ any style properties like display, float, etc. through JavaScript
 after page load on the SVG root element or an SVG OBJECT does not 
 currently cause any dynamic behavior.
 
-Note, however, that on Internet Explorer externally changing style values
-on SVG elements other than the root _will_ cause dynamic changes:
+You can dynamically change the CSS values on SVG elements through JavaScript:
 
 var rect = document.getElementById('myRect');
 rect.style.strokeWidth = '5px'; // works!
 rect.setAttribute('stroke-width', '5px'); // also works!
-
-If you use SVG inside of an SVG file using an SVG OBJECT tag you can also
-dynamically change CSS values on all browsers.
+console.log('rect.style.strokeWidth='+rect.style.strokeWidth) // prints 5px
 
 Root Background Color
 ---------------------
 
 If no background color for your SVG is specified with a CSS background-color
-attribute, the default is transparent. If you specify a color, that will
-be used for your background:
+attribute, the default is transparent (TODO: Confirm on non-IE browsers). 
+If you specify a color, that will be used for your background:
 
 <script type="image/svg+xml">
  <svg width="200" height="200" style="background-color: red;">
@@ -594,7 +647,8 @@ Manipulating SVG Objects on the Page
 ------------------------------------
 
 If you embed SVG objects into your page using the OBJECT element, you can
-navigate into the SVG inside the OBJECT element using contentDocument:
+navigate into the SVG inside the OBJECT element using contentDocument or
+getSVGDocument():
 
 <object data="scimitar.svg" type="image/svg+xml" 
         id="testSVG" width="1250" height="750">
@@ -606,7 +660,8 @@ var myCircle = doc.getElementById('myCircle');
 
 We also support the non-standard getSVGDocument() method that the Adobe
 SVG Viewer introduced, even if you are using native SVG support (we patch
-it in).
+it in). For code written today using contentDocument is recommended as it
+is standards-compliant.
 
 Known Issues and Errata
 -----------------------
@@ -762,48 +817,6 @@ support, and use the OBJECT tag to embed an SVG file, the browser's native
 support will render the OBJECT tag first, followed by our Flash renderer taking
 over and then rendering things. This might result in a slight flash, or your
 embedded SVG file having it's onload() event fired twice.
-
-* This is an issue that affects native SVG support for OBJECT tags. If you 
-have an SVG file that you bring in using the OBJECT tag, and have some
-non-SVG, non-HTML nodes inside of it such as in a METADATA element that have
-IDs:
-
-<metadata
-   id="metadata7">
-  <rdf:RDF>
-    <cc:Work
-       rdf:about=""
-       id="myCCWork">
-      <dc:format id="foo">image/svg+xml</dc:format>
-      <dc:type id="myDCType"
-         rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-    </cc:Work>
-  </rdf:RDF>
-</metadata>
-
-getElementById() will not return any elements from non-SVG/non-HTML nodes,
-such as the cc:Work element with id 'myCCWork'. This is technically not
-a bug, but has to do with XML ID handling. If you want to retrieve these
-nodes you will have to use XPath. In addition, using the .id way to retrieve
-the ID from a node, such as myCCWork.id will return undefined in these
-scenarios; you should use myCCWork.getAttribute('id').
-
-Note that the Flash renderer however will correctly work with these kinds of 
-non-SVG/non-HTML nodes and the ID attribute, including having .id work.
-
-Note that when you directly embed SVG into your page using the SCRIPT tag,
-the SVGWeb library actually makes getElementById() work with these kinds of
-nodes; we can not provide the same fixes when inside of a self-contained
-SVG file pulled in with an OBJECT tag. .id access also works in this scenario
-since we patch that in.
-
-* If you have SVG OBJECTs on your page and have an onload listener on the
-HTML page itself, your onload listener might get called before all of the
-SVG content inside each of the OBJECTs is finished loading. This is true
-for native SVG support as well, as onload ordering for this is browser
-specific. In this scenario, you should have your SVG content inside each
-OBJECT signal to the outside page somehow that it is loaded (such as calling
-back and flagging a variable or method in the containing HTML page).
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1099,9 +1112,33 @@ extend(SVGWeb, {
       truly done, so this method should be used instead.
       
       @param listener Function that will get called when page and all
-      embedded SVG is loaded and rendered. */
-  addOnLoad: function(listener) {
-    this._listeners.push(listener);
+      embedded SVG is loaded and rendered.
+      @param isObject Optional. If true, then we are calling this from
+      inside an SVG OBJECT file.
+      @param objectWindow Optional. Provided when called from inside an SVG
+      OBJECT file; this is the window object inside the SVG OBJECT. */
+  addOnLoad: function(listener, isObject, objectWindow) {
+    if (isObject) { 
+      // addOnLoad called from an SVG file embedded with OBJECT
+      
+      // NOTE: some browsers will fire the onload of the SVG file _before_ our
+      // NativeHandler is done (Firefox); others will do it the opposite way
+      // (Safari). We set variables pointing between the OBJECT and its
+      // NativeHandler to handle this.
+      var obj = objectWindow.frameElement;
+      if (obj._svgHandler) { // NativeHandler already constructed
+        obj._svgHandler._onObjectLoad(listener, objectWindow);
+      } else {
+        // NativeHandler not constructed yet; store a reference for later
+        // handling
+        obj._svgWindow = objectWindow;
+        obj._svgFunc = listener;
+      }
+    } else { 
+      // normal addOnLoad request from containing HTML page
+      
+      this._listeners.push(listener);
+    }
   },
   
   /** Returns a string for the given handler for this platform, 'flash' if
@@ -1318,6 +1355,22 @@ extend(SVGWeb, {
   
   /** Fires any addOnLoad() listeners that were registered by a developer. */
   _fireOnLoad: function() {
+    // see if all SVG OBJECTs are done loading; if so, fire final onload
+    // event for any externally registered SVG 
+    var allLoaded = true;
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      var h = svgweb.handlers[i];
+      if (h.type == 'object' && !h._loaded) {
+        allLoaded = false;
+        break;
+      }
+    }
+     
+    if (!allLoaded) { 
+      return;
+    }
+    
+    // the page is truly finished loading
     this.pageLoaded = true;
     
     // TODO: handle dynamic SVG
@@ -2292,11 +2345,27 @@ function NativeHandler(args) {
   this._xml = args.xml;
   
   if (this.type == 'object') {
-    // these are just handled by the browser; just add an onload handler
-    // to know when they are done and save any old one that might be present
+    // these are mostly handled by the browser
     this.id = args.objID;
-    this._patchSVGObject(args.objNode);
-    this._watchObjectLoad(args.objNode);
+    this._objNode = args.objNode;
+    
+    this._patchSVGObject(this._objNode);
+    
+    // at this point we wait for our SVG OBJECTs to call svgweb.addOnLoad
+    // so we can know they have loaded. Some browsers however will fire the 
+    // onload of the SVG file _before_ our NativeHandler is done depending
+    // on whether they are loading from the cache or not; others will do it the 
+    // opposite way (Safari). If the onload was fired and therefore 
+    // svgweb.addOnLoad was called, then we stored a reference the SVG file's 
+    // Window object there.
+    if (this._objNode._svgWindow) {
+      this._onObjectLoad(this._objNode._svgFunc, this._objNode._svgWindow);
+    } else {    
+      // if SVG Window isn't there, then we need to wait for svgweb.addOnLoad
+      // to get called by the SVG file itself. Store a reference to ourselves
+      // to be used there.
+      this._objNode._svgHandler = this;
+    }
   } else if (this.type == 'script') {
     this.id = args.svgID;
     this._namespaces = this._getNamespaces();
@@ -2316,19 +2385,32 @@ extend(NativeHandler, {
     }
   },
   
-  /** Capture any old developer onload listeners that might be on this object,
-      and then add our own. */
-  _watchObjectLoad: function(obj) {
-    var self = this;
-    obj.addEventListener('load', function() {
-      // NOTE: on Firefox and Safari, object.onload will correctly fire _after_
-      // the containing SVG's onload listener has fired. Opera unfortunately
-      // doesn't, which means that our external svgweb addOnLoad listener will
-      // fire _before_ the SVG objects are finished loading.
-
-      // indicate that we are done with this particular SVG object
-      self._finishedCallback(self.id, 'object');
-    }, false);
+  /** Called by svgweb.addOnLoad() or our NativeHandler function constructor
+      after an SVG OBJECT has loaded to tell us that we have loaded. We require 
+      that script writers manually tell us when they have loaded; see 
+      'Knowing When Your SVG Is Loaded' section in the documentation.
+      
+      @param func The actual onload function to fire inside the SVG file
+      (i.e. this is the function the end developer wants run when the SVG
+      file is done loading).
+      @param win The Window object inside the SVG OBJECT */
+  _onObjectLoad: function(func, win) {
+    // flag that we are loaded
+    this._loaded = true;
+    
+    // patch the document object to correct some browser bugs and to have
+    // more consistency between the Flash and Native handlers
+    var doc = win.document;    
+    this._patchDocumentObject(doc);
+    
+    // execute the actual SVG onload that the developer wants run
+    if (func) {
+      func.apply(win);
+    }
+    
+    // try to fire the page-level onload event; the svgweb object will check
+    // to make sure all SVG OBJECTs are loaded
+    svgweb._fireOnLoad();
   },
   
   /** Inserts the SVG back into the HTML page with the correct namespace. */
@@ -2338,8 +2420,8 @@ extend(NativeHandler, {
    this._svgRoot = importedSVG;
   },
   
-  _patchDocumentObject: function() {
-    if (document._getElementById) {
+  _patchDocumentObject: function(doc) {
+    if (doc._getElementById) {
       // already defined before
       return;
     }
@@ -2350,9 +2432,9 @@ extend(NativeHandler, {
     // that we can work with later
     
     // getElementById
-    document._getElementById = document.getElementById;
-    document.getElementById = function(id) {
-      var result = document._getElementById(id);
+    doc._getElementById = doc.getElementById;
+    doc.getElementById = function(id) {
+      var result = doc._getElementById(id);
       if (result != null) { // Firefox doesn't like 'if (result)'
         // This is to solve an edge bug on Safari 3;
         // if you do a replaceChild on a non-SVG, non-HTML node,
@@ -2396,8 +2478,8 @@ extend(NativeHandler, {
     // were RDF rather than rdf it won't work)
     
     // getElementsByTagNameNS
-    document._getElementsByTagNameNS = document.getElementsByTagNameNS;
-    document.getElementsByTagNameNS = function(ns, localName) {
+    doc._getElementsByTagNameNS = doc.getElementsByTagNameNS;
+    doc.getElementsByTagNameNS = function(ns, localName) {
       var result = document._getElementsByTagNameNS(ns, localName);
       
       // firefox doesn't like if (result)
@@ -2476,8 +2558,8 @@ extend(NativeHandler, {
     // to override createElementNS and patch in the ability to use the
     // svgElement.style.* syntax
     if (isFF) {
-      document._createElementNS = document.createElementNS;
-      document.createElementNS = this._createElementNS;
+      doc._createElementNS = doc.createElementNS;
+      doc.createElementNS = this._createElementNS(doc);
     }
   },
   
@@ -2511,69 +2593,76 @@ extend(NativeHandler, {
   
   /** A patched version of createElementNS necessary for Firefox. See the
       documentation inside of patchDocumentObject for the reasons why. 
-      Note that this function runs in the global scope, so 'this' will not 
-      refer to our object instance but rather the window object. */
-  _createElementNS: function(ns, qname) {
-    var elem = document._createElementNS(ns, qname);
+      We set this up to be a function that returns a function so that we 
+      can bind it to a dynamic instance of the document object -- this is
+      necessary so that we can apply it either to a top-level document
+      object or to the document object inside of an SVG file in an OBJECT
+      tag. */
+  _createElementNS: function(doc) {
+    // Note that the returned function runs in the global scope, so 'this' 
+    // will not refer to our object instance but rather the window object.
+    return function(ns, qname) {
+      var elem = doc._createElementNS(ns, qname);
     
-    if (ns != svgns) {
+      if (ns != svgns) {
+        return elem;
+      }
+    
+      // patch the style object to support style.fill = 'red' type accessing
+      var customStyle = {};
+      var origStyle = elem.style;
+    
+      // define getters and setters for SVG CSS property names
+      for (var i = 0; i < _Style._allStyles.length; i++) {
+        var styleName = _Style._allStyles[i];
+      
+        // convert camel casing (i.e. strokeWidth becomes stroke-width)
+        var stylePropName = styleName.replace(/([A-Z])/g, '-$1').toLowerCase();
+      
+        // Do a trick so that we can have a separate closure for each
+        // iteration of the loop and therefore each separate style name; 
+        // closures are function-level, so doing an anonymous inline function 
+        // will force the closure into just being what we pass into it. If we 
+        // don't do this then the closure will actually always simply be the final 
+        // index position when the for loop finishes.
+      
+        (function(origStyle, styleName, stylePropName) {
+          customStyle.__defineSetter__(styleName, function(styleValue) {
+            return origStyle.setProperty(stylePropName, styleValue, null);
+          });
+          customStyle.__defineGetter__(styleName, function() {
+            return origStyle.getPropertyValue(stylePropName);
+          });
+        })(origStyle, styleName, stylePropName); // pass closure values
+      }
+      
+      // define other methods and properties from CSSStyleDeclaration interface
+      customStyle.setProperty = function(styleName, styleValue, priority) {
+        return origStyle.setProperty(styleName, styleValue, priority);
+      }
+      customStyle.getPropertyValue = function(styleName) {
+        return origStyle.getPropertyValue(styleName);
+      }
+      customStyle.removeProperty = function(styleName) {
+        return origStyle.removeProperty(styleName);
+      }
+      customStyle.item = function(index) {
+        return origStyle.item(index);
+      }
+      customStyle.__defineGetter__('cssText', function() {
+        return origStyle.cssText;
+      });
+      customStyle.__defineGetter__('length', function() {
+        return origStyle.length;
+      });
+    
+      // now override the browser's native style property on our new element
+      elem.__defineGetter__('style', function() {
+        return customStyle; 
+      });
+    
       return elem;
     }
-    
-    // patch the style object to support style.fill = 'red' type accessing
-    var customStyle = {};
-    var origStyle = elem.style;
-    
-    // define getters and setters for SVG CSS property names
-    for (var i = 0; i < _Style._allStyles.length; i++) {
-      var styleName = _Style._allStyles[i];
-      
-      // convert camel casing (i.e. strokeWidth becomes stroke-width)
-      var stylePropName = styleName.replace(/([A-Z])/g, '-$1').toLowerCase();
-      
-      // Do a trick so that we can have a separate closure for each
-      // iteration of the loop and therefore each separate style name; 
-      // closures are function-level, so doing an anonymous inline function 
-      // will force the closure into just being what we pass into it. If we 
-      // don't do this then the closure will actually always simply be the final 
-      // index position when the for loop finishes.
-      
-      (function(origStyle, styleName, stylePropName) {
-        customStyle.__defineSetter__(styleName, function(styleValue) {
-          return origStyle.setProperty(stylePropName, styleValue, null);
-        });
-        customStyle.__defineGetter__(styleName, function() {
-          return origStyle.getPropertyValue(stylePropName);
-        });
-      })(origStyle, styleName, stylePropName); // pass closure values
-    }
-      
-    // define other methods and properties from CSSStyleDeclaration interface
-    customStyle.setProperty = function(styleName, styleValue, priority) {
-      return origStyle.setProperty(styleName, styleValue, priority);
-    }
-    customStyle.getPropertyValue = function(styleName) {
-      return origStyle.getPropertyValue(styleName);
-    }
-    customStyle.removeProperty = function(styleName) {
-      return origStyle.removeProperty(styleName);
-    }
-    customStyle.item = function(index) {
-      return origStyle.item(index);
-    }
-    customStyle.__defineGetter__('cssText', function() {
-      return origStyle.cssText;
-    });
-    customStyle.__defineGetter__('length', function() {
-      return origStyle.length;
-    });
-    
-    // now override the browser's native style property on our new element
-    elem.__defineGetter__('style', function() {
-      return customStyle; 
-    });
-    
-    return elem;
   }
 });
 
