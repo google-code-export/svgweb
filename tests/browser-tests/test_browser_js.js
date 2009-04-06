@@ -13,10 +13,10 @@ function runTests(embedTypes) {
   var cc_ns = "http://web.resource.org/cc/";
   
   // did we embed any of the SVG using OBJECTs?
-  var hasEmbedObjects = false;
+  var hasObjects = false;
   if (embedTypes['mySVG'] == 'object' || embedTypes['svg2'] == 'object'
       || embedTypes['svg11242'] == 'object') {
-    hasEmbedObjects = true;
+    hasObjects = true;
   }
   
   var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
@@ -54,6 +54,14 @@ function runTests(embedTypes) {
     assertFailed(logMessage);
   }
   
+  // add a hook so we can ensure that our SVG OBJECT tags truly load
+  if (hasObjects) {
+    var objectLoaded = [false, false, false];
+    svgweb._objectLoaded = function(position) {
+      objectLoaded[position] = true;
+    }
+  }
+  
   // make sure renderer string gets set
   renderer = svgweb.getHandlerType();
   assertTrue('renderer == native || flash',
@@ -62,7 +70,7 @@ function runTests(embedTypes) {
   
   // contentDocument, getSVGDocument(), contentDocument.rootElement, and
   // contentDocument.documentElement
-  if (hasEmbedObjects) {
+  if (hasObjects) {
     console.log('Testing contentDocument, getSVGDocument(), rootElement, and '
                 + 'documentElement...');
     svg = document.getElementById('mySVG');
@@ -96,7 +104,7 @@ function runTests(embedTypes) {
   // getElementById
   console.log('Testing getElementById...');
   
-  if (!hasEmbedObjects) {
+  if (!hasObjects) {
     myRect = document.getElementById('myRect');
     assertExists('Getting myRect first time', myRect);
     assertEquals('myRect.id should be myRect', 'myRect', myRect.id);
@@ -115,7 +123,7 @@ function runTests(embedTypes) {
   assertExists('mySVG root should exist', mySVG);
   assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
   
-  if (hasEmbedObjects) {
+  if (hasObjects) {
     // make sure getElementById works inside of nested SVG OBJECT document
     doc = document.getElementById('mySVG').contentDocument;
     svg = doc.getElementById('mySVG');
@@ -126,15 +134,16 @@ function runTests(embedTypes) {
     // get non-SVG node
     // NOTE: Due to issues around xml:id handling in browser's with native
     // SVG support getElementById() not supported on non-SVG/non-HTML
-    // elements inside SVG OBJECT tags
-    if (renderer == 'flash') {
-      cc = document.getElementById('svg2').contentDocument
-                                                .getElementById('myCCWork');
-    } else {
-      doc = document.getElementById('svg2').contentDocument;
-      cc = getElementById_xml('myCCWork', doc);
-    }
-    
+    // elements inside SVG OBJECT tags; workaround is to use nested
+    // getElementsByTagNameNS
+    doc = document.getElementById('svg2').contentDocument;
+    metadata = doc.getElementById('metadata7');
+    matches = metadata.getElementsByTagNameNS(cc_ns, 'Work');
+    assertExists('getElementsByTagNameNS(cc:Work) should return something',
+                 matches);
+    assertEquals('getElementsByTagNameNS(cc:Work).length == 1', 1, 
+                 matches.length);
+    cc = matches[0];
     assertExists('myCCWork from contentDocument should exist', cc);
     assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
                  cc.getAttribute('id'));
@@ -271,6 +280,54 @@ function runTests(embedTypes) {
   assertExists("document.getElementsByTagNameNS(null, 'rect')", rects);
   assertEquals("document.getElementsByTagNameNS(null, 'rect').length "
                + "should be 0", 0, rects.length);
+               
+  // test contextual getElementsByTagNameNS to find SVG nodes
+  doc = (hasObjects) ? document.getElementById('svg2').documentElement : document;
+  group = doc.getElementById('layer1');
+  matches = group.getElementsByTagNameNS(svgns, 'rect');
+  assertExists("group.getElementsByTagNameNS(svgns, 'rect') should "
+               + "return results", matches);
+  assertEquals("group.getElementsByTagNameNS(svgns, 'rect').length == 1", 
+               1, matches.length);
+  rect = matches[0];
+  assertEquals('rect.nodeName == rect', 'rect', rect.nodeName);
+  assertEquals('rect.id == rect3926', 'rect3926', rect.id);
+  // test contextual getElementsByTagNameNS on a node with children but with
+  // a tag that should have no results
+  matches = group.getElementsByTagNameNS(svgns, 'text');
+  assertEquals("group.getElementsByTagNameNS(svgns, 'text').length == 0", 0, 
+               matches.length);
+  
+  // test contextual getElementsByTagNameNS on node with no children
+  doc = (hasObjects) ? document.getElementById('svg2').documentElement : document;
+  path = doc.getElementById('path3913');
+  matches = path.getElementsByTagNameNS(svgns, 'rect');
+  assertEquals("path.getElementsByTagNameNS(svgns, 'rect').length == 0", 0, 
+               matches.length);
+  
+  // test contextual getElementsByTagNameNS on node with only textual children
+  doc = (hasObjects) ? document.getElementById('mySVG').documentElement : document;
+  text = doc.getElementById('testText5');
+  matches = text.getElementsByTagNameNS(svgns, 'path');
+  assertEquals("text.getElementsByTagNameNS(svgns, 'path').length == 0", 0, 
+               matches.length);
+  
+  // text contextual getElementsByTagNameNS to get a non-SVG node
+  // NOTE: Due to issues around xml:id handling in browser's with native
+  // SVG support getElementById() not supported on non-SVG/non-HTML
+  // elements inside SVG OBJECT tags; workaround is to use nested
+  // getElementsByTagNameNS
+  doc = (hasObjects) ? document.getElementById('svg2').documentElement : document;
+  metadata = doc.getElementById('metadata7');
+  matches = metadata.getElementsByTagNameNS(cc_ns, 'Work');
+  assertExists('getElementsByTagNameNS(cc:Work) should return something',
+               matches);
+  assertEquals('getElementsByTagNameNS(cc:Work).length == 1', 1, 
+               matches.length);
+  cc = matches[0];
+  assertExists('myCCWork from contentDocument should exist', cc);
+  assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
+               cc.getAttribute('id'));
                
   // test getElementsByTagNameNS on normal HTML content to
   // ensure it still works
@@ -4269,7 +4326,7 @@ function runTests(embedTypes) {
   // on the screen. Uncomment when we have other tests that do bitmap
   // testing or visual tests, and we don't need the tests in this file
   // to be visually inspected.
-  
+  /*
   console.log('Testing window.unload listener...');
   if (svgweb.getHandlerType() == 'flash') {
     exp = null;
@@ -4298,7 +4355,15 @@ function runTests(embedTypes) {
       console.log(exp.message);
     }
     assertNull('Window.unload should run without an exception', exp);
-  }
+  }*/
+  
+  // our SVG OBJECT should have loaded by now
+  if (hasObjects) {
+    for (var i = 0; i < 3; i++) {
+      assertTrue('SVG OBJECT ' + (i + 1) ' should have its onload() '
+                 + 'method called', objectLoaded[i]);
+    }
+  }     
   
   // set a slight timeout before reporting success in case a flash
   // error occurred

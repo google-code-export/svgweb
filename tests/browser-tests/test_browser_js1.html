@@ -3,7 +3,7 @@
   <!-- Runs a suite of unit tests against our JavaScript SVG DOM and CSS API -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
     
     <script src="../../src/svg.js" data-path="../../src"></script>
     <script src="test_browser_js.js"></script>
@@ -55,7 +55,7 @@
             <title>This is a title</title>
           </g>
           <g id="removeMe">
-            <text x="80" y="150">You should not see this</text>
+            <text x="80" y="150" id="testText5">You should not see this</text>
             <rect x="80" y="190" width="15" height="15" fill="green"/>
           </g>
         </svg>

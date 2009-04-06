@@ -16,7 +16,27 @@
    sodipodi:docname="spring_tree_final.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
-   sodipodi:modified="true">
+   sodipodi:modified="true"
+   onload="loaded()">
+   
+  <script type="text/javascript"><![CDATA[
+    function loaded() {
+      // change onloadFunc to point to your real onload function that you
+      // want called when the page is truly ready
+      var onloadFunc = testLoaded;
+      
+      if (top.svgweb != undefined) {
+        top.svgweb.addOnLoad(onloadFunc, true, this);
+      } else {
+        onloadFunc();
+      }
+    }
+    
+    function testLoaded() {
+      top.svgweb._objectLoaded(1);
+    }
+  ]]></script>
+  
   <defs
      id="defs4" />
   <sodipodi:namedview

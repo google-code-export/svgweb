@@ -11,7 +11,7 @@
 
 <svg xmlns="http://www.w3.org/2000/svg"
      xmlns:xlink="http://www.w3.org/1999/xlink"
-     onload="init();">
+     onload="loaded();">
 
 <script>
 <![CDATA[
@@ -451,6 +451,18 @@ function keyHandler(event) {
 }
 
 //----------------------------------------------------------------------
+
+function loaded() {
+  // change onloadFunc to point to your real onload function that you
+  // want called when the page is truly ready
+  var onloadFunc = init;
+  
+  if (top.svgweb != undefined) {
+    top.svgweb.addOnLoad(onloadFunc, true, this);
+  } else {
+    onloadFunc();
+  }
+}
 
 function init() {
   // page layout:
