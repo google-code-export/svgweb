@@ -117,7 +117,7 @@ function runTests(embedTypes) {
                  'myRect', myRect.id);
   }
   
-  mySVG = document.getElementById('mySVG');
+  mySVG = getRoot('mySVG');
   assertExists('mySVG root should exist', mySVG);
   assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
   
@@ -1774,7 +1774,7 @@ function runTests(embedTypes) {
                node.nodeName.toLowerCase());
   assertEquals('H1 content should be == hello world!', 'hello world!',
                node.childNodes[0].data);
-               
+
   // add a test where have a group with multiple children; then,
   // do an appendChild and test to make sure that
   // next/previous sibling relationships work correctly on all the
@@ -1973,7 +1973,7 @@ function runTests(embedTypes) {
   
   // remove a normal circle element _after_ appending to DOM
   // using returned object reference
-  circle = document.createElementNS(svgns, 'circle');
+  circle = getDoc('mySVG').createElementNS(svgns, 'circle');
   circle.setAttribute('cx', 2);
   circle.setAttribute('cy', 2);
   circle.setAttribute('r', 15);
@@ -2168,7 +2168,7 @@ function runTests(embedTypes) {
                 group.lastChild.childNodes[0].nodeName);
   assertEquals('text node content == hello content!', 'hello content!',
                group.childNodes[2].lastChild.firstChild.data);
-  
+
   // remove an SVG TITLE element
   matches = getDoc('mySVG').getElementsByTagNameNS(svgns, 'title');
   lengthBefore = matches.length;
@@ -2388,26 +2388,26 @@ function runTests(embedTypes) {
              child.previousSibling);
   // restore the original state
   metadata.appendChild(orig);
-             
+
   // create a test where we remove a child and its subtree, then
   // later on remove the _parent_ of that child, then test parentNode,
   // firstChild, etc. on this to make sure that the double removal
   // hasn't messed things up in terms of cached values
-  group = document.createElementNS(svgns, 'g');
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
   group.id = 'parent_test_group1';
-  path = document.createElementNS(svgns, 'path');
+  path = getDoc('svg11242').createElementNS(svgns, 'path');
   path.id = 'subtree_test_path1';
   group.appendChild(path);
-  path = document.createElementNS(svgns, 'path');
+  path = getDoc('svg11242').createElementNS(svgns, 'path');
   path.id = 'subtree_test_path2';
   group.appendChild(path);
-  path = document.createElementNS(svgns, 'path');
+  path = getDoc('svg11242').createElementNS(svgns, 'path');
   path.id = 'subtree_test_path3';
   group.appendChild(path);
-  group2 = document.createElementNS(svgns, 'g');
+  group2 = getDoc('svg11242').createElementNS(svgns, 'g');
   group2.id = 'parent_container_group';
   group2.appendChild(group);
-  svg = document.getElementById('svg11242');
+  svg = getRoot('svg11242');
   svg.appendChild(group2);
   // now remove group
   group.parentNode.removeChild(group);
@@ -2431,40 +2431,40 @@ function runTests(embedTypes) {
                'subtree_test_path3', group.lastChild.id);
   assertEquals('group.childNodes[1].id == subtree_test_path2',
                'subtree_test_path2', group.childNodes[1].id);
-  
+
   // add a test where have a group with multiple children; then,
   // do an removeChild in the middle and test to make sure that
   // next/previous sibling relationships work correctly on all the
   // nodes. Everything should be unattached.
-  group = document.createElementNS(svgns, 'g');
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
   paths = [];
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   // we've used these IDs before; make sure they aren't in the DOM, since
   // we removed them in the past
   assertNull('document.getElementById(group_path100) == null',
-             document.getElementById('group_path100'));
+             getDoc('svg11242').getElementById('group_path100'));
   assertNull('document.getElementById(group_path200) == null',
-             document.getElementById('group_path200'));
+             getDoc('svg11242').getElementById('group_path200'));
   assertNull('document.getElementById(group_path300) == null',
-             document.getElementById('group_path300'));
+             getDoc('svg11242').getElementById('group_path300'));
   assertNull('document.getElementById(group_path400) == null',
-             document.getElementById('group_path400'));
+             getDoc('svg11242').getElementById('group_path400'));
   assertNull('document.getElementById(group_path500) == null',
-             document.getElementById('group_path500'));
+             getDoc('svg11242').getElementById('group_path500'));
   // now create our PATH elements
   paths[0].id = 'group_path100';
   group.appendChild(paths[0]);            
   // now create the other paths
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[1].id = 'group_path200';
   group.appendChild(paths[1]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[2].id = 'group_path300';
   group.appendChild(paths[2]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[3].id = 'group_path400';
   group.appendChild(paths[3]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[4].id = 'group_path500';
   group.appendChild(paths[4]);
   // now do a removeChild in the middle and make sure sibling 
@@ -2579,7 +2579,7 @@ function runTests(embedTypes) {
   assertNull('group_path500.parentNode == null', paths[4].parentNode);
   // append the group node, then remove it, and make sure all the
   // sibling information is still correct
-  svg = document.getElementById('svg11242');
+  svg = getRoot('svg11242');
   svg.appendChild(group);
   group = svg.removeChild(group);
   assertExists('Group of created paths should exist', group);
@@ -2607,11 +2607,11 @@ function runTests(embedTypes) {
   
   // Test replaceChild
   console.log('Testing replaceChild...');
-  
+
   // before anything is appended to the DOM, replace an SVG circle
   // element with an SVG rectangle
-  group = document.createElementNS(svgns, 'g');
-  circle = document.createElementNS(svgns, 'circle');
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
+  circle = getDoc('svg11242').createElementNS(svgns, 'circle');
   circle.setAttribute('cx', 2);
   circle.setAttribute('cy', 2);
   circle.setAttribute('r', 15);
@@ -2619,7 +2619,7 @@ function runTests(embedTypes) {
   circle.setAttribute('stroke-width', 1);
   circle.setAttribute('fill', 'pink');
   group.appendChild(circle);
-  rect = document.createElementNS(svgns, 'rect');
+  rect = getDoc('svg11242').createElementNS(svgns, 'rect');
   rect.setAttribute('x', 5);
   rect.setAttribute('y', 5);
   rect.setAttribute('width', 20);
@@ -2634,8 +2634,8 @@ function runTests(embedTypes) {
   
   // after things are appended to the DOM, replace an SVG circle
   // element with an SVG rectangle
-  group = document.createElementNS(svgns, 'g');
-  circle = document.createElementNS(svgns, 'circle');
+  group = getDoc('mySVG').createElementNS(svgns, 'g');
+  circle = getDoc('mySVG').createElementNS(svgns, 'circle');
   circle.setAttribute('cx', 2);
   circle.setAttribute('cy', 2);
   circle.setAttribute('r', 15);
@@ -2643,13 +2643,13 @@ function runTests(embedTypes) {
   circle.setAttribute('stroke-width', 1);
   circle.setAttribute('fill', 'pink');
   group.appendChild(circle);
-  rect = document.createElementNS(svgns, 'rect');
+  rect = getDoc('svg11242').createElementNS(svgns, 'rect');
   rect.setAttribute('x', 5);
   rect.setAttribute('y', 5);
   rect.setAttribute('width', 20);
   rect.setAttribute('height', 20);
   rect.setAttribute('fill', 'orange');
-  svg = document.getElementById('mySVG');
+  svg = getRoot('mySVG');
   svg.appendChild(group);
   temp = group.replaceChild(rect, circle);
   assertNull('circle.parentNode == null', circle.parentNode);
@@ -2661,9 +2661,9 @@ function runTests(embedTypes) {
   // after things are appended to the DOM, replace an SVG circle
   // element with an SVG rectangle; use getElementById to get the
   // parent element instance
-  group = document.createElementNS(svgns, 'g');
+  group = getDoc('mySVG').createElementNS(svgns, 'g');
   group.id = 'myGroup1';
-  circle = document.createElementNS(svgns, 'circle');
+  circle = getDoc('mySVG').createElementNS(svgns, 'circle');
   circle.setAttribute('cx', 2);
   circle.setAttribute('cy', 2);
   circle.setAttribute('r', 15);
@@ -2671,15 +2671,15 @@ function runTests(embedTypes) {
   circle.setAttribute('stroke-width', 1);
   circle.setAttribute('fill', 'pink');
   group.appendChild(circle);
-  rect = document.createElementNS(svgns, 'rect');
+  rect = getDoc('mySVG').createElementNS(svgns, 'rect');
   rect.setAttribute('x', 5);
   rect.setAttribute('y', 5);
   rect.setAttribute('width', 20);
   rect.setAttribute('height', 20);
   rect.setAttribute('fill', 'orange');
-  svg = document.getElementById('mySVG');
+  svg = getRoot('mySVG');
   svg.appendChild(group);
-  group = document.getElementById('myGroup1');
+  group = getDoc('mySVG').getElementById('myGroup1');
   temp = group.replaceChild(rect, circle);
   assertNull('circle.parentNode == null', circle.parentNode);
   assertEquals('rect.parentNode == group', group, rect.parentNode);
@@ -2689,11 +2689,12 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, replace the text in an
   // SVG Title element
-  textNode = document.createTextNode('text for an svg title element', 
+  textNode = getDoc('mySVG').createTextNode('text for an svg title element', 
                                      true);
-  title = document.createElementNS(svgns, 'title');
+  title = getDoc('mySVG').createElementNS(svgns, 'title');
   title.appendChild(textNode);
-  textNode2 = document.createTextNode('replace text for svg title', true);
+  textNode2 = getDoc('mySVG').createTextNode('replace text for svg title', 
+                                             true);
   temp = title.replaceChild(textNode2, textNode);
   assertNull('title.parentNode == null', title.parentNode);
   assertEquals('textNode2.parentNode == title', title, 
@@ -2705,13 +2706,13 @@ function runTests(embedTypes) {
   // after things are appended to the DOM, replace the text in an 
   // SVG Title element; get the title we will do replacing on
   // through getElementsByTagNameNS
-  title = document.createElementNS(svgns, 'title');
-  textNode = document.createTextNode('more text for an svg title element',
+  title = getDoc('mySVG').createElementNS(svgns, 'title');
+  textNode = getDoc('mySVG').createTextNode('more text for an svg title element',
                                      true);
   title.appendChild(textNode);
   title.id = 'myTitle1';
-  matches = document.getElementsByTagNameNS(svgns, 'g');
-  svg = document.getElementById('mySVG');
+  matches = getDoc('mySVG').getElementsByTagNameNS(svgns, 'g');
+  svg = getRoot('mySVG');
   group = null;
   for (var i = 0; i < matches.length; i++) {
     if (matches[i] == svg.lastChild) {
@@ -2721,7 +2722,7 @@ function runTests(embedTypes) {
   }
   assertExists('group should exist', group);
   group.appendChild(title);
-  matches = document.getElementsByTagNameNS(svgns, 'title');
+  matches = getDoc('mySVG').getElementsByTagNameNS(svgns, 'title');
   title = null;
   for (var i = 0; i < matches.length; i++) {
     if (matches[i].getAttribute('id') == 'myTitle1') {
@@ -2731,7 +2732,7 @@ function runTests(embedTypes) {
   }
   assertExists('title should exist', title);
   lengthBefore = group.childNodes.length;
-  textNode2 = document.createTextNode('more replaced text', true);
+  textNode2 = getDoc('mySVG').createTextNode('more replaced text', true);
   textNode = title.firstChild;
   temp = title.replaceChild(textNode2, title.firstChild);
   assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -2743,13 +2744,13 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, replace the text in an
   // SVG Text element
-  text = document.createElementNS(svgns, 'text');
+  text = getDoc('mySVG').createElementNS(svgns, 'text');
   text.setAttribute('x', 0);
   text.setAttribute('y', 300);
   text.setAttribute('fill', 'green');
-  textNode = document.createTextNode('You should see this text', true);
+  textNode = getDoc('mySVG').createTextNode('You should see this text', true);
   textNode = text.appendChild(textNode);
-  textNode2 = document.createTextNode('Replaced text', true);
+  textNode2 = getDoc('mySVG').createTextNode('Replaced text', true);
   temp = text.replaceChild(textNode2, textNode);
   assertNull('textNode.parentNode == null', textNode.parentNode);
   assertEquals('textNode2.parentNode == text', text, 
@@ -2761,15 +2762,15 @@ function runTests(embedTypes) {
                
   // after things are appended to the DOM, replace the text in an 
   // SVG Text element
-  text = document.createElementNS(svgns, 'text');
+  text = getDoc('mySVG').createElementNS(svgns, 'text');
   text.setAttribute('x', 300);
   text.setAttribute('y', 300);
-  textNode = document.createTextNode('more text for an svg text element',
-                                     true);
+  textNode = getDoc('mySVG').createTextNode('more text for an svg text element',
+                                            true);
   text.appendChild(textNode);
   text.id = 'myText1';
-  matches = document.getElementsByTagNameNS(svgns, 'g');
-  svg = document.getElementById('mySVG');
+  matches = getDoc('mySVG').getElementsByTagNameNS(svgns, 'g');
+  svg = getRoot('mySVG');
   group = null;
   for (var i = 0; i < matches.length; i++) {
     if (matches[i] == svg.lastChild) {
@@ -2779,7 +2780,7 @@ function runTests(embedTypes) {
   }
   assertExists('group should exist', group);
   group.appendChild(text);
-  matches = document.getElementsByTagNameNS(svgns, 'text');
+  matches = getDoc('mySVG').getElementsByTagNameNS(svgns, 'text');
   text = null;
   for (var i = 0; i < matches.length; i++) {
     if (matches[i].getAttribute('id') == 'myText1') {
@@ -2789,7 +2790,7 @@ function runTests(embedTypes) {
   }
   assertExists('text should exist', text);
   lengthBefore = group.childNodes.length;
-  textNode2 = document.createTextNode('more replaced text', true);
+  textNode2 = getDoc('mySVG').createTextNode('more replaced text', true);
   textNode = text.firstChild;
   temp = text.replaceChild(textNode2, text.firstChild);
   assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -2803,11 +2804,11 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, replace the text in a
   // namespaced element inside a METADATA node
-  rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
-  textNode = document.createTextNode('Some RDF text', true);
-  textNode2 = document.createTextNode('Some more RDF text', true);
+  rdf = getDoc('svg11242').createElementNS(rdf_ns, 'rdf:RDF');
+  textNode = getDoc('svg11242').createTextNode('Some RDF text', true);
+  textNode2 = getDoc('svg11242').createTextNode('Some more RDF text', true);
   rdf.appendChild(textNode);
-  var metadata = document.createElementNS(svgns, 'metadata');
+  var metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
   metadata.id = 'svg11242_metadata';
   metadata.appendChild(rdf);
   temp = rdf.replaceChild(textNode2, textNode);
@@ -2832,7 +2833,7 @@ function runTests(embedTypes) {
     rdf = matches[2];
   }
   assertExists('rdf should exist', rdf);
-  textNode2 = document.createTextNode('Replaced RDF text', true);
+  textNode2 = getDoc('svg11242').createTextNode('Replaced RDF text', true);
   textNode = rdf.firstChild;
   temp = rdf.replaceChild(textNode2, rdf.firstChild);
   assertNull('textNode.parentNode == null', textNode.parentNode);
@@ -2844,12 +2845,12 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, replace a namespaced
   // element with another namespaced element inside a METADATA node
-  rdf = document.createElementNS(rdf_ns, 'rdf:RDF');
+  rdf = getDoc('svg11242').createElementNS(rdf_ns, 'rdf:RDF');
   rdf.appendChild(textNode);
-  var metadata = document.createElementNS(svgns, 'metadata');
+  var metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
   metadata.appendChild(rdf);
-  dc = document.createElementNS(dc_ns, 'dc:creator');
-  textNode = document.createTextNode('Home boy', true);
+  dc = getDoc('svg11242').createElementNS(dc_ns, 'dc:creator');
+  textNode = getDoc('svg11242').createTextNode('Home boy', true);
   dc.appendChild(textNode);
   temp = metadata.replaceChild(dc, rdf);
   assertNull('rdf.parentNode == null', rdf.parentNode);
@@ -2893,43 +2894,43 @@ function runTests(embedTypes) {
   // do an replaceChild in the middle and test to make sure that
   // next/previous sibling relationships work correctly on all the
   // nodes. Everything should be unattached.
-  group = document.createElementNS(svgns, 'g');
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
   paths = [];
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   // we've used these IDs before; make sure they aren't in the DOM, since
   // we removed them in the past
   assertNull('document.getElementById(group_path100) == null',
-             document.getElementById('group_path100'));
+             getDoc('svg11242').getElementById('group_path100'));
   assertNull('document.getElementById(group_path200) == null',
-             document.getElementById('group_path200'));
+             getDoc('svg11242').getElementById('group_path200'));
   assertNull('document.getElementById(group_path300) == null',
-             document.getElementById('group_path300'));
+             getDoc('svg11242').getElementById('group_path300'));
   assertNull('document.getElementById(group_path400) == null',
-             document.getElementById('group_path400'));
+             getDoc('svg11242').getElementById('group_path400'));
   assertNull('document.getElementById(group_path500) == null',
-             document.getElementById('group_path500'));
+             getDoc('svg11242').getElementById('group_path500'));
   // now create our PATH elements
   paths[0].id = 'group_path100';
   group.appendChild(paths[0]);            
   // now create the other paths
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[1].id = 'group_path200';
   group.appendChild(paths[1]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[2].id = 'group_path300';
   group.appendChild(paths[2]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[3].id = 'group_path400';
   group.appendChild(paths[3]);
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[4].id = 'group_path500';
   group.appendChild(paths[4]);
   // elements that we will use to replace earlier ones with
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[5].id = 'group_path400_replacer';
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[6].id = 'group_path100_replacer';
-  paths.push(document.createElementNS(svgns, 'path'));
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   paths[7].id = 'group_path500_replacer';
   // now do a replaceChild in the middle and make sure sibling 
   // relationships still work correctly
@@ -3110,12 +3111,12 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, insert an SVG GROUP
   // before another SVG GROUP
-  group = document.createElementNS(svgns, 'g');
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
   group.id = 'shouldBeLast';
-  group2 = document.createElementNS(svgns, 'g');
+  group2 = getDoc('svg11242').createElementNS(svgns, 'g');
   group2.id = 'shouldBeFirst';
   group2.setAttribute('fill', 'red');
-  parentNode = document.createElementNS(svgns, 'g');
+  parentNode = getDoc('svg11242').createElementNS(svgns, 'g');
   parentNode.appendChild(group);
   temp = parentNode.insertBefore(group2, group);
   assertEquals('parentNode.childNodes.length == 2', 2,
@@ -3388,12 +3389,12 @@ function runTests(embedTypes) {
   assertFalse('group.hasAttributes() == false', group.hasAttributes());
   
   // grab a text node -- text nodes don't have attributes
-  text = document.createElementNS(svgns, 'text');
+  text = getDoc('svg11242').createElementNS(svgns, 'text');
   text.setAttribute('x', 250);
   text.setAttribute('y', 250);
   assertTrue('text before append, text.hasAttributes() == true',
              text.hasAttributes());
-  textNode = document.createTextNode('hello world', true);
+  textNode = getDoc('svg11242').createTextNode('hello world', true);
   text.appendChild(textNode);
   assertFalse('textNode before append, textNode.hasAttributes() == false', 
               textNode.hasAttributes());
@@ -3429,7 +3430,7 @@ function runTests(embedTypes) {
   // test isSupported there
   if (renderer != 'native' 
         && navigator.userAgent.indexOf('Gecko') == -1) {   
-    path = document.getElementById('path3913');
+    path = getDoc('svg2').getElementById('path3913');
     assertTrue('path.isSupported(Core, 2.0) == true',
                path.isSupported('Core', '2.0'));
     assertFalse('path.isSupported(Core, 4.0) == false',
@@ -4524,7 +4525,7 @@ function runTests(embedTypes) {
       assertTrue('SVG OBJECT ' + (i + 1) + ' should have its onload() '
                  + 'method called', objectLoaded[i]);
     }
-  }     
+  }
   
   // set a slight timeout before reporting success in case a flash
   // error occurred
