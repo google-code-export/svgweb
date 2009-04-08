@@ -34,19 +34,22 @@
       <h1>Runs a suite of unit tests against our JavaScript SVG DOM and 
           CSS API on a normal text/html page using OBJECTs to embed the
           SVG</h1>
+          
+      <object id="mySVG" data="embed1.svg" type="image/svg+xml">
+        <!-- Specify no width and height. Should propagate from internal
+             SVG to have the right dimensions. -->
+      </object>
       
-      <!-- Specify no width and height. Should propagate from internal
-           SVG to have the right dimensions. -->    
-      <object id="mySVG" data="embed1.svg" type="image/svg+xml"></object>
-      
-      <!-- Specify exact width and height -->
       <object id="svg2" data="embed2.svg" type="image/svg+xml" 
-              width="450" height="450"></object>
+              width="450" height="450">
+        <!-- Specify exact width and height -->
+      </object>
               
-      <!-- Specify width and height that is smaller than the one in the SVG
-           file. Horizontal and vertical scroll bars should appear. -->
       <object id="svg11242" data="embed3.svg" type="image/svg+xml" 
-              width="200" height="200"></object>
+              width="200" height="200">
+        <!-- Specify width and height that is smaller than the one in the SVG
+           file. Horizontal and vertical scroll bars should appear. -->
+      </object>
     
       <h1>Test HTML H1</h1>
     </div> <!-- end test_container -->

@@ -11,32 +11,9 @@
    y="100"
    width="466.11172"
    height="265.35126"
-   onload="loaded()">
-   
-  <script type="text/javascript"><![CDATA[
-    function loaded() {
-      console.log('internal onload function');
-      // change onloadFunc to point to your real onload function that you
-      // want called when the page is truly ready
-      var onloadFunc = testLoaded;
-      
-      if (top.svgweb != undefined) {
-        top.svgweb.addOnLoad(onloadFunc, true, this);
-      } else {
-        onloadFunc();
-      }
-    }
-    
-    function testLoaded() {
-      top.svgweb._objectLoaded(2);
-    }
-  ]]></script>
-  
-  <defs
-     id="defs3">
-    <linearGradient
-       id="linearGradient2361">
-      <stop
+   onload="loaded()"><defs
+     id="defs3"><linearGradient
+       id="linearGradient2361"><stop
          style="stop-color:#ffffff;stop-opacity:1"
          offset="0"
          id="stop2363" />
@@ -1033,12 +1010,25 @@
        y2="60.379639"
        id="linearGradient4485"
        xlink:href="#linearGradient2361"
-       gradientUnits="userSpaceOnUse" />
-  </defs>
-  <g
+       gradientUnits="userSpaceOnUse" /></defs><script type="text/javascript"><![CDATA[
+         function loaded() {
+           // change onloadFunc to point to your real onload function that you
+           // want called when the page is truly ready
+           var onloadFunc = testLoaded;
+
+           if (top.svgweb != undefined) {
+             top.svgweb.addOnLoad(onloadFunc, true, this);
+           } else {
+             onloadFunc();
+           }
+         }
+
+         function testLoaded() {
+           top.svgweb._objectLoaded(2);
+         }
+       ]]></script><g
      transform="matrix(0.658246,0,0,0.658246,300.47258,71.37439)"
-     id="g4337">
-    <path
+     id="g4337"><path
        d="M 423.07205 253.04457 A 168.24873 99.097961 0 1 1  86.574585,253.04457 A 168.24873 99.097961 0 1 1  423.07205 253.04457 z"
        transform="matrix(2.0763665,0,0,1.9761102,-626.81548,-401.18495)"
        style="color:#000000;fill:#2e2e2e;fill-opacity:1;fill-rule:nonzero;stroke:none;stroke-width:3.25200009;stroke-linecap:butt;stroke-linejoin:miter;marker:none;marker-start:none;marker-mid:none;marker-end:none;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;visibility:visible;display:inline;overflow:visible;filter:url(#filter6426);enable-background:accumulate"
@@ -1403,7 +1393,4 @@
              id="path11123" />
         </g>
       </g>
-      <circle id="strangeStyleCircle" cx="0" cy="0" r="100" style="FILL: green; FILL-OPACITY:1;background-IMAGE: url(FOOBAR.SVG); stroke:PURPLE;stroke-width:3PX"/>
-    </g>
-  </g>
-</svg>
+      <circle id="strangeStyleCircle" cx="0" cy="0" r="100" style="FILL: green; FILL-OPACITY:1;background-IMAGE: url(FOOBAR.SVG); stroke:PURPLE;stroke-width:3PX"/></g></g></svg>

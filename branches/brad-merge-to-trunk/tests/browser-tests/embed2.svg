@@ -17,27 +17,7 @@
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
    sodipodi:modified="true"
-   onload="loaded()">
-   
-  <script type="text/javascript"><![CDATA[
-    function loaded() {
-      // change onloadFunc to point to your real onload function that you
-      // want called when the page is truly ready
-      var onloadFunc = testLoaded;
-      
-      if (top.svgweb != undefined) {
-        top.svgweb.addOnLoad(onloadFunc, true, this);
-      } else {
-        onloadFunc();
-      }
-    }
-    
-    function testLoaded() {
-      top.svgweb._objectLoaded(1);
-    }
-  ]]></script>
-  
-  <defs
+   onload="loaded()"><defs
      id="defs4" />
   <sodipodi:namedview
      id="base"
@@ -61,19 +41,30 @@
      width="5in"
      height="5in"
      units="in"
-     borderlayer="true" />
-  <metadata
-     id="metadata7">
-    <rdf:RDF>
-      <cc:Work
+     borderlayer="true" /><metadata
+     id="metadata7"><rdf:RDF><cc:Work
          rdf:about=""
-         id="myCCWork">
-        <dc:format>image/svg+xml</dc:format>
-        <dc:type id="myDCType"
-           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-      </cc:Work>
-    </rdf:RDF>
-  </metadata>
+         id="myCCWork"><dc:format>image/svg+xml</dc:format><dc:type id="myDCType"
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata>
+  
+  <script type="text/javascript"><![CDATA[
+    function loaded() {
+      // change onloadFunc to point to your real onload function that you
+      // want called when the page is truly ready
+      var onloadFunc = testLoaded;
+      
+      if (top.svgweb != undefined) {
+        top.svgweb.addOnLoad(onloadFunc, true, this);
+      } else {
+        onloadFunc();
+      }
+    }
+    
+    function testLoaded() {
+      top.svgweb._objectLoaded(1);
+    }
+  ]]></script>
+  
   <g
      inkscape:label="bg"
      inkscape:groupmode="layer"
