@@ -166,6 +166,34 @@ function assertFalse(comment, expression) {
   }
 }
 
+/** Gets a document object using the given ID. Useful so that we can
+    test our functions across either the standard global document object
+    or the document object inside of an SVG file embedded using OBJECT tag.
+    
+    @param ID The ID of either the SVG root element or the SVG OBJECT tag.
+    We make these the same to ease testing. */
+function getDoc(id) {
+  if (_hasObjects) {
+    return document.getElementById(id).contentDocument;
+  } else {
+    return document;
+  }
+}
+
+/** Gets the root document element using the given ID. Useful so that we can
+    test our functions across either the standard global document object
+    or the document object inside of an SVG file embedded using OBJECT tag.
+    
+    @param ID The ID of either the SVG root element or the SVG OBJECT tag.
+    We make these the same to ease testing. */
+function getRoot(id) {
+  if (_hasObjects) {
+    return getDoc(id).documentElement;
+  } else {
+    return document.getElementById(id);
+  }
+}
+
 // browser detection adapted from Dojo
 var isOpera = false, isSafari = false, isMoz = false, isIE = false, 
     isAIR = false, isKhtml = false, isFF = false;

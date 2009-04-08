@@ -1118,7 +1118,7 @@ extend(SVGWeb, {
       @param objectWindow Optional. Provided when called from inside an SVG
       OBJECT file; this is the window object inside the SVG OBJECT. */
   addOnLoad: function(listener, isObject, objectWindow) {
-    if (isObject) { 
+    if (isObject) {
       // addOnLoad called from an SVG file embedded with OBJECT
       
       // NOTE: some browsers will fire the onload of the SVG file _before_ our
@@ -1356,17 +1356,22 @@ extend(SVGWeb, {
   /** Fires any addOnLoad() listeners that were registered by a developer. */
   _fireOnLoad: function() {
     // see if all SVG OBJECTs are done loading; if so, fire final onload
-    // event for any externally registered SVG 
+    // event for any externally registered SVG
+    if (this.handlers.length < this._svgObjects.length) {
+      // not even done constructing all our Native Handlers yet
+      return;
+    }
+    
     var allLoaded = true;
-    for (var i = 0; i < svgweb.handlers.length; i++) {
-      var h = svgweb.handlers[i];
+    for (var i = 0; i < this.handlers.length; i++) {
+      var h = this.handlers[i];
       if (h.type == 'object' && !h._loaded) {
         allLoaded = false;
         break;
       }
     }
      
-    if (!allLoaded) { 
+    if (!allLoaded) {
       return;
     }
     
@@ -2348,7 +2353,6 @@ function NativeHandler(args) {
     // these are mostly handled by the browser
     this.id = args.objID;
     this._objNode = args.objNode;
-    
     this._patchSVGObject(this._objNode);
     
     // at this point we wait for our SVG OBJECTs to call svgweb.addOnLoad
@@ -2403,6 +2407,10 @@ extend(NativeHandler, {
     var doc = win.document;    
     this._patchDocumentObject(doc);
     
+    // build up list of namespaces so that getElementsByTagNameNS works with
+    // foreign namespaces
+    this._namespaces = this._getNamespaces(doc);
+    
     // execute the actual SVG onload that the developer wants run
     if (func) {
       func.apply(win);
@@ -2453,7 +2461,7 @@ extend(NativeHandler, {
       // does not get picked up by getElementById, such as 
       // <sodipodi:namedview id="someID"/>, so we have to use an XPath 
       // expression
-      result = xpath(document, null, '//*[@id="' + id + '"]');
+      result = xpath(doc, null, '//*[@id="' + id + '"]');
       if (result.length) {
         var node = result[0];
         
@@ -2480,7 +2488,7 @@ extend(NativeHandler, {
     // getElementsByTagNameNS
     doc._getElementsByTagNameNS = doc.getElementsByTagNameNS;
     doc.getElementsByTagNameNS = function(ns, localName) {
-      var result = document._getElementsByTagNameNS(ns, localName);
+      var result = doc._getElementsByTagNameNS(ns, localName);
       
       // firefox doesn't like if (result)
       if (result != null && result.length != 0) {
@@ -2521,7 +2529,7 @@ extend(NativeHandler, {
           expr = '//' + localName;
         }
         
-        xpathResults = xpath(document, handler._svgRoot, expr, 
+        xpathResults = xpath(doc, handler._svgRoot, expr, 
                              handler._namespaces);
         if (xpathResults != null && xpathResults != undefined
             && xpathResults.length > 0) {
@@ -2569,12 +2577,22 @@ extend(NativeHandler, {
       NOTE: We only support namespace declarations on the root SVG node
       for now.
       
+      @param doc Optional. If present, then we retrieve the list of namespaces
+      from the SVG inside of the object. This is the document object inside the
+      SVG file.
+      
       @returns An object that associates prefix to namespaceURI, and vice
       versa. */
-  _getNamespaces: function() {
+  _getNamespaces: function(doc) {
     var results = [];
     
-    var attrs = this._xml.documentElement.attributes;
+    var attrs;
+    if (doc) {
+      attrs = doc.documentElement.attributes;
+    } else {
+      attrs = this._xml.documentElement.attributes;
+    }
+    
     for (var i = 0; i < attrs.length; i++) {
       var attr = attrs[i];
       if (/^xmlns:?(.*)$/.test(attr.nodeName)) {
