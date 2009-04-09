@@ -61,6 +61,10 @@
     }
     
     function testLoaded() {
+      // TODO: Fill this up with lots of functions manipulating the document
+      // along with a subset of assertions so that we can test the routines
+      // that transform our script into calling the Flash Handler. Also have
+      // a createTextNode function where the string runs over several lines.
       top.svgweb._objectLoaded(1);
     }
   ]]></script>
