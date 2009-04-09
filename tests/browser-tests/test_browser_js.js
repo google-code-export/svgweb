@@ -35,7 +35,7 @@ function runTests(embedTypes) {
       gradient, stop, defs, parent, textNode2, group2, renderer,
       origText, exp, html, ns, nextToLast, paths, styleStr, circle,
       image, line, defs, runTests, styleReturned, use, regExp, split, doc,
-      orig;
+      orig, rect1, rect2;
       
   var allStyles = [
     'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -144,6 +144,42 @@ function runTests(embedTypes) {
   assertExists('H2 element with ID htmlH2 should exist', html);
   assertEquals('H2.firstChild.nodeValue == This is an HTML H2',
                'This is an HTML H2', html.firstChild.nodeValue);
+               
+  // make sure you can have the same IDs within different SVG files embedded
+  // with the OBJECT tag and they don't collide
+  if (_hasObjects) {
+    // create first element with same ID
+    rect1 = getDoc('mySVG').createElementNS(svgns, 'rect');
+    rect1.setAttribute('id', 'dontCollide');
+    rect1.style.fill = 'red';
+    group = getDoc('mySVG').getElementById('myGroup');
+    group.appendChild(rect1);
+    // create second element with same ID
+    rect2 = getDoc('svg2').createElementNS(svgns, 'rect');
+    rect2.setAttribute('id', 'dontCollide');
+    rect2.style.fill = 'green';
+    group = getDoc('svg2').getElementById('layer1');
+    group.appendChild(rect2);
+    // make sure they are present and don't collide
+    rect1 = getDoc('mySVG').getElementById('dontCollide');
+    assertExists('mySVG.doc.getElementById(dontCollide) should exist', rect1);
+    assertEqualsAny('rect1.style.fill == red or #FF0000 or #ff0000', 
+                    ['red', '#FF0000', '#ff0000'], rect1.style.fill);
+    rect2 = getDoc('svg2').getElementById('dontCollide');
+    assertExists('svg2.doc.getElementById(dontCollide) should exist', rect2);
+    assertEqualsAny('rect2.style.fill == green or #008000', ['green', 
+                    '#008000'], rect2.style.fill);
+    assertTrue('rect1 !== rect2', (rect1 !== rect2));
+    // delete and make sure they disappear
+    rect1.parentNode.removeChild(rect1);
+    rect2.parentNode.removeChild(rect2);
+    rect1 = getDoc('mySVG').getElementById('dontCollide');
+    assertNotExists('mySVG.doc.getElementById(dontCollide) should not exist', 
+                    rect1);
+    rect2 = getDoc('svg2').getElementById('dontCollide');
+    assertNotExists('svg2.doc.getElementById(dontCollide) should not exist', 
+                    rect2);
+  }
   
   // getElementsByTagNameNS
   console.log('Testing getElementsByTagNameNS...');

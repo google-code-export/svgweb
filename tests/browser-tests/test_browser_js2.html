@@ -3,9 +3,10 @@
   <!-- Runs a suite of unit tests against our JavaScript SVG DOM and CSS API -->
 
   <head>
-    <meta name="svg.render.forceflash" content="false" />
+    <meta name="svg.render.forceflash" content="true" />
     
-    <script src="../../src/svg.js" data-path="../../src"></script>
+    <script src="../../src/svg.js" data-path="../../src" data-debug="true">
+    </script>
     <script src="test_browser_js.js"></script>
     <script src="testUtil.js"></script>
     
@@ -21,7 +22,7 @@
         embedTypes['svg11242'] = 'object';
         
         // run the tests
-        runTests(embedTypes);  
+        //runTests(embedTypes);  
          
         var endTime = new Date().getTime();
         console.log('total test time='+(endTime - startTime) + 'ms');
@@ -46,8 +47,8 @@
              SVG to have the right dimensions. -->
       </object>
               
-      <object id="svg11242" data="embed3.svg" type="image/svg+xml" 
-              width="200" height="200">
+      <object id="svg11242" data="embed3.svg?query1=foobar&amp;query2=foobar2" 
+              type="image/svg+xml33" width="200" height="200">
         <!-- Specify width and height that is smaller than the one in the SVG
              file. Horizontal and vertical scroll bars should appear. -->
       </object>
