@@ -2412,18 +2412,29 @@ extend(FlashHandler, {
   },
   
   _onEvent: function(msg) {
-    //console.log('onEvent');
     if (msg.eventType.substr(0, 5) == 'mouse') {
       this._onMouseEvent(msg);
       return;
     } else if (msg.eventType == 'onRenderingFinished') {
-      this.document.documentElement._onRenderingFinished(msg);
+      if (this.type == 'script') {
+        this.document.documentElement._onRenderingFinished(msg);
+      } else if (this.type == 'object') {
+        this._svgObject._onRenderingFinished(msg);
+      }
       return;
     } else if (msg.eventType == 'onFlashLoaded') {
-      this.document.documentElement._onFlashLoaded(msg);
+      if (this.type == 'script') {
+        this.document.documentElement._onFlashLoaded(msg);
+      } else if (this.type == 'object') {
+        this._svgObject._onFlashLoaded(msg);
+      }
       return;
     } else if (msg.eventType == 'onHTCLoaded') {
-      this.document.documentElement._onHTCLoaded(msg);
+      if (this.type == 'script') {
+        this.document.documentElement._onHTCLoaded(msg);
+      } else if (this.type == 'object') {
+        this._svgObject._onHTCLoaded(msg);
+      }
     }
   },
   
@@ -4951,34 +4962,33 @@ extend(_Style, {
     how we actually do the work of embedding this into the page (such as 
     internally transforming the SVG OBJECT into a Flash one).
     
-    @param svgObject The SVG OBJECT node to work with.
+    @param svgNode The SVG OBJECT node to work with.
     @param handler The FlashHandler that owns us. */
-function _SVGObject(svgObject, handler) {
+function _SVGObject(svgNode, handler) {
   this._handler = handler;
+  this._svgNode = svgNode;
   
-  var url = svgObject.getAttribute('data');
+  var url = this._svgNode.getAttribute('data');
   
   // fetch the SVG URL now and start processing
   this._fetchURL(url, 
-    
     // success function
     hitch(this, function(svgStr, svgXML) {
-      console.log('onSuccess, svgXML='+svgXML);
-      // parse the SVG into an XML data structure
-      /*this._svgString = content;
-      this._xml = this._parseSVG(this._svgString);
+      this._xml = svgXML;
+      this._svgString = svgStr;
       
       // create our document objects
       this.document = new _Document(this._xml, this._handler);
       
       // insert our Flash and replace the SVG OBJECT tag
-      this._insertFlash();
+      var nodeXML = this._xml.documentElement;
+      var inserter = new FlashInserter('object', document, 
+                                       this._xml.documentElement,
+                                       this._svgNode, this._handler);
       
       // wait for Flash to finish loading; see _onFlashLoaded() in this class
       // for further execution after the Flash asynchronous process is done
-      */
-    }), 
-  
+    }),
     // failure function
     hitch(this, this.fallback)
   );
@@ -4993,8 +5003,6 @@ extend(_SVGObject, {
       url += (url.indexOf('?') == -1) ? '?' : '&';
       url += new Date().getTime();
     }
-    
-    console.log('fetchURL, url='+url);
     
     req.onreadystatechange = function() {
       if (req.readyState == 4) {
@@ -5014,25 +5022,30 @@ extend(_SVGObject, {
   
   _fallback: function(error) {
     console.log('onError (fallback), error='+error);
-  },
-  
-  _parseSVG: function(svgString) {
     
+    // TODO!!!
   },
-  
-  _insertFlash: function() {
     
-  },
-  
-  _onFlashLoaded: function() {
+  _onFlashLoaded: function(msg) {
+    console.log('Our flashloaded method');
+    // store a reference to our Flash object
+    this._handler.flash = document.getElementById(this._handler.flashID);
+    
     // expose top and parent attributes on Flash OBJECT
+    this._handler.flash.top = this._handler.flash.parent = window;
     
     // start watching the data attribute to see if it's URL has changed to 
     // reload the Flash
+    // TODO
     
     // if not IE, send the SVG string over to Flash
-    
-    // if IE, force the HTC file to asynchronously load with a dummy element
+    if (!isIE) {
+      this._handler.sendToFlash({type: 'load', sourceType: 'string',
+                                 svgString: this._svgString});
+    } else {
+      // if IE, force the HTC file to asynchronously load with a dummy element
+      // TODO
+    }
   },
   
   _onHTCLoaded: function(elemDoc, htcNode) {
@@ -5041,7 +5054,7 @@ extend(_SVGObject, {
     // send the SVG string over to Flash
   },
   
-  _onRenderingFinished: function() {
+  _onRenderingFinished: function(msg) {
     // create the 'documentElement' and set it to our SVG root element
     
     // store a reference to the Flash object in the Flash Handler
