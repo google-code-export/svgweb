@@ -136,17 +136,24 @@ any further tricks:
   <svg width="466" height="265" id="svg11242"></svg>
 ]]></script>
 
-The second way to embed SVG is with the the OBJECT tag, including on 
-Internet Explorer; you must specify both a 'data' attribute pointing to your
-SVG file as well as set the 'type' to "image/svg+xml":
+The second way to embed SVG is with the the OBJECT tag, which will work on 
+Internet Explorer as well. Example:
 
-<object data="scimitar.svg" type="image/svg+xml" 
-        id="testSVG" width="1250" height="750">
+<object id="testSVG" data="scimitar.svg" classid="image/svg+xml" 
+         width="1250" height="750">
 </object>
+
+You must specify a 'data' attribute pointing to your
+SVG file. According to the standard you must also set the 'type'
+attribute to "image/svg+xml". Unfortunately due to some limitations on
+Internet Explorer you should _not_ include the type attribute but rather
+must include a 'classid' attribute set to "image/svg+xml" for use with the
+SVG Web framework.
 
 The URL given in the 'data' element must be on the same domain as the web
 page and follows the same domain rule (i.e. same protocol, port, etc.); 
-cross-domain object insertion is not supported for security reasons.
+cross-domain object insertion is not supported for security reasons. You
+must also specify a width and height.
 
 Extra Files
 -----------
@@ -234,7 +241,7 @@ working as expected.
 If you have a SCRIPT block _inside_ of your SVG that it will
 work correctly on _all browsers_ with the Flash renderer as well:
 
-<object data="blocks_game.svg" type="image/svg+xml" 
+<object data="blocks_game.svg" classid="image/svg+xml" 
         width="1250" height="750">
 </object>
 
@@ -262,7 +269,7 @@ On all browsers, including Internet Explorer, an SVG OBJECT tag can be
 manipulated by external JavaScript as normal by using the getSVGDocument()
 method or the contentDocument property:
 
-<object data="scimitar.svg" type="image/svg+xml" 
+<object data="scimitar.svg" classid="image/svg+xml" 
         id="testSVG" width="1250" height="750">
 </object>
 
@@ -362,7 +369,9 @@ root.addEventListener('SVGLoad', function(evt) {
 If you are loading an SVG file using the OBJECT tag and have an onload="" 
 attribute, such as:
 
-<object data="photos.svg" type="image/svg+xml"></object>
+Containing HTML page:
+
+<object data="photos.svg" classid="image/svg+xml"></object>
 
 photos.svg:
 
@@ -432,13 +441,13 @@ height for the Flash renderer:
 * Directly setting the width and height attributes on the SVG root tag or the
 SVG OBJECT:
 
-<script type="image/svg+xml">
+<script classid="image/svg+xml">
   <svg width="30" height="30"></svg>
 </script>
 
 or
 
-<object data="example.svg" type="image/svg+xml" width="30" height="30"></object>
+<object data="example.svg" classid="image/svg+xml" width="30" height="30"></object>
 
 * A viewBox attribute on the SVG root element:
 
@@ -503,7 +512,7 @@ Note the svg\:rect trick to have Internet Explorer see namespaced SVG CSS
 rules. Currently you should directly set these on the SVG root element or 
 SVG OBJECT tag which is supported:
 
-<object data="scimitar.svg" type="image/svg+xml" 
+<object data="scimitar.svg" classid="image/svg+xml" 
         id="testSVG" width="1250" height="750"
         style="display: inline; float: right; border: 1px solid black;">
 </object>
@@ -541,7 +550,7 @@ Fallback Content When SVG Not Possible
 If neither native SVG nor Flash can be used, you can put fallback content
 inside of your OBJECT tag to be displayed:
 
-<object data="scimitar.svg" type="image/svg+xml" 
+<object data="scimitar.svg" classid="image/svg+xml" 
         id="testSVG" width="1250" height="750"
         style="display: inline; float: right">
   <img src="scimitar.png"></img>
@@ -650,7 +659,7 @@ If you embed SVG objects into your page using the OBJECT element, you can
 navigate into the SVG inside the OBJECT element using contentDocument or
 getSVGDocument():
 
-<object data="scimitar.svg" type="image/svg+xml" 
+<object data="scimitar.svg" classid="image/svg+xml" 
         id="testSVG" width="1250" height="750">
 </object>
 
@@ -1395,7 +1404,18 @@ extend(SVGWeb, {
     var objs = document.getElementsByTagName('object');
     var results = [];
     for (var i = 0; i < objs.length; i++) {
-      if (objs[i].type == 'image/svg+xml') {
+      // unfortunately we have to use 'classid' to carry our MIME type instead
+      // of 'type'. Here's why: on Internet Explorer, you must have either
+      // classid or type present on your OBJECT tag. If there is _any_ fallback
+      // content inside of the OBJECT tag, IE will erase the OBJECT from the
+      // DOM and replace it with the fallback content if the 'type' attribute 
+      // is set to an unknown MIME type; this makes it impossible for us to 
+      // then get the OBJECT from the DOM below. If we don't have a classid
+      // this will also happen, so we just set it to the string 'image/svg+xml'
+      // which is arbitrary. If both type and classid are present, IE will
+      // still look at the type first and repeat the same incorrect fallback 
+      // behavior for our purposes.
+      if (objs[i].getAttribute('classid') == 'image/svg+xml') {
         results.push(objs[i]);
       }
     }
@@ -2189,17 +2209,7 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with an OBJECT tag. */
   _handleObject: function() {
-    // browsers with native support will start processing the SVG OBJECT
-    // themselves; to avoid this, we replace the SVG OBJECT with a DIV as 
-    // a place holder on where to put things and keep the data attribute
-    if (!isIE) {
-      var div = document.createElement('div');
-      div.setAttribute('data', this._objNode.getAttribute('data'));
-      this._objNode.parentNode.replaceChild(div, this._objNode);
-      this._objNode = div;
-    }
-    
-    // now transform the SVG OBJECT into a Flash one
+    // transform the SVG OBJECT into a Flash one
     this._svgObject = new _SVGObject(this._objNode, this);
     this._objNode = null;
   },
@@ -2486,6 +2496,21 @@ extend(NativeHandler, {
   
   /** Handles SVG embedded into the page with an OBJECT tag. */
   _handleObject: function() {
+    // we had to use 'classid' inside of 'type' (see svgweb._getSVGObjects()
+    // for the reasons why). Convert this back into a type attribute. We
+    // have to recreate the OBJECT for it to be recognized again with correct
+    // type
+    this._objNode.removeAttribute('classid');
+    var obj = document.createElement('object');
+    obj.setAttribute('type', 'image/svg+xml');
+    for (var i = 0; i < this._objNode.attributes.length; i++) {
+      var attr = this._objNode.attributes[i];
+      obj.setAttribute(attr.nodeName, attr.nodeValue);
+    }
+    obj.innerHTML = this._objNode.innerHTML; // get fallback content too
+    this._objNode.parentNode.replaceChild(obj, this._objNode);
+    this._objNode = obj;
+    
     // patch the OBJECT tag with some missing attributes
     this._patchSVGObject(this._objNode);
     
@@ -4926,10 +4951,7 @@ extend(_Style, {
     how we actually do the work of embedding this into the page (such as 
     internally transforming the SVG OBJECT into a Flash one).
     
-    @param svgObject The SVG OBJECT node to work with (or a DIV if we are
-      working with a place holder -- see the method 
-      FlashHandler._handleObject() for details on why we use a DIV place holder
-      for non-IE browsers).
+    @param svgObject The SVG OBJECT node to work with.
     @param handler The FlashHandler that owns us. */
 function _SVGObject(svgObject, handler) {
   this._handler = handler;
