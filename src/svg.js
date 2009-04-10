@@ -1542,37 +1542,48 @@ extend(SVGWeb, {
     // TODO: Handle dynamic SVG
   },
   
-  /** Extracts SVG from the script, cleans it up, adds missing IDs to
-      all elements, and then creates the correct Flash or Native handler to do 
-      the hard work. 
+  /** Cleans up some SVG in various ways (adding IDs, etc.)
+  
+      @param svg SVG string to clean up.
+      @param addMissing If true, we add missing
+      XML doctypes, SVG namespace, etc. to make working with SVG a bit easier
+      when doing direct embed; if false, we require the XML to be
+      well-formed and correct (primary for independent .svg files). 
+      @param normalizeWhitespace If true, we try to remove whitespace between 
+      nodes to make the DOM more similar to Internet Explorer's 
+      ignoreWhiteSpace, mostly used when doing direct embed of SVG into an 
+      HTML page; if false, we leave things alone (primarily for independent 
+      .svg files). 
       
-      @param script DOM node of the SVG SCRIPT element. */
-  _processSVGScript: function(script) {
-    var svg = script.innerHTML;
-    
+      @returns Cleaned up SVG string. */
+  _cleanSVG: function(svg, addMissing, normalizeWhitespace) {
     // remove any leading whitespace from beginning and end of SVG doc
     svg = svg.replace(/^\s*/, '');
     svg = svg.replace(/\s*$/, '');
     
-    // add any missing things (XML declaration, SVG namespace, etc.)
-    if (/\<\?xml/m.test(svg) == false) { // XML declaration
-      svg = '<?xml version="1.0"?>\n' + svg;
-    }
-    // add SVG namespace declaration; don't however if there is a custom 
-    // prefix for SVG namespace
-    if (/\<[^\:]+\:svg/m.test(svg) == false) {
-      if (/xmlns\=['"]http:\/\/www\.w3\.org\/2000\/svg['"]/.test(svg) == false) {
-        svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    if (addMissing) {
+      // add any missing things (XML declaration, SVG namespace, etc.)
+      if (/\<\?xml/m.test(svg) == false) { // XML declaration
+        svg = '<?xml version="1.0"?>\n' + svg;
+      }
+      // add SVG namespace declaration; don't however if there is a custom 
+      // prefix for SVG namespace
+      if (/\<[^\:]+\:svg/m.test(svg) == false) {
+        if (/xmlns\=['"]http:\/\/www\.w3\.org\/2000\/svg['"]/.test(svg) == false) {
+          svg = svg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+      }
+      // add xlink namespace if it is not present
+      if (/xmlns:[^=]+=['"]http:\/\/www\.w3\.org\/1999\/xlink['"]/.test(svg) == false) {
+        svg = svg.replace('<svg', '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
       }
     }
-    // add xlink namespace if it is not present
-    if (/xmlns:[^=]+=['"]http:\/\/www\.w3\.org\/1999\/xlink['"]/.test(svg) == false) {
-      svg = svg.replace('<svg', '<svg xmlns:xlink="http://www.w3.org/1999/xlink"');
-    }
     
-    // remove whitespace between tags to normalize the DOM between IE
-    // and other browsers
-    svg = svg.replace(/\>\s+\</gm, '><');
+    if (normalizeWhitespace) {
+      // remove whitespace between tags to normalize the DOM between IE
+      // and other browsers
+      svg = svg.replace(/\>\s+\</gm, '><');
+    }
     
     // add missing IDs to all elements and get the root SVG elements ID
     var xml = this._addIDs(svg);
@@ -1582,6 +1593,17 @@ extend(SVGWeb, {
       svg = xml.xml;
     }
     
+    return svg;
+  },
+  
+  /** Extracts SVG from the script, cleans it up, adds missing IDs to
+      all elements, and then creates the correct Flash or Native handler to do 
+      the hard work. 
+      
+      @param script SCRIPT node to get the SVG from. */
+  _processSVGScript: function(script) {
+    var svg = script.innerHTML;
+    svg = this._cleanSVG(svg, true, true);
     var rootID = xml.documentElement.getAttribute('id');
     
     // create the correct handler
@@ -4968,15 +4990,16 @@ function _SVGObject(svgNode, handler) {
   this._handler = handler;
   this._svgNode = svgNode;
   
-  var url = this._svgNode.getAttribute('data');
-  
   // fetch the SVG URL now and start processing
+  var url = this._svgNode.getAttribute('data');
   this._fetchURL(url, 
     // success function
-    hitch(this, function(svgStr, svgXML) {
-      this._xml = svgXML;
+    hitch(this, function(svgStr) {
+      // clean up and parse our SVG
+      svgStr = svgweb._cleanSVG(svgStr, false, false);
       this._svgString = svgStr;
-      
+      this._xml = parseXML(this._svgString);
+
       // create our document objects
       this.document = new _Document(this._xml, this._handler);
       
@@ -5007,7 +5030,7 @@ extend(_SVGObject, {
     req.onreadystatechange = function() {
       if (req.readyState == 4) {
         if (req.status == 200) { // done
-          onSuccess(req.responseText, req.responseXML);
+          onSuccess(req.responseText);
         } else { // error
           onFailure(req.status + ': ' + req.statusText);
         }
@@ -5043,6 +5066,7 @@ extend(_SVGObject, {
       this._handler.sendToFlash({type: 'load', sourceType: 'string',
                                  svgString: this._svgString});
     } else {
+      console.log('now we would async the HTC file!');
       // if IE, force the HTC file to asynchronously load with a dummy element
       // TODO
     }
@@ -5472,7 +5496,6 @@ function _Document(xml, handler) {
   // superclass constructor
   _Node.apply(this, ['#document', _Node.DOCUMENT_NODE, null, null, 
                      xml, handler], svgns);
-  
   this._xml = xml;
   this._handler = handler;
   this._nodeById = {};
@@ -5658,7 +5681,6 @@ extend(_Document, {
       versa. */
   _getNamespaces: function() {
     var results = [];
-    
     var attrs = this._xml.documentElement.attributes;
     for (var i = 0; i < attrs.length; i++) {
       var attr = attrs[i];
