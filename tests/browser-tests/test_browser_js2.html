@@ -3,8 +3,8 @@
   <!-- Runs a suite of unit tests against our JavaScript SVG DOM and CSS API -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
-    
+    <meta name="svg.render.forceflash" content="false" />
+
     <script src="../../src/svg.js" data-path="../../src" data-debug="true">
     </script>
     <script src="test_browser_js.js"></script>
@@ -36,19 +36,20 @@
           CSS API on a normal text/html page using OBJECTs to embed the
           SVG</h1>
           
-      <object id="mySVG" data="embed1.svg" type="image/svg+xml"
+      
+      <object id="mySVG" data="embed1.svg" classid="image/svg+xml"
               width="500" height="500">
-        <!-- Specify exact width and height -->
+        <!-- Specify exact width and height -->        
       </object>
       
-      <object id="svg2" data="embed2.svg" type="image/svg+xml" 
+      <object id="svg2" data="embed2.svg" classid="image/svg+xml" 
               width="450" height="450">
         <!-- Specify no width and height. Should propagate from internal
              SVG to have the right dimensions. -->
       </object>
               
       <object id="svg11242" data="embed3.svg?query1=foobar&amp;query2=foobar2" 
-              type="image/svg+xml33" width="200" height="200">
+              classid="image/svg+xml" width="200" height="200">
         <!-- Specify width and height that is smaller than the one in the SVG
              file. Horizontal and vertical scroll bars should appear. -->
       </object>
