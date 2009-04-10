@@ -74,6 +74,7 @@ package org.svgweb
 
         public function SVGViewerWeb():void {
             this.setupJavaScriptInterface();
+            this.debug('SVGViewerWeb constructor');
             this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
             super();
         }
