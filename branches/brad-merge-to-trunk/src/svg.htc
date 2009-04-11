@@ -71,8 +71,11 @@ The 'lightWeight' attribute below is important for two reasons:
   /** Called when the content is ready for some SVG tag in the HTML
       page. This method is called for each individual SVG tag. */
   function contentReady() {
-    console.log('contentReady');
-    //console.log('contentReady, nodeName='+this._fakeNode.nodeName);
+    /*if (this._fakeNode) {
+      console.log('contentReady, nodeName='+this._fakeNode.nodeName);
+    } else {
+      console.log('contentReady');
+    }*/
     
     // if we are dealing with an SVG OBJECT, we 'prime the pump' and create
     // a fake tag named svg:__force__load (see _SVGObject._onFlashLoaded()
