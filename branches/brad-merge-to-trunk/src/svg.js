@@ -1155,7 +1155,7 @@ var XHR_PROGIDS = [
   Standard way to grab XMLHttpRequest object.
 */
 function xhrObj() {
-  if (XMLHttpRequest) {
+  if (typeof XMLHttpRequest != 'undefined') {
     return new XMLHttpRequest();
   } else if (ActiveXObject) {
     var xhr = null;
