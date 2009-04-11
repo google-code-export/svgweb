@@ -71,13 +71,27 @@ The 'lightWeight' attribute below is important for two reasons:
   /** Called when the content is ready for some SVG tag in the HTML
       page. This method is called for each individual SVG tag. */
   function contentReady() {
+    console.log('contentReady');
     //console.log('contentReady, nodeName='+this._fakeNode.nodeName);
     
-    // are we even attached? This will incorrectly get fired when we create 
-    // and append the HTC node, even if it isn't really appended to our 
-    // actual SVG DOM. Also only fire for SVG root nodes since we don't
-    // really care about this event for other node types.
-    if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg') {
+    // if we are dealing with an SVG OBJECT, we 'prime the pump' and create
+    // a fake tag named svg:__force__load (see _SVGObject._onFlashLoaded()
+    // for details. We can't look at our nodeName since that will recursively
+    // call our overridden method, so we set a flag when we created this
+    // svg:__force__load method
+    if (this._realNodeName == '__force__load') {
+      // indicate that we are now loaded
+      var msg = { type: 'event', 
+                  eventType: 'onHTCLoaded',
+                  htcNode: this.element };
+      this._handler.onMessage(msg);
+    } else if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg') {
+      // This checks to see if we are even really attached. contentReady() will 
+      // incorrectly get fired when we create and append the HTC node, even if 
+      // it isn't really appended to our actual SVG DOM. Also only fire for SVG 
+      // root nodes since we don't really care about this event for other node 
+      // types.
+      
       // indicate that we are now loaded
       var msg = { type: 'event', 
                   eventType: 'onHTCLoaded',
