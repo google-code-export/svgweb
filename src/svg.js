@@ -683,7 +683,7 @@ you find that you are running into an issue:
 than Internet Explorer, and embed some SVG into a SCRIPT tag, the Flash will 
 show up directly in the DOM as an EMBED tag with the 'class' set to 'embedssvg'. 
 You can get the SVG root element by calling 'documentElement' on the EMBED tag
-(this is non-standard and is not part of the SVG 1.1 spec).
+(this is non-standard and is not part of the SVG 1.1 spec). 
 
 For example, if your page had an SVG SCRIPT block right under the BODY tag, 
 this would get transformed into an EMBED tag with the Flash viewer:
@@ -701,7 +701,10 @@ if (embed.className && embed.className.indexOf('embedssvg') != -1) {
 }
 
 Internet Explorer does not have this limitation, with the SVG root element
-showing up directly in the DOM.
+showing up directly in the DOM. Note though that we also add the 'embedssvg' 
+class name automatically onto the SVG root element for Internet Explorer 
+(i.e. <svg class="embedssvg">); this can be useful for certain styling 
+scenarios.
 
 * Scoping getElementsByTagNameNS on elements other than the document element is
 not supported. For example, you can not currently do
@@ -826,6 +829,11 @@ support, and use the OBJECT tag to embed an SVG file, the browser's native
 support will render the OBJECT tag first, followed by our Flash renderer taking
 over and then rendering things. This might result in a slight flash, or your
 embedded SVG file having it's onload() event fired twice.
+
+* If you dynamically change the data attribute of an SVG OBJECT element after
+page load, the update SVG will not load for the Flash Handler and certain
+patched functions for the Native Handler will no longer work. Dynamically
+creating SVG OBJECT nodes after page load is also not supported.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1548,7 +1556,7 @@ extend(SVGWeb, {
       @param addMissing If true, we add missing
       XML doctypes, SVG namespace, etc. to make working with SVG a bit easier
       when doing direct embed; if false, we require the XML to be
-      well-formed and correct (primary for independent .svg files). 
+      well-formed and correct (primarily for independent .svg files). 
       @param normalizeWhitespace If true, we try to remove whitespace between 
       nodes to make the DOM more similar to Internet Explorer's 
       ignoreWhiteSpace, mostly used when doing direct embed of SVG into an 
@@ -5045,7 +5053,6 @@ extend(_SVGObject, {
   
   _fallback: function(error) {
     console.log('onError (fallback), error='+error);
-    
     // TODO!!!
   },
     
@@ -5053,13 +5060,8 @@ extend(_SVGObject, {
     console.log('Our flashloaded method');
     // store a reference to our Flash object
     this._handler.flash = document.getElementById(this._handler.flashID);
-    
     // expose top and parent attributes on Flash OBJECT
     this._handler.flash.top = this._handler.flash.parent = window;
-    
-    // start watching the data attribute to see if it's URL has changed to 
-    // reload the Flash
-    // TODO
     
     // if not IE, send the SVG string over to Flash
     if (!isIE) {
@@ -5067,15 +5069,36 @@ extend(_SVGObject, {
                                  svgString: this._svgString});
     } else {
       console.log('now we would async the HTC file!');
-      // if IE, force the HTC file to asynchronously load with a dummy element
-      // TODO
+      // if IE, force the HTC file to asynchronously load with a dummy element;
+      // we want to do the async operation now so that external API users don't 
+      // get hit with the async nature of the HTC file first loading when they
+      // make a sync call.
+      this._dummyNode = document.createElement('svg:__force__load');
+      // set flag so that svg.htc can know this is a __force__load method,
+      // since we can't check dummy.nodeName as that will cause us to
+      // incorrectly call our overridden HTC nodeName property instead
+      this._dummyNode._realNodeName = '__force__load';
+      this._dummyNode._handler = this._handler;
+      var head = document.getElementsByTagName('head')[0];
+      // NOTE: as _soon_ as we append the dummy element the HTC file will
+      // get called, branching control, so code after this call will not
+      // get run in the sequence expected
+      head.appendChild(this._dummyNode);
     }
   },
   
-  _onHTCLoaded: function(elemDoc, htcNode) {
-    // delete the dummy element
+  _onHTCLoaded: function(msg) {
+    // can't use htcNode.parentNode since we override that inside svg.htc
+    var head = document.getElementsByTagName('head')[0];
+    head.removeChild(msg.htcNode);
+    
+    // prevent IE memory leaks
+    htcNode = null;
+    msg = null;
     
     // send the SVG string over to Flash
+    this._handler.sendToFlash({type: 'load', sourceType: 'string',
+                               svgString: this._svgString});
   },
   
   _onRenderingFinished: function(msg) {
@@ -5138,6 +5161,8 @@ extend(FlashInserter, {
       // have the HTC node insert the actual Flash so that it gets
       // hidden in the HTC's shadow DOM
       htcNode._insertFlash(flash, size, background, style, className);
+    } else if (this._embedType == 'object' && isIE) {
+      this._insertFlashIE(flash);
     } else {
       this._insertFlash(flash);
     }
@@ -5172,20 +5197,28 @@ extend(FlashInserter, {
     // now insert the EMBED tag into the document
     this._replaceMe.parentNode.replaceChild(flashObj, this._replaceMe);
     
-    // for non-IE browsers, expose the root SVG element as 'documentElement'
-    // on the EMBED tag, and set the EMBED tag's class name to be
-    // 'embedssvg' to help script writers;
-    // Safari will have a superflous space before 'embedssvg' if there are no
-    // class names already there, so avoid that.
-    if (flashObj.className == null 
-        || /^\s*$/.test(String(flashObj.className))) {
-      flashObj.className = 'embedssvg';
-    } else {
-      flashObj.className += ' embedssvg';
+    // expose the root SVG element as 'documentElement' on the EMBED tag
+    // for SVG SCRIPT embed as a utility property for developers
+    // (see Known Issues and Errata for details)
+    if (this.type == 'script') {
+      flashObj.documentElement = this;
     }
-    flashObj.documentElement = this;
   
     return flashObj;
+  },
+  
+  /** For SVG OBJECTs, we have to replace the OBJECT with a Flash one. We
+      have to do this on IE differently than for other browsers primarily
+      because as _soon_ as we call innerHTML or outerHTML with our Flash
+      string control immediately leaves us and asynchronously starts 
+      initializing the Flash control, so we have to do the outerHTML
+      assignment last. */
+  _insertFlashIE: function(flash) {
+    // Note: as _soon_ as we make this call the Flash will load, even
+    // before the rest of this method has finished. The Flash can
+    // therefore finish loading before anything after the next statement
+    // has run, so be careful of timing bugs.
+    this._replaceMe.outerHTML = flash; 
   },
   
   /** Determines a width and height for the parsed SVG XML. Returns an
@@ -5281,9 +5314,9 @@ extend(FlashInserter, {
   _determineClassName: function() {
     var className = this._nodeXML.getAttribute('class');
     if (!className) {
-      return '';
+      return 'embedssvg';
     } else {
-      return className;
+      return className + ' embedssvg';
     }
   },
   
@@ -5293,9 +5326,7 @@ extend(FlashInserter, {
       @param background Object literal with background color and 
       transparent boolean.
       @param style Style string to copy onto Flash object.
-      @param className The class name to copy into the Flash object. You should
-      not add the internal name 'embedssvg' to this string as we will do
-      that internally later.
+      @param className The class name to copy into the Flash object.
       @param doc Either 'document' or element.document if being called
       from the Microsoft Behavior HTC. 
       
