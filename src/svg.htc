@@ -79,7 +79,7 @@ The 'lightWeight' attribute below is important for two reasons:
     
     // if we are dealing with an SVG OBJECT, we 'prime the pump' and create
     // a fake tag named svg:__force__load (see _SVGObject._onFlashLoaded()
-    // for details. We can't look at our nodeName since that will recursively
+    // for details). We can't look at our nodeName since that will recursively
     // call our overridden method, so we set a flag when we created this
     // svg:__force__load method
     if (this._realNodeName == '__force__load') {
