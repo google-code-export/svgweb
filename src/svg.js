@@ -831,7 +831,7 @@ over and then rendering things. This might result in a slight flash, or your
 embedded SVG file having it's onload() event fired twice.
 
 * If you dynamically change the data attribute of an SVG OBJECT element after
-page load, the update SVG will not load for the Flash Handler and certain
+page load, the updated SVG will not load for the Flash Handler and certain
 patched functions for the Native Handler will no longer work. Dynamically
 creating SVG OBJECT nodes after page load is also not supported.
   
