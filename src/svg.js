@@ -5057,7 +5057,6 @@ extend(_SVGObject, {
   },
     
   _onFlashLoaded: function(msg) {
-    console.log('Our flashloaded method');
     // store a reference to our Flash object
     this._handler.flash = document.getElementById(this._handler.flashID);
     // expose top and parent attributes on Flash OBJECT
@@ -5068,17 +5067,18 @@ extend(_SVGObject, {
       this._handler.sendToFlash({type: 'load', sourceType: 'string',
                                  svgString: this._svgString});
     } else {
-      console.log('now we would async the HTC file!');
       // if IE, force the HTC file to asynchronously load with a dummy element;
       // we want to do the async operation now so that external API users don't 
       // get hit with the async nature of the HTC file first loading when they
       // make a sync call.
       this._dummyNode = document.createElement('svg:__force__load');
+      this._dummyNode._handler = this._handler;
+      
       // set flag so that svg.htc can know this is a __force__load method,
       // since we can't check dummy.nodeName as that will cause us to
       // incorrectly call our overridden HTC nodeName property instead
       this._dummyNode._realNodeName = '__force__load';
-      this._dummyNode._handler = this._handler;
+      
       var head = document.getElementsByTagName('head')[0];
       // NOTE: as _soon_ as we append the dummy element the HTC file will
       // get called, branching control, so code after this call will not
