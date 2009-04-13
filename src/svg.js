@@ -834,6 +834,10 @@ embedded SVG file having it's onload() event fired twice.
 page load, the updated SVG will not load for the Flash Handler and certain
 patched functions for the Native Handler will no longer work. Dynamically
 creating SVG OBJECT nodes after page load is also not supported.
+
+* You should avoid IDs on your OBJECT, SVG root, or SVG elements that start
+with numbers, such as "32MyElement". The SVG Web framework will not work
+correctly with such IDs.
   
 What SVG Features Are and Are Not Supported
 -------------------------------------------
@@ -1346,6 +1350,12 @@ extend(SVGWeb, {
     this._svgScripts = this._getSVGScripts();
     this._svgObjects = this._getSVGObjects();
     
+    // make any SVG objects have visibility hidden early in the process
+    // to prevent IE from showing scroll bars
+    for (var i = 0; i < this._svgObjects.length; i++) {
+      this._svgObjects[i].style.visibility = 'hidden';
+    }
+    
     this.totalSVG = this._svgScripts.length + this._svgObjects.length;
     
     // no SVG - we're done
@@ -1645,7 +1655,7 @@ extend(SVGWeb, {
       obj.setAttribute('id', svgweb._generateID('__svg__random__', '__object'));
       objID = obj.getAttribute('id');
     }
-    
+
     // create the correct handler
     var self = this;
     var finishedCallback = function(id, type){
@@ -2239,7 +2249,9 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with an OBJECT tag. */
   _handleObject: function() {
-    // transform the SVG OBJECT into a Flash one
+    // transform the SVG OBJECT into a Flash one; the _SVGObject class
+    // will handle embedding the Flash asychronously; see there for 
+    // where the code continues after the Flash is done loading
     this._svgObject = new _SVGObject(this._objNode, this);
     this._objNode = null;
   },
@@ -5102,6 +5114,11 @@ extend(_SVGObject, {
   },
   
   _onRenderingFinished: function(msg) {
+    console.log('onRenderingFinished');
+    // we made the SVG hidden before to avoid scrollbars on IE; make visible
+    // now
+    this._handler.flash.style.visibility = 'visible';
+    
     // create the 'documentElement' and set it to our SVG root element
     
     // store a reference to the Flash object in the Flash Handler
