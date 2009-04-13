@@ -88,7 +88,8 @@ The 'lightWeight' attribute below is important for two reasons:
                   eventType: 'onHTCLoaded',
                   htcNode: this.element };
       this._handler.onMessage(msg);
-    } else if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg') {
+    } else if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg'
+               && this._handler.type == 'script') {
       // This checks to see if we are even really attached. contentReady() will 
       // incorrectly get fired when we create and append the HTC node, even if 
       // it isn't really appended to our actual SVG DOM. Also only fire for SVG 
