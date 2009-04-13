@@ -2174,6 +2174,7 @@ function FlashHandler(args) {
 extend(FlashHandler, {
   /** The Flash object's ID; set by _SVGSVGElement. */
   flashID: null, 
+  
   /** The Flash object; set by _SVGSVGElement. */
   flash: null,
   
@@ -2220,7 +2221,6 @@ extend(FlashHandler, {
       this._onLog(msg);
       return;
     } else if (msg.type == 'script') {
-      console.log('onscript!!!');
       this._onObjectScript(msg);
       return;
     } else if (msg.type == 'error') {
@@ -2487,10 +2487,12 @@ extend(FlashHandler, {
     throw 'FLASH: ' + msg.logString;
   },
   
-  /** Executes any SCRIPT that might be inside an SVG file embedded through
-      an SVG OBJECT. */
+  /** Stores any SCRIPT that might be inside an SVG file embedded through
+      an SVG OBJECT to be executed at a later time when are done
+      loading the Flash and HTC infrastructure. */
   _onObjectScript: function(msg) {
-    console.log('onObjectScript!');
+    // batch for later execution
+    this._svgObject._scriptsToExec.push(msg.script);
   }
 });  
 
@@ -3072,13 +3074,18 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
     this._defineNodeAccessors();
-  } else if (isIE && this.nodeType != _Node.DOCUMENT_NODE 
-             && this.nodeName != 'svg') {
-    // if we are IE, we must use a behavior in order to get onpropertychange
-    // and override core DOM methods. We don't do it for the root SVG
-    // element since that is already a proper Behavior as it embeds our
-    // Flash control inside of _SVGSVGElement
-    this._createHTC();
+  } else if (isIE) {
+    // If we are IE, we must use a behavior in order to get onpropertychange
+    // and override core DOM methods. We only do this for normal SVG elements
+    // and not for the DOCUMENT element. For the SVG root element, we only
+    // create our HTC node here if we are being embedded with an SVG OBJECT
+    // element; SVG SCRIPT elements override the normal process here and do 
+    // their embedding in the _SVGSVGElement class itself.
+    if (this.nodeType != _Node.DOCUMENT_NODE 
+        || (this.nodeName == 'svg' && this._handler.type == 'object')
+        || (this.nodeName != 'svg' && this._handler.type == 'script')) {
+      this._createHTC();
+    }
   }
 }
 
@@ -3766,7 +3773,6 @@ extend(_Node, {
   // if we are IE, we must use a behavior in order to get onpropertychange
   // and override core DOM methods
   _createHTC: function() {
-    console.log('createHTC');
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
     if (!this._htcContainer) {
@@ -4281,21 +4287,24 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
     this._defineAccessors();
   }
   
-  // track .style changes
   if (this.namespaceURI == svgns) {
-    // for IE, don't setup the style object for the SVG root; we do this a bit
-    // later for the SVG root since we initialize the HTC object differently,
-    // which the _Style object depends on during initialization
-    if (!isIE || this.nodeName != 'svg') {
+    // track .style changes; 
+    if (isIE && this._handler.type == 'script' && this.nodeName == 'svg') {
+      // do nothing now -- if we are IE and are being embedded with an
+      // SVG SCRIPT tag, don't setup the style object for the SVG root now; we
+      // do that later in _SVGSVGElement
+    } else {
       this.style = new _Style(this);
     }
-  }
-  
-  // pay attention to style changes now in the HTC for everything but the
-  // SVG root, which starts paying attention to style changes after the SVG
-  // root has done its works putting the Flash into the page
-  if (isIE && this.nodeName != 'svg' && this.namespaceURI == svgns) {
-    this.style._ignoreStyleChanges = false;
+    
+    // handle style changes for HTCs
+    if (isIE && this._handler.type == 'script' && this.nodeName == 'svg') {
+      // for the SVG root when being embedded by an SVG SCRIPT, ignore
+      // style changes that might get set during our initialization
+      this.style._ignoreStyleChanges = true;
+    } else if (isIE) {
+      this.style._ignoreStyleChanges = false;
+    }
   }
 }
 
@@ -5045,6 +5054,10 @@ function _SVGObject(svgNode, handler) {
 }
 
 extend(_SVGObject, {
+  /** An array of strings, where each string is an SVG SCRIPT tag embedded
+      in an external SVG file. This is when SVG is embedded with an OBJECT. */
+  _scriptsToExec: [],
+  
   _fetchURL: function(url, onSuccess, onFailure) {
     var req = xhrObj();
     
@@ -5135,18 +5148,23 @@ extend(_SVGObject, {
     var rootID = rootXML.getAttribute('id');
     var root = new _SVGSVGElement(rootXML, null, null, this._handler);
     this._handler.document.documentElement = root;
-                                  
-    // store the root in our lookup table so we can get it later through
-    // getElementById or getElementsByTagNameNS
-    this._handler.document._nodeById['_' + rootID] = root;
-    console.log('found='+this._handler.document.documentElement);
     
-    // tell Flash to execute any script now; wait for script to finish
-    // executing
+    // now execute any scripts embedded into the SVG file
+    for (var i = 0; i < this._scriptsToExec.length; i++) {
+      this._executeScript(this._scriptsToExec[i]);
+    }
+    console.log('end');
   },
   
-  _onInitialScriptFinished: function() {
-    // fire that we are done
+  /** Executes a SCRIPT block inside of an SVG file. We essentially rewrite
+      the references in this script to point to Flash Handler instead, and then
+      eval the entire block.
+      
+      @param script String with script to execute. */
+  _executeScript: function(script) {
+    // change any calls to the document.* object to point to our Flash Handler
+    // instead
+    console.log('script='+script);
   }
 });
 
@@ -5448,6 +5466,11 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
   this._svgString = svgString;
   this._scriptNode = scriptNode;
   
+  // when being embedded by a SCRIPT element, the _SVGSVGElement class
+  // takes over inserting the Flash and HTC elements so that we have 
+  // something visible on the screen; when being embedded by an SVG OBJECT
+  // we don't do this since the OBJECT tag itself is what is visible on the 
+  // screen
   if (isIE && this._handler.type == 'script') {
     // for IE, replace the SCRIPT tag with our SVG root element; this is so
     // that we can kick off the HTC running so that it can insert our Flash
@@ -5472,27 +5495,11 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
     
     // now wait for the HTC file to load for the SVG root element
-  } else if (isIE && this._handler.type == 'object') {
-    // just create our HTC now; when embedded by an SVG OBJECT the SVG root
-    // element is handled similarly to other SVG elements and doesn't have
-    // any special HTC handling like when we are embedding with an 
-    // SVG SCRIPT element
-    this._createHTC();
-    
-    // track .style changes
-    this.style = new _Style(this);
-    
-    // track style updates immediately
-    this.style._ignoreStyleChanges = false;
-  } else { // non-IE browsers; immediately insert the Flash
+  } else if (!isIE && this._handler.type == 'script') { 
+    // non-IE browsers; immediately insert the Flash
     var inserter = new FlashInserter('script', document, this._nodeXML,
                                       this._scriptNode, this._handler);
   }
-  
-  // store in our lookup table for getElementById and 
-  // getElementsByTagNameNS
-  var elementId = this._nodeXML.getAttribute('id');
-  this._handler.document._nodeById['_' + elementId] = this;
 }  
 
 // subclasses _Element
@@ -5609,11 +5616,9 @@ extend(_Document, {
   },
   
   getElementById: function(id) /* _Element */ {
-    console.log('getElementById, id='+id);
     // XML parser does not have getElementById, due to id mapping in XML
     // issues; use XPath instead
     var results = xpath(this._xml, null, '//*[@id="' + id + '"]');
-    console.log('results='+results.length);
     var nodeXML, node;
     
     if (results.length) {
@@ -5702,7 +5707,6 @@ extend(_Document, {
       magic happen; if other browsers, returns the _Node or _Element
       itself. */
   _getNode: function(nodeXML) {
-    console.log('getNode, nodeXML='+nodeXML);
     var node;
     
     if (nodeXML.nodeType == _Node.ELEMENT_NODE) {
@@ -5714,7 +5718,7 @@ extend(_Document, {
         // never seen before -- we'll have to create a new _Element now
         node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
                             nodeXML.namespaceURI, nodeXML, this._handler, true);
-console.log('node after creation='+node);
+
         // store a reference to ourselves. 
         // unfortunately IE doesn't support 'expandos' on XML parser objects, 
         // so we can't just say nodeXML._fakeNode = node, so we have to use a 

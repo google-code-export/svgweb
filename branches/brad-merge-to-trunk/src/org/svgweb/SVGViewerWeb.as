@@ -310,7 +310,6 @@ package org.svgweb
         }
 
         override public function handleScript(script:String):void {
-
             if (!this.scriptSentToJS) {           
                 script = script.split('\\n').join(';_SVGNL_;');
                 script = script.replace(/<script.*/, '');
