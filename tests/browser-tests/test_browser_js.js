@@ -1170,18 +1170,18 @@ function runTests(embedTypes) {
                svg.firstChild);
   child = svg.firstChild;
   assertEquals('firstChild.nodeName == defs', 'defs', child.nodeName);
-  console.log('svg.id='+svg.id);
-  console.log('child.nodeName='+child.nodeName);
-  console.log('child.parentNode='+child.parentNode);
-  console.log('child.parentNode.nodeName='+child.parentNode.nodeName);
-  console.log('child.parentNode.id='+child.parentNode.id);
   assertEquals('firstChild.parentNode == svg', svg, child.parentNode);
   assertNull('firstChild.previousSibling == null', child.previousSibling);
   assertExists('firstChild.nextSibling should exist', child.nextSibling);
   if (_hasObjects) {
     assertEquals('firstChild.nextSibling.nodeName == script', 'script',
                  child.nextSibling.nodeName);
-    assertEquals('firstChild.nextSibling.id == ""', '', child.nextSibling.id);
+    // we never assigned an ID to the SCRIPT; make sure that the @id property
+    // is still present though for the Native Handler (we generate a random
+    // ID for the Flash Handler)
+    if (renderer == 'native') {
+      assertEquals('firstChild.nextSibling.id == ""', '', child.nextSibling.id);
+    }
   } else {
     assertEquals('firstChild.nextSibling.nodeName == g', 'g',
                  child.nextSibling.nodeName);
