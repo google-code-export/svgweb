@@ -2495,6 +2495,7 @@ extend(FlashHandler, {
       var nodeXML = document._createTextNode(data);
       var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
       textNode._nodeValue = data;
+      textNode.ownerDocument = document;
       
       return textNode._getProxyNode();
     }
@@ -4046,6 +4047,15 @@ extend(_Node, {
                                   method: 'setText',
                                   parentId: parentID,
                                   text: childXML.nodeValue });
+    }
+    
+    // set the ownerDocument based on how we were embedded
+    if (attached) {
+      if (this._handler.type == 'script') {
+        child.ownerDocument = document;
+      } else if (this._handler.type == 'object') {
+        child.ownerDocument = this._handler.document;
+      }
     }
     
     // recursively process each child
@@ -5742,14 +5752,24 @@ extend(_Document, {
     return node._getProxyNode();
   },
   
-  createTextNode: function(text /* DOM Text Node */) /* _Node */ {
+  createTextNode: function(data /* DOM Text Node */) /* _Node */ {
     // just create a real DOM text node in our internal representation for
     // our nodeXML value; we will import this anyway into whatever parent
     // we append this to, which will convert it into a real XML type at
     // that time
-    var nodeXML = document._createTextNode(data);
-    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
+    var nodeXML;
+    // We might have mixed SVG SCRIPTs and OBJECTs on the page; using
+    // a different createTextNode function depending on this situation because
+    // we want to use the actual native createTextNode function
+    if (document._createTextNode) {
+      nodeXML = document._createTextNode(data);
+    } else {
+      nodeXML = document.createTextNode(data);
+    }
+    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML,
+                             this._handler);
     textNode._nodeValue = data;
+    textNode.ownerDocument = this;
     
     return textNode._getProxyNode();
   },
