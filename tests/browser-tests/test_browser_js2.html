@@ -22,7 +22,7 @@
         embedTypes['svg11242'] = 'object';
         
         // run the tests
-        runTests(embedTypes);  
+        //runTests(embedTypes);  
          
         var endTime = new Date().getTime();
         console.log('total test time='+(endTime - startTime) + 'ms');
@@ -36,22 +36,28 @@
           CSS API on a normal text/html page using OBJECTs to embed the
           SVG</h1>
           
-      
-      <object id="mySVG" data="embed1.svg" classid="image/svg+xml"
+      <object id="mySVG" data="embed1.svg" type="image/svg+xml"
               width="500" height="500">
-        <!-- Specify exact width and height -->        
+        <object id="mySVG" src="embed1.svg" classid="image/svg+xml"
+              width="500" height="500">
+          <h2>Fallback content 1</h2>  
+        </object>
       </object>
       
-      <object id="svg2" data="embed2.svg" classid="image/svg+xml" 
+      <object id="svg2" data="embed2.svg" type="image/svg+xml"
               width="450" height="450">
-        <!-- Specify no width and height. Should propagate from internal
-             SVG to have the right dimensions. -->
+        <object id="svg2" src="embed2.svg" classid="image/svg+xml"
+              width="450" height="450">
+          <h2>Fallback content 2</h2> 
+        </object>
       </object>
-              
-      <object id="svg11242" data="embed3.svg?query1=foobar&amp;query2=foobar2" 
-              classid="image/svg+xml" width="200" height="200">
-        <!-- Specify width and height that is smaller than the one in the SVG
-             file. Horizontal and vertical scroll bars should appear. -->
+      
+      <object id="svg11242" data="embed3.svg" type="image/svg+xml"
+              width="200" height="200">
+        <object id="svg11242" src="embed3.svg" classid="image/svg+xml"
+              width="200" height="200">
+          <h2>Fallback content 3</h2>
+        </object>
       </object>
     
       <h1>Test HTML H1</h1>
