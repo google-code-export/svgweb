@@ -1586,6 +1586,9 @@ function runTests(embedTypes) {
   assertEquals('path.parentNode == svg', svg, path.parentNode);
   assertNull('path.nextSibling == null', path.nextSibling);
   child = svg.childNodes[svg.childNodes.length - 2];
+  console.log('child.nodeName='+child.nodeName);
+  console.log('child.nextSibling='+child.nextSibling);
+  console.log('svg last child='+svg.childNodes[svg.childNodes.length - 1].nodeName);
   assertExists('child should exist', child);
   assertEquals('path.previousSibling == child', child, 
                path.previousSibling);
