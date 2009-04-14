@@ -1377,34 +1377,11 @@ extend(SVGWeb, {
     // extract any SVG SCRIPTs or OBJECTs
     this._svgScripts = this._getSVGScripts();
     this._svgObjects = this._getSVGObjects();
+    
+    // do various things we must do early on in the page load process
+    // around cleaning up SVG OBJECTs on the page
+    this._cleanupSVGObjects();
 
-    // if this browser has native SVG support, do some tricks to take away
-    // control from it for the Flash renderer early in the process
-    if (this.config.use == 'flash' && this.config.hasNativeSVG()) {
-      for (var i = 0; i < this._svgObjects.length; i++) {
-        // replace the SVG OBJECT with a DIV
-        var obj = this._svgObjects[i];
-        var div = document.createElement('div');
-        for (var j = 0; j < obj.attributes.length; j++) {
-          var attr = obj.attributes[j];
-          div.setAttribute(attr.nodeName, attr.nodeValue);
-        }
-        // bring over fallback content, but trim out the inner OBJECT for IE
-        var fallback = obj.innerHTML;
-        fallback = fallback.replace(/\s*<\s*object[^>]*>\s*/i, '');
-        fallback = fallback.replace(/\s*<\s*\/object\s*>\s*/i, '');
-        div.innerHTML = fallback;
-        obj.parentNode.replaceChild(div, obj);
-        this._svgObjects[i] = div;
-      }
-    }
-    
-    // make any SVG objects have visibility hidden early in the process
-    // to prevent IE from showing scroll bars
-    for (var i = 0; i < this._svgObjects.length; i++) {
-      this._svgObjects[i].style.visibility = 'hidden';
-    }
-    
     this.totalSVG = this._svgScripts.length + this._svgObjects.length;
     
     // no SVG - we're done
@@ -1486,6 +1463,8 @@ extend(SVGWeb, {
     var objs = document.getElementsByTagName('object');
     var results = [];
     for (var i = 0; i < objs.length; i++) {
+      // Note: IE 6 will unfortunately return all 6 objects, unlike later 
+      // versions of IE
       if (objs[i].getAttribute('type') == 'image/svg+xml') {
         results.push(objs[i]);
       } else if (isIE && objs[i].getAttribute('classid') == 'image/svg+xml') {
@@ -1964,6 +1943,51 @@ extend(SVGWeb, {
     document.createTextNode = null;
     document._createTextNode = null;
     document._importNodeFunc = null;
+  },
+  
+  /** Does certain things early on in the page load process to cleanup
+      any SVG objects on our page, such as making them hidden, etc. */
+  _cleanupSVGObjects: function() {
+    // if this browser has native SVG support, do some tricks to take away
+    // control from it for the Flash renderer early in the process
+    if (this.config.use == 'flash' && this.config.hasNativeSVG()) {
+      for (var i = 0; i < this._svgObjects.length; i++) {
+        // replace the SVG OBJECT with a DIV
+        var obj = this._svgObjects[i];
+        var div = document.createElement('div');
+        for (var j = 0; j < obj.attributes.length; j++) {
+          var attr = obj.attributes[j];
+          div.setAttribute(attr.nodeName, attr.nodeValue);
+        }
+        // bring over fallback content, but trim out the inner OBJECT for IE
+        var fallback = obj.innerHTML;
+        fallback = fallback.replace(/\s*<\s*object[^>]*>\s*/i, '');
+        fallback = fallback.replace(/\s*<\s*\/object\s*>\s*/i, '');
+        div.innerHTML = fallback;
+        obj.parentNode.replaceChild(div, obj);
+        this._svgObjects[i] = div;
+      }
+    }
+    
+    // IE 6 unfortunately returns all of our objects, including nested ones;
+    // remove the standards compliant ones from the page so they aren't 
+    // visible
+    if (this.config.use == 'flash' && isIE) {
+      for (var i = 0; i < this._svgObjects.length; i++) {
+        var obj = this._svgObjects[i];
+        if (obj.getAttribute('data') && obj.getAttribute('type')) {
+          // standards compliant SVG OBJECT tag -- remove it
+          obj.parentNode.removeChild(obj);
+          this._svgObjects.splice(i, 1);
+        }
+      }
+    }
+    
+    // make any SVG objects have visibility hidden early in the process
+    // to prevent IE from showing scroll bars
+    for (var i = 0; i < this._svgObjects.length; i++) {
+      this._svgObjects[i].style.visibility = 'hidden';
+    }
   }
 });
 
