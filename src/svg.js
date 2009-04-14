@@ -3550,7 +3550,7 @@ extend(_Node, {
       return null;
     }
     
-    // are we the root SVG object when being embedded by an SVG SCRIPT?
+    // are we the root SVG node when being embedded by an SVG SCRIPT?
     if (this.nodeName == 'svg' && this._handler.type == 'script') {
       if (this._htcNode) { // IE
         // we stored the realParentNode in the _SVGSVGElement constructor
@@ -3559,6 +3559,10 @@ extend(_Node, {
       } else { // other browsers
         return this._handler.flash;
       }
+    } else if (this.nodeName == 'svg' && this._handler.type == 'object') {
+      // if we are the root SVG node and are embedded by an SVG OBJECT, then
+      // our parent is a #document object
+      return this._handler.document;
     }
     
     var parentXML = this._nodeXML.parentNode;
