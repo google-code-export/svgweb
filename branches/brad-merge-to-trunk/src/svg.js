@@ -5702,12 +5702,27 @@ extend(_Document, {
   implementation: null,
   documentElement: null,
   
-  createElementNS: function(ns, qName) /* _Element */ {
-    // TODO; this is for object tags
+  createElementNS: function(ns, qname) /* _Element */ {
+    var prefix = this._namespaces['_' + ns];
+    
+    if (prefix == 'xmlns' || !prefix) { // default SVG namespace
+      prefix = null;
+    }
+
+    var node = new _Element(qname, prefix, ns);
+    return node._getProxyNode();
   },
   
   createTextNode: function(text /* DOM Text Node */) /* _Node */ {
-    // TODO; this is for object tags
+    // just create a real DOM text node in our internal representation for
+    // our nodeXML value; we will import this anyway into whatever parent
+    // we append this to, which will convert it into a real XML type at
+    // that time
+    var nodeXML = document._createTextNode(data);
+    var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
+    textNode._nodeValue = data;
+    
+    return textNode._getProxyNode();
   },
   
   getElementById: function(id) /* _Element */ {
