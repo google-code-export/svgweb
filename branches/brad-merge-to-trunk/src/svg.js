@@ -1969,10 +1969,11 @@ extend(SVGWeb, {
       }
     }
     
-    // IE 6 unfortunately returns all of our objects, including nested ones;
+    // IE 6 unfortunately returns all 6 of our objects, including nested ones;
     // remove the standards compliant ones from the page so they aren't 
     // visible
-    if (this.config.use == 'flash' && isIE) {
+    if (this.config.use == 'flash' && isIE 
+        && /MSIE 6/i.test(navigator.userAgent)) {
       for (var i = 0; i < this._svgObjects.length; i++) {
         var obj = this._svgObjects[i];
         if (obj.getAttribute('data') && obj.getAttribute('type')) {
