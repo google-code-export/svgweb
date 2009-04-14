@@ -234,8 +234,9 @@ page has finished loading, so you can manipulate it with normal JavaScript:
 </script>
 
 Manipulating an SVG OBJECT tag with browsers with native support is as 
-normal following the standard; just call getSVGDocument() on the OBJECT
-to get a document object and execute your standard DOM functions afterwards.
+normal following the standard; just use the contentDocument property on the 
+OBJECT to get a document object and execute your standard DOM functions 
+afterwards.
 
 For the Flash renderer, scripting support is as follows.
 
@@ -277,8 +278,8 @@ work correctly on _all browsers_ with the Flash renderer as well:
 </svg>
 
 On all browsers, including Internet Explorer, an SVG OBJECT tag can be 
-manipulated by external JavaScript as normal by using the getSVGDocument()
-method or the contentDocument property:
+manipulated by external JavaScript as normal by using the contentDocument 
+property:
 
 <object data="scimitar.svg" type="image/svg+xml"
         id="testSVG" width="1250" height="750">
@@ -289,9 +290,7 @@ method or the contentDocument property:
 
 <script>
   svgweb.addOnLoad() {
-    var doc = document.getElementById('testSVG').getSVGDocument();
-    // also works:
-    doc = document.getElementById('testSVG').contentDocument;
+    var doc = document.getElementById('testSVG').contentDocument;
     var rect = doc.getElementsByTagNameNS(svgns, 'rect')[0];
   }
 </script>
@@ -684,8 +683,7 @@ Manipulating SVG Objects on the Page
 ------------------------------------
 
 If you embed SVG objects into your page using the OBJECT element, you can
-navigate into the SVG inside the OBJECT element using contentDocument or
-getSVGDocument():
+navigate into the SVG inside the OBJECT element using contentDocument:
 
 <object src="scimitar.svg" classid="image/svg+xml" 
         id="testSVG" width="1250" height="750">
@@ -694,11 +692,6 @@ getSVGDocument():
 var obj = document.getElementById('testSVG');
 var doc = obj.contentDocument;
 var myCircle = doc.getElementById('myCircle');
-
-We also support the non-standard getSVGDocument() method that the Adobe
-SVG Viewer introduced, even if you are using native SVG support (we patch
-it in). For code written today using contentDocument is recommended as it
-is standards-compliant.
 
 Known Issues and Errata
 -----------------------
@@ -867,10 +860,11 @@ creating SVG OBJECT nodes after page load is also not supported.
 with numbers, such as "32MyElement". The SVG Web framework will not work
 correctly with such IDs.
   
-What SVG Features Are and Are Not Supported
+What SVG Features Are Not Supported
 -------------------------------------------
 
-TODO: Fill this in
+* We don't support the non-standard getSVGDocument() method that the Adobe
+SVG Viewer introduced due to technical limations on supporting this in Firefox.
 
 */
 
@@ -2637,9 +2631,6 @@ extend(NativeHandler, {
     // make the object visible again
     this._objNode.style.visibility = 'visible';
     
-    // patch the OBJECT tag with some missing attributes
-    this._patchSVGObject(this._objNode);
-    
     // at this point we wait for our SVG OBJECTs to call svgweb.addOnLoad
     // so we can know they have loaded. Some browsers however will fire the 
     // onload of the SVG file _before_ our NativeHandler is done depending
@@ -2654,15 +2645,6 @@ extend(NativeHandler, {
       // to get called by the SVG file itself. Store a reference to ourselves
       // to be used there.
       this._objNode._svgHandler = this;
-    }
-  },
-  
-  /** Patches an SVG object to have some extra methods. */
-  _patchSVGObject: function(obj) {
-    // added because so many scripts use getSVGDocument() from the Adobe
-    // SVG Viewer
-    obj.getSVGDocument = function() {
-      return obj.contentDocument;
     }
   },
   
@@ -5217,15 +5199,27 @@ extend(_SVGObject, {
     // we made the SVG hidden before to avoid scrollbars on IE; make visible
     // now
     this._handler.flash.style.visibility = 'visible';
-    
+
     // create the document object
     this._handler.document = new _Document(this._xml, this._handler);
-    
-    // create the 'documentElement' and set it to our SVG root element
+
+    // create the documentElement and rootElement and set them to our SVG 
+    // root element
     var rootXML = this._xml.documentElement;
     var rootID = rootXML.getAttribute('id');
     var root = new _SVGSVGElement(rootXML, null, null, this._handler);
     this._handler.document.documentElement = root;
+    this._handler.document.rootElement = root;
+
+    // add our contentDocument property
+    this._handler.flash.contentDocument = this._handler.document;
+    
+    // Note: unfortunately we can't support the getSVGDocument() method as 
+    // well; Firefox throws an error when we try to override it:
+    // 'Trying to add unsupported property on scriptable plugin object!'
+    // this._handler.flash.getSVGDocument = function() {
+    //   return this.contentDocument;
+    // };
     
     // now execute any scripts embedded into the SVG file
     for (var i = 0; i < this._scriptsToExec.length; i++) {
@@ -5493,7 +5487,13 @@ extend(FlashInserter, {
       protocol = protocol.substring(0, protocol.length - 1);
     }
     
-    this._handler.flashID = elementId + '_flash';
+    // if we are embedded with a SCRIPT tag, we append _flash to the ID; 
+    // if we used an OBJECT tag, then we simply make the Flash have the
+    // exact same ID
+    this._handler.flashID = elementId;
+    if (this.type == 'flash') {
+      this._handler.flashID += '_flash';
+    }
 
     var flash =
           '<object\n '
