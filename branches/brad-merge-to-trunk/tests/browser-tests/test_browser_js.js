@@ -692,8 +692,15 @@ function runTests(embedTypes) {
                child.childNodes[0].childNodes[0].getAttribute('offset'));
 
   if (_hasObjects) {
-    root = document.getElementsByTagName('object')[2].contentDocument
+    // there are 6 OBJECT tags for standards compliant browsers (nested OBJECT
+    // tags), but IE only returns 3.
+    if (isIE) {
+      root = document.getElementsByTagName('object')[2].contentDocument
                                                             .documentElement;
+    } else {
+      root = document.getElementsByTagName('object')[4].contentDocument
+                                                              .documentElement;
+    }
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg')[2];
   }
@@ -852,6 +859,12 @@ function runTests(embedTypes) {
     assertEquals('Zero svg elements', 0, svg.length);
     matches = document.getElementsByTagName('object');
     for (var i = 0; i < matches.length; i++) {
+      if (!isIE && matches[i].getAttribute('src')) {
+        // there are 6 OBJECT tags for standards compliant browsers (nested 
+        // OBJECT tags), but IE only returns 3.
+        continue;
+      }
+      
       doc = matches[i].contentDocument;
       svg = doc.documentElement;
       assertEquals('svg[' + i + '].ownerDocument == contentDocument', doc, 
