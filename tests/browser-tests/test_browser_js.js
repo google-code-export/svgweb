@@ -409,7 +409,14 @@ function runTests(embedTypes) {
   // getAttribute
   console.log('Testing getAttribute...');
   if (_hasObjects) {
-    matches = document.getElementsByTagName('object');
+    // Firefox and Safari transform our OBJECT tags into EMBEDs beyond our
+    // control
+    if (isIE) {
+      matches = document.getElementsByTagName('object');
+    } else {
+      matches = document.getElementsByTagName('embed');
+    }
+    console.log('matches='+matches.length);
     root = matches[0].contentDocument.documentElement;
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg');
@@ -691,8 +698,8 @@ function runTests(embedTypes) {
       root = document.getElementsByTagName('object')[2].contentDocument
                                                             .documentElement;
     } else {
-      root = document.getElementsByTagName('object')[4].contentDocument
-                                                              .documentElement;
+      root = document.getElementsByTagName('embed')[2].contentDocument
+                                                            .documentElement;
     }
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg')[2];

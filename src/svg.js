@@ -859,6 +859,22 @@ creating SVG OBJECT nodes after page load is also not supported.
 * You should avoid IDs on your OBJECT, SVG root, or SVG elements that start
 with numbers, such as "32MyElement". The SVG Web framework will not work
 correctly with such IDs.
+
+* If you are using OBJECT tags to embed your SVG into the page while using
+the Flash handler support:
+
+<object id="testSVG" data="scimitar.svg" type="image/svg+xml"
+        width="1250" height="750">
+  <object id="testSVG" src="scimitar.svg" classid="image/svg+xml" 
+          width="1250" height="750">
+  </object>
+</object>
+
+and call document.getElementsByTagName('object'), note that on Firefox 
+and Safari the OBJECT tag gets transformed into an EMBED tag by the browser 
+itself beyond our control, so you must call 
+document.getElementsByTagName('embed') instead of asking for objects in order 
+to enumerate all the SVG OBJECTs on the page.
   
 What SVG Features Are Not Supported
 -------------------------------------------
