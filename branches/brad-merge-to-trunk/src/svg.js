@@ -1491,7 +1491,7 @@ extend(SVGWeb, {
       // not even done constructing all our Native Handlers yet
       return;
     }
-    
+
     var allLoaded = true;
     for (var i = 0; i < this.handlers.length; i++) {
       var h = this.handlers[i];
@@ -1500,11 +1500,11 @@ extend(SVGWeb, {
         break;
       }
     }
-     
+
     if (!allLoaded) {
       return;
     }
-    
+
     // the page is truly finished loading
     this.pageLoaded = true;
     
@@ -1528,9 +1528,6 @@ extend(SVGWeb, {
         self._listeners[i]();
       }
     }, 1);
-    
-    // TODO: remember to fire on all of the SVG handlers as well, not just the
-    // persisted developers window onload
   },
   
   /** Prepares the svg.htc behavior for IE. */
@@ -5025,6 +5022,7 @@ extend(_Style, {
 function _SVGObject(svgNode, handler) {
   this._handler = handler;
   this._svgNode = svgNode;
+  this._scriptsToExec = [];
   
   // fetch the SVG URL now and start processing
   var url = this._svgNode.getAttribute('data');
@@ -5056,7 +5054,7 @@ function _SVGObject(svgNode, handler) {
 extend(_SVGObject, {
   /** An array of strings, where each string is an SVG SCRIPT tag embedded
       in an external SVG file. This is when SVG is embedded with an OBJECT. */
-  _scriptsToExec: [],
+  _scriptsToExec: null,
   
   _fetchURL: function(url, onSuccess, onFailure) {
     var req = xhrObj();
@@ -5135,7 +5133,7 @@ extend(_SVGObject, {
   },
   
   _onRenderingFinished: function(msg) {
-    console.log('onRenderingFinished');
+    console.log('onRenderingFinished, id='+this._handler.id);
     // we made the SVG hidden before to avoid scrollbars on IE; make visible
     // now
     this._handler.flash.style.visibility = 'visible';
@@ -5153,7 +5151,10 @@ extend(_SVGObject, {
     for (var i = 0; i < this._scriptsToExec.length; i++) {
       this._executeScript(this._scriptsToExec[i]);
     }
-    console.log('end');
+    
+    // indicate that we are done
+    this._handler._loaded = true;
+    this._handler.fireOnLoad(this._handler.id, 'object');
   },
   
   /** Executes a SCRIPT block inside of an SVG file. We essentially rewrite
@@ -5164,7 +5165,22 @@ extend(_SVGObject, {
   _executeScript: function(script) {
     // change any calls to the document.* object to point to our Flash Handler
     // instead
-    console.log('script='+script);
+    var replaceText = 'svgweb.handlers["' + this._handler.id + '"].';
+    script = script.replace(/document./g, replaceText + 'document.');
+    
+    try {
+      if (isIE) {
+        // needed to run script in global scope for IE
+        window.execScript(script);
+      }
+      else {
+        eval(script);
+      }
+    } catch (exp) {
+      console.log('Error executing SVG script for ' + this._handler.id + ': '
+                  + (exp.message | exp));
+    }
+    console.log('evaled, id='+this._handler.id);
   }
 });
 

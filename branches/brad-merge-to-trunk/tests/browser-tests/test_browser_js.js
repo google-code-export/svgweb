@@ -4516,6 +4516,12 @@ function runTests(embedTypes) {
   assertEquals('rdf matches.length == 2', 2, matches.length);
   svg.removeChild(metadata);
   
+  // run tests inside of an SVG file embedded with the object tag
+  if (_hasObjects) {
+    svg = document.getElementById('svg2');
+    svg.contentDocument.runObjectTests();
+  }
+  
   // manually call unload listener to make sure no exceptions fire;
   // on browsers other than Internet Explorer this is a no-op
   // TODO: commenting out right now because it deletes the SVG rendering

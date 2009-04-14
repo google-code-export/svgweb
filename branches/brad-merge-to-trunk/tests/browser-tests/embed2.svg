@@ -61,11 +61,18 @@
     }
     
     function testLoaded() {
+      top.svgweb._objectLoaded(1);
+    }
+    
+    document.runObjectTests = function() {
+      console.log('Testing functions inside of an SVG file....');
+      // a set of tests to ensure that accessing the document object
+      // inside of SVG files works
+      
       // TODO: Fill this up with lots of functions manipulating the document
       // along with a subset of assertions so that we can test the routines
       // that transform our script into calling the Flash Handler. Also have
       // a createTextNode function where the string runs over several lines.
-      top.svgweb._objectLoaded(1);
     }
   ]]></script>
   
