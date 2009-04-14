@@ -3108,7 +3108,13 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     }
   }
   
-  this.ownerDocument = document;
+  if (this._attached) {
+    if (this._handler.type == 'script') {
+      this.ownerDocument = document;
+    } else if (this._handler.type == 'object') {
+      this.ownerDocument = this._handler.document;
+    }
+  }
   
   if (passThrough === undefined) {
     passThrough = false;
