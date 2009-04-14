@@ -887,10 +887,10 @@ function runTests(embedTypes) {
   
   svg = getDoc('mySVG').getElementById('mySVG');
   if (_hasObjects) {
-    // Firefox and Safari off by one
-    if (isFF) {
+    // Firefox and Safari differ by one for native handler
+    if (isFF && renderer == 'native') {
       svgText = svg.childNodes[4].childNodes[1];
-    } else { // Safari
+    } else { // Safari native and Flash handler for others
       svgText = svg.childNodes[3].childNodes[1];
     }
   } else {
