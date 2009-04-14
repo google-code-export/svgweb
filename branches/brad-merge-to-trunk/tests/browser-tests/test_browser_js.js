@@ -1170,6 +1170,11 @@ function runTests(embedTypes) {
                svg.firstChild);
   child = svg.firstChild;
   assertEquals('firstChild.nodeName == defs', 'defs', child.nodeName);
+  console.log('svg.id='+svg.id);
+  console.log('child.nodeName='+child.nodeName);
+  console.log('child.parentNode='+child.parentNode);
+  console.log('child.parentNode.nodeName='+child.parentNode.nodeName);
+  console.log('child.parentNode.id='+child.parentNode.id);
   assertEquals('firstChild.parentNode == svg', svg, child.parentNode);
   assertNull('firstChild.previousSibling == null', child.previousSibling);
   assertExists('firstChild.nextSibling should exist', child.nextSibling);

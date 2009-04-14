@@ -4454,10 +4454,10 @@ extend(_Element, {
                 id="rect11121" />
         </clipPath>
         
-        Then calling setAttribute('style', '') on our nodeXML causes the
-        browser to crash! The workaround is to temporarily remove nodes
-        that have a clipPath parent, set their style, then
-        reattach them (!) */
+       Then calling setAttribute('style', '') on our nodeXML causes the
+       browser to crash! The workaround is to temporarily remove nodes
+       that have a clipPath parent, set their style, then
+       reattach them (!) */
     if (isSafari
         && localName == 'style'
         && this._nodeXML.parentNode != null 
@@ -5236,6 +5236,9 @@ extend(_SVGObject, {
     var root = new _SVGSVGElement(rootXML, null, null, this._handler);
     this._handler.document.documentElement = root;
     this._handler.document.rootElement = root;
+    // add to our nodeByID lookup table so that fetching this node in the
+    // future works
+    this._handler.document._nodeById['_' + rootID] = root;
 
     // add our contentDocument property
     this._handler.flash.contentDocument = this._handler.document;
