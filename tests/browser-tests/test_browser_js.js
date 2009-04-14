@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = false;
+var printAsserts = true;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure
@@ -70,26 +70,20 @@ function runTests(embedTypes) {
               renderer == 'native' 
               || renderer == 'flash');
   
-  // contentDocument, getSVGDocument(), contentDocument.rootElement, and
+  // contentDocument, contentDocument.rootElement, and 
   // contentDocument.documentElement
   if (_hasObjects) {
-    console.log('Testing contentDocument, getSVGDocument(), rootElement, and '
-                + 'documentElement...');
+    console.log('Testing contentDocument, rootElement, and documentElement...');
     svg = document.getElementById('mySVG');
     assertExists('OBJECT with ID "svg" should exist', svg);
     assertExists('svg.contentDocument should exist', svg.contentDocument);
-    assertExists('svg.getSVGDocument should exist', svg.getSVGDocument);
-    assertExists('svg.getSVGDocument() should return something', 
-                 svg.getSVGDocument());
-    assertEquals('svg.contentDocument == svg.getSVGDocument()',
-                 svg.contentDocument, svg.getSVGDocument());
     assertExists('svg.contentDocument.rootElement should exist',
                  svg.contentDocument.rootElement);
     assertExists('svg.contentDocument.documentElement should exist',
                  svg.contentDocument.documentElement);
-    assertExists('svg.getSVGDocument().rootElement should exist',
+    assertExists('svg.contentDocument.rootElement should exist',
                  svg.contentDocument.rootElement);
-    assertExists('svg.getSVGDocument().documentElement should exist',
+    assertExists('svg.contentDocument.documentElement should exist',
                  svg.contentDocument.documentElement);
     assertEquals('svg.contentDocument.rootElement.getAttribute(id) == mySVG',
                  'mySVG', svg.contentDocument.rootElement.getAttribute('id'));
