@@ -3623,10 +3623,6 @@ extend(_Node, {
       return null;
     }
     
-    if (this.nodeType == _Node.TEXT_NODE) {
-      return null;
-    }
-    
     // are we the root SVG object when being embedded by an SVG SCRIPT?
     if (this.nodeName == 'svg' && this._handler.type == 'script') {
       if (this._htcNode) { // IE
@@ -3657,11 +3653,7 @@ extend(_Node, {
     if (this.nodeType == _Node.DOCUMENT_NODE) {
       return null;
     }
-    
-    if (this.nodeType == _Node.TEXT_NODE) {
-      return null;
-    }
-    
+      
     // are we the root SVG object when being embedded by an SVG SCRIPT?
     if (this.nodeName == 'svg' && this._handler.type == 'script') {
       if (this._htcNode) { // IE
