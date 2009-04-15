@@ -27,6 +27,7 @@ The 'lightWeight' attribute below is important for two reasons:
     <property name="textContent" get="_getTextContent"
                                  put="_setTextContent" />
     <property name="data" get="_getData" put="_setData" />
+    <property name="ownerDocument" get="_getOwnerDocument" />
 
     <!-- Non-standard defacto properties -->
     <property name="innerHTML" 
@@ -392,6 +393,10 @@ The 'lightWeight' attribute below is important for two reasons:
     } else {
       return undefined;
     }
+  }
+  
+  function _getOwnerDocument() {
+    return this._fakeNode.ownerDocument;
   }
   
   function _getId() {
