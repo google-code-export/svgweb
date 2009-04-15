@@ -3096,7 +3096,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     } else {
       xml += '<' + nodeName + ' xmlns:' + prefix + '="' + namespaceURI + '"/>';
     }
-  
+    
     this._nodeXML = parseXML(xml).documentElement;
   }
   
