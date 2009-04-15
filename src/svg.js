@@ -3234,6 +3234,12 @@ extend(_Node, {
     
     // inform Flash about the change
     if (this._attached && this._passThrough) {
+      // find the position again, but this time ignore text nodes; this is 
+      // because on the Flash side we ignore white space but don't on the 
+      // JavaScript side to have our DOM look more like the native DOM for 
+      // native SVG OBJECT support
+      position = this._findChild(refChild, true).position;
+      
       var parentID = this._nodeXML.getAttribute('id');
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'insertBefore',
@@ -3326,6 +3332,12 @@ extend(_Node, {
     if (this._attached) {
       var parentId = this._getId();
       if (oldChild.nodeType == _Node.ELEMENT_NODE) {
+        // find the position again, but this time ignore text nodes; 
+        // this is because on the Flash side we ignore white space but 
+        // don't on the JavaScript side to have our DOM look more like the 
+        // native DOM for native SVG OBJECT support
+        position = this._findChild(newChild, true).position;
+        
         this._handler.sendToFlash({ type: 'invoke', 
                                     method: 'addChildAt',
                                     elementId: newChild._getId(),
@@ -3412,7 +3424,6 @@ extend(_Node, {
         childID = this._nodeXML.getAttribute('id');
       }
       
-      // TODO: BUG: We also need to delete the text node associated with this
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'removeChild',
                                   elementId: childID,
@@ -4155,14 +4166,21 @@ extend(_Node, {
       
       @param child A _Node or _Element to search for in our list of
       childNodes. 
+      @param ignoreTextNodes Optional, defaults to false. If true, then we
+      ignore any text nodes when looking for the child, as if all we have
+      are element nodes.
       
       @returns An object literal with two values:
          position The index position of where the child is located.
          node The node itself
          
       If the child is not found then null is returned instead. */
-  _findChild: function(child) {
+  _findChild: function(child, ignoreTextNodes) {
     //console.log('findChild, child='+child.nodeName);
+    if (ignoreTextNodes === undefined) {
+      ignoreTextNodes = false;
+    }
+    
     var results = {};
     
     // get an ID for the child if one is available
@@ -4179,22 +4197,27 @@ extend(_Node, {
     // text content versus a text node ID. This is because on IE XML
     // nodes can't have expando properties, so we can't store our generated
     // text node ID on the XML node itself to find it again later.
+    var elementIndex = 0;
     for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
       var node = this._nodeXML.childNodes[i];
       var nodeID;
       if (node.nodeType == _Node.ELEMENT_NODE) {
         nodeID = node.getAttribute('id');
-      } else if (node.nodeType == _Node.TEXT_NODE && !isIE
+        elementIndex++;
+      } else if (node.nodeType == _Node.TEXT_NODE 
+                 && !ignoreTextNodes
+                 && !isIE
                  && node._textNodeID) {
         nodeID = node._textNodeID;
       }
 
       if (id && nodeID && id === nodeID) {
-        results.position = i;
+        results.position = (ignoreTextNodes) ? elementIndex : i;
         results.node = node;
         return results;
       } else if (isIE && child.nodeType == _Node.TEXT_NODE
-                 && node.nodeType == _Node.TEXT_NODE) {
+                 && node.nodeType == _Node.TEXT_NODE
+                 && !ignoreTextNodes) {
         if (child._nodeValue == node.nodeValue) {
           results.position = i;
           results.node = node;
@@ -5085,8 +5108,13 @@ extend(_Style, {
       results = results.substring(0, results.length - 1);
     }
     
-    // have the element tell Flash about the change if we are attached
+    // change our style value; however, don't pass this through to Flash
+    // because Flash might not even know about our existence yet, because we
+    // are still being run from the _Element constructor
+    var origPassThrough = this._element._passThrough;
+    this._element._passThrough = false;
     this._element.setAttribute('style', results);
+    this._element._passThrough = origPassThrough;
   }
 });
 

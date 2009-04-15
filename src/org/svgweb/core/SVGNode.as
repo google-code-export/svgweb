@@ -1485,12 +1485,16 @@ package org.svgweb.core
          * Adds newChild before refChild. Position is the position of refChild
          * to add newChild before.
          */
-        public function insertBefore(position, newChild, refChild) {
+        public function insertBefore(position:int, newChild:SVGNode, refChild:SVGNode) {
+            //this.dbg('insertBefore, position='+position+', newChild='+newChild+', refChild='+refChild);
+            // update our XML
             if (position == 0) {
                 this._xml.*[0] = newChild + this._xml.*[0];
             } else {
                 this._xml.*[position - 1] += newChild;
             }
+    
+            // update our Flash display list
             super.addChildAt(newChild, position);
             this.invalidateDisplay();
         }
