@@ -2239,6 +2239,10 @@ function FlashHandler(args) {
   this.type = args.type;
   this._finishedCallback = args.finishedCallback;
   
+  // setup our custom document.getElementById, 
+  // document.getElementsByTagNameNS, etc. methods
+  this._patchDocumentObject();
+  
   if (this.type == 'script') {
     this.id = args.svgID;
     this._xml = args.xml;
@@ -2322,10 +2326,6 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with a SCRIPT tag. */
   _handleScript: function() {
-    // setup our custom document.getElementById, 
-    // document.getElementsByTagNameNS, etc. methods
-    this._patchDocumentObject();
-    
     // create proxy objects representing the Document and SVG root; these
     // kick off creating the Flash internally
     this.document = new _Document(this._xml, this);
@@ -2336,11 +2336,6 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with an OBJECT tag. */
   _handleObject: function() {
-    // add the importNode function for IE
-    if (isIE && !document._importNodeFunc) {
-      document._importNodeFunc = this._importNodeFunc;
-    }
-    
     // transform the SVG OBJECT into a Flash one; the _SVGObject class
     // will handle embedding the Flash asychronously; see there for 
     // where the code continues after the Flash is done loading
@@ -2387,7 +2382,9 @@ extend(FlashHandler, {
     }
     
     for (var i = 0; i < svgweb.handlers.length; i++) {
-      result = svgweb.handlers[i].document.getElementById(id);
+      if (svgweb.handlers[i].type == 'script') {
+        result = svgweb.handlers[i].document.getElementById(id);
+      }
       
       if (result) {
         return result;
@@ -2418,10 +2415,12 @@ extend(FlashHandler, {
     }
     
     for (var i = 0; i < svgweb.handlers.length; i++) {
-      var doc = svgweb.handlers[i].document;
-      var matches = doc.getElementsByTagNameNS(ns, localName);
-      for (var j = 0; j < matches.length; j++) {
-        results.push(matches[j]);
+      if (svgweb.handlers[i].type == 'script') {
+        var doc = svgweb.handlers[i].document;
+        var matches = doc.getElementsByTagNameNS(ns, localName);
+        for (var j = 0; j < matches.length; j++) {
+          results.push(matches[j]);
+        }
       }
     }
 
@@ -2448,7 +2447,8 @@ extend(FlashHandler, {
     if (!isIE) {
       var namespaceFound = false;
       for (var i = 0; i < svgweb.handlers.length; i++) {
-        if (svgweb.handlers[i].document._namespaces['_' + ns]) {
+        if (svgweb.handlers[i].type == 'script'
+            && svgweb.handlers[i].document._namespaces['_' + ns]) {
           namespaceFound = true;
           break;
         }
@@ -2461,9 +2461,11 @@ extend(FlashHandler, {
     
     var prefix;
     for (var i = 0; i < svgweb.handlers.length; i++) {
-      prefix = svgweb.handlers[i].document._namespaces['_' + ns];
-      if (prefix) {
-        break;
+      if (svgweb.handlers[i].type == 'script') {
+        prefix = svgweb.handlers[i].document._namespaces['_' + ns];
+        if (prefix) {
+          break;
+        }
       }
     }
     
@@ -2795,6 +2797,11 @@ extend(NativeHandler, {
       var xpathResults;
       for (var i = 0; i < svgweb.handlers.length; i++) {
         var handler = svgweb.handlers[i];
+        
+        if (handler.type == 'object') {
+          continue;
+        }
+        
         var prefix = handler._namespaces['_' + ns];
         if (!prefix) {
           continue;
