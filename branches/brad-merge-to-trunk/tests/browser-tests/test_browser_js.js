@@ -707,7 +707,6 @@ function runTests(embedTypes) {
   }
   if (_hasObjects) {
     // Firefox and Safari differ by one
-    console.log('renderer='+renderer);
     if (renderer == 'native') {
       assertEqualsAny('root.childNodes.length == 39 or 40', [39, 40], 
                       root.childNodes.length);
