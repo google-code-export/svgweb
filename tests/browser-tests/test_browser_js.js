@@ -3241,12 +3241,12 @@ function runTests(embedTypes) {
   
   // before anything is appended to the DOM, insert a namespaced
   // element before another one in the METADATA section
-  rdf = getDoc('mySVG').createElementNS(rdf_ns, 'rdf:RDF');
-  textNode = getDoc('mySVG').createTextNode('rdf content', true);
+  rdf = getDoc('svg2').createElementNS(rdf_ns, 'rdf:RDF');
+  textNode = getDoc('svg2').createTextNode('rdf content', true);
   rdf.appendChild(textNode);
-  var metadata = getDoc('mySVG').createElementNS(svgns, 'metadata');
-  dc = getDoc('mySVG').createElementNS(dc_ns, 'dc:creator');
-  textNode = getDoc('mySVG').createTextNode('Home boy2', true);
+  var metadata = getDoc('svg2').createElementNS(svgns, 'metadata');
+  dc = getDoc('svg2').createElementNS(dc_ns, 'dc:creator');
+  textNode = getDoc('svg2').createTextNode('Home boy2', true);
   dc.appendChild(textNode);
   metadata.appendChild(rdf);
   temp = metadata.insertBefore(dc, rdf);
