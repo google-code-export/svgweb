@@ -1017,13 +1017,15 @@
            var onloadFunc = testLoaded;
 
            if (top.svgweb != undefined) {
-             top.svgweb.addOnLoad(onloadFunc, true, this);
+             top.svgweb.addOnLoad(onloadFunc, true, window);
            } else {
              onloadFunc();
            }
          }
 
          function testLoaded() {
+           // tell containing testing class that our particular file has loaded
+           // so it can assert this later
            top.svgweb._objectLoaded(2);
          }
        ]]></script><g

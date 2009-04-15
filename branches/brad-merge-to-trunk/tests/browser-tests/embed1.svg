@@ -6,20 +6,20 @@
      
   <script type="text/javascript"><![CDATA[
     function loaded() {
-    top.console.log('loaded');
       // change onloadFunc to point to your real onload function that you
       // want called when the page is truly ready
       var onloadFunc = testLoaded;
       
       if (top.svgweb != undefined) {
-        top.svgweb.addOnLoad(onloadFunc, true, this);
+        top.svgweb.addOnLoad(onloadFunc, true, window);
       } else {
         onloadFunc();
       }
     }
     
     function testLoaded() {
-    top.console.log('testLoaded');
+      // tell containing testing class that our particular file has loaded
+      // so it can assert this later
       top.svgweb._objectLoaded(0);
     }
   ]]></script>
