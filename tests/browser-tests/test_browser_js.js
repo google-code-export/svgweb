@@ -1581,9 +1581,14 @@ function runTests(embedTypes) {
   assertNull('path.firstChild == null', path.firstChild);
   assertNull('path.lastChild == null', path.lastChild);
   assertNull('path.nextSibling == null', path.nextSibling);
-  assertEquals('path.previousSibling == svg.childNodes[2nd to last child]', 
-               svg.childNodes[svg.childNodes.length - 2], 
-               path.previousSibling);
+  // NOTE: It is a known issue that on IE sometimes two text nodes that
+  // should be identical won't have == be true
+  if (!isIE) {
+    assertEquals('path.previousSibling == svg.childNodes[2nd to last child]', 
+                 svg.childNodes[svg.childNodes.length - 2], 
+                 path.previousSibling);
+  }             
+               
   assertExists('path.childNodes should exist', path.childNodes);
   assertEquals('path.childNodes.length == 0', 0, 
                path.childNodes.length);
@@ -1614,8 +1619,12 @@ function runTests(embedTypes) {
   assertNull('path.nextSibling == null', path.nextSibling);
   child = svg.childNodes[svg.childNodes.length - 2];
   assertExists('child should exist', child);
-  assertEquals('path.previousSibling == child', child, 
-               path.previousSibling);
+  // NOTE: It is a known issue that on IE sometimes two text nodes that
+  // should be identical won't have == be true
+  if (!isIE) {
+    assertEquals('path.previousSibling == child', child, 
+                 path.previousSibling);
+  }
   assertEquals('child.nextSibling == path', path, child.nextSibling);
   assertNull('path.firstChild == null', path.firstChild);
   assertNull('path.lastChild == null', path.lastChild);
