@@ -49,6 +49,7 @@
   
   <script type="text/javascript"><![CDATA[
     function loaded() {
+      top.svgweb._embedOnloads.push(1);
       // change onloadFunc to point to your real onload function that you
       // want called when the page is truly ready
       var onloadFunc = testLoaded;
@@ -65,7 +66,7 @@
     }
     
     document.runObjectTests = function() {
-      console.log('Testing functions inside of an SVG file....');
+      top.console.log('Testing functions inside of an SVG file....');
       // a set of tests to ensure that accessing the document object
       // inside of SVG files works
       
@@ -73,6 +74,22 @@
       // along with a subset of assertions so that we can test the routines
       // that transform our script into calling the Flash Handler. Also have
       // a createTextNode function where the string runs over several lines.
+    }
+    
+    // make sure doing an addEventListener for onload works on the window
+    // object using both anonymous and named functions, and that they get
+    // called in the correct order (onload attribute should fire first,
+    // followed by each of the following two addEventListeners in the order
+    // they appear in the source
+    
+    window.addEventListener('load', function() {
+      top.svgweb._embedOnloads.push(2);
+    }, false);
+    
+    window.addEventListener('load', addEventListenerMethod, false);
+    
+    function addEventListenerMethod() {
+      top.svgweb._embedOnloads.push(3);
     }
   ]]></script>
   

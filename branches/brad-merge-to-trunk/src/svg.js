@@ -875,6 +875,13 @@ and Safari the OBJECT tag gets transformed into an EMBED tag by the browser
 itself beyond our control, so you must call 
 document.getElementsByTagName('embed') instead of asking for objects in order 
 to enumerate all the SVG OBJECTs on the page.
+
+* When including SVG files using the OBJECT tag using a browser's native
+handling, the browser will parse all the white space and include these as
+children in the SVG document's DOM. When using the Flash handler for browsers,
+we do not do this. Keep this in mind if you are navigating into an SVG OBJECT;
+you will have extra text nodes on browser's where you are using native support
+versus where you are using Flash.
   
 What SVG Features Are Not Supported
 -------------------------------------------
@@ -5308,6 +5315,8 @@ extend(_SVGObject, {
     for (var i = 0; i < this._scriptsToExec.length; i++) {
       this._executeScript(this._scriptsToExec[i]);
     }
+    
+    // execute any onload handlers 
     
     // indicate that we are done
     this._handler._loaded = true;
