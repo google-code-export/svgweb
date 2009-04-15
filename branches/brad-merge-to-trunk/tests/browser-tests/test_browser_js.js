@@ -315,48 +315,46 @@ function runTests(embedTypes) {
   assertEquals("doc.getElementsByTagNameNS(null, 'rect').length "
                + "should be 0", 0, rects.length);
   
-  // TODO: FIXME: uncomment these when we support contextual node finding
-  /*             
+  // TODO: FIXME: uncomment these when we support contextual node finding            
   // test contextual getElementsByTagNameNS to find SVG nodes
-  group = getDoc('svg2').getElementById('layer1');
-  matches = group.getElementsByTagNameNS(svgns, 'rect');
-  assertExists("group.getElementsByTagNameNS(svgns, 'rect') should "
-               + "return results", matches);
-  assertEquals("group.getElementsByTagNameNS(svgns, 'rect').length == 1", 
-               1, matches.length);
-  rect = matches[0];
-  assertEquals('rect.nodeName == rect', 'rect', rect.nodeName);
-  assertEquals('rect.id == rect3926', 'rect3926', rect.id);
+  //group = getDoc('svg2').getElementById('layer1');
+  //matches = group.getElementsByTagNameNS(svgns, 'rect');
+  //assertExists("group.getElementsByTagNameNS(svgns, 'rect') should "
+  //             + "return results", matches);
+  //assertEquals("group.getElementsByTagNameNS(svgns, 'rect').length == 1", 
+  //             1, matches.length);
+  //rect = matches[0];
+  //assertEquals('rect.nodeName == rect', 'rect', rect.nodeName);
+  //assertEquals('rect.id == rect3926', 'rect3926', rect.id);
   // test contextual getElementsByTagNameNS on a node with children but with
   // a tag that should have no results
-  matches = group.getElementsByTagNameNS(svgns, 'text');
-  assertEquals("group.getElementsByTagNameNS(svgns, 'text').length == 0", 0, 
-               matches.length);
+  //matches = group.getElementsByTagNameNS(svgns, 'text');
+  //assertEquals("group.getElementsByTagNameNS(svgns, 'text').length == 0", 0, 
+  //             matches.length);
   
   // test contextual getElementsByTagNameNS on node with no children
-  path = getDoc('svg2').getElementById('path3913');
-  matches = path.getElementsByTagNameNS(svgns, 'rect');
-  assertEquals("path.getElementsByTagNameNS(svgns, 'rect').length == 0", 0, 
-               matches.length);
+  //path = getDoc('svg2').getElementById('path3913');
+  //matches = path.getElementsByTagNameNS(svgns, 'rect');
+  //assertEquals("path.getElementsByTagNameNS(svgns, 'rect').length == 0", 0, 
+  //             matches.length);
   
   // test contextual getElementsByTagNameNS on node with only textual children
-  text = getDoc('mySVG').getElementById('testText5');
-  matches = text.getElementsByTagNameNS(svgns, 'path');
-  assertEquals("text.getElementsByTagNameNS(svgns, 'path').length == 0", 0, 
-               matches.length);
+  //text = getDoc('mySVG').getElementById('testText5');
+  //matches = text.getElementsByTagNameNS(svgns, 'path');
+  //assertEquals("text.getElementsByTagNameNS(svgns, 'path').length == 0", 0, 
+  //             matches.length);
   
   // text contextual getElementsByTagNameNS to get a non-SVG node
-  metadata = getDoc('svg2').getElementById('metadata7');
-  matches = metadata.getElementsByTagNameNS(cc_ns, 'Work');
-  assertExists('getElementsByTagNameNS(cc:Work) should return something',
-               matches);
-  assertEquals('getElementsByTagNameNS(cc:Work).length == 1', 1, 
-               matches.length);
-  cc = matches[0];
-  assertExists('myCCWork from contentDocument should exist', cc);
-  assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
-               cc.getAttribute('id'));
-  */
+  //metadata = getDoc('svg2').getElementById('metadata7');
+  //matches = metadata.getElementsByTagNameNS(cc_ns, 'Work');
+  //assertExists('getElementsByTagNameNS(cc:Work) should return something',
+  //             matches);
+  //assertEquals('getElementsByTagNameNS(cc:Work).length == 1', 1, 
+  //             matches.length);
+  //cc = matches[0];
+  //assertExists('myCCWork from contentDocument should exist', cc);
+  //assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
+  //             cc.getAttribute('id'));
                
   // test getElementsByTagNameNS on normal HTML content to
   // ensure it still works

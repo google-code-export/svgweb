@@ -567,7 +567,7 @@ package org.svgweb
                     if (!refChild) {
                         this.error("error:insertBefore: refChildId not found: " + jsMsg.refChildId);
                     }
-                    
+
                     if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
                         parent = this.js_createdElements[jsMsg.parentId];
                     }
@@ -577,7 +577,7 @@ package org.svgweb
                     if (!parent) {
                         this.error("error:insertBefore: parentId not found: " + jsMsg.parentId);
                     }
-                    
+
                     parent.insertBefore(jsMsg.position, newChild, refChild);
                     parent.invalidateDisplay();
                 }
