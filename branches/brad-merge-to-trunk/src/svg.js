@@ -1107,10 +1107,17 @@ function xpath(doc, context, expr, namespaces) {
 /** Parses the given XML string and returns the document object.
 
     @param xml XML String to parse.
+    @param preserveWhiteSpace Whether to parse whitespace in the XML document
+    into their own nodes. Defaults to false. Controls Internet Explorer's
+    XML parser only.
     
     @returns XML DOM document node.
 */
-function parseXML(xml) {
+function parseXML(xml, preserveWhiteSpace) {
+  if (preserveWhiteSpace === undefined) {
+    preserveWhiteSpace = false;
+  }
+  
   var xmlDoc;
   
   if (typeof DOMParser != 'undefined') { // non-IE browsers
@@ -1147,6 +1154,7 @@ function parseXML(xml) {
     }
     
     try {
+      xmlDoc.preserveWhiteSpace = preserveWhiteSpace;
       xmlDoc.async = 'false';
       xmlDoc.loadXML(xml);
     } catch (e) {
@@ -5166,7 +5174,7 @@ function _SVGObject(svgNode, handler) {
       // clean up and parse our SVG
       svgStr = svgweb._cleanSVG(svgStr, false, false);
       this._svgString = svgStr;
-      this._xml = parseXML(this._svgString);
+      this._xml = parseXML(this._svgString, true);
 
       // create our document objects
       this.document = new _Document(this._xml, this._handler);

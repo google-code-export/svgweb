@@ -563,7 +563,7 @@ function runTests(embedTypes) {
   // elements from the test_container.
   // 11 child nodes of the div on non-IE browsers due to whitespace 
   // handling, 5 on IE
-  if (whitespaceAreNodes) {
+  if (whitespaceAreNodes && !isIE) {
     assertEquals('div.childNodes.length == 11 (non-IE browsers)', 11, 
                  div.childNodes.length);
   } else {
@@ -572,7 +572,7 @@ function runTests(embedTypes) {
   }
   // get the children in different ways due to whitespacing handling
   // first SVG root element
-  if (whitespaceAreNodes) {
+  if (whitespaceAreNodes && !isIE) {
     child = div.childNodes[3];
   } else {
     child = div.childNodes[1]; 
@@ -601,7 +601,7 @@ function runTests(embedTypes) {
   assertEquals('first SVG root element.getAttribute(id) == mySVG', 'mySVG',
                child.getAttribute('id'));
   // 2nd SVG root element
-  if (whitespaceAreNodes) {
+  if (whitespaceAreNodes && !isIE) {
     child = div.childNodes[5];
   } else {
     child = div.childNodes[2]; 
@@ -630,7 +630,7 @@ function runTests(embedTypes) {
   assertEquals('2nd SVG root element.getAttribute(id) == svg2', 'svg2',
                child.getAttribute('id'));
   // 3rd SVG root element
-  if (whitespaceAreNodes) {
+  if (whitespaceAreNodes && !isIE) {
     child = div.childNodes[7];
   } else {
     child = div.childNodes[3]; 
