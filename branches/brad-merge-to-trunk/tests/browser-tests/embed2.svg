@@ -76,20 +76,29 @@
       // a createTextNode function where the string runs over several lines.
     }
     
-    // make sure doing an addEventListener for onload works on the window
-    // object using both anonymous and named functions, and that they get
-    // called in the correct order (onload attribute should fire first,
-    // followed by each of the following two addEventListeners in the order
-    // they appear in the source
+    // test the different ways to register for the SVG file onload
     
+    // anonymous function - onload
     window.addEventListener('load', function() {
       top.svgweb._embedOnloads.push(2);
     }, false);
     
-    window.addEventListener('load', addEventListenerMethod, false);
-    
+    // named function - onload
+    window.addEventListener('load', addEventListenerMethod, false); 
     function addEventListenerMethod() {
       top.svgweb._embedOnloads.push(3);
+      top.svgweb._validateOnloads();
+    }
+    
+    // Note: we don't test document.rootElement.addEventListener(onload) for the 
+    // following reason:
+    // * Firefox only supports document.rootElement.addEventListener('SVGLoad')
+    // * Safari only supports document.rootElement.addEventListener('onload')
+    // So there is no common subset between them
+    
+    function runWindowTests() {
+      console.log('Testing using window object inside of SVG OBJECT files...');
+      // TODO: Have a bunch of tests where we use the window object
     }
   ]]></script>
   

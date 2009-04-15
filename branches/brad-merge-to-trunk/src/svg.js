@@ -5320,7 +5320,9 @@ extend(_SVGObject, {
       this._executeScript(this._scriptsToExec[i]);
     }
     
-    // execute any onload handlers 
+    // execute any onload handlers
+    
+    // execute any window.addEventListeners for the SVG OBJECTs onload event
     
     // indicate that we are done
     this._handler._loaded = true;
