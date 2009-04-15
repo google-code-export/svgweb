@@ -411,7 +411,7 @@ You should change the above to:
         var onloadFunc = doload;
         
         if (top.svgweb) {
-          top.svgweb.addOnLoad(onloadFunc, true, this);
+          top.svgweb.addOnLoad(onloadFunc, true, window);
         } else {
           onloadFunc();
         }
@@ -886,6 +886,57 @@ children in the SVG document's DOM. When using the Flash handler for browsers,
 we do not do this (i.e. we ignore white space). Keep this in mind if you are 
 navigating into an SVG OBJECT; you will have extra text nodes on browser's 
 where you are using native support versus where you are using Flash.
+
+* The 'this' keyword in an external SVG file when brought in with an SVG OBJECT
+tag when using the Flash renderer isn't always correct. For example, if you
+have the following SVG file:
+
+<svg onload="loaded(this)">
+  <script><![CDATA[
+    function loaded(onloadThis) {
+      // onloadThis correctly points to our SVG root element
+      
+      // call some other function
+      anotherFunc();
+    }
+    
+    function anotherFunc() {
+      alert(this); // 'this' incorrectly points to the containing HTML pages
+                   // window object
+    }
+  ]]></script>
+</svg>
+
+If you use the 'this' keyword inside of an onload="" attribute on the SVG
+root tag, it will correctly point to the SVG root element. However, if you
+use the 'this' keyword later on inside of a script block, such as in a 
+function, it will incorrectly point to the containing HTML page's window
+object. Correct behavior would be for it to point to the SVG object's
+own window object. 
+
+In general, though, you should not be using the 'this' keyword to grab a 
+reference to a window object; this is bad programming. Instead, you should 
+directly call and use window and only use 'this' when doing object-oriented 
+JavaScript development:
+
+<svg onload="loaded(this)">
+  <script><![CDATA[
+    function loaded(onloadThis) {
+      // onloadThis correctly points to our SVG root element
+      
+      anotherFunc();
+    }
+    
+    function anotherFunc() {
+      alert(window); // correctly points to just our SVG OBJECT window
+    }
+    
+    function SomeClass() {
+      this.someProp = 'foo'; // 'this' correctly points to SomeClass instance
+    }
+    
+    var instance = new SomeClass();
+  ]]></script>
   
 What SVG Features Are Not Supported
 -------------------------------------------
@@ -1288,25 +1339,29 @@ extend(SVGWeb, {
       @param objectWindow Optional. Provided when called from inside an SVG
       OBJECT file; this is the window object inside the SVG OBJECT. */
   addOnLoad: function(listener, isObject, objectWindow) {
-    if (isObject) {
-      // addOnLoad called from an SVG file embedded with OBJECT
-      
-      // NOTE: some browsers will fire the onload of the SVG file _before_ our
-      // NativeHandler is done (Firefox); others will do it the opposite way
-      // (Safari). We set variables pointing between the OBJECT and its
-      // NativeHandler to handle this.
+    if (isObject) { // addOnLoad called from an SVG file embedded with OBJECT
       var obj = objectWindow.frameElement;
-      if (obj._svgHandler) { // NativeHandler already constructed
-        obj._svgHandler._onObjectLoad(listener, objectWindow);
-      } else {
-        // NativeHandler not constructed yet; store a reference for later
-        // handling
-        obj._svgWindow = objectWindow;
-        obj._svgFunc = listener;
-      }
-    } else { 
-      // normal addOnLoad request from containing HTML page
       
+      // If we are being called from an SVG OBJECT tag and are the Flash
+      // renderer than just execute the onload listener now since we know
+      // the SVG file is done rendering.
+      if (isObject && this.getHandlerType() == 'flash') {
+        listener.apply(objectWindow);
+      } else {
+        // NOTE: some browsers will fire the onload of the SVG file _before_ our
+        // NativeHandler is done (Firefox); others will do it the opposite way
+        // (Safari). We set variables pointing between the OBJECT and its
+        // NativeHandler to handle this.
+        if (obj._svgHandler) { // NativeHandler already constructed
+          obj._svgHandler._onObjectLoad(listener, objectWindow);
+        } else {
+          // NativeHandler not constructed yet; store a reference for later
+          // handling
+          obj._svgWindow = objectWindow;
+          obj._svgFunc = listener;
+        }
+      }
+    } else { // normal addOnLoad request from containing HTML page
       this._listeners.push(listener);
     }
   },
@@ -5172,14 +5227,14 @@ function _SVGObject(svgNode, handler) {
   // that some URLs were blocked; on others IE will attempt to download the
   // file pointed to by the 'data' attribute. Note that using the 'src'
   // attribute is a divergence from the standard, but it solves both issues.
-  var url = this._svgNode.getAttribute('src');
-  if (!url) {
+  this.url = this._svgNode.getAttribute('src');
+  if (!this.url) {
     // they might be using an optional IE conditional comment to present
     // different versions of the OBJECT tag for different browsers
-    url = this._svgNode.getAttribute('data');
+    this.url = this._svgNode.getAttribute('data');
   }
   
-  this._fetchURL(url, 
+  this._fetchURL(this.url, 
     // success function
     hitch(this, function(svgStr) {
       // clean up and parse our SVG
@@ -5299,14 +5354,15 @@ extend(_SVGObject, {
     var rootXML = this._xml.documentElement;
     var rootID = rootXML.getAttribute('id');
     var root = new _SVGSVGElement(rootXML, null, null, this._handler);
-    this._handler.document.documentElement = root._getProxyNode();
-    this._handler.document.rootElement = root._getProxyNode();
+    var doc = this._handler.document;
+    doc.documentElement = root._getProxyNode();
+    doc.rootElement = root._getProxyNode();
     // add to our nodeByID lookup table so that fetching this node in the
     // future works
-    this._handler.document._nodeById['_' + rootID] = root;
+    doc._nodeById['_' + rootID] = root;
 
     // add our contentDocument property
-    this._handler.flash.contentDocument = this._handler.document;
+    this._handler.flash.contentDocument = doc;
     
     // Note: unfortunately we can't support the getSVGDocument() method as 
     // well; Firefox throws an error when we try to override it:
@@ -5315,14 +5371,31 @@ extend(_SVGObject, {
     //   return this.contentDocument;
     // };
     
-    // now execute any scripts embedded into the SVG file
-    for (var i = 0; i < this._scriptsToExec.length; i++) {
-      this._executeScript(this._scriptsToExec[i]);
+    // create a pseudo window element
+    this._handler.window = new _SVGWindow(this._handler);
+    
+    // our fake document object should point to our fake window object
+    doc.defaultView = this._handler.window;
+    
+    // add our onload handler to the list of scripts to execute at the
+    // beginning
+    var onload = root.getAttribute('onload');
+    if (onload) {
+      // we want 'this' inside of the onload handler to point to our
+      // SVG root; the 'document.documentElement' will get rewritten later by
+      // the _executeScript() method to point to our fake SVG root instead
+      onload = '(function(){' + onload + '}).apply(document.documentElement);';
+      this._scriptsToExec.push(onload);
     }
     
-    // execute any onload handlers
-    
-    // execute any window.addEventListeners for the SVG OBJECTs onload event
+    // now execute any scripts embedded into the SVG file; we turn all
+    // the scripts into one giant block and run them together so that 
+    // global functions can 'see' and call each other
+    var finalScript = '';
+    for (var i = 0; i < this._scriptsToExec.length; i++) {
+      finalScript += this._scriptsToExec[i] + '\n';
+    }
+    this._executeScript(finalScript);
     
     // indicate that we are done
     this._handler._loaded = true;
@@ -5338,20 +5411,153 @@ extend(_SVGObject, {
     // change any calls to the document.* object to point to our Flash Handler
     // instead
     var replaceText = 'svgweb.handlers["' + this._handler.id + '"].';
-    script = script.replace(/document./g, replaceText + 'document.');
+    script = script.replace(/document\./g, replaceText + 'document.');
     
+    // change any calls to the window.* object to point to our fake window
+    // object
+    script = script.replace(/window\./g, replaceText + 'window.');
+    //console.log('transformed script='+script);
+    
+    // we want 'this' to be our fake window object
+    var func = new Function(script);
     try {
-      if (isIE) {
-        // needed to run script in global scope for IE
-        window.execScript(script);
-      }
-      else {
-        eval(script);
-      }
+      func.apply(this._handler.window);
     } catch (exp) {
       console.log('Error executing SVG script for ' + this._handler.id + ': '
-                  + (exp.message | exp));
+                  + (exp.message || exp));
+      return;
     }
+    
+    // now execute any addEventListener(onloads) that might have been
+    // registered
+    this._handler.window._fireOnload();
+  }
+});
+
+
+/** A fake window object that we provide for SVG files to use internally. 
+    
+    @param handler The Flash Handler assigned to this fake window object. */
+function _SVGWindow(handler) {
+  this._handler = handler;
+  this.fake = true; // helps to detect fake abstraction
+  
+  this.defaultView = {};
+  this.defaultView.fake = true;
+  this.defaultView.frameElement = this._handler.flash;
+  this.defaultView.location = this._createLocation();
+  this.frameElement = this._handler.flash;
+  this.location = this.defaultView.location;
+  this.alert = window.alert;
+  this.top = this.parent = window;
+  
+  this._onloadListeners = [];
+}
+
+extend(_SVGWindow, {
+  /** Variable that makes it easy to inject a fake window.location for
+      testing. */
+  _windowLocation: window.location,
+  
+  addEventListener: function(type, listener, capture) {
+    if (type == 'load' || type == 'SVGLoad') {
+      this._onloadListeners.push(listener);
+    }
+  },
+  
+  _fireOnload: function() {
+    for (var i = 0; i < this._onloadListeners.length; i++) {
+      try {
+        this._onloadListeners[i]();
+      } catch (exp) {
+        console.log('The follow exception occurred from an SVG onload listener: '
+                    + (exp.message || exp));
+      }
+    }
+    
+    // if there is an inline window.onload execute that now
+    if (this.onload) {
+      try {
+        this.onload();
+      } catch (exp) {
+        console.log('The follow exception occurred from an SVG onload listener: '
+                    + (exp.message || exp));
+      }
+    }
+  },
+  
+  /** Creates a fake window.location object. */
+  _createLocation: function() {
+    var loc = {};
+    var url = this._handler._svgObject.url;   
+    var windowLocation = this._windowLocation; // helps unit testing
+    
+    // expand URL
+    
+    // first, see if this url is fully expanded already
+    if (/^http/.test(url)) {
+      // nothing to do
+    } else if (url.charAt(0) == '/') { // ex: /embed1.svg
+      url = windowLocation.protocol + '//' + windowLocation.host + url;
+    } else { // fully relative, such as embed1.svg
+      // get the pathname of the page we are on, clearing out everything after
+      // the last slash
+      if (windowLocation.pathname.indexOf('/') == -1) {
+        url = windowLocation.protocol + '//' + windowLocation.host + url;
+      } else {
+        var relativeTo = windowLocation.pathname;
+        // walk the string in reverse removing characters until we hit a slash
+        for (var i = relativeTo.length - 1; i >= 0; i--) {
+          if (relativeTo.charAt(i) == '/') {
+            break;
+          }
+          
+          relativeTo = relativeTo.substring(0, i);
+        }
+        
+        url = windowLocation.protocol + '//' + windowLocation.host
+              + relativeTo + url;
+      }
+    }
+    
+    // parse URL
+    
+    // FIXME: NOTE: href, search, and pathname should be URL-encoded; the others
+    // should be URL-decoded
+    
+    // match 1 - protocol
+    // match 2 - hostname
+    // match 3 - port
+    // match 4 - pathname
+    // match 5 - search
+    // match 6 - hash
+
+    var results = 
+          url.match(/^(https?:)\/\/([^\/:]*):?([0-9]*)([^\?#]*)([^#]*)(#.*)?$/);
+          
+    loc.protocol = (results[1]) ? results[1] : windowLocation.href;
+    if (loc.protocol.charAt(loc.protocol.length - 1) != ':') {
+      loc.protocol += ':';
+    }
+    loc.hostname = results[2];
+    
+    loc.port = (results[3]) ? results[3] : windowLocation.port;
+    if (!loc.port) {
+      loc.port = 80;
+    }
+    
+    loc.host = loc.hostname + ':' + loc.port;
+    
+    loc.pathname = (results[4]) ? results[4] : '';
+    loc.search = (results[5]) ? results[5] : '';
+    loc.hash = (results[6]) ? results[6] : '';
+    
+    loc.toString = function() {
+      return this.protocol + '//' + this.host + this.pathname + this.search
+                           + this.hash;
+    };
+    
+    return loc;
   }
 });
 
@@ -5781,6 +5987,12 @@ function _Document(xml, handler) {
   this._nodeById = {};
   this._namespaces = this._getNamespaces();
   this.implementation = new _DOMImplementation();
+  if (this._handler.type == 'script') {
+    this.defaultView = window;
+  } else if (this._handler.type == 'object') {
+    // we set the document.defaultView in _SVGObject._onRenderingFinished() 
+    // after we have created our fake _SVGWindow object
+  }
 }
 
 // subclasses _Node

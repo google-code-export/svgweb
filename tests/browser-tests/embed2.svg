@@ -17,7 +17,7 @@
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
    version="1.0"
    sodipodi:modified="true"
-   onload="loaded()"><defs
+   onload="loaded(this)"><defs
      id="defs4" />
   <sodipodi:namedview
      id="base"
@@ -48,20 +48,38 @@
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" /></cc:Work></rdf:RDF></metadata>
   
   <script type="text/javascript"><![CDATA[
-    function loaded() {
+    // save 'this' so we can make sure it points to our fake window object
+    var outerThis = this;
+
+    function loaded(passedInThis) {
+      // tell containing testing class that we have loaded
       top.svgweb._embedOnloads.push(1);
+      
+      // make sure our 'this' variables are correct
+      top.assertEquals('The passed in "this" should equal our fake SVG root',
+                       document.documentElement, passedInThis);
+      top.assertEquals('The outer "this" should equal our fake window object',
+                       document.defaultView, outerThis);
+      // FIXME: This is a known issue that 'this' will incorrectly refer
+      // to the containing HTML pages window object.
+      /*top.assertEquals('"this" inside of the loaded() function block should '
+                       + 'be our fake window object', document.defaultView, 
+                       this);*/
+                       
       // change onloadFunc to point to your real onload function that you
       // want called when the page is truly ready
       var onloadFunc = testLoaded;
       
       if (top.svgweb != undefined) {
-        top.svgweb.addOnLoad(onloadFunc, true, this);
+        top.svgweb.addOnLoad(onloadFunc, true, window);
       } else {
         onloadFunc();
       }
     }
     
     function testLoaded() {
+      // tell containing testing class that our particular file has loaded
+      // so it can assert this later
       top.svgweb._objectLoaded(1);
     }
     
@@ -87,6 +105,10 @@
     window.addEventListener('load', addEventListenerMethod, false); 
     function addEventListenerMethod() {
       top.svgweb._embedOnloads.push(3);
+    }
+    
+    window.onload = function() {
+      top.svgweb._embedOnloads.push(4);
       top.svgweb._validateOnloads();
     }
     
@@ -97,9 +119,17 @@
     // So there is no common subset between them
     
     function runWindowTests() {
-      console.log('Testing using window object inside of SVG OBJECT files...');
+      top.console.log('Testing using window object inside of SVG OBJECT '
+                      + 'files...');
       // TODO: Have a bunch of tests where we use the window object
+      
+      // TODO: Test accessing window.defaultView.frameElement, including
+      // the location oject on the defaultView as well as accessing name
+      // value pairs
     }
+    
+    // TODO: Add a JavaScript OOP class to make sure 'this' keyword correctly
+    // points to instance and not HTML window object
   ]]></script>
   
   <g

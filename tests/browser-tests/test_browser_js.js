@@ -24,16 +24,18 @@ svgweb._embedOnloads = [];
 // make sure things ran correctly
 svgweb._validateOnloadsCalled = false;
 svgweb._validateOnloads = function() {
-  // make sure that the 3 onload listeners in embed2.svg got called
+  // make sure that the 4 onload listeners in embed2.svg got called
   // and in the right order
-  assertEquals('embeds2.svg should have had three onload functions fire',
-               3, svgweb._embedOnloads.length);
+  assertEquals('embeds2.svg should have had 4 onload functions fire',
+               4, svgweb._embedOnloads.length);
   assertEquals('1st onload in embeds2.svg should be "1"', 1, 
                svgweb._embedOnloads[0]);
   assertEquals('2nd onload in embeds2.svg should be "2"', 2,
                svgweb._embedOnloads[1]);
   assertEquals('3rd onload in embeds2.svg should be "3"', 3,
                svgweb._embedOnloads[2]);
+  assertEquals('4th onload in embeds2.svg should be "4"', 4,
+               svgweb._embedOnloads[3]);
                
   svgweb._validateOnloadsCalled = true;
 }
@@ -716,7 +718,7 @@ function runTests(embedTypes) {
     if (isIE || renderer == 'native') {
       root = document.getElementsByTagName('object')[2].contentDocument
                                                             .documentElement;
-    } if (renderer == 'native') {
+    } else if (renderer == 'native') {
       root = document.getElementsByTagName('object')[4].contentDocument
                                                             .documentElement;
     } else {

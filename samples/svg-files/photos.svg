@@ -19,7 +19,7 @@
           var onloadFunc = doload;
         
           if (top.svgweb != undefined) {
-            top.svgweb.addOnLoad(onloadFunc, true, this);
+            top.svgweb.addOnLoad(onloadFunc, true, window);
           } else {
             onloadFunc();
           }
