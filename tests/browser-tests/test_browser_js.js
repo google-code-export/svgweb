@@ -698,6 +698,9 @@ function runTests(embedTypes) {
     if (isIE || renderer == 'native') {
       root = document.getElementsByTagName('object')[2].contentDocument
                                                             .documentElement;
+    } if (renderer == 'native') {
+      root = document.getElementsByTagName('object')[4].contentDocument
+                                                            .documentElement;
     } else {
       root = document.getElementsByTagName('embed')[2].contentDocument
                                                             .documentElement;
@@ -705,13 +708,11 @@ function runTests(embedTypes) {
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg')[2];
   }
+  assertEquals('root.id == svg11242', 'svg11242', root.id);
   if (_hasObjects) {
     // Firefox and Safari differ by one
-    if (renderer == 'native') {
-      assertEqualsAny('root.childNodes.length == 39 or 40', [39, 40], 
-                      root.childNodes.length);
-    } else if (renderer == 'flash') {
-      assertEqualsAny('root.childNodes.length == 3 or 4', [3, 44], 
+    if (renderer == 'flash') {
+      assertEqualsAny('root.childNodes.length == 3 or 4', [3, 4], 
                       root.childNodes.length);
     }
   } else {

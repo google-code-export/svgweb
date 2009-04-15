@@ -4051,8 +4051,8 @@ extend(_Node, {
           if (this._handler.document._namespaces['_' + prefix]) {
             ns = this._handler.document._namespaces['_' + prefix];
           } else {
-            console.debug('Note: no namespace declared for ' + prefix
-                          + ' attribute ' + attrName + '; ignoring');
+            console.log('Note: no namespace declared for ' + prefix
+                        + ' attribute ' + attrName + '; ignoring');
             continue;
           }
         }
