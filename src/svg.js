@@ -738,9 +738,9 @@ instead and set the page title at the top of the browser. To correct this,
 if you have no HTML TITLE, we automatically place an empty HTML TITLE into 
 the HEAD of the page, which fixes the issue.
 
-* DOM Mutation Events will not fire for SVG nodes when the Flash viewer
-is used (i.e. if you create an SVG circle and then attach it to the document, 
-a DOM Mutation event will not fire).
+* DOM Mutation Events are not yet supported and will not fire for SVG nodes 
+when the Flash viewer is used (i.e. if you create an SVG circle and then 
+attach it to the document, a DOM Mutation event will not fire).
 
 * There is an edge condition around text node equality. If you have
 a text node as a child, such as in an SVG DESC element, and then grab it:
@@ -786,7 +786,9 @@ this work, you should have the namespace on your SVG root markup:
 </svg>
 
 Note that this limitation is done on purpose to support existing XHTML
-documents that want to use createElementNS for their own purposes.
+documents that want to use createElementNS for their own purposes. This is
+also a limitation imposed by the XML namespace model itself rather than a
+limitation of the SVG Web framework.
 
 * On Internet Explorer we don't support wildcarding a given tag name
 across known namespaces and a given tag:
@@ -805,8 +807,8 @@ getElementsByTagNameNS(null, 'someTag');
 system; this means you can't dynamically work and insert processing
 instructions, comments, attributes, etc.
 
-* The isSupported() method on SVG DOM Nodes is not natively supported by Firefox,
-so therefore doesn't work when the Native Handler is being used:
+* The isSupported() method on SVG DOM Nodes is not natively supported by 
+Firefox, so therefore doesn't work when the Native Handler is being used:
 
 svgPath.isSupported('Core', '2.0')
 
@@ -824,7 +826,8 @@ DOM text nodes should not have a .style property.
 * On Internet Explorer, the cssText property on an SVG node's style object
 should not be set or retrieved; it will have unreliable results. For example,
 calling myCircle.style.cssText will not correctly return the SVG CSS of that
-node.
+node; you will instead see some custom internal properties that we use to
+support some of the framework magic on Internet Explorer.
 
 * The Firefox 3 native implementation of SVG doesn't correctly mirror
 inline style="" attributes into element.style.* values. For example,
@@ -843,7 +846,8 @@ our style properties for the above case for the Flash renderer.
 
 * By default the SVG root element has an overflow of hidden. If you make the
 overflow visible, when using the Flash renderer elements will not overflow
-outside of the containing Flash movie.
+outside of the containing Flash movie as we can't support rendering things
+outside of the Flash movie.
 
 * If you are using the Flash renderer on a browser that has native SVG
 support, and use the OBJECT tag to embed an SVG file, the browser's native
@@ -879,9 +883,9 @@ to enumerate all the SVG OBJECTs on the page.
 * When including SVG files using the OBJECT tag using a browser's native
 handling, the browser will parse all the white space and include these as
 children in the SVG document's DOM. When using the Flash handler for browsers,
-we do not do this. Keep this in mind if you are navigating into an SVG OBJECT;
-you will have extra text nodes on browser's where you are using native support
-versus where you are using Flash.
+we do not do this (i.e. we ignore white space). Keep this in mind if you are 
+navigating into an SVG OBJECT; you will have extra text nodes on browser's 
+where you are using native support versus where you are using Flash.
   
 What SVG Features Are Not Supported
 -------------------------------------------
