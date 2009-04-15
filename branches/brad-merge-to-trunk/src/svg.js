@@ -2244,10 +2244,6 @@ function FlashHandler(args) {
     this._xml = args.xml;
     this._svgString = args.svgString;
     this._scriptNode = args.scriptNode;
-    
-    // setup our custom document.getElementById, document.getElementsByTagNameNS, 
-    // etc. methods
-    this._patchDocumentObject();
        
     this._handleScript();
   } else if (this.type == 'object') {
@@ -2326,6 +2322,10 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with a SCRIPT tag. */
   _handleScript: function() {
+    // setup our custom document.getElementById, 
+    // document.getElementsByTagNameNS, etc. methods
+    this._patchDocumentObject();
+    
     // create proxy objects representing the Document and SVG root; these
     // kick off creating the Flash internally
     this.document = new _Document(this._xml, this);
@@ -2336,6 +2336,11 @@ extend(FlashHandler, {
   
   /** Handles SVG embedded into the page with an OBJECT tag. */
   _handleObject: function() {
+    // add the importNode function for IE
+    if (isIE && !document._importNodeFunc) {
+      document._importNodeFunc = this._importNodeFunc;
+    }
+    
     // transform the SVG OBJECT into a Flash one; the _SVGObject class
     // will handle embedding the Flash asychronously; see there for 
     // where the code continues after the Flash is done loading
@@ -4115,7 +4120,7 @@ extend(_Node, {
     } else {
       doc = this._nodeXML.ownerDocument;
     }
-    
+
     // IE does not support document.importNode, even on XML documents, 
     // so we have to define it ourselves.
     // Adapted from ALA article:
@@ -4387,7 +4392,9 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   
   if (this.namespaceURI == svgns) {
     // track .style changes; 
-    if (isIE && this._handler.type == 'script' && this.nodeName == 'svg') {
+    if (isIE && this._attached 
+        && this._handler.type == 'script' 
+        && this.nodeName == 'svg') {
       // do nothing now -- if we are IE and are being embedded with an
       // SVG SCRIPT tag, don't setup the style object for the SVG root now; we
       // do that later in _SVGSVGElement
@@ -4396,7 +4403,9 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
     }
     
     // handle style changes for HTCs
-    if (isIE && this._handler.type == 'script' && this.nodeName == 'svg') {
+    if (isIE && this._attached
+        && this._handler.type == 'script' 
+        && this.nodeName == 'svg') {
       // for the SVG root when being embedded by an SVG SCRIPT, ignore
       // style changes that might get set during our initialization
       this.style._ignoreStyleChanges = true;
@@ -5264,8 +5273,8 @@ extend(_SVGObject, {
     var rootXML = this._xml.documentElement;
     var rootID = rootXML.getAttribute('id');
     var root = new _SVGSVGElement(rootXML, null, null, this._handler);
-    this._handler.document.documentElement = root;
-    this._handler.document.rootElement = root;
+    this._handler.document.documentElement = root._getProxyNode();
+    this._handler.document.rootElement = root._getProxyNode();
     // add to our nodeByID lookup table so that fetching this node in the
     // future works
     this._handler.document._nodeById['_' + rootID] = root;
