@@ -20,6 +20,24 @@ svgweb._objectLoaded = function(position) {
 // listeners added in different ways run in the right order
 svgweb._embedOnloads = [];
 
+// a method that embed2.svg calls after all of its onloads have fired to
+// make sure things ran correctly
+svgweb._validateOnloadsCalled = false;
+svgweb._validateOnloads = function() {
+  // make sure that the 3 onload listeners in embed2.svg got called
+  // and in the right order
+  assertEquals('embeds2.svg should have had three onload functions fire',
+               3, svgweb._embedOnloads.length);
+  assertEquals('1st onload in embeds2.svg should be "1"', 1, 
+               svgweb._embedOnloads[0]);
+  assertEquals('2nd onload in embeds2.svg should be "2"', 2,
+               svgweb._embedOnloads[1]);
+  assertEquals('3rd onload in embeds2.svg should be "3"', 3,
+               svgweb._embedOnloads[2]);
+               
+  svgweb._validateOnloadsCalled = true;
+}
+
 function runTests(embedTypes) {
   var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
   var dc_ns = "http://purl.org/dc/elements/1.1/";
@@ -4588,6 +4606,8 @@ function runTests(embedTypes) {
   
   // our SVG OBJECT should have loaded by now
   if (_hasObjects) {
+    console.log('Testing SVG OBJECT onload listeners...');
+    
     for (var i = 0; i < 3; i++) {
       assertTrue('SVG OBJECT ' + (i + 1) + ' should have its onload() '
                  + 'method called', objectLoaded[i]);
@@ -4595,8 +4615,14 @@ function runTests(embedTypes) {
   }
   
   // set a slight timeout before reporting success in case a flash
-  // error occurred
+  // error occurred; our various onloads in embed2.svg can also run after
+  // our main function has finished (on Firefox, for example, but not Safari).
   window.setTimeout(function() {
+    // make sure that embed2.svg called our _validateOnloads() method
+    assertTrue('_validateOnloads should have been called', 
+               svgweb._validateOnloadsCalled);
+    
+    // check for any Flash errors           
     if (!_flashError) {
       console.log('All tests passed');
     }
