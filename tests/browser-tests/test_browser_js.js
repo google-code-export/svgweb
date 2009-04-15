@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = true;
+var printAsserts = false;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure
@@ -15,6 +15,10 @@ var objectLoaded = [false, false, false];
 svgweb._objectLoaded = function(position) {
   objectLoaded[position] = true;
 }
+
+// a variable that embed2.svg accesses to make sure that multiple onload
+// listeners added in different ways run in the right order
+svgweb._embedOnloads = [];
 
 function runTests(embedTypes) {
   var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
@@ -408,13 +412,12 @@ function runTests(embedTypes) {
   console.log('Testing getAttribute...');
   if (_hasObjects) {
     // Firefox and Safari transform our OBJECT tags into EMBEDs beyond our
-    // control
-    if (isIE) {
+    // control when they are using the Flash Handler
+    if (isIE || renderer == 'native') {
       matches = document.getElementsByTagName('object');
     } else {
       matches = document.getElementsByTagName('embed');
     }
-    console.log('matches='+matches.length);
     root = matches[0].contentDocument.documentElement;
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg');
@@ -692,7 +695,7 @@ function runTests(embedTypes) {
   if (_hasObjects) {
     // there are 6 OBJECT tags for standards compliant browsers (nested OBJECT
     // tags), but IE only returns 3.
-    if (isIE) {
+    if (isIE || renderer == 'native') {
       root = document.getElementsByTagName('object')[2].contentDocument
                                                             .documentElement;
     } else {
@@ -704,8 +707,14 @@ function runTests(embedTypes) {
   }
   if (_hasObjects) {
     // Firefox and Safari differ by one
-    assertEqualsAny('root.childNodes.length == 3 or 4', [3, 4], 
-                 root.childNodes.length);
+    console.log('renderer='+renderer);
+    if (renderer == 'native') {
+      assertEqualsAny('root.childNodes.length == 39 or 40', [39, 40], 
+                      root.childNodes.length);
+    } else if (renderer == 'flash') {
+      assertEqualsAny('root.childNodes.length == 3 or 4', [3, 44], 
+                      root.childNodes.length);
+    }
   } else {
     assertEquals('root.childNodes.length == 2', 2, root.childNodes.length);
   }
@@ -1584,9 +1593,6 @@ function runTests(embedTypes) {
   assertEquals('path.parentNode == svg', svg, path.parentNode);
   assertNull('path.nextSibling == null', path.nextSibling);
   child = svg.childNodes[svg.childNodes.length - 2];
-  console.log('child.nodeName='+child.nodeName);
-  console.log('child.nextSibling='+child.nextSibling);
-  console.log('svg last child='+svg.childNodes[svg.childNodes.length - 1].nodeName);
   assertExists('child should exist', child);
   assertEquals('path.previousSibling == child', child, 
                path.previousSibling);
