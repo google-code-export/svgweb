@@ -139,29 +139,35 @@ any further tricks:
 The second way to embed SVG is with the the OBJECT tag, which will work on 
 Internet Explorer as well. Example:
 
-<object id="testSVG" data="scimitar.svg" type="image/svg+xml"
-        width="1250" height="750">
-  <object id="testSVG" src="scimitar.svg" classid="image/svg+xml" 
-          width="1250" height="750">
-  </object>
+<!--[if IE]>
+<object id="testSVG" src="scimitar.svg"
+        classid="image/svg+xml" width="1250" height="750">
+<![endif]-->
+<!--[if !IE]>-->
+<object id="testSVG" data="scimitar.svg"
+        type="image/svg+xml" width="1250" height="750">
+<!--<![endif]-->
+  <h1>Put fallback content here</h1>
 </object>
 
-The outer tag is for browsers with standards-compliant support, while
-the inner tag is for Internet Explorer. Note that the inner OBJECT tag
-slightly diverges from the standard in order to support Internet Explorer
-as follows.
+Notice the Internet Explorer conditional comments. The first OBJECT tag
+is for Internet Explorer, while the second one is for standards-compliant
+browsers.
 
-For the inner OBJECT for Internet Explorer, you must specify a 'src' 
+For the first OBJECT for Internet Explorer, you must specify a 'src' 
 attribute pointing to your SVG file rather than using the standard 'data'
 attribute. Unfortunately again due to some limitations on
 Internet Explorer you should _not_ include the 'type' attribute but rather
 must include a 'classid' attribute set to "image/svg+xml" for use with the
 SVG Web framework.
 
-The URL given in the 'src' or 'data' attributes must be on the same domain 
-as the web page and follows the same domain rule (i.e. same protocol, port,
-etc.); cross-domain object insertion is not supported for security reasons. You
-must also specify a width and height.
+The second OBJECT works according to the standard, which has a 'type'
+set to "image/svg+xml" and a 'data' attribute set to 'scimitar.svg'.
+
+Note that the URL given in the 'src' or 'data' attributes must be on the same 
+domain as the web page and follows the same domain rule (i.e. same protocol, 
+port, etc.); cross-domain object insertion is not supported for security 
+reasons. You must also specify a width and height.
 
 Extra Files
 -----------
@@ -250,11 +256,12 @@ working as expected.
 If you have a SCRIPT block _inside_ of your SVG that it will
 work correctly on _all browsers_ with the Flash renderer as well:
 
-<object data="blocks_game.svg" type="image/svg+xml"
-        width="1250" height="750">
-  <object src="blocks_game.svg" classid="image/svg+xml" 
-          width="1250" height="750">
-  </object>
+<!--[if IE]>
+<object src="blocks_game.svg" classid="image/svg+xml" width="500" height="500">
+<![endif]-->
+<!--[if !IE]>-->
+<object data="blocks_game.svg" type="image/svg+xml" width="500" height="500">
+<!--<![endif]-->
 </object>
 
 (inside of blocks_game.svg):
@@ -281,11 +288,14 @@ On all browsers, including Internet Explorer, an SVG OBJECT tag can be
 manipulated by external JavaScript as normal by using the contentDocument 
 property:
 
-<object data="scimitar.svg" type="image/svg+xml"
-        id="testSVG" width="1250" height="750">
-  <object src="scimitar.svg" classid="image/svg+xml" 
-          id="testSVG" width="1250" height="750">
-  </object>
+<!--[if IE]>
+<object id="testSVG" src="scimitar.svg"
+        classid="image/svg+xml" width="1250" height="750">
+<![endif]-->
+<!--[if !IE]>-->
+<object id="testSVG" data="scimitar.svg"
+        type="image/svg+xml" width="1250" height="750">
+<!--<![endif]-->
 </object>
 
 <script>
@@ -384,8 +394,13 @@ attribute, such as:
 
 Containing HTML page:
 
-<object data="photos.svg" type="image/svg+xml">
-  <object src="photos.svg" classid="image/svg+xml"></object>
+<!--[if IE]>
+<object src="photos.svg" classid="image/svg+xml" width="500" height="500">
+<![endif]-->
+<!--[if !IE]>-->
+<object data="photos.svg"
+        type="image/svg+xml" width="500" height="500">
+<!--<![endif]-->
 </object>
 
 photos.svg:
@@ -462,9 +477,12 @@ SVG OBJECT:
 
 or
 
+<!--[if IE]>
+<object src="example.svg" classid="image/svg+xml" width="30" height="30">
+<![endif]-->
+<!--[if !IE]>-->
 <object data="example.svg" type="image/svg+xml" width="30" height="30">
-  <object src="example.svg" classid="image/svg+xml" width="30" height="30">
-  </object>
+<!--<![endif]-->
 </object>
 
 * A viewBox attribute on the SVG root element:
@@ -530,13 +548,16 @@ Note the svg\:rect trick to have Internet Explorer see namespaced SVG CSS
 rules. Currently you should directly set these on the SVG root element or 
 SVG OBJECT tag which is supported:
 
-<object data="scimitar.svg" type="image/svg+xml"
+<!--[if IE]>
+<object src="scimitar.svg" classid="image/svg+xml"
         id="testSVG" width="1250" height="750"
         style="display: inline; float: right; border: 1px solid black;">
-  <object src="scimitar.svg" classid="image/svg+xml" 
+<![endif]-->
+<!--[if !IE>-->
+  <object data="scimitar.svg" type="image/svg+xml" 
           id="testSVG" width="1250" height="750"
           style="display: inline; float: right; border: 1px solid black;">
-  </object>
+<!--<![endif]-->          
 </object>
 
 These properties are copied directly to the Flash rendering object. Changing
@@ -570,17 +591,18 @@ Fallback Content When SVG Not Possible
 --------------------------------------
 
 If neither native SVG nor Flash can be used, you can put fallback content
-inside of your OBJECT tag to be displayed; put it in the inner-most nested
-OBJECT:
+inside of your OBJECT tag to be displayed; place it before the end </OBJECT>
+tag:
 
-<object data="scimitar.svg" type="image/svg+xml" id="testSVG" 
-        width="1250" height="750"
-        style="display: inline; float: right">
-  <object src="scimitar.svg" classid="image/svg+xml" id="testSVG" 
-          width="1250" height="750"
-          style="display: inline; float: right">
-    <img src="scimitar.png"></img>
-  </object>
+<!--[if IE]>
+<object id="mySVG" src="embed1.svg"
+        classid="image/svg+xml" width="500" height="500">
+<![endif]-->
+<!--[if !IE]>-->
+<object id="mySVG" data="embed1.svg"
+        type="image/svg+xml" width="500" height="500">
+<!--<![endif]-->
+  <img src="scimitar.png" />
 </object>
 
 This will display the PNG file if SVG can't be used.
@@ -685,8 +707,14 @@ Manipulating SVG Objects on the Page
 If you embed SVG objects into your page using the OBJECT element, you can
 navigate into the SVG inside the OBJECT element using contentDocument:
 
-<object src="scimitar.svg" classid="image/svg+xml" 
-        id="testSVG" width="1250" height="750">
+<!--[if IE]>
+<object id="testSVG" src="embed1.svg"
+        classid="image/svg+xml" width="500" height="500">
+<![endif]-->
+<!--[if !IE]>-->
+<object id="testSVG" data="embed1.svg"
+        type="image/svg+xml" width="500" height="500">
+<!--<![endif]-->
 </object>
 
 var obj = document.getElementById('testSVG');
@@ -867,11 +895,15 @@ correctly with such IDs.
 * If you are using OBJECT tags to embed your SVG into the page while using
 the Flash handler support:
 
-<object id="testSVG" data="scimitar.svg" type="image/svg+xml"
-        width="1250" height="750">
-  <object id="testSVG" src="scimitar.svg" classid="image/svg+xml" 
-          width="1250" height="750">
-  </object>
+<!--[if IE]>
+<object id="mySVG" src="embed1.svg"
+        classid="image/svg+xml" width="500" height="500">
+<![endif]-->
+<!--[if !IE]>-->
+<object id="mySVG" data="embed1.svg"
+        type="image/svg+xml" width="500" height="500">
+<!--<![endif]-->
+  <img src="scimitar.png" />
 </object>
 
 and call document.getElementsByTagName('object'), note that on Firefox 
@@ -879,6 +911,8 @@ and Safari the OBJECT tag gets transformed into an EMBED tag by the browser
 itself beyond our control, so you must call 
 document.getElementsByTagName('embed') instead of asking for objects in order 
 to enumerate all the SVG OBJECTs on the page.
+
+TODO: FIXME: Check to make sure this is still true.
 
 * When including SVG files using the OBJECT tag using a browser's native
 handling, the browser will parse all the white space and include these as
@@ -1461,12 +1495,12 @@ extend(SVGWeb, {
     // extract any SVG SCRIPTs or OBJECTs
     this._svgScripts = this._getSVGScripts();
     this._svgObjects = this._getSVGObjects();
+
+    this.totalSVG = this._svgScripts.length + this._svgObjects.length;
     
     // do various things we must do early on in the page load process
     // around cleaning up SVG OBJECTs on the page
     this._cleanupSVGObjects();
-
-    this.totalSVG = this._svgScripts.length + this._svgObjects.length;
     
     // no SVG - we're done
     if (this.totalSVG == 0) {
@@ -1539,19 +1573,13 @@ extend(SVGWeb, {
     // don't have a @classid this will also happen, so we just set it to 
     // the string 'image/svg+xml' which is arbitrary. If both @type and 
     // @classid are present, IE will still look at the type first and 
-    // repeat the same incorrect fallback behavior for our purposes. Here's
-    // the thing though: if we have nested OBJECTs as recommended in the SVG Web
-    // docs, IE will _sometimes_ show the OBJECTs after the first one with 
-    // @type and @data, so we have to be ready for both 
-    // situations. Sigh -- gotta love IE.
+    // repeat the same incorrect fallback behavior for our purposes.
     var objs = document.getElementsByTagName('object');
     var results = [];
     for (var i = 0; i < objs.length; i++) {
-      // Note: IE 6 will unfortunately return all 6 objects, unlike later 
-      // versions of IE
-      if (objs[i].getAttribute('type') == 'image/svg+xml') {
+      if (objs[i].getAttribute('classid') == 'image/svg+xml') {
         results.push(objs[i]);
-      } else if (isIE && objs[i].getAttribute('classid') == 'image/svg+xml') {
+      } else if (objs[i].getAttribute('type') == 'image/svg+xml') {
         results.push(objs[i]);
       }
     }
@@ -2043,28 +2071,11 @@ extend(SVGWeb, {
           var attr = obj.attributes[j];
           div.setAttribute(attr.nodeName, attr.nodeValue);
         }
-        // bring over fallback content, but trim out the inner OBJECT for IE
+        // bring over fallback content
         var fallback = obj.innerHTML;
-        fallback = fallback.replace(/\s*<\s*object[^>]*>\s*/i, '');
-        fallback = fallback.replace(/\s*<\s*\/object\s*>\s*/i, '');
         div.innerHTML = fallback;
         obj.parentNode.replaceChild(div, obj);
         this._svgObjects[i] = div;
-      }
-    }
-    
-    // IE 6 unfortunately returns all 6 of our objects, including nested ones;
-    // remove the standards compliant ones from the page so they aren't 
-    // visible
-    if (this.config.use == 'flash' && isIE 
-        && /MSIE 6/i.test(navigator.userAgent)) {
-      for (var i = 0; i < this._svgObjects.length; i++) {
-        var obj = this._svgObjects[i];
-        if (obj.getAttribute('data') && obj.getAttribute('type')) {
-          // standards compliant SVG OBJECT tag -- remove it
-          obj.parentNode.removeChild(obj);
-          this._svgObjects.splice(i, 1);
-        }
       }
     }
     
@@ -2322,12 +2333,10 @@ function FlashHandler(args) {
     this._xml = args.xml;
     this._svgString = args.svgString;
     this._scriptNode = args.scriptNode;
-       
     this._handleScript();
   } else if (this.type == 'object') {
     this.id = args.objID;
     this._objNode = args.objNode;
-    
     this._handleObject();
   }
 }
@@ -5222,15 +5231,13 @@ function _SVGObject(svgNode, handler) {
   
   // fetch the SVG URL now and start processing.
   // Note: unfortunately we must use the 'src' attribute instead of the 
-  // standard 'data' attribute. On certain installations of Internet Explorer
+  // standard 'data' attribute for IE. On certain installations of IE
   // with some security patches IE will display a gold security bar indicating
   // that some URLs were blocked; on others IE will attempt to download the
   // file pointed to by the 'data' attribute. Note that using the 'src'
   // attribute is a divergence from the standard, but it solves both issues.
   this.url = this._svgNode.getAttribute('src');
   if (!this.url) {
-    // they might be using an optional IE conditional comment to present
-    // different versions of the OBJECT tag for different browsers
     this.url = this._svgNode.getAttribute('data');
   }
   

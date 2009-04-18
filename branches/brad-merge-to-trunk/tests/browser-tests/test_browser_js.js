@@ -435,10 +435,14 @@ function runTests(embedTypes) {
     // control when they are using the Flash Handler
     if (isIE || renderer == 'native') {
       matches = document.getElementsByTagName('object');
+      root = matches[0].contentDocument.documentElement;
     } else {
       matches = document.getElementsByTagName('embed');
+      root = matches[0].contentDocument.documentElement;
     }
+    
     root = matches[0].contentDocument.documentElement;
+    
   } else {
     root = document.getElementsByTagNameNS(svgns, 'svg');
     assertExists("document.getElementsByTagNameNS(svgns, 'svg')", root);
@@ -587,7 +591,7 @@ function runTests(embedTypes) {
   // 11 child nodes of the div on non-IE browsers due to whitespace 
   // handling, 5 on IE
   if (whitespaceAreNodes && !isIE) {
-    assertEquals('div.childNodes.length == 11 (non-IE browsers)', 11, 
+    assertEquals('div.childNodes.length == 23 (non-IE browsers)', 23, 
                  div.childNodes.length);
   } else {
     assertEquals('div.childNodes.length == 5 (Internet Explorer only)', 
@@ -596,7 +600,7 @@ function runTests(embedTypes) {
   // get the children in different ways due to whitespacing handling
   // first SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[3];
+    child = div.childNodes[7];
   } else {
     child = div.childNodes[1]; 
   }
@@ -625,7 +629,7 @@ function runTests(embedTypes) {
                child.getAttribute('id'));
   // 2nd SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[5];
+    child = div.childNodes[13];
   } else {
     child = div.childNodes[2]; 
   }
@@ -654,7 +658,7 @@ function runTests(embedTypes) {
                child.getAttribute('id'));
   // 3rd SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[7];
+    child = div.childNodes[19];
   } else {
     child = div.childNodes[3]; 
   }
@@ -713,13 +717,8 @@ function runTests(embedTypes) {
                child.childNodes[0].childNodes[0].getAttribute('offset'));
 
   if (_hasObjects) {
-    // there are 6 OBJECT tags for standards compliant browsers (nested OBJECT
-    // tags), but IE only returns 3.
     if (isIE || renderer == 'native') {
       root = document.getElementsByTagName('object')[2].contentDocument
-                                                            .documentElement;
-    } else if (renderer == 'native') {
-      root = document.getElementsByTagName('object')[4].contentDocument
                                                             .documentElement;
     } else {
       root = document.getElementsByTagName('embed')[2].contentDocument
