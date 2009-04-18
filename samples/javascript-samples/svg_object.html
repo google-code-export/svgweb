@@ -21,16 +21,34 @@
   <body>
     <h1>Tests using the OBJECT syntax to embed an SVG file</h1>
     
-    <object data="../svg-files/photos.svg" classid="image/svg+xml" 
+    <!--[if IE]>
+    <object src="../svg-files/photos.svg" classid="image/svg+xml" 
             id="testSVG" width="1250" height="750">
+    <![endif]-->
+    <!--[if !IE]>-->
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
+            id="testSVG" width="1250" height="750">
+    <!--<![endif]-->
+    </object>
+
+    <!--[if IE]>
+    <object src="../svg-files/photos.svg" classid="image/svg+xml" 
+            width="1250" height="750">
+    <![endif]-->
+    <!--[if !IE]>-->
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
+            width="1250" height="750">
+    <!--<![endif]-->
     </object>
     
-    <object data="../svg-files/photos.svg" classid="image/svg+xml" 
+    <!--[if IE]>
+    <object src="../svg-files/photos.svg" classid="image/svg+xml" 
             width="1250" height="750">
-    </object>
-    
-    <object data="../svg-files/photos.svg" classid="image/svg+xml" 
+    <![endif]-->
+    <!--[if !IE]>-->
+    <object data="../svg-files/photos.svg" type="image/svg+xml" 
             width="1250" height="750">
+    <!--<![endif]-->
     </object>
     
     <h1>Test HTML H1</h1>
