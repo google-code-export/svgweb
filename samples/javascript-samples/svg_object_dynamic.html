@@ -9,8 +9,7 @@
    <script>
      svgweb.addOnLoad(function() {
        console.log('Developers window.onload');
-       var SVGNS = 'http://www.w3.org/2000/svg';
-       
+
        var doc = document.getElementById('mySVG').contentDocument;
        
        // make sure setting and getting attributes in various ways works
@@ -54,16 +53,6 @@
    
    <h1>Tests embedding SVG using an OBJECT tag, and manipulating it through
         JavaScript</h1>
-        
-  <!--[if IE]>
-  <object id="mySVG" src="rectangles.svg" classid="image/svg+xml"
-           width="300" height="300">
-  <![endif]-->
-  <!--[if !IE]>-->
-  <object id="mySVG" data="rectangles.svg" type="image/svg+xml"
-          width="300" height="300">
-  <!--<![endif]-->
-  </object>
 
  </body>
 </html>

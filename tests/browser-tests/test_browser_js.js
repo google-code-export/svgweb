@@ -40,6 +40,10 @@ svgweb._validateOnloads = function() {
   svgweb._validateOnloadsCalled = true;
 }
 
+// a variable that we use to make sure that the different ways we listen
+// for the onload event when dynamically creating SVG OBJECT tags works
+svgweb._dynamicObjOnloads = 0;
+
 function runTests(embedTypes) {
   var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
   var dc_ns = "http://purl.org/dc/elements/1.1/";
@@ -93,7 +97,7 @@ function runTests(embedTypes) {
   assertTrue('renderer == native || flash',
               renderer == 'native' 
               || renderer == 'flash');
-  
+  /*
   // contentDocument, contentDocument.rootElement, and 
   // contentDocument.documentElement
   if (_hasObjects) {
@@ -4402,8 +4406,10 @@ function runTests(embedTypes) {
     split = circle.getAttribute('style').split(';');
     split = split.slice(0, split.length - 1);
     for (var i = 0; i < split.length; i++) {
-      split[i] = split[i].replace(/^\s*/, '');
-      split[i] = split[i].replace(/:\s*/, ':');
+      var regExp = new RegExp('^\s*', '');
+      split[i] = split[i].replace(regExp, '');
+      regExp = new RegExp(':\s*');
+      split[i] = split[i].replace(regExp, ':');
     }
     split.sort();
     styleStr = split.join(';');
@@ -4533,8 +4539,44 @@ function runTests(embedTypes) {
   // inheritance using 'inherit' keyword. Make sure things show up
   // visually correctly
   
+  */
+  // Tests for dynamically creating an SVG OBJECT
+  console.log('Testing dynamically creating an SVG OBJECT...');
+  
+  // test using addEventListener('load')
+  var div = document.getElementById('test_container');
+  var obj = document.createElement('object', true);
+  obj.setAttribute('id', 'dynamic1');
+  obj.setAttribute('data', '../../samples/svg-files/rectangles.svg');
+  obj.setAttribute('type', 'image/svg+xml');
+  obj.addEventListener('load', function() {
+    // now run our tests for this object
+    obj = document.getElementById('dynamic1');
+    assertExists('dynamic1 should exist', obj);
+    
+    // indicate that this onload and its tests ran
+     svgweb._dynamicObjOnloads++;
+  }, false);
+  svgweb.appendChild(obj, div);
+  
+  // test using onload
+  /*var div = document.getElementById('test_container');
+  var obj = document.createElement('object', true);
+  obj.setAttribute('id', 'dynamic2');
+  obj.setAttribute('data', '../../samples/svg-files/rectangles.svg');
+  obj.setAttribute('type', 'image/svg+xml');
+  obj.onload = function() {
+    // now run our tests for this object
+    obj = document.getElementById('dynamic2');
+    assertExists('dynamic2 should exist', obj);
+    
+    // indicate that this onload and its tests ran
+    svgweb._dynamicObjOnloads++;
+  }
+  svgweb.appendChild(obj, div);*/
+  
   // Test assertions for bug fixes
-  console.log('Testing bug fixes...');
+  /*console.log('Testing bug fixes...');
   
   // make sure that getElementsByTagNameNS works correctly
   // after an insertBefore, after a removeChild, and after a replaceChild
@@ -4567,7 +4609,7 @@ function runTests(embedTypes) {
   svg.insertBefore(metadata, group);
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
   assertEquals('rdf matches.length == 2', 2, matches.length);
-  svg.removeChild(metadata);
+  svg.removeChild(metadata);*/
   
   // run tests inside of an SVG file embedded with the object tag
   if (_hasObjects) {
@@ -4631,6 +4673,11 @@ function runTests(embedTypes) {
     // make sure that embed2.svg called our _validateOnloads() method
     assertTrue('_validateOnloads should have been called', 
                svgweb._validateOnloadsCalled);
+               
+    // make sure that when we dynamically created our SVG OBJECTs that
+    // the different ways we subscribed to the onload events worked
+    assertEquals('onload should have fired for our 2 listeners for dynamic '
+                 + 'objects', 2, svgweb._dynamicObjOnloads);
     
     // check for any Flash errors           
     if (!_flashError) {

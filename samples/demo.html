@@ -164,7 +164,7 @@
     }
     function svgOnLoad(msg) {
         if (SVGFiles[currentSVGIndex].viewBox) {
-            currentSVGHandler.getSVGDocument().documentElement.setAttribute('viewBox', SVGFiles[currentSVGIndex].viewBox);
+            currentSVGHandler.contentDocument.documentElement.setAttribute('viewBox', SVGFiles[currentSVGIndex].viewBox);
             document.getElementById('inputViewBox').value = SVGFiles[currentSVGIndex].viewBox;
         }
         else {
