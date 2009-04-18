@@ -721,6 +721,78 @@ var obj = document.getElementById('testSVG');
 var doc = obj.contentDocument;
 var myCircle = doc.getElementById('myCircle');
 
+Note that the getSVGDocument() method is not currently supported; you should
+use contentDocument instead.
+
+Dynamically Creating SVG OBJECTs and SVG Roots
+----------------------------------------------
+
+If you want to dynamically create a new SVG OBJECT on your page, you must
+do the following. First, when you create your object, you must pass in the
+value 'true' to signal that this object will be used for SVG:
+
+var obj = document.createElement('object', true);
+
+Note that this is a divergence from the standard and is needed for the 
+SVG Web magic to happen.
+
+After creating your object, set it's 'data', 'type', 'width', and 'height'
+values, then add an onload listener to know when its ready to use:
+
+var obj = document.createElement('object', true);
+obj.setAttribute('type', 'image/svg+xml');
+obj.setAttribute('data', 'rectangles.svg');
+obj.setAttribute('width', '500');
+obj.setAttribute('height', '500');
+obj.addEventListener('load', function() {
+  alert('loaded!');
+}, false);
+
+To append your new SVG OBJECT to the page, you must use the svgweb.appendChild()
+method instead of calling appendChild on the element you want to attach it
+to. So if you wanted to attached it to the BODY element, you would do the
+following:
+
+svgweb.appendChild(obj, document.body);
+
+rather than:
+
+document.body.appendChild(obj). The svgweb.appendChild() method takes the
+SVG OBJECT to append as its first argument, and the parent to attach it to
+as its second argument.
+
+Note that this is a divergence from the standard necessary for SVG Web to
+do its magic.
+
+Dynamically creating an SVG Root element is similar for direct embedding into
+a web page (note that this is just documented here but is not yet implemented). 
+You don't have to create a SCRIPT tag like you would if you were direct
+embedding the SVG on page load:
+
+<script type="image/svg+xml">
+  <svg>
+    ...
+  </svg>
+</script>
+
+Instead, you follow a process similar to the above:
+
+// create SVG root element
+var svg = document.createElementNS(svgns, 'svg'); // don't need to pass in 'true'
+svg.setAttribute('width', '300');
+svg.setAttribute('height', '300');
+
+// create an example circle and append it to SVG root element
+var circle = document.createElementNS(svgns, 'circle');
+svg.appendChild(circle);
+
+// now append the SVG root to our document
+svgweb.appendChild(svg, document.body); // note that we call svgweb.appendChild
+
+The parent that you attach either your SVG OBJECT or SVG root must 
+already be attached to the real DOM on your page (i.e. it can't be disconnected
+from the page).
+
 Known Issues and Errata
 -----------------------
 
@@ -1368,18 +1440,18 @@ extend(SVGWeb, {
       
       @param listener Function that will get called when page and all
       embedded SVG is loaded and rendered.
-      @param isObject Optional. If true, then we are calling this from
+      @param fromObject Optional. If true, then we are calling this from
       inside an SVG OBJECT file.
       @param objectWindow Optional. Provided when called from inside an SVG
       OBJECT file; this is the window object inside the SVG OBJECT. */
-  addOnLoad: function(listener, isObject, objectWindow) {
-    if (isObject) { // addOnLoad called from an SVG file embedded with OBJECT
+  addOnLoad: function(listener, fromObject, objectWindow) {
+    if (fromObject) { // addOnLoad called from an SVG file embedded with OBJECT
       var obj = objectWindow.frameElement;
       
       // If we are being called from an SVG OBJECT tag and are the Flash
       // renderer than just execute the onload listener now since we know
       // the SVG file is done rendering.
-      if (isObject && this.getHandlerType() == 'flash') {
+      if (fromObject && this.getHandlerType() == 'flash') {
         listener.apply(objectWindow);
       } else {
         // NOTE: some browsers will fire the onload of the SVG file _before_ our
@@ -1408,6 +1480,51 @@ extend(SVGWeb, {
       return 'flash';
     } else if (this.renderer == NativeHandler) {
       return 'native';
+    }
+  },
+  
+  /** Appends a dynamically created SVG OBJECT or SVG root to the page.
+      See the section "Dynamically Creating SVG OBJECTs and SVG Roots"
+      for details.
+      
+      @node Either an 'object' created with 
+      document.createElement('object', true) or an SVG root created with
+      document.createElementNS(svgns, 'svg')
+      @parent An HTML DOM parent to attach our SVG OBJECT or SVG root to.
+      This DOM parent must already be attached to the visible DOM. */
+  appendChild: function(node, parent) {
+    if (this.getHandlerType() == 'native') {
+      parent.appendChild(node); // just pass through
+    } else { // Flash
+      if (node.nodeName.toLowerCase() == 'object'
+          && node.getAttribute('type') == 'image/svg+xml') {
+        this.totalSVG++;
+        this._svgObjects.push(node);
+        
+        // register onloads
+        if (node.onload) {
+          node.addEventListener('load', node.onload, false);
+        }
+        // node._listeners is an array we expose through our custom
+        // document.createElement('object', true) -- the 'true' actually
+        // flags us to do things like this
+        for (var i = 0; i < node._listeners.length; i++) {
+          this.addOnLoad(node._listeners[i]);
+        }
+        
+        // turn our OBJECT into a place-holder DIV attached to the DOM, 
+        // copying over our properties; this will get replaced by the 
+        // Flash OBJECT
+        var div = document._createElement('div');
+        for (var j = 0; j < node.attributes.length; j++) {
+          var attr = node.attributes[j];
+          div.setAttribute(attr.nodeName, attr.nodeValue);
+        }
+        parent.appendChild(div);
+        
+        // now handle this SVG OBJECT
+        this._processSVGObject(div);
+      }
     }
   },
   
@@ -1502,6 +1619,9 @@ extend(SVGWeb, {
     // around cleaning up SVG OBJECTs on the page
     this._cleanupSVGObjects();
     
+    // handle a peculiarity for Safari (see method for details)
+    this._handleHTMLTitleBug();
+    
     // no SVG - we're done
     if (this.totalSVG == 0) {
       if (isIE) {
@@ -1530,9 +1650,6 @@ extend(SVGWeb, {
     } else if (this.config.use == 'native') {
       this.renderer = NativeHandler;
     }
-    
-    // handle a peculiarity for Safari (see method for details)
-    this._handleHTMLTitleBug();
   
     // now process each of the SVG SCRIPTs and SVG OBJECTs
     this.totalLoaded = 0;
@@ -1673,6 +1790,8 @@ extend(SVGWeb, {
       for (var i = 0; i < self._listeners.length; i++) {
         self._listeners[i]();
       }
+      
+      self._listeners = [];
     }, 1);
   },
   
@@ -2052,6 +2171,8 @@ extend(SVGWeb, {
     document._getElementsByTagNameNS = null;
     document.createElementNS = null;
     document._createElementNS = null;
+    document.createElement = null;
+    document._createElement = null;
     document.createTextNode = null;
     document._createTextNode = null;
     document._importNodeFunc = null;
@@ -2446,6 +2567,9 @@ extend(FlashHandler, {
     
     document._createElementNS = document.createElementNS;
     document.createElementNS = this._createElementNS;
+    
+    document._createElement = document.createElement;
+    document.createElement = this._createElement;
       
     document._createTextNode = document.createTextNode;
     document.createTextNode = this._createTextNode;
@@ -2558,6 +2682,51 @@ extend(FlashHandler, {
 
     var node = new _Element(qname, prefix, ns);
     return node._getProxyNode(); 
+  },
+  
+  /** Our implementation of createElement, which we patch into the 
+      document object. We do it here to prevent a closure and therefore
+      a memory leak on IE. Note that this function runs in the global
+      scope, so 'this' will not refer to our object instance but rather
+      the window object. 
+      
+      We patch createElement to have a second boolean argument that controls 
+      how we handle the nodeName, in particular for 'object'. This flags to
+      us that this object will be used as an SVG object so that we can 
+      keep track of onload listeners added through addEventListener.
+      
+      @param nodeName The node name, such as 'div' or 'object'.
+      @param forSVG Optional boolean on whether the node is an OBJECT that
+      will be used as an SVG OBJECT. Defaults to false. */
+  _createElement: function(nodeName, forSVG) {
+    if (!forSVG) {
+      return document._createElement(nodeName);
+    } else if (forSVG && nodeName.toLowerCase() == 'object') {
+      var obj = document._createElement('object');
+      obj._listeners = [];
+      
+      // capture any original addEventListener method
+      var addEventListener = obj.addEventListener;
+      // Do a trick to form a mini-closure here so that we don't capture
+      // the objects above and form memory leaks on IE. We basically patch
+      // addEventListener for just this object to build up our list of
+      // onload listeners; for other event types we delegate to the browser's
+      // native way to attach event listeners.
+      (function(_obj, _addEventListener){
+        _obj.addEventListener = function(type, listener, useCapture) {
+          // handle onloads special
+          if (type == 'load') {
+            this._listeners.push(listener);
+          } else if (!addEventListener) { // IE
+            this.attachEvent('on' + type, listener);
+          } else { // W3C
+            _addEventListener(type, listener, useCapture);
+          }  
+        };
+      })(obj, addEventListener); // pass in object and native addEventListener
+      
+      return obj;
+    }
   },
   
   /** Our implementation of createTextNode, which we patch into the 
@@ -5302,6 +5471,7 @@ extend(_SVGObject, {
   },
     
   _onFlashLoaded: function(msg) {
+    console.log('_SVGObject, onFlashLoaded, msg='+this._handler.debugMsg(msg));
     // store a reference to our Flash object
     this._handler.flash = document.getElementById(this._handler.flashID);
     
@@ -5334,6 +5504,7 @@ extend(_SVGObject, {
   },
   
   _onHTCLoaded: function(msg) {
+    console.log('_SVGObject, onHTCLoaded, msg='+this._handler.debugMsg(msg));
     // can't use htcNode.parentNode since we override that inside svg.htc
     var head = document.getElementsByTagName('head')[0];
     head.removeChild(msg.htcNode);
@@ -5348,7 +5519,8 @@ extend(_SVGObject, {
   },
   
   _onRenderingFinished: function(msg) {
-    console.log('onRenderingFinished, id='+this._handler.id);
+    console.log('_SVGObject, onRenderingFinished, id='+this._handler.id
+                + ', msg='+this._handler.debugMsg(msg));
     // we made the SVG hidden before to avoid scrollbars on IE; make visible
     // now
     this._handler.flash.style.visibility = 'visible';
@@ -5629,6 +5801,7 @@ extend(FlashInserter, {
       
       @returns The Flash DOM object. */
   _insertFlash: function(flash) {
+    console.log('insertFlash, flash='+flash);
     // do a trick to turn the Flash HTML string into an actual DOM object
     // unfortunately this doesn't work on IE; on IE the Flash is immediately
     // loaded when we do div.innerHTML even though we aren't attached
@@ -5637,6 +5810,7 @@ extend(FlashInserter, {
     div.innerHTML = flash;
     var flashObj = div.childNodes[0];
     div.removeChild(flashObj);
+    console.log('flashObj='+flashObj);
     
     // at this point we have the OBJECT tag; ExternalInterface communication
     // won't work on Firefox unless we get the EMBED tag itself
@@ -5651,7 +5825,8 @@ extend(FlashInserter, {
     this._replaceMe.parentNode.replaceChild(flashObj, this._replaceMe);
     
     // expose the root SVG element as 'documentElement' on the EMBED tag
-    // for SVG SCRIPT embed as a utility property for developers
+    // for SVG SCRIPT embed as a utility property for developers to descend
+    // down into the SVG root tag
     // (see Known Issues and Errata for details)
     if (this.type == 'script') {
       flashObj.documentElement = this;
