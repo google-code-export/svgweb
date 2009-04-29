@@ -74,7 +74,7 @@ package org.svgweb
 
         public function SVGViewerWeb():void {
             this.setupJavaScriptInterface();
-            this.debug('SVGViewerWeb constructor');
+            //this.debug('SVGViewerWeb constructor');
             this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
             super();
         }
@@ -291,7 +291,7 @@ package org.svgweb
          * Event handlers from SVG Nodes
          **/
         override public function handleOnLoad():void {
-            this.debug("render time: " + ( (new Date()).valueOf()  - this.renderStartTime) + "ms");
+            this.debug("render time for " + this.js_uniqueId + ": " + ( (new Date()).valueOf()  - this.renderStartTime) + "ms");
             var onLoadHandler:String = '';
             if (this.svgRoot.xml.@onload) {
                 onLoadHandler = this.svgRoot.xml.@onload;
