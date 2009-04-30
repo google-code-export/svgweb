@@ -207,6 +207,12 @@ to be used you can drop the following META tag into your page:
 
 <meta name="svg.render.forceflash" content="true" />
 
+You can also force the Flash renderer through the URL with the following flag:
+
+http://example.com/mypage.html?svg.render.forceflash=true
+
+Just set 'svg.render.forceflash' to true or false after a query parameter.
+
 SVG Scripting Support
 ---------------------
 
@@ -2190,7 +2196,8 @@ extend(SVGWeb, {
     Also determines if the browser supports native SVG or Flash and the
     correct Flash version. Determines the best renderer to use. */
 function RenderConfig() {
-  // see if there is a META tag for 'svg.render.forceflash'
+  // see if there is a META tag for 'svg.render.forceflash' or a query
+  // value in the URL
   if (!this._forceFlash()) {
     // if not, see if this browser natively supports SVG
     if (this.hasNativeSVG()) {
@@ -2229,17 +2236,23 @@ extend(RenderConfig, {
   use: null,
   
   /** Determines if there is the META tag 'svg.render.forceflash' set to
-      true. */
+      true or a URL query value with 'svg.render.forceflash' given. */
   _forceFlash: function() {
+    var results = false;
+    
+    if (window.location.search.indexOf('svg.render.forceflash=true') != -1) {
+      results = true;
+    }
+    
     var meta = document.getElementsByTagName('meta');
     for (var i = 0; i < meta.length; i++) {
       if (meta[i].name == 'svg.render.forceflash' &&
           meta[i].content.toLowerCase() == 'true') {
-        return true;
+        results = true;
       }
     }
     
-    return false;
+    return results;
   },
   
   /** Determines whether this browser supports native SVG. */
