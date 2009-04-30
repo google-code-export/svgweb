@@ -43,11 +43,13 @@ the SVG is rendered natively by the browser.
 
 In general, the library is meant to bring seamless SVG support to Internet 
 Explorer using Flash as close to the SVG 1.1 Full standard as possible, using 
-native browser SVG upport in other browsers. The Flash renderer can be used on 
+native browser SVG support in other browsers. The Flash renderer can be used on 
 other browsers than Internet Explorer, though we default to only using Flash
 on IE.
 
-It is currently a non-goal of this library to support SVG 1.2. 
+It is currently a non-goal of this library to support SVG 1.2; we might
+select specific elements from the SVG 1.2 spec where it makes sense, 
+however, such as possibly the Video and Audio tag.
 
 Another goal of the library is to make direct embedding of SVG into normal 
 non-XHTML HTML much easier, as was well as supporting using the OBJECT tag to 
@@ -727,8 +729,8 @@ var obj = document.getElementById('testSVG');
 var doc = obj.contentDocument;
 var myCircle = doc.getElementById('myCircle');
 
-Note that the getSVGDocument() method is not currently supported; you should
-use contentDocument instead.
+Note that the getSVGDocument() method is not currently supported due to
+technical limitations; you should use contentDocument instead.
 
 Dynamically Creating SVG OBJECTs and SVG Roots
 ----------------------------------------------
@@ -767,8 +769,8 @@ document.body.appendChild(obj). The svgweb.appendChild() method takes the
 SVG OBJECT to append as its first argument, and the parent to attach it to
 as its second argument.
 
-Note that this is a divergence from the standard necessary for SVG Web to
-do its magic.
+Note that our svgweb.appendChild method is a divergence from the standard 
+necessary for SVG Web to do its magic.
 
 Dynamically creating an SVG Root element is similar for direct embedding into
 a web page (note that this is just documented here but is not yet implemented). 
