@@ -92,6 +92,19 @@
       // along with a subset of assertions so that we can test the routines
       // that transform our script into calling the Flash Handler. Also have
       // a createTextNode function where the string runs over several lines.
+      
+      // TODO: add setTimeout and setIntervals here that call a global function
+      // relative to ourselves (i.e. setTimeout("tick()", 500) with the 
+      // following tests:
+      //  * Pass in string functions to both, using both double and single
+      //  quoted delimiters, with backslashed versions inside each string,
+      //  with string functions that go over several lines
+      //  * Pass in normal function pointers
+      //  * Pass in a variable that is a string to execute
+      //  * Pass in an inline anonymous function that is multiline and which
+      //  uses double and single quotes inside of it
+      // Also call clearTimeout and clearInterval to ensure these work with
+      // the styles above
     }
     
     // test the different ways to register for the SVG file onload
