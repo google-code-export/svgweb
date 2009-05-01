@@ -1052,6 +1052,49 @@ JavaScript development:
     var instance = new SomeClass();
   ]]></script>
   
+* If you are dynamically creating an SVG OBJECT with the Flash handler, after 
+creation the SVG OBJECT will not correctly reference the actual object in the 
+page. For example, if you have the following code:
+
+var obj = document.createElement('object', true);
+obj.setAttribute('type', 'text/svg+xml');
+obj.setAttribute('data', 'myfile.svg');
+obj.addEventListener('load', function() {
+  alert(obj.parentNode); // will incorrectly return null!
+}, false);
+svgweb.appendChild(obj, myParentNode);
+
+Notice that we access 'obj.parentNode' after the SVG OBJECT has finished
+loading, and this incorrectly returns 'null' instead of the actual
+'myParentNode' value. 'obj' will not reference the actual Flash object as
+you would expect, so you should not continue using the value inside the closure 
+or later on as a stored value.
+
+There are two workarounds. First, 'this' inside your onload handler will 
+correctly reference the actual Flash object so you can further manipulate it
+or store the value:
+
+var obj = document.createElement('object', true);
+obj.setAttribute('type', 'text/svg+xml');
+obj.setAttribute('data', 'myfile.svg');
+obj.addEventListener('load', function() {
+  obj = this;
+  alert(obj.parentNode); // correctly prints 'myParentNode'
+}, false);
+svgweb.appendChild(obj, myParentNode);
+
+You can also of course use getElementById if you gave your SVG OBJECT an id:
+
+var obj = document.createElement('object', true);
+obj.setAttribute('type', 'text/svg+xml');
+obj.setAttribute('data', 'myfile.svg');
+obj.setAttribute('id', 'mySVG');
+obj.addEventListener('load', function() {
+  obj = document.getElementById('mySVG');
+  alert(obj.parentNode); // correctly prints 'myParentNode'
+}, false);
+svgweb.appendChild(obj, myParentNode);
+  
 What SVG Features Are Not Supported
 -------------------------------------------
 
@@ -6037,7 +6080,7 @@ extend(FlashInserter, {
               + 'FlashVars="' + flashVars + '" '
               + 'pluginspage="'
               + protocol
-              +'://www.macromedia.com/go/getflashplayer" '
+              + '://www.macromedia.com/go/getflashplayer" '
               + 'style="' + style + '"\n '
               + 'class="' + className + '"\n '
               + ' />'
