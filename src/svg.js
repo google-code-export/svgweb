@@ -1350,8 +1350,8 @@ function parseXML(xml, preserveWhiteSpace) {
     
     var root = xmlDoc.documentElement;
     if (root.nodeName == 'parsererror') {
-      throw 'There is a bug in your SVG: '
-             + (new XMLSerializer().serializeToString(root));
+      throw new Error('There is a bug in your SVG: '
+                      + (new XMLSerializer().serializeToString(root)));
     }
   } else { // IE
     // only use the following two MSXML parsers:
@@ -1369,7 +1369,7 @@ function parseXML(xml, preserveWhiteSpace) {
     }
     
     if (!xmlDoc) {
-      throw 'Unable to instantiate XML parser';
+      throw new Error('Unable to instantiate XML parser');
     }
     
     try {
@@ -1378,11 +1378,11 @@ function parseXML(xml, preserveWhiteSpace) {
       var successful = xmlDoc.loadXML(xml);
       
       if (!successful || xmlDoc.parseError.errorCode != 0) {
-        throw(new Error(xmlDoc.parseError.reason));
+        throw new Error(xmlDoc.parseError.reason);
       }
     } catch (e) {
       console.log(e.message);
-      throw 'Unable to parse SVG: ' + e.message;
+      throw new Error('Unable to parse SVG: ' + e.message);
     }
   }
   
@@ -1440,7 +1440,7 @@ function xhrObj() {
     }
 
     if (!xhr) {
-      throw 'XMLHttpRequest object not available on this platform.';
+      throw new Error('XMLHttpRequest object not available on this platform');
     }
 
     return xhr;
@@ -1840,7 +1840,11 @@ extend(SVGWeb, {
       self._listeners = [];
       this.totalLoaded = 0;
       for (var i = 0; i < listeners.length; i++) {
-        listeners[i]();
+        try {
+          listeners[i]();
+        } catch (exp) {
+          console.log('Error while firing onload: ' + (exp.message || exp));
+        }
       }
     }, 1);
   },
@@ -2876,7 +2880,7 @@ extend(FlashHandler, {
   _onFlashError: function(msg) {
     this._onLog(msg);
     svgweb._fireFlashError('FLASH: ' + msg.logString);
-    throw 'FLASH: ' + msg.logString;
+    throw new Error('FLASH: ' + msg.logString);
   },
   
   /** Stores any SCRIPT that might be inside an SVG file embedded through
@@ -5654,9 +5658,10 @@ extend(_SVGObject, {
       
       @param script String with script to execute. */
   _executeScript: function(script) {
+    var replaceText = 'svgweb.handlers["' + this._handler.id + '"].';
+    
     // change any calls to the document.* object to point to our Flash Handler
     // instead
-    var replaceText = 'svgweb.handlers["' + this._handler.id + '"].';
     script = script.replace(/document\./g, replaceText + 'document.');
     
     // change any calls to the window.* object to point to our fake window
