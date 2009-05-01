@@ -1375,7 +1375,11 @@ function parseXML(xml, preserveWhiteSpace) {
     try {
       xmlDoc.preserveWhiteSpace = preserveWhiteSpace;
       xmlDoc.async = 'false';
-      xmlDoc.loadXML(xml);
+      var successful = xmlDoc.loadXML(xml);
+      
+      if (!successful || xmlDoc.parseError.errorCode != 0) {
+        throw(new Error(xmlDoc.parseError.reason));
+      }
     } catch (e) {
       console.log(e.message);
       throw 'Unable to parse SVG: ' + e.message;
@@ -1911,6 +1915,13 @@ extend(SVGWeb, {
       svg = svg.replace(/\>\s+\</gm, '><');
     }
     
+    // Surprisingly, MSXML will fetch and parse external DTDs, resulting 
+    // in errors most of the time! tiger.svg was throwing this issue. 
+    // Just strip out the SVG DTD for now.
+    // FIXME: Will this cause issues for custom DTD overrides, which we don't
+    // support anyway for now?
+    svg = svg.replace(/<!DOCTYPE svg PUBLIC "\-\/\/W3C\/\/DTD SVG 1\.1\/\/EN"\s*"http:\/\/www\.w3\.org\/Graphics\/SVG\/1\.1\/DTD\/svg11\.dtd"\>\s*/m, '');
+    
     // add missing IDs to all elements and get the root SVG elements ID
     var xml = this._addIDs(svg);
     if (typeof XMLSerializer != 'undefined') { // non-IE browsers
@@ -1918,7 +1929,6 @@ extend(SVGWeb, {
     } else { // IE
       svg = xml.xml;
     }
-    
     return svg;
   },
   
@@ -5476,13 +5486,13 @@ function _SVGObject(svgNode, handler) {
 
       // create our document objects
       this.document = new _Document(this._xml, this._handler);
-      
+
       // insert our Flash and replace the SVG OBJECT tag
       var nodeXML = this._xml.documentElement;
+
       var inserter = new FlashInserter('object', document, 
                                        this._xml.documentElement,
                                        this._svgNode, this._handler);
-      
       // wait for Flash to finish loading; see _onFlashLoaded() in this class
       // for further execution after the Flash asynchronous process is done
     }),
@@ -5528,6 +5538,7 @@ extend(_SVGObject, {
     
   _onFlashLoaded: function(msg) {
     //console.log('_SVGObject, onFlashLoaded, msg='+this._handler.debugMsg(msg));
+    
     // store a reference to our Flash object
     this._handler.flash = document.getElementById(this._handler.flashID);
     
