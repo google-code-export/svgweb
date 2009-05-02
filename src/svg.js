@@ -1889,7 +1889,10 @@ extend(SVGWeb, {
       HTML page; if false, we leave things alone (primarily for independent 
       .svg files). 
       
-      @returns Cleaned up SVG string. */
+      @returns Returns an object with two values:
+        svg: cleaned up SVG as a String
+        xml: parsed SVG as an XML object
+  */
   _cleanSVG: function(svg, addMissing, normalizeWhitespace) {
     // remove any leading whitespace from beginning and end of SVG doc
     svg = svg.replace(/^\s*/, '');
@@ -1933,7 +1936,7 @@ extend(SVGWeb, {
     } else { // IE
       svg = xml.xml;
     }
-    return svg;
+    return {svg: svg, xml: xml};
   },
   
   /** Extracts SVG from the script, cleans it up, adds missing IDs to
@@ -1943,7 +1946,9 @@ extend(SVGWeb, {
       @param script SCRIPT node to get the SVG from. */
   _processSVGScript: function(script) {
     var svg = script.innerHTML;
-    svg = this._cleanSVG(svg, true, true);
+    var results = this._cleanSVG(svg, true, true);
+    svg = results.svg;
+    var xml = results.xml;
     var rootID = xml.documentElement.getAttribute('id');
     
     // create the correct handler
@@ -5484,7 +5489,7 @@ function _SVGObject(svgNode, handler) {
     // success function
     hitch(this, function(svgStr) {
       // clean up and parse our SVG
-      svgStr = svgweb._cleanSVG(svgStr, false, false);
+      svgStr = svgweb._cleanSVG(svgStr, false, false).svg;
       this._svgString = svgStr;
       this._xml = parseXML(this._svgString, true);
 
