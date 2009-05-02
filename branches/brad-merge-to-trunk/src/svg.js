@@ -1,5 +1,5 @@
 /*
-Copyright (c) 2009 Google Inc.
+Copyright (c) 2009 Google Inc. (Brad Neuberg, http://codinginparadise.org)
 
 Portions Copyright (c) 2008 Rick Masters
 Portions Copyright (c) 2008 Others (see COPYING.txt for details on
@@ -5653,32 +5653,45 @@ extend(_SVGObject, {
   },
   
   /** Executes a SCRIPT block inside of an SVG file. We essentially rewrite
-      the references in this script to point to Flash Handler instead, and then
-      eval the entire block.
+      the references in this script to point to our Flash Handler instead, 
+      create an invisible iframe that will act as the 'global' object, and then
+      write the script into the iframe as a new SCRIPT block.
       
       @param script String with script to execute. */
   _executeScript: function(script) {
-    var replaceText = 'svgweb.handlers["' + this._handler.id + '"].';
+    var replaceText = 'top.svgweb.handlers["' + this._handler.id + '"].';
     
     // change any calls to the document.* object to point to our Flash Handler
     // instead
     script = script.replace(/document\./g, replaceText + 'document.');
     
-    // change any calls to the window.* object to point to our fake window
+    // change any calls to the window.* object to point to our fake Window
     // object
     script = script.replace(/window\./g, replaceText + 'window.');
     
-    // we want 'this' to be our fake window object
-    var func = new Function(script);
-    try {
-      func.apply(this._handler.window);
-    } catch (exp) {
-      console.log('Error executing SVG script for ' + this._handler.id + ': '
-                  + (exp.message || exp));
-      return;
-    }
+    // Now create an iframe that we will use to 'silo' and execute our
+    // code, which will act as a place for globals to be defined without
+    // clobbering globals on the HTML document's window or from other
+    // embedded SVG files. This is necessary so that setTimeouts and
+    // setIntervals will work later on, for example.
     
-    // now execute any addEventListener(onloads) that might have been
+    // create an iframe and attach it offscreen
+    var iframe = document.createElement('iframe');
+    iframe.src = 'about:blank';
+    iframe.style.position = 'absolute';
+    iframe.style.top = '-1000px';
+    iframe.style.left = '-1000px';
+    var body = document.getElementsByTagName('body')[0];
+    body.appendChild(iframe);
+    
+    // get the iframes document object; IE differs on how to get this
+    var iframeDoc = (iframe.contentWindow) ? 
+                iframe.contentWindow.document : iframe.contentDocument;
+    
+    // now write the script into the iframe to execute it in a siloed way
+    iframeDoc.write('<script>' + script + '</script>');
+
+    // execute any addEventListener(onloads) that might have been
     // registered
     this._handler.window._fireOnload();
   }
