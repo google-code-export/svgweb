@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = false;
+var printAsserts = true;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure

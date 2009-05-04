@@ -5935,14 +5935,6 @@ extend(FlashInserter, {
     // now insert the EMBED tag into the document
     this._replaceMe.parentNode.replaceChild(flashObj, this._replaceMe);
     
-    // expose the root SVG element as 'documentElement' on the EMBED tag
-    // for SVG SCRIPT embed as a utility property for developers to descend
-    // down into the SVG root tag
-    // (see Known Issues and Errata for details)
-    if (this.type == 'script') {
-      flashObj.documentElement = this;
-    }
-  
     return flashObj;
   },
   
@@ -6254,6 +6246,15 @@ extend(_SVGSVGElement, {
   /** The Flash is finished rendering. */
   _onRenderingFinished: function(msg) {
     //console.log('onRenderingFinished');
+    
+    // expose the root SVG element as 'documentElement' on the EMBED tag
+    // for SVG SCRIPT embed as a utility property for developers to descend
+    // down into the SVG root tag
+    // (see Known Issues and Errata for details)
+    if (this._handler.type == 'script') {
+      this._handler.flash.documentElement = this;
+    }
+    
     var elementId = this._nodeXML.getAttribute('id');
     this._handler.fireOnLoad(elementId, 'script');
   }
