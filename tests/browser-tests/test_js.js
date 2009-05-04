@@ -143,14 +143,6 @@ function runTests(embedTypes) {
   assertExists('mySVG root should exist', mySVG);
   assertEquals('mySVG.id should be mySVG', mySVG.id, 'mySVG');
   
-  // get non-SVG node
-  cc = getDoc('svg2').getElementById('myCCWork');
-  assertExists('myCCWork should exist', cc);
-  assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
-               cc.getAttribute('id'));
-  assertEquals('g.id == myCCWork', 'myCCWork',
-               cc.id);
-  
   if (_hasObjects) {
     // make sure getElementById works inside of nested SVG OBJECT document
     doc = document.getElementById('mySVG').contentDocument;
@@ -159,6 +151,14 @@ function runTests(embedTypes) {
     rect = doc.getElementById('myRect');
     assertExists('Getting myRect from contentDocument should exist', rect);
   }
+  
+  // get non-SVG node
+  cc = getDoc('svg2').getElementById('myCCWork');
+  assertExists('myCCWork should exist', cc);
+  assertEquals('myCCWork.getAttribute(id) == myCCWork', 'myCCWork',
+               cc.getAttribute('id'));
+  assertEquals('g.id == myCCWork', 'myCCWork',
+               cc.id);
   
   // test getElementById on normal HTML content to ensure it
   // still works
