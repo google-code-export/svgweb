@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = true;
+var printAsserts = false;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure
@@ -4625,7 +4625,7 @@ function runTests(embedTypes) {
     } else {
       matches = document.getElementsByTagName('embed');
     }
-    if (_hasObjects) {
+    if (renderer == 'flash' || _hasObjects) {
       obj3 = matches[5];
     } else {
       obj3 = matches[2];

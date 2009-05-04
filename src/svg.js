@@ -3383,12 +3383,15 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   this._handler = handler;
   this.fake = true;
   
+  // determine whether we are attached
+  this._attached = true;
+  if (!this._handler) {
+    this._attached = false;
+  }
+  
   // handle nodes that were created with createElementNS but are not yet
   // attached to the document yet
-  this._attached = true;
   if (!this._nodeXML && !this._handler) {
-    this._attached = false;
-    
     // build up an empty XML node for this element
     var xml = '<?xml version="1.0"?>\n';
     if (namespaceURI == svgns && !prefix) {
@@ -3398,7 +3401,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     }
     
     this._nodeXML = parseXML(xml).documentElement;
-  }
+  } 
   
   if (nodeType == _Node.ELEMENT_NODE) {
     if (nodeName.indexOf(':') != -1) {
