@@ -44,46 +44,46 @@ svgweb._validateOnloads = function() {
 // for the onload event when dynamically creating SVG OBJECT tags works
 svgweb._dynamicObjOnloads = 0;
 
+var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
+var dc_ns = "http://purl.org/dc/elements/1.1/";
+var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
+var cc_ns = "http://web.resource.org/cc/";
+
+var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
+    path, gradient, group, child, whitespaceAreNodes, metadata,
+    cc, svg, svgText, textNode, text, desc, title, format, type,
+    className, htmlTitle, head, circle, lengthBefore, matches, temp,
+    gradient, stop, defs, parent, textNode2, group2, renderer,
+    origText, exp, html, ns, nextToLast, paths, styleStr, circle,
+    image, line, defs, runTests, styleReturned, use, regExp, split, doc,
+    orig, rect1, rect2, obj1, obj2, obj3;
+    
+var allStyles = [
+  'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
+  'fontVariant', 'fontWeight', 'direction', 'letterSpacing', 'textDecoration',
+  'unicodeBidi', 'wordSpacing', 'clip', 'color', 'cursor', 'display', 'overflow',
+  'visibility', 'clipPath', 'clipRule', 'mask', 'opacity', 'enableBackground',
+  'filter', 'floodColor', 'floodOpacity', 'lightingColor', 'stopColor',
+  'stopOpacity', 'pointerEvents', 'colorInterpolation',
+  'colorInterpolationFilters', 'colorProfile', 'colorRendering', 'fill',
+  'fillOpacity', 'fillRule', 'imageRendering', 'marker', 'markerEnd',
+  'markerMid', 'markerStart', 'shapeRendering', 'stroke', 'strokeDasharray',
+  'strokeDashoffset', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit',
+  'strokeOpacity', 'strokeWidth', 'textRendering', 'alignmentBaseline', 
+  'baselineShift', 'dominantBaseline', 'glyphOrientationHorizontal',
+  'glyphOrientationVertical', 'kerning', 'textAnchor',
+  'writingMode'
+];
+
 function runTests(embedTypes) {
-  var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
-  var dc_ns = "http://purl.org/dc/elements/1.1/";
-  var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
-  var cc_ns = "http://web.resource.org/cc/";
+  // TODO: Refactor this to use JSUnit instead of our own custom assertion 
+  // methods
   
   // did we embed any of the SVG using OBJECTs?
   if (embedTypes['mySVG'] == 'object' || embedTypes['svg2'] == 'object'
       || embedTypes['svg11242'] == 'object') {
     _hasObjects = true;
   }
-  
-  var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
-      path, gradient, group, child, whitespaceAreNodes, metadata,
-      cc, svg, svgText, textNode, text, desc, title, format, type,
-      className, htmlTitle, head, circle, lengthBefore, matches, temp,
-      gradient, stop, defs, parent, textNode2, group2, renderer,
-      origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-      image, line, defs, runTests, styleReturned, use, regExp, split, doc,
-      orig, rect1, rect2, obj1, obj2, obj3;
-      
-  var allStyles = [
-    'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
-    'fontVariant', 'fontWeight', 'direction', 'letterSpacing', 'textDecoration',
-    'unicodeBidi', 'wordSpacing', 'clip', 'color', 'cursor', 'display', 'overflow',
-    'visibility', 'clipPath', 'clipRule', 'mask', 'opacity', 'enableBackground',
-    'filter', 'floodColor', 'floodOpacity', 'lightingColor', 'stopColor',
-    'stopOpacity', 'pointerEvents', 'colorInterpolation',
-    'colorInterpolationFilters', 'colorProfile', 'colorRendering', 'fill',
-    'fillOpacity', 'fillRule', 'imageRendering', 'marker', 'markerEnd',
-    'markerMid', 'markerStart', 'shapeRendering', 'stroke', 'strokeDasharray',
-    'strokeDashoffset', 'strokeLinecap', 'strokeLinejoin', 'strokeMiterlimit',
-    'strokeOpacity', 'strokeWidth', 'textRendering', 'alignmentBaseline', 
-    'baselineShift', 'dominantBaseline', 'glyphOrientationHorizontal',
-    'glyphOrientationVertical', 'kerning', 'textAnchor',
-    'writingMode'
-  ];
-  
-  // TODO: Get these into a separate test page with JSUnit testing
-  // to assert correct results
   
   // override svgweb._fireFlashError so we can know when errors
   // have occurred
@@ -97,7 +97,162 @@ function runTests(embedTypes) {
   assertTrue('renderer == native || flash',
               renderer == 'native' 
               || renderer == 'flash');
+              
+  testContentDocument();
+  testGetElementById();  
+  testGetElementsByTagNameNS();
+  testSVGSVGElementProperties();
+  testSVGUseElementProperties();
+  testGetAttribute();
+  testSetAttribute();
+  testChildNodes();
+  testDOMHierarchyAccessors();         
+  testAppendChild();   
+  testRemoveChild();
+  testReplaceChild();
+  testInsertBefore();
+  testHasChildNodes();       
+  testIsSupported();
+  testStyle();
+  testCreateSVGObject();
+  testBugFixes();
   
+  // run tests inside of an SVG file embedded with the object tag
+  if (_hasObjects) {
+    svg = document.getElementById('svg2');
+    svg.contentDocument.runObjectTests();
+  }
+  
+  // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
+  
+  // TODO: Test dynamically creating an SVG root
+  
+  // TODO: Test having a dynamically created SVG root that is nested
+  // in some dynamically created HTML, such as a DIV
+  
+  // TODO: Test doing removeChild that removes an SVG root
+                                         
+  // TODO: Test every one of the SVG element types, perhaps
+  // creating them dynamically and building up an image; probably
+  // in another file     
+  
+  // TODO: Do all these tests again, but have some SVG that we
+  // namespace with svg: inside of our SVG SCRIPT block  
+  
+  // TODO: Rename the ID of nodes (including the SVG root) and make sure
+  // things propagate correctly
+  
+  // TODO: Create two adjacent text nodes then test text node
+  // equality for nextSibling and previousSibling, which I believe
+  // will currently break and is a known issue
+  // (i.e. textNode1.nextSibling == textNode2.previousSibling)
+  
+  // TODO: Put all of this into a separate JavaScript file, then include
+  // it to test it on an XHTML page, a quirks doctype, a standards
+  // doctype, none, etc.; have one page with an HTML TITLE in the 
+  // markup
+  
+  // TODO: Have some performance tests with a performance threshold
+  
+  // TODO: Have tests where we pass in various kinds of invalid values:
+  // Have tests where we pass in null, undefined, and non-DOM
+  // or internal _Node or _Element values into our DOM methods; should
+  // throw an explicit exception. Also test trying to append HTML
+  // DOM nodes into an SVG document, which should throw an exception.
+  // Also test trying to attach a node that is already appended, or
+  // calling one of the replaceChild methods with an already appended
+  // node. Test calling removeChild with a node that is not a member
+  // of the given parent node. Have tests where we pass in bad values
+  // to setAttribute. Append children into places they don't belong,
+  // such as trying to insert a METADATA node into a GROUP. Make sure
+  // insertBefore throws an exception if either node is a text node
+  // for now. Throw error if childNodes index is accessed that doesn't
+  // exist. Throw an exception if you call getElementsByTagNameNS
+  // with a prefix in the node name (i.e. 
+  // getElementsByTagNameNS(rdf_ns, 'rdf:RDF') should throw an exception
+  // as the correct usage is getElementsByTagNameNS(rdf_ns, 'RDF') ).
+  // For unimplemented methods, add stubs that throw the DOM
+  // not implemented exception. Call getElementById with IDs that
+  // are known not to exist, and call getElementsByTagNameNS with
+  // invalid values. Set null property names and values with set
+  // and getAttribute. Repeatedly delete an element, repeatedly
+  // append an element as well as using the other ways to 
+  // append (replaceChild and insertBefore). Try to append a text
+  // node created incorrectly with document.createTextNode to an SVG
+  // node, which should throw an exception. Insert nodes that aren't
+  // allowed structurally (i.e. more than one metadata element, 
+  // metadata at the end, etc.). Remove children that were never
+  // actually children. Throw exception if SVG root added or deleted.
+  // Throw DOM exception if unknown style name passed to getProperty
+  // on a style object, or if item() is called with an unknown index.
+  
+  // TODO: I'm not sure if we are correctly handling what should
+  // happen if you pass in null, undefined, or an empty string
+  // into setAttribute; I believe it should clear out that attribute
+  // as if you were deleting it
+  
+  // TODO: Add a test where we dynamically add a new namespace onto
+  // an SVG root node, and then be able to use this namespace on a node
+  
+  // TODO: Add robust tests for USE element with the different
+  // configurations possible
+  
+  // TODO: It looks like the Flash XML parser parses XML comments
+  // into the XML DOM. Add some inline ones below in our SVG XML and 
+  // make sure we don't barf on them. Filter them out for now.
+  
+  // TODO: Add a test with negative coordinate values. It appears the
+  // Flash renderer can't handle those for now, and ensure that something
+  // doesn't barf on the JS side. Include a test with a negative
+  // value plus coordinate type, such as '-50px'.
+  
+  // TODO: Add a bunch of tests around A hyperlink elements, including
+  // working with existing ones, creating new ones, etc.
+  
+  // TODO: Have tests around CSS inherited styles, as well as forcing
+  // inheritance using 'inherit' keyword. Make sure things show up
+  // visually correctly
+  
+  testUnload();
+  
+  // our SVG OBJECTs located in the page source itself should have loaded by now
+  if (_hasObjects) {
+    console.log('Testing SVG OBJECT onload listeners...');
+    
+    for (var i = 0; i < 3; i++) {
+      assertTrue('SVG OBJECT ' + (i + 1) + ' should have its onload() '
+                 + 'method called', objectLoaded[i]);
+    }
+  }
+  
+  console.log('Waiting for final setTimeout check to run and ensure '
+              + 'everything passes (10 seconds)...');
+  
+  // set a slight timeout before reporting success in case a flash
+  // error occurred; our various onloads in embed2.svg can also run after
+  // our main function has finished (on Firefox, for example, but not Safari).
+  window.setTimeout(function() {
+    if (_hasObjects) {
+      // make sure that embed2.svg called our _validateOnloads() method
+      assertTrue('_validateOnloads should have been called', 
+                 svgweb._validateOnloadsCalled);
+    }
+    
+    // make sure that when we dynamically created our SVG OBJECTs that
+    // the different ways we subscribed to the onload events worked;
+    // NOTE: this must be in the final dynamically created SVG OBJECT's
+    // onload function that we want to check for
+    assertEquals('onload should have fired for our 3 listeners for dynamic '
+                 + 'objects', 3, svgweb._dynamicObjOnloads);
+    
+    // check for any Flash errors           
+    if (!_flashError) {
+      console.log('All tests passed');
+    }
+  }, 10000);
+}
+
+function testContentDocument() {
   // contentDocument, contentDocument.rootElement, and 
   // contentDocument.documentElement
   if (_hasObjects) {
@@ -124,7 +279,9 @@ function runTests(embedTypes) {
     assertEquals('svg.contentDocument.rootElement.nodeName == svg',
                  'svg', svg.contentDocument.rootElement.nodeName);
   }
-  
+}
+
+function testGetElementById() {
   // getElementById
   console.log('Testing getElementById...');
   
@@ -202,7 +359,9 @@ function runTests(embedTypes) {
     assertNotExists('svg2.doc.getElementById(dontCollide) should not exist', 
                     rect2);
   }
-  
+}
+
+function testGetElementsByTagNameNS() {
   // getElementsByTagNameNS
   console.log('Testing getElementsByTagNameNS...');
   
@@ -394,7 +553,9 @@ function runTests(embedTypes) {
     assertEquals('There should be one HEAD element after calling '
                  + 'getElementsByTagNameNS', 1, html.length);
   }
-               
+}
+
+function testSVGSVGElementProperties() {
   // SVGSVGElement.x, .y, .width, .height
   console.log('Testing SVGSVGElement.x, .y, .width, and .height...');
   
@@ -427,11 +588,15 @@ function runTests(embedTypes) {
               466.11172, root.width.baseVal.value.toPrecision(8));
   assertEquals("svg11242.height.baseVal.value should be 265.35126", 
               265.35126, root.height.baseVal.value.toPrecision(8));
-    
+}
+
+function testSVGUseElementProperties() {
   // SVGUseElement.x, .y, .width, .height
   //console.log('Testing SVGUseElement.x, .y, .width, and .height...');
   // TODO
-              
+}
+
+function testGetAttribute() {
   // getAttribute
   console.log('Testing getAttribute...');
   if (_hasObjects) {
@@ -502,8 +667,10 @@ function runTests(embedTypes) {
   assertExists("document.getElementById('base')", sodipodi);
   assertEquals("sodipodi.getAttribute('objecttolerance') == 10", 
                 '10',
-                sodipodi.getAttribute('objecttolerance'));        
-                
+                sodipodi.getAttribute('objecttolerance'));
+}
+
+function testSetAttribute() {
   // setAttribute
   console.log('Testing setAttribute...');
   
@@ -545,7 +712,9 @@ function runTests(embedTypes) {
   assertEquals("sodipodi.getAttribute('newAttribute') == hello world", 
                 'hello world',
                 sodipodi.getAttribute('newAttribute'));
+}
 
+function testChildNodes() {
   // childNodes
   console.log('Testing childNodes...');
   
@@ -1161,7 +1330,9 @@ function runTests(embedTypes) {
                'This is a title4', text.data);
   assertEquals('text.textContent == This is a title4',
                'This is a title4', text.textContent);
-  
+}
+
+function testDOMHierarchyAccessors() {
   // parentNode, firstChild, lastChild, previousSibling, and nextSibling
   console.log('Testing parentNode, firstChild, lastChild, '
               + 'previousSibling, and nextSibling...');
@@ -1408,7 +1579,9 @@ function runTests(embedTypes) {
   assertEquals('After setting .textContent, textNode.textContent == '
                + 'set through textContent', 'set through textContent',
                textNode.textContent);
-  
+}
+
+function testAppendChild() {
   // appendChild
   console.log('Testing appendChild...');
   
@@ -2020,7 +2193,9 @@ function runTests(embedTypes) {
              paths[4].nextSibling);
   assertEquals('group_path500.parentNode == group', group,
                paths[4].parentNode);
-  
+}
+
+function testRemoveChild() {
   // Test removeChild
   console.log('Testing removeChild...');
   
@@ -2715,7 +2890,9 @@ function runTests(embedTypes) {
              group.childNodes[1].nextSibling);
   assertEquals('after removal, group_path300.parentNode == group', group,
                group.childNodes[1].parentNode);
-  
+}
+
+function testReplaceChild() {
   // Test replaceChild
   console.log('Testing replaceChild...');
 
@@ -3216,7 +3393,9 @@ function runTests(embedTypes) {
              paths[7].nextSibling);
   assertEquals('group_path500_replacer.parentNode == group', group,
                paths[7].parentNode);
-             
+}
+
+function testInsertBefore() {
   // Test insertBefore
   console.log('Testing insertBefore...');
   
@@ -3433,7 +3612,9 @@ function runTests(embedTypes) {
              group.childNodes[5].nextSibling);
   assertEquals('group_path500.parentNode == group', group,
                group.childNodes[5].parentNode);
-  
+}
+
+function testHasChildNodes() {
   // Test hasChildNodes
   console.log('Testing hasChildNodes...');
   
@@ -3528,9 +3709,9 @@ function runTests(embedTypes) {
   // attributes
   dc = getDoc('svg2').getElementsByTagNameNS(dc_ns, 'format')[0];
   assertFalse('dc.hasAttributes() == false', dc.hasAttributes());
-  
-  // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
-          
+}
+
+function testIsSupported() {
   // Test Node.isSupported
   console.log('Testing Node.isSupported...');
   
@@ -3560,7 +3741,9 @@ function runTests(embedTypes) {
                    path.isSupported('HTML', '2.0'));
     }
   }
-  
+}
+
+function testStyle() {
   // Test .style property
   console.log('Testing style property...');
   
@@ -4467,95 +4650,9 @@ function runTests(embedTypes) {
   
   // TODO: null out properties and make sure they change, see if they 
   // change style.length
-  
-  // TODO: Test dynamically creating an SVG root
-  
-  // TODO: Test having a dynamically created SVG root that is nested
-  // in some dynamically created HTML, such as a DIV
-  
-  // TODO: Test doing removeChild that removes an SVG root
-                                         
-  // TODO: Test every one of the SVG element types, perhaps
-  // creating them dynamically and building up an image; probably
-  // in another file     
-  
-  // TODO: Do all these tests again, but have some SVG that we
-  // namespace with svg: inside of our SVG SCRIPT block  
-  
-  // TODO: Rename the ID of nodes (including the SVG root) and make sure
-  // things propagate correctly
-  
-  // TODO: Create two adjacent text nodes then test text node
-  // equality for nextSibling and previousSibling, which I believe
-  // will currently break and is a known issue
-  // (i.e. textNode1.nextSibling == textNode2.previousSibling)
-  
-  // TODO: Put all of this into a separate JavaScript file, then include
-  // it to test it on an XHTML page, a quirks doctype, a standards
-  // doctype, none, etc.; have one page with an HTML TITLE in the 
-  // markup
-  
-  // TODO: Have some performance tests with a performance threshold
-  
-  // TODO: Have tests where we pass in various kinds of invalid values:
-  // Have tests where we pass in null, undefined, and non-DOM
-  // or internal _Node or _Element values into our DOM methods; should
-  // throw an explicit exception. Also test trying to append HTML
-  // DOM nodes into an SVG document, which should throw an exception.
-  // Also test trying to attach a node that is already appended, or
-  // calling one of the replaceChild methods with an already appended
-  // node. Test calling removeChild with a node that is not a member
-  // of the given parent node. Have tests where we pass in bad values
-  // to setAttribute. Append children into places they don't belong,
-  // such as trying to insert a METADATA node into a GROUP. Make sure
-  // insertBefore throws an exception if either node is a text node
-  // for now. Throw error if childNodes index is accessed that doesn't
-  // exist. Throw an exception if you call getElementsByTagNameNS
-  // with a prefix in the node name (i.e. 
-  // getElementsByTagNameNS(rdf_ns, 'rdf:RDF') should throw an exception
-  // as the correct usage is getElementsByTagNameNS(rdf_ns, 'RDF') ).
-  // For unimplemented methods, add stubs that throw the DOM
-  // not implemented exception. Call getElementById with IDs that
-  // are known not to exist, and call getElementsByTagNameNS with
-  // invalid values. Set null property names and values with set
-  // and getAttribute. Repeatedly delete an element, repeatedly
-  // append an element as well as using the other ways to 
-  // append (replaceChild and insertBefore). Try to append a text
-  // node created incorrectly with document.createTextNode to an SVG
-  // node, which should throw an exception. Insert nodes that aren't
-  // allowed structurally (i.e. more than one metadata element, 
-  // metadata at the end, etc.). Remove children that were never
-  // actually children. Throw exception if SVG root added or deleted.
-  // Throw DOM exception if unknown style name passed to getProperty
-  // on a style object, or if item() is called with an unknown index.
-  
-  // TODO: I'm not sure if we are correctly handling what should
-  // happen if you pass in null, undefined, or an empty string
-  // into setAttribute; I believe it should clear out that attribute
-  // as if you were deleting it
-  
-  // TODO: Add a test where we dynamically add a new namespace onto
-  // an SVG root node, and then be able to use this namespace on a node
-  
-  // TODO: Add robust tests for USE element with the different
-  // configurations possible
-  
-  // TODO: It looks like the Flash XML parser parses XML comments
-  // into the XML DOM. Add some inline ones below in our SVG XML and 
-  // make sure we don't barf on them. Filter them out for now.
-  
-  // TODO: Add a test with negative coordinate values. It appears the
-  // Flash renderer can't handle those for now, and ensure that something
-  // doesn't barf on the JS side. Include a test with a negative
-  // value plus coordinate type, such as '-50px'.
-  
-  // TODO: Add a bunch of tests around A hyperlink elements, including
-  // working with existing ones, creating new ones, etc.
-  
-  // TODO: Have tests around CSS inherited styles, as well as forcing
-  // inheritance using 'inherit' keyword. Make sure things show up
-  // visually correctly
-  
+}
+
+function testCreateSVGObject() {
   // Tests for dynamically creating an SVG OBJECT
   console.log('Testing dynamically creating an SVG OBJECT...');
   
@@ -4660,7 +4757,9 @@ function runTests(embedTypes) {
   // both by setting their parents .innerHTML to blank as well as through
   // removeChild. Test removing then reattaching them to the page, as well
   // as testing changing their @data property while unattached.
-  
+}
+
+function testBugFixes() {
   // Test assertions for bug fixes
   console.log('Testing bug fixes...');
 
@@ -4688,13 +4787,9 @@ function runTests(embedTypes) {
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
   assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
-  
-  // run tests inside of an SVG file embedded with the object tag
-  if (_hasObjects) {
-    svg = document.getElementById('svg2');
-    svg.contentDocument.runObjectTests();
-  }
-  
+}
+
+function testUnload() {
   // manually call unload listener to make sure no exceptions fire;
   // on browsers other than Internet Explorer this is a no-op
   // TODO: commenting out right now because it deletes the SVG rendering
@@ -4733,40 +4828,4 @@ function runTests(embedTypes) {
     }
     assertNull('Window.unload should run without an exception', exp);
   }*/
-  
-  // our SVG OBJECTs located in the page source itself should have loaded by now
-  if (_hasObjects) {
-    console.log('Testing SVG OBJECT onload listeners...');
-    
-    for (var i = 0; i < 3; i++) {
-      assertTrue('SVG OBJECT ' + (i + 1) + ' should have its onload() '
-                 + 'method called', objectLoaded[i]);
-    }
-  }
-  
-  console.log('Waiting for final setTimeout check to run and ensure '
-              + 'everything passes (10 seconds)...');
-  
-  // set a slight timeout before reporting success in case a flash
-  // error occurred; our various onloads in embed2.svg can also run after
-  // our main function has finished (on Firefox, for example, but not Safari).
-  window.setTimeout(function() {
-    if (_hasObjects) {
-      // make sure that embed2.svg called our _validateOnloads() method
-      assertTrue('_validateOnloads should have been called', 
-                 svgweb._validateOnloadsCalled);
-    }
-    
-    // make sure that when we dynamically created our SVG OBJECTs that
-    // the different ways we subscribed to the onload events worked;
-    // NOTE: this must be in the final dynamically created SVG OBJECT's
-    // onload function that we want to check for
-    assertEquals('onload should have fired for our 3 listeners for dynamic '
-                 + 'objects', 3, svgweb._dynamicObjOnloads);
-    
-    // check for any Flash errors           
-    if (!_flashError) {
-      console.log('All tests passed');
-    }
-  }, 10000);
 }
