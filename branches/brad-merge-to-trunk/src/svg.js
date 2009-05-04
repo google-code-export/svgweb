@@ -1282,6 +1282,7 @@ function xpath(doc, context, expr, namespaces) {
   if (!context) {
     context = doc.documentElement;
   }
+
   if (typeof XPathEvaluator != 'undefined') { // non-IE browsers
     var evaluator = new XPathEvaluator();
     var resolver = doc.createNSResolver(context);
@@ -2559,7 +2560,7 @@ FlashHandler._getElementById = function(id) {
   if (result != null) { // Firefox doesn't like 'if (result)'
     return result;
   }
-  
+
   for (var i = 0; i < svgweb.handlers.length; i++) {
     if (svgweb.handlers[i].type == 'script') {
       result = svgweb.handlers[i].document.getElementById(id);
@@ -6146,6 +6147,14 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
   this._svgString = svgString;
   this._scriptNode = scriptNode;
   
+  // add to our nodeByID lookup table so that fetching this node in the
+  // future works
+  if (this._handler.type == 'script') {
+    var rootID = this._nodeXML.getAttribute('id');
+    var doc = this._handler.document;
+    doc._nodeById['_' + rootID] = this;
+  }
+  
   // when being embedded by a SCRIPT element, the _SVGSVGElement class
   // takes over inserting the Flash and HTC elements so that we have 
   // something visible on the screen; when being embedded by an SVG OBJECT
@@ -6250,11 +6259,11 @@ extend(_SVGSVGElement, {
   _onRenderingFinished: function(msg) {
     //console.log('onRenderingFinished');
     
-    // expose the root SVG element as 'documentElement' on the EMBED tag
-    // for SVG SCRIPT embed as a utility property for developers to descend
-    // down into the SVG root tag
-    // (see Known Issues and Errata for details)
-    if (this._handler.type == 'script') {
+    if (!isIE && this._handler.type == 'script') {
+      // expose the root SVG element as 'documentElement' on the EMBED tag
+      // for SVG SCRIPT embed as a utility property for developers to descend
+      // down into the SVG root tag
+      // (see Known Issues and Errata for details)
       this._handler.flash.documentElement = this;
     }
     
@@ -6339,6 +6348,7 @@ extend(_Document, {
     // XML parser does not have getElementById, due to id mapping in XML
     // issues; use XPath instead
     var results = xpath(this._xml, null, '//*[@id="' + id + '"]');
+
     var nodeXML, node;
     
     if (results.length) {
@@ -6428,12 +6438,11 @@ extend(_Document, {
       itself. */
   _getNode: function(nodeXML) {
     var node;
-    
+
     if (nodeXML.nodeType == _Node.ELEMENT_NODE) {
       // if we've created an _Element for this node before, we
       // stored a reference to it by ID so we could get it later
       node = this._nodeById['_' + nodeXML.getAttribute('id')];
-    
       if (!node) {
         // never seen before -- we'll have to create a new _Element now
         node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
