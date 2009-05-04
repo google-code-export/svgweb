@@ -3464,16 +3464,16 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
     this._defineNodeAccessors();
-  } else if (isIE) {
+  } else if (isIE && this.nodeType != _Node.DOCUMENT_NODE) {
     // If we are IE, we must use a behavior in order to get onpropertychange
     // and override core DOM methods. We only do this for normal SVG elements
     // and not for the DOCUMENT element. For the SVG root element, we only
     // create our HTC node here if we are being embedded with an SVG OBJECT
     // element; SVG SCRIPT elements override the normal process here and do 
     // their embedding in the _SVGSVGElement class itself later on.
-    if (this.nodeType != _Node.DOCUMENT_NODE 
-        && ( (this.nodeName == 'svg' && this._handler.type == 'object')
-             || (this.nodeName != 'svg' && this._handler.type == 'script'))) {
+    if (this.nodeName == 'svg' && this._handler.type == 'script') {
+      // do nothing; _SVGSVGElement will do the HTC node handling in this case
+    } else { // everything else
       this._createHTC();
     }
   }
