@@ -1945,6 +1945,7 @@ extend(SVGWeb, {
       
       @param script SCRIPT node to get the SVG from. */
   _processSVGScript: function(script) {
+    //console.log('processSVGScript, script='+script);
     var svg = script.innerHTML;
     var results = this._cleanSVG(svg, true, true);
     svg = results.svg;
@@ -3420,7 +3421,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   } else if (nodeType == _Node.TEXT_NODE) {
     this._nodeValue = this._nodeXML.nodeValue;
     
-    // browsers return null instead of undefined
+    // browsers return null instead of undefined; match their behavior
     this.prefix = null;
     this.namespaceURI = null;
     if (this._nodeValue === undefined) {
@@ -3469,10 +3470,10 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     // and not for the DOCUMENT element. For the SVG root element, we only
     // create our HTC node here if we are being embedded with an SVG OBJECT
     // element; SVG SCRIPT elements override the normal process here and do 
-    // their embedding in the _SVGSVGElement class itself.
+    // their embedding in the _SVGSVGElement class itself later on.
     if (this.nodeType != _Node.DOCUMENT_NODE 
-        || (this.nodeName == 'svg' && this._handler.type == 'object')
-        || (this.nodeName != 'svg' && this._handler.type == 'script')) {
+        && ( (this.nodeName == 'svg' && this._handler.type == 'object')
+             || (this.nodeName != 'svg' && this._handler.type == 'script'))) {
       this._createHTC();
     }
   }
@@ -4706,7 +4707,8 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   
   if (this.namespaceURI == svgns) {
     // track .style changes; 
-    if (isIE && this._attached 
+    if (isIE 
+        && this._attached 
         && this._handler.type == 'script' 
         && this.nodeName == 'svg') {
       // do nothing now -- if we are IE and are being embedded with an
@@ -4717,12 +4719,12 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
     }
     
     // handle style changes for HTCs
-    if (isIE && this._attached
+    if (isIE 
+        && this._attached
         && this._handler.type == 'script' 
         && this.nodeName == 'svg') {
-      // for the SVG root when being embedded by an SVG SCRIPT, ignore
-      // style changes that might get set during our initialization
-      this.style._ignoreStyleChanges = true;
+      // do nothing now - if we are IE we delay creating the style property
+      // until later in _SVGSVGElement
     } else if (isIE) {
       this.style._ignoreStyleChanges = false;
     }
@@ -5682,7 +5684,6 @@ extend(_SVGObject, {
     
     // create an iframe and attach it offscreen
     var iframe = document.createElement('iframe');
-    iframe.src = 'about:blank';
     iframe.style.position = 'absolute';
     iframe.style.top = '-1000px';
     iframe.style.left = '-1000px';
@@ -5692,9 +5693,18 @@ extend(_SVGObject, {
     // get the iframes document object; IE differs on how to get this
     var iframeDoc = (iframe.contentWindow) ? 
                 iframe.contentWindow.document : iframe.contentDocument;
-    
+                
+    // set the document.defaultView to the iframe's real Window object;
+    // note that IE doesn't support defaultView
+    this._handler.document.defaultView = 
+        (iframeDoc.defaultView) ? iframeDoc.defaultView : iframe.contentWindow;
+
     // now write the script into the iframe to execute it in a siloed way
+    var time1 = new Date().getTime();
     iframeDoc.write('<script>' + script + '</script>');
+    iframeDoc.close();
+    var time2 = new Date().getTime();
+    //alert('total time='+(time2 - time1));
 
     // execute any addEventListener(onloads) that might have been
     // registered
@@ -6215,7 +6225,7 @@ extend(_SVGSVGElement, {
       var inserter = new FlashInserter('script', elemDoc, this._nodeXML,
                                         this._scriptNode, this._handler,
                                         this._htcNode);
-                                        
+                             
       // pay attention to style changes now in the HTC
       this.style._ignoreStyleChanges = false;
     }
@@ -6266,8 +6276,8 @@ function _Document(xml, handler) {
   if (this._handler.type == 'script') {
     this.defaultView = window;
   } else if (this._handler.type == 'object') {
-    // we set the document.defaultView in _SVGObject._onRenderingFinished() 
-    // after we have created our fake _SVGWindow object
+    // we set the document.defaultView in _SVGObject._executeScript() once
+    // we create the iframe that we execute our script into
   }
 }
 

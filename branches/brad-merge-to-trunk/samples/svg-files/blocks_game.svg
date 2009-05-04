@@ -391,6 +391,7 @@ function tick() {
       return; // Game over
     }
   }
+  
   setTimeout("tick()", tickTime);
 }
 
@@ -476,8 +477,6 @@ function init() {
   // initialize event processing:
   document.documentElement.addEventListener("keydown", keyHandler, false);
 }
-
-
 ]]>
 </script>
 

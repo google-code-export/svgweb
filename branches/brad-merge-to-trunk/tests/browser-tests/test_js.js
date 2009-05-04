@@ -595,8 +595,13 @@ function runTests(embedTypes) {
   // 11 child nodes of the div on non-IE browsers due to whitespace 
   // handling, 5 on IE
   if (whitespaceAreNodes && !isIE) {
-    assertEquals('div.childNodes.length == 23 (non-IE browsers)', 23, 
-                 div.childNodes.length);
+    if (_hasObjects) {
+      assertEquals('div.childNodes.length == 23 (non-IE browsers)', 23, 
+                   div.childNodes.length);
+    } else {
+      assertEquals('div.childNodes.length == 11 (non-IE browsers)', 11, 
+                   div.childNodes.length);
+    }
   } else {
     assertEquals('div.childNodes.length == 5 (Internet Explorer only)', 
                  5, div.childNodes.length);
@@ -604,7 +609,11 @@ function runTests(embedTypes) {
   // get the children in different ways due to whitespacing handling
   // first SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[7];
+    if (_hasObjects) {
+      child = div.childNodes[7];
+    } else {
+      child = div.childNodes[3];
+    }
   } else {
     child = div.childNodes[1]; 
   }
@@ -633,7 +642,11 @@ function runTests(embedTypes) {
                child.getAttribute('id'));
   // 2nd SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[13];
+    if (_hasObjects) {
+      child = div.childNodes[13];
+    } else {
+      child = div.childNodes[5];
+    }
   } else {
     child = div.childNodes[2]; 
   }
@@ -662,7 +675,11 @@ function runTests(embedTypes) {
                child.getAttribute('id'));
   // 3rd SVG root element
   if (whitespaceAreNodes && !isIE) {
-    child = div.childNodes[19];
+    if (_hasObjects) {
+      child = div.childNodes[19];
+    } else {
+      child = div.childNodes[7];
+    }
   } else {
     child = div.childNodes[3]; 
   }
@@ -2480,6 +2497,7 @@ function runTests(embedTypes) {
   assertNull('format.firstChild.nextSibling == null', 
              child.previousSibling);
   // restore the original state
+  metadata.removeChild(metadata.childNodes[0]);
   metadata.appendChild(orig);
 
   // create a test where we remove a child and its subtree, then
@@ -2901,7 +2919,7 @@ function runTests(embedTypes) {
   textNode = getDoc('svg11242').createTextNode('Some RDF text', true);
   textNode2 = getDoc('svg11242').createTextNode('Some more RDF text', true);
   rdf.appendChild(textNode);
-  var metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
+  metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
   metadata.id = 'svg11242_metadata';
   metadata.appendChild(rdf);
   temp = rdf.replaceChild(textNode2, textNode);
@@ -2922,8 +2940,8 @@ function runTests(embedTypes) {
     assertEquals('rdf matches.length == 1', 1, matches.length);
     rdf = matches[0];
   } else {
-    assertEquals('rdf matches.length == 3', 3, matches.length);
-    rdf = matches[2];
+    assertEquals('rdf matches.length == 2', 2, matches.length);
+    rdf = matches[1];
   }
   assertExists('rdf should exist', rdf);
   textNode2 = getDoc('svg11242').createTextNode('Replaced RDF text', true);
@@ -2940,7 +2958,7 @@ function runTests(embedTypes) {
   // element with another namespaced element inside a METADATA node
   rdf = getDoc('svg11242').createElementNS(rdf_ns, 'rdf:RDF');
   rdf.appendChild(textNode);
-  var metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
+  metadata = getDoc('svg11242').createElementNS(svgns, 'metadata');
   metadata.appendChild(rdf);
   dc = getDoc('svg11242').createElementNS(dc_ns, 'dc:creator');
   textNode = getDoc('svg11242').createTextNode('Home boy', true);
@@ -2962,7 +2980,7 @@ function runTests(embedTypes) {
     assertEquals('rdf matches == 1', 1, matches.length);
     rdf = matches[0];
   } else {
-    assertEquals('rdf matches == 3', 3, matches.length);
+    assertEquals('rdf matches == 2', 2, matches.length);
     rdf = matches[1];
   }
   assertExists('rdf should exist', rdf);
@@ -3282,7 +3300,7 @@ function runTests(embedTypes) {
   rdf = getDoc('svg2').createElementNS(rdf_ns, 'rdf:RDF');
   textNode = getDoc('svg2').createTextNode('rdf content', true);
   rdf.appendChild(textNode);
-  var metadata = getDoc('svg2').createElementNS(svgns, 'metadata');
+  metadata = getDoc('svg2').createElementNS(svgns, 'metadata');
   dc = getDoc('svg2').createElementNS(dc_ns, 'dc:creator');
   textNode = getDoc('svg2').createTextNode('Home boy2', true);
   dc.appendChild(textNode);
@@ -3306,14 +3324,14 @@ function runTests(embedTypes) {
   dc.appendChild(getDoc('svg2').createTextNode('This is a description', true));
   rdf = metadata.firstChild;
   temp = metadata.insertBefore(dc, rdf);
-  assertEquals('metadata.childNodes.length == 3', 3,
+  assertEquals('metadata.childNodes.length == 2', 2,
                metadata.childNodes.length);
   assertEquals('rdf.parentNode == metadata', metadata, rdf.parentNode);
   assertEquals('dc.parentNode == metadata', metadata, dc.parentNode);
   assertEquals('metadata.lastChild.nodeName == rdf:RDF', 'rdf:RDF',
                metadata.lastChild.nodeName);
   assertEquals('metadata.firstChild.nodeName == dc:description', 
-               'dc:description', metadata.firstChild.nodeName);
+               'dc:description', metadata.firstChild.nodeName);   
                
   // add a test where have a group with multiple children; then,
   // do an insertBefore in the middle and test to make sure that
@@ -4607,7 +4625,11 @@ function runTests(embedTypes) {
     } else {
       matches = document.getElementsByTagName('embed');
     }
-    obj3 = matches[5];
+    if (_hasObjects) {
+      obj3 = matches[5];
+    } else {
+      obj3 = matches[2];
+    }
     assertExists('SVG OBJECT should exist', obj3);
     
     // check autogenerated ID
@@ -4624,13 +4646,6 @@ function runTests(embedTypes) {
     
     // indicate that this onload and its tests ran
     svgweb._dynamicObjOnloads++;
-    
-    // make sure that when we dynamically created our SVG OBJECTs that
-    // the different ways we subscribed to the onload events worked;
-    // NOTE: this must be in the final dynamically created SVG OBJECT's
-    // onload function that we want to check for
-    assertEquals('onload should have fired for our 3 listeners for dynamic '
-                 + 'objects', 3, svgweb._dynamicObjOnloads);
   }, false);
   svgweb.appendChild(obj3, div);
   
@@ -4648,7 +4663,7 @@ function runTests(embedTypes) {
   
   // Test assertions for bug fixes
   console.log('Testing bug fixes...');
-  
+
   // make sure that getElementsByTagNameNS works correctly
   // after an insertBefore, after a removeChild, and after a replaceChild
   svg = getRoot('svg2');
@@ -4656,30 +4671,22 @@ function runTests(embedTypes) {
   // testing removeChild + getElementsByTagNameNS
   svg.removeChild(metadata);
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
-  if (_hasObjects) {
-    assertEquals('rdf matches.length == 0', 0, matches.length);
-  } else {
-    assertEquals('rdf matches.length == 3', 3, matches.length);
-  }
+  assertEquals('rdf matches.length == 0', 0, matches.length);
   // testing replaceChild + getElementsByTagNameNS
   group = getDoc('svg2').createElementNS(svgns, 'g');
   svg.appendChild(group);
   svg.replaceChild(metadata, group);
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
-  assertEquals('rdf matches.length == 2', 2, matches.length);
+  assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
-  if (_hasObjects) {
-    assertEquals('rdf matches.length == 0', 0, matches.length);
-  } else {
-    assertEquals('rdf matches.length == 1', 1, matches.length);
-  }
+  assertEquals('rdf matches.length == 0', 0, matches.length);
   // testing insertBefore + getElementsByTagNameNS
   group = getDoc('svg2').createElementNS(svgns, 'g');
   svg.appendChild(group);
   svg.insertBefore(metadata, group);
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
-  assertEquals('rdf matches.length == 2', 2, matches.length);
+  assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
   
   // run tests inside of an SVG file embedded with the object tag
@@ -4737,17 +4744,29 @@ function runTests(embedTypes) {
     }
   }
   
+  console.log('Waiting for final setTimeout check to run and ensure '
+              + 'everything passes (3 seconds)...');
+  
   // set a slight timeout before reporting success in case a flash
   // error occurred; our various onloads in embed2.svg can also run after
   // our main function has finished (on Firefox, for example, but not Safari).
   window.setTimeout(function() {
-    // make sure that embed2.svg called our _validateOnloads() method
-    assertTrue('_validateOnloads should have been called', 
-               svgweb._validateOnloadsCalled);
+    if (_hasObjects) {
+      // make sure that embed2.svg called our _validateOnloads() method
+      assertTrue('_validateOnloads should have been called', 
+                 svgweb._validateOnloadsCalled);
+    }
+    
+    // make sure that when we dynamically created our SVG OBJECTs that
+    // the different ways we subscribed to the onload events worked;
+    // NOTE: this must be in the final dynamically created SVG OBJECT's
+    // onload function that we want to check for
+    assertEquals('onload should have fired for our 3 listeners for dynamic '
+                 + 'objects', 3, svgweb._dynamicObjOnloads);
     
     // check for any Flash errors           
     if (!_flashError) {
       console.log('All tests passed');
     }
-  }, 500);
+  }, 3000);
 }
