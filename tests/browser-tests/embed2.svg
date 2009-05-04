@@ -60,11 +60,9 @@
                        document.documentElement, passedInThis);
       top.assertEquals('The outer "this" should equal our fake window object',
                        document.defaultView, outerThis);
-      // FIXME: This is a known issue that 'this' will incorrectly refer
-      // to the containing HTML pages window object.
-      /*top.assertEquals('"this" inside of the loaded() function block should '
+      top.assertEquals('"this" inside of the loaded() function block should '
                        + 'be our fake window object', document.defaultView, 
-                       this);*/
+                       this);
                        
       // change onloadFunc to point to your real onload function that you
       // want called when the page is truly ready
@@ -103,6 +101,7 @@
       //  * Pass in a variable that is a string to execute
       //  * Pass in an inline anonymous function that is multiline and which
       //  uses double and single quotes inside of it
+      //  * Preface call with window.setTimeout and window.setInterval
       // Also call clearTimeout and clearInterval to ensure these work with
       // the styles above
     }

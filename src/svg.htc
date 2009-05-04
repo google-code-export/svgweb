@@ -152,7 +152,7 @@ The 'lightWeight' attribute below is important for two reasons:
   
   /** Does some magic to have the Flash object show up in our SVG 
       root element 'hidden' from the external DOM. Called by
-      FlashHandler._insertFlash() inside of svg.js.
+      the FlashInserter class inside of svg.js.
       
       @param flash Flash object as HTML string.
       @param size An object literal with two values, width and height,

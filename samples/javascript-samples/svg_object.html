@@ -7,9 +7,9 @@
          renderer for Internet Explorer and using native support on other
          browsers. You can force the Flash renderer for all browsers by
          setting the META tag below to true. -->
-    <meta name="svg.render.forceflash" content="tru" />
+    <meta name="svg.render.forceflash" content="true" />
     
-    <script src="../../src/svg.js" data-path="../../src/"></script>
+    <script src="../../src/svg.js" data-path="../../src/" data-debug="true"></script>
     
     <script>
       svgweb.addOnLoad(function() {
@@ -22,8 +22,7 @@
     <h1>Tests using the OBJECT syntax to embed an SVG file</h1>
 
     <!--[if IE]>
-    <object src="../svg-files/photos.svg" classid="image/svg+xml" 
-            id="testSVG" width="1250" height="750">
+    <object src="../svg-files/photos.svg" classid="image/svg+xml">
     <![endif]-->
     <!--[if !IE]>-->
     <object data="../svg-files/photos.svg" type="image/svg+xml" 
