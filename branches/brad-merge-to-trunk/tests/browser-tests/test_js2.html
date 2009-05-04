@@ -12,8 +12,6 @@
     
     <script>
       svgweb.addOnLoad(function() {
-        var startTime = new Date().getTime();
-        
         // specify how each of our SVG images is embedded to help the unit
         // tests run correctly
         var embedTypes = {};
@@ -22,10 +20,7 @@
         embedTypes['svg11242'] = 'object';
         
         // run the tests
-        runTests(embedTypes);  
-         
-        var endTime = new Date().getTime();
-        console.log('total test time='+(endTime - startTime) + 'ms');
+        runTests(embedTypes);
       });
     </script>
   </head>
