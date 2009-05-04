@@ -616,10 +616,10 @@ function runTests(embedTypes) {
     }
   } else {
     child = div.childNodes[1]; 
-  }
+  } 
   if (_hasObjects) {
     child = child.contentDocument.documentElement;
-  } else if (String(child.className).indexOf('embedssvg') != -1) {
+  } else if (!isIE && String(child.className).indexOf('embedssvg') != -1) {
     child = child.documentElement;
   }
   assertExists('First SVG root element', child);
@@ -652,7 +652,7 @@ function runTests(embedTypes) {
   }
   if (_hasObjects) {
     child = child.contentDocument.documentElement;
-  } else if (String(child.className).indexOf('embedssvg') != -1) {
+  } else if (!isIE && String(child.className).indexOf('embedssvg') != -1) {
     child = child.documentElement;
   }
   assertExists('Second SVG root element', child);
@@ -685,7 +685,7 @@ function runTests(embedTypes) {
   }
   if (_hasObjects) {
     child = child.contentDocument.documentElement;
-  } else if (String(child.className).indexOf('embedssvg') != -1) {
+  } else if (!isIE && String(child.className).indexOf('embedssvg') != -1) {
     child = child.documentElement;
   }
   assertExists('Third SVG root element', child);
@@ -4625,7 +4625,7 @@ function runTests(embedTypes) {
     } else {
       matches = document.getElementsByTagName('embed');
     }
-    if (renderer == 'flash' || _hasObjects) {
+    if ((!isIE && renderer == 'flash') || _hasObjects) {
       obj3 = matches[5];
     } else {
       obj3 = matches[2];
