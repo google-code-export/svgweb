@@ -3394,7 +3394,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   
   // handle nodes that were created with createElementNS but are not yet
   // attached to the document yet
-  if (!this._nodeXML && !this._handler) {
+  if (nodeType == _Node.ELEMENT_NODE && !this._nodeXML && !this._handler) {
     // build up an empty XML node for this element
     var xml = '<?xml version="1.0"?>\n';
     if (namespaceURI == svgns && !prefix) {
@@ -3782,7 +3782,8 @@ extend(_Node, {
       document.createTextNode. We return either a _Node or an HTC reference
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
-    //console.log('appendChild, child='+child.nodeName+', this='+this.nodeName);  
+    //console.log('appendChild, child='+child.nodeName+', this='+this.nodeName);
+     
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
@@ -4045,67 +4046,60 @@ extend(_Node, {
   
   /** Do the getter/setter magic for our attributes for non-IE browsers. */
   _defineNodeAccessors: function() {
-    var self = this;
-    
     // readonly properties
-    this.__defineGetter__('parentNode', function() { 
-      return self._getParentNode(); 
-    });
-    this.__defineGetter__('firstChild', function() { 
-      return self._getFirstChild(); 
-    });
-    this.__defineGetter__('lastChild', function() { 
-      return self._getLastChild(); 
-    });
-    this.__defineGetter__('previousSibling', function() { 
-      return self._getPreviousSibling(); 
-    });
-    this.__defineGetter__('nextSibling', function() { 
-      return self._getNextSibling(); 
-    });
+    this.__defineGetter__('parentNode', hitch(this, this._getParentNode));
+    this.__defineGetter__('firstChild', hitch(this, this._getFirstChild));
+    this.__defineGetter__('lastChild', hitch(this, this._getLastChild));
+    this.__defineGetter__('previousSibling', 
+                          hitch(this, this._getPreviousSibling));
+    this.__defineGetter__('nextSibling', hitch(this, this._getNextSibling));
     
-    // childNodes array
-    this.__defineGetter__('childNodes', function() {
-      return self._childNodes;
-    });
+    // childNodes array -- define and execute an inline function so that we 
+    // only get closure over the 'self' variable rather than all the 
+    // __defineGetter__ calls above
+    this.__defineGetter__('childNodes', (function(self) {
+      return function() { return self._childNodes; }
+    })(this));
     var children = this._nodeXML.childNodes;
     this._childNodes.length = children.length; 
     for (var i = 0; i < children.length; i++) {
       // do the defineGetter in a different method so the closure gets
       // formed correctly (closures can be tricky in loops if you are not
-      // careful)
+      // careful); we also need the defineChildNodeAccessor method anyway
+      // since we need the ability to individually define new accessors
+      // at a later point (such as in insertBefore(), for example).
       this._defineChildNodeAccessor(i);
     }
     
     // read/write properties
     if (this.nodeType == _Node.TEXT_NODE) {
-      this.__defineGetter__('data', function() { 
-        return self._nodeValue; 
-      });
-      this.__defineSetter__('data', function(newValue) {
-        return self._setNodeValue(newValue);
-      });
+      this.__defineGetter__('data', (function(self) { 
+        return function() { return self._nodeValue; }
+      })(this));
+      this.__defineSetter__('data', (function(self) {
+        return function(newValue) { return self._setNodeValue(newValue); }
+      })(this));
       
-      this.__defineGetter__('textContent', function() { 
-        return self._nodeValue; 
-      });
-      this.__defineSetter__('textContent', function(newValue) {
-        return self._setNodeValue(newValue);
-      });
+      this.__defineGetter__('textContent', (function(self) {
+        return function() { return self._nodeValue; } 
+      })(this));
+      this.__defineSetter__('textContent', (function(self) {
+        return function(newValue) { return self._setNodeValue(newValue); }
+      })(this));
     } else { // ELEMENT and DOCUMENT nodes
       // Firefox and Safari return '' for textContent for non-text nodes;
       // mimic this behavior
-      this.__defineGetter__('textContent', function() {
-        return '';
-      });
+      this.__defineGetter__('textContent', (function() {
+        return function() { return ''; }
+      })());
     }
     
-    this.__defineGetter__('nodeValue', function() { 
-      return self._nodeValue; 
-    });
-    this.__defineSetter__('nodeValue', function(newValue) {
-      return self._setNodeValue(newValue);
-    });
+    this.__defineGetter__('nodeValue', (function(self) {
+      return function() { return self._nodeValue; }
+    })(this));
+    this.__defineSetter__('nodeValue', (function(self) {
+      return function(newValue) { return self._setNodeValue(newValue); }
+    })(this));
   },
   
   /** Creates a getter/setter for a childNode at the given index position.
