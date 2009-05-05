@@ -44,6 +44,14 @@ svgweb._validateOnloads = function() {
 // for the onload event when dynamically creating SVG OBJECT tags works
 svgweb._dynamicObjOnloads = 0;
 
+// a global variable that we set to ensure we don't incorrectly see it
+// over in embed2; checked in testScope() inside of embed2.svg
+var shouldNotClash = 'set globally in test_js.js';
+
+// a global function we define to ensure that it doesn't clash with local
+// functions in our SVG files; checked in testScope() inside of embed2.svg
+var globalFunction = function() { return 'returned from test_js.js'; }
+
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";
 var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -98,6 +106,10 @@ function runTests(embedTypes) {
               renderer == 'native' 
               || renderer == 'flash');
               
+  if (_hasObjects) {
+    testScope();
+  }
+  
   testContentDocument();
   testGetElementById();  
   testGetElementsByTagNameNS();
@@ -106,6 +118,8 @@ function runTests(embedTypes) {
   testGetAttribute();
   testSetAttribute();
   testChildNodes();
+  testOwnerDocument();
+  testTextNodes();
   testDOMHierarchyAccessors();         
   testAppendChild();   
   testRemoveChild();
@@ -117,7 +131,7 @@ function runTests(embedTypes) {
   testCreateSVGObject();
   testBugFixes();
   
-  // run tests inside of an SVG file embedded with the object tag
+  // run tests inside of an SVG file embedded with the OBJECT tag
   if (_hasObjects) {
     svg = document.getElementById('svg2');
     svg.contentDocument.runObjectTests();
@@ -252,6 +266,21 @@ function runTests(embedTypes) {
   }, 10000);
 }
 
+function testScope() {
+  console.log('Testing scope...');
+  
+  // various tests to make sure that the scope in the global containing
+  // document doesn't collide with the scope inside our embedded SVG files
+  
+  // make sure variables don't clash
+  assertEquals('shouldNotClash == set globally in test_js.js',
+               'set globally in test_js.js', shouldNotClash);
+                   
+  // make sure functions don't clash
+  assertEquals('globalFunction() == returned from test_js.js',
+               'returned from test_js.js', globalFunction());
+}
+
 function testContentDocument() {
   // contentDocument, contentDocument.rootElement, and 
   // contentDocument.documentElement
@@ -359,6 +388,77 @@ function testGetElementById() {
     assertNotExists('svg2.doc.getElementById(dontCollide) should not exist', 
                     rect2);
   }
+  
+  // element.id syntax
+  console.log('Testing element.id...');
+  
+  group = getDoc('svg11242').getElementById('g4743');
+  assertExists('SVG g element with ID g4743 should exist', group);
+  assertEquals('group.nodeName == g', 'g', group.nodeName);
+  assertEquals('group.id == g4743', 'g4743', group.id);
+  
+  gradient = getDoc('svg11242').getElementsByTagNameNS(svgns, 'linearGradient');
+  assertExists('There should be gradient tags', gradient);
+  gradient = gradient[0];
+  assertExists('gradient with ID linearGradient2361 should exist',
+               gradient);
+  assertEquals('gradient.nodeName == linearGradient', 'linearGradient',
+               gradient.nodeName);
+  assertEquals('gradient.id == linearGradient2361', 'linearGradient2361',
+               gradient.id);
+               
+  if (!_hasObjects) {
+    svg = document.getElementsByTagNameNS(svgns, 'svg');
+    assertExists("document.body.getElementsByTagNameNS(svgns, 'svg') "
+                 + "should exist", svg);
+    assertEquals("document.body.getElementsByTagNameNS(svgns, 'svg').length "
+                 + " == 3", 3, svg.length);
+    svg = svg[2];
+    assertExists('SVG root with svg11242 should exist', svg);
+  } else {
+    svg = getRoot('svg11242');
+  }
+  assertEquals('svg.id == svg11242', 'svg11242', svg.id);
+  
+  // change the ID and make sure getElementById still sees it
+  path = getDoc('svg2').getElementById('path3182');
+  path.id = 'path3182_changed';
+  assertExists('document.getElementById(path3182_changed) should exist',
+               getDoc('svg2').getElementById('path3182_changed'));
+  assertNull('document.getElementById(path3182) == null',
+             getDoc('svg2').getElementById('path3182'));
+             
+  // change the ID through setAttribute and make sure getElementById
+  // still sees it
+  path = getDoc('svg2').getElementById('path3182_changed');
+  path.setAttribute('id', 'path3182_changed_again');
+  assertExists('document.getElementById(path3182_changed_again) should '
+               + 'exist',
+               getDoc('svg2').getElementById('path3182_changed_again'));
+  assertNull('document.getElementById(path3182_changed) == null',
+             getDoc('svg2').getElementById('path3182_changed'));
+             
+  // change the ID and make sure getElementById still sees it for a
+  // non-SVG, non-HTML element
+  cc = getDoc('svg2').getElementById('myCCWork');
+  cc.id = 'myCCWork_changed';
+  assertExists('document.getElementById(myCCWork_changed) should exist',
+               getDoc('svg2').getElementById('myCCWork_changed'));
+  assertNull('document.getElementById(myCCWork) == null',
+             getDoc('svg2').getElementById('myCCWork'));
+  
+  // change the ID through setAttribute and make sure getElementById
+  // still sees it for a non-SVG, non-HTML element
+  cc = getDoc('svg2').getElementById('myCCWork_changed');
+  cc.setAttribute('id', 'myCCWork_changed_again');
+  assertExists('document.getElementById(myCCWork_changed_again) should '
+               + 'exist',
+               getDoc('svg2').getElementById('myCCWork_changed_again'));
+  assertNull('document.getElementById(myCCWork_changed) == null',
+             getDoc('svg2').getElementById('myCCWork_changed'));
+  cc.id = 'myCCWork';
+  assertExists('document.getElementById(myCCWork) should exist',
+               getDoc('svg2').getElementById('myCCWork'));
 }
 
 function testGetElementsByTagNameNS() {
@@ -997,78 +1097,11 @@ function testChildNodes() {
                'http://web.resource.org/cc/', cc.namespaceURI);
   assertEquals('cc.localName == Work', 'Work', cc.localName);
   assertEquals('cc.nodeType == 1', 1, cc.nodeType);  
-  
-  // element.id syntax
-  console.log('Testing element.id...');
-  
-  group = getDoc('svg11242').getElementById('g4743');
-  assertExists('SVG g element with ID g4743 should exist', group);
-  assertEquals('group.nodeName == g', 'g', group.nodeName);
-  assertEquals('group.id == g4743', 'g4743', group.id);
-  
-  gradient = getDoc('svg11242').getElementsByTagNameNS(svgns, 'linearGradient');
-  assertExists('There should be gradient tags', gradient);
-  gradient = gradient[0];
-  assertExists('gradient with ID linearGradient2361 should exist',
-               gradient);
-  assertEquals('gradient.nodeName == linearGradient', 'linearGradient',
-               gradient.nodeName);
-  assertEquals('gradient.id == linearGradient2361', 'linearGradient2361',
-               gradient.id);
-               
-  if (!_hasObjects) {
-    svg = document.getElementsByTagNameNS(svgns, 'svg');
-    assertExists("document.body.getElementsByTagNameNS(svgns, 'svg') "
-                 + "should exist", svg);
-    assertEquals("document.body.getElementsByTagNameNS(svgns, 'svg').length "
-                 + " == 3", 3, svg.length);
-    svg = svg[2];
-    assertExists('SVG root with svg11242 should exist', svg);
-  } else {
-    svg = getRoot('svg11242');
-  }
-  assertEquals('svg.id == svg11242', 'svg11242', svg.id);
-  
-  // change the ID and make sure getElementById still sees it
-  path = getDoc('svg2').getElementById('path3182');
-  path.id = 'path3182_changed';
-  assertExists('document.getElementById(path3182_changed) should exist',
-               getDoc('svg2').getElementById('path3182_changed'));
-  assertNull('document.getElementById(path3182) == null',
-             getDoc('svg2').getElementById('path3182'));
-             
-  // change the ID through setAttribute and make sure getElementById
-  // still sees it
-  path = getDoc('svg2').getElementById('path3182_changed');
-  path.setAttribute('id', 'path3182_changed_again');
-  assertExists('document.getElementById(path3182_changed_again) should '
-               + 'exist',
-               getDoc('svg2').getElementById('path3182_changed_again'));
-  assertNull('document.getElementById(path3182_changed) == null',
-             getDoc('svg2').getElementById('path3182_changed'));
-             
-  // change the ID and make sure getElementById still sees it for a
-  // non-SVG, non-HTML element
-  cc = getDoc('svg2').getElementById('myCCWork');
-  cc.id = 'myCCWork_changed';
-  assertExists('document.getElementById(myCCWork_changed) should exist',
-               getDoc('svg2').getElementById('myCCWork_changed'));
-  assertNull('document.getElementById(myCCWork) == null',
-             getDoc('svg2').getElementById('myCCWork'));
-  
-  // change the ID through setAttribute and make sure getElementById
-  // still sees it for a non-SVG, non-HTML element
-  cc = getDoc('svg2').getElementById('myCCWork_changed');
-  cc.setAttribute('id', 'myCCWork_changed_again');
-  assertExists('document.getElementById(myCCWork_changed_again) should '
-               + 'exist',
-               getDoc('svg2').getElementById('myCCWork_changed_again'));
-  assertNull('document.getElementById(myCCWork_changed) == null',
-             getDoc('svg2').getElementById('myCCWork_changed'));
-  cc.id = 'myCCWork';
-  assertExists('document.getElementById(myCCWork) should exist',
-               getDoc('svg2').getElementById('myCCWork'));
+}
 
+function testOwnerDocument() {
+  console.log('Testing ownerDocument...');
+  
   // ownerDocument
   if (_hasObjects) {
     svg = document.getElementsByTagNameNS(svgns, 'svg');
@@ -1100,6 +1133,13 @@ function testChildNodes() {
   doc = getDoc('svg2');
   assertEquals('rdf.ownerDocument == document or contentDocument', doc, 
                 rdf.ownerDocument);
+}
+
+function testTextNodes() {
+  console.log('Testing text nodes...');
+  
+  // text nodes (createTextNode, textNode.nodeValue, textNode.textContent,
+  // and textNode.data) including setting and getting
   
   svg = getDoc('mySVG').getElementById('mySVG');
   if (_hasObjects) {
@@ -1116,9 +1156,6 @@ function testChildNodes() {
   assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
   assertEquals('svgText.childNodes.length == 1', 1, 
                svgText.childNodes.length);
-
-  // text nodes (createTextNode, textNode.nodeValue, textNode.textContent,
-  // and textNode.data) including setting and getting
   textNode = svgText.childNodes[0];
   assertExists('svgText should have a DOM TEXT NODE', textNode);
   assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
@@ -1242,7 +1279,11 @@ function testChildNodes() {
                
   desc = getDoc('mySVG').getElementsByTagNameNS(svgns, 'desc');
   assertExists('There should be a DESC element', desc);
-  assertEquals('There should be 1 DESC element', 1, desc.length);
+  if (_hasObjects) {
+    assertEquals('There should be 1 DESC element', 1, desc.length);
+  } else {
+    assertEquals('There should be 2 DESC elements', 2, desc.length);
+  }
   desc = desc[0];
   assertEquals('desc.nodeName == desc', 'desc', desc.nodeName);
   assertNull('desc.nodeValue == null', desc.nodeValue);
@@ -1988,16 +2029,23 @@ function testAppendChild() {
   // create a DESC element, then create a text node, and append
   // both together than append the DESC element to a G element
   desc = getDoc('svg2').createElementNS(svgns, 'desc');
-  text = getDoc('svg2').createTextNode('This is a test desc', true);
+  text = getDoc('svg2').createTextNode('This is a test desc - dynamic', true);
   desc.appendChild(text);
   group = getDoc('svg2').getElementById('layer1');
   group.appendChild(desc);
+  // bug test - embed2 already has a <desc> element; a bug was incorrectly
+  // causing _its_ data value to also change at this time
+  assertEquals('myDesc over in svg2 should _not_ have its value changed; it '
+               + 'should be: This is a description',
+               'This is a description',
+               getDoc('svg2').getElementById('myDesc').firstChild.data);  
+  // end bug test
   matches = getDoc('svg2').getElementsByTagNameNS(svgns, 'desc');
   desc = null;
   for (var i = 0; i < matches.length; i++) {
     var m = matches[i];
     if (m.childNodes.length > 0 
-        && m.childNodes[0].data == 'This is a test desc') {
+        && m.childNodes[0].data == 'This is a test desc - dynamic') {
       desc = matches[i];
     }
   }
@@ -3662,24 +3710,26 @@ function testHasChildNodes() {
   // test an SVG root node
   svg = getRoot('svg2');
   assertTrue('svg.hasChildNodes() == true', svg.hasChildNodes());
-  
+}
+
+function testHasAttributes() {
   // Test hasAttributes
   console.log('Testing hasAttributes...');
-  
+
   // grab an element from the document that has attributes
   path = getDoc('svg2').getElementById('path3913');
   assertTrue('path3913.hasAttributes() == true', path.hasAttributes());
-  
+
   // test on an svg root
   svg = getRoot('svg2');
   assertTrue('svg.hasAttributes() == true', svg.hasAttributes());
-  
+
   // grab an element from the document that does not have attributes
   group = getDoc('mySVG').createElementNS(svgns, 'g');
   svg = getRoot('mySVG');
   svg.appendChild(group);
   assertFalse('group.hasAttributes() == false', group.hasAttributes());
-  
+
   // grab a text node -- text nodes don't have attributes
   text = getDoc('svg11242').createElementNS(svgns, 'text');
   text.setAttribute('x', 250);
@@ -3696,15 +3746,15 @@ function testHasChildNodes() {
   textNode = text.childNodes[0];
   assertFalse('textNode after append, textNode.hasAttributes() == false', 
               textNode.hasAttributes());
-  
+
   // grab the SVG root which should have attributes
   svg = getRoot('mySVG');
   assertTrue('mySVG.hasAttributes() == true', svg.hasAttributes());
-  
+
   // grab a namespaced element inside METADATA that has attributes
   cc = getDoc('svg2').getElementById('myCCWork');
   assertTrue('myCCWork.hasAttributes() == true', cc.hasAttributes());
-  
+
   // grab a namespaced element inside of METADATA that does not have
   // attributes
   dc = getDoc('svg2').getElementsByTagNameNS(dc_ns, 'format')[0];

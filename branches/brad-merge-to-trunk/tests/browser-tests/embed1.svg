@@ -5,6 +5,10 @@
      onload="loaded()">
      
   <script type="text/javascript"><![CDATA[
+    // A global variable that we set to ensure we don't incorrectly see it
+    // over in embed2.
+    var shouldNotClash = 'set globally in embed1';
+    
     function loaded() {
       // change onloadFunc to point to your real onload function that you
       // want called when the page is truly ready
