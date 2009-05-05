@@ -2894,6 +2894,8 @@ extend(FlashHandler, {
       an SVG OBJECT to be executed at a later time when are done
       loading the Flash and HTC infrastructure. */
   _onObjectScript: function(msg) {
+    //console.log('onObjectScript, msg='+this.debugMsg(msg));
+    
     // batch for later execution
     this._svgObject._scriptsToExec.push(msg.script);
   }
