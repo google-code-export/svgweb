@@ -155,6 +155,9 @@
       // SVG OBJECTs works
       
       testScope();
+      
+      renderer = top.svgweb.getHandlerType();
+      
       testIncorrectConversions();
       testHostObjects();
       testTimingFunctions();
@@ -214,6 +217,11 @@
       // with 'top'
       top.assertTrue('assertEquals should be undefined', 
                      (typeof assertEquals == 'undefined'));
+                     
+      // make sure some of our top.* variables show up
+      top.assertExists('top.svgweb should exist', top.svgweb);
+      top.assertExists('top.isIE should exist', top.isIE);
+      top.assertExists('top.isFF should exist', top.isFF);
     }
     
     function testIncorrectConversions() {
@@ -226,9 +234,6 @@
       
       // TODO: access the parent document or window object:
       // top.document and top.window
-      
-      // TODO: printing out the document objects nodeName should result
-      // in #document, which should not be converted
       
       // TODO: use document and window inside of a double and single quoted
       // string
@@ -581,7 +586,12 @@
       group = document.getElementById('layer4');
       top.assertExists("group.childNodes", group.childNodes);
       top.assertEquals("group.length == 9", 9, group.childNodes.length);
+      // child 0 is whitespace
       child = group.childNodes[0];
+      top.assertExists("group.childNodes[first child]", child);
+      top.assertEquals("group.childNodes[first child].nodeType == 3", 3,
+                       child.nodeType);      
+      child = group.childNodes[1]; 
       top.assertExists("group.childNodes[first element]", child);
       top.assertEquals("child.childNodes[first element].id == rect5688", 'rect5688', 
                     child.id);
@@ -662,12 +672,12 @@
 
       // SVG element
       path = document.getElementById('path3924');
-      top.assertExists('path3924 should exist');
+      top.assertExists('path3924 should exist', path);
       top.assertEquals('path.ownerDocument == doc', document, path.ownerDocument);
 
       // SVG element using ownerDocument reference
       path = svg.ownerDocument.getElementById('path3924');
-      top.assertExists('path3924 should exist');
+      top.assertExists('path3924 should exist', path);
       top.assertEquals('path.ownerDocument == doc', document, path.ownerDocument);
 
       // non-SVG element
@@ -908,8 +918,8 @@
       // root element
       svg = document.getElementById('svg2');
       top.assertExists('svg.parentNode should exist', svg.parentNode);
-      top.assertEquals('svg.parentNode.nodeName == #document', 
-                    '#document', svg.parentNode.nodeName.toLowerCase());
+      top.assertEquals('svg.parentNode.nodeName == #doc' + 'ument', 
+                    '#doc' + 'ument', svg.parentNode.nodeName.toLowerCase());
       top.assertNull('svg.previousSibling == null', svg.previousSibling);
       top.assertNull('svg.nextSibling == null', svg.nextSibling);
       top.assertExists('svg.firstChild should exist', svg.firstChild);
@@ -922,8 +932,13 @@
       top.assertEquals('firstChild.parentNode == svg', svg, child.parentNode);
       top.assertNull('firstChild.previousSibling == null', child.previousSibling);
       top.assertExists('firstChild.nextSibling should exist', child.nextSibling);
-      top.assertEquals('firstChild.nextSibling.nodeName == sodipodi:namedview', 
-                   'sodipodi:namedview', child.nextSibling.nodeName);
+      top.assertEquals('firstChild.nextSibling.nodeType == 3', 3,
+                       child.nextSibling.nodeType);
+      top.assertExists('firstChild.nextSibling.nextSibling should exist',
+                       child.nextSibling.nextSibling);
+      top.assertEquals('firstChild.nextSibling.nextSibling.nodeName == '
+                       + 'sodipodi:namedview', 'sodipodi:namedview', 
+                       child.nextSibling.nextSibling.nodeName);
       top.assertExists('svg.lastChild should exist', svg.lastChild);
       top.assertEquals('svg.lastChild == svg.childNodes[last child]',
                    svg.childNodes[svg.childNodes.length - 1],
@@ -938,22 +953,23 @@
       top.assertNull('lastChild.nextSibling == null', child.nextSibling);
       top.assertExists('lastChild.previousSibling should exist',
                    child.previousSibling);      
-      top.assertEquals('lastChild.previousSibling.nodeName == group', 'group',
+      top.assertEquals('lastChild.previousSibling.nodeName == group', 'g',
                    child.previousSibling.nodeName);
-      top.assertExists('lastChild.firstChild should exist', child.firstChild);
-      top.assertExists('lastChild.lastChild should exist', child.lastChild);
-      top.assertEquals('lastChild.firstChild.nodeName == path',
-                   'path', child.firstChild.nodeName);
-      top.assertEquals('lastChild.firstChild.id == path5644',
-                   'path5644', child.firstChild.id);
-      top.assertEquals('lastChild.lastChild.nodeName == title',
-                   'title', child.lastChild.nodeName);
-      top.assertEquals('lastChild.lastChild.id == myTitle',
-                   'myTitle', child.lastChild.id);
-      top.assertEquals('lastChild.firstChild.parentNode == this (g)',
-                   child, child.firstChild.parentNode);
+      child = svg.lastChild.firstChild.nextSibling;
+      top.assertExists('svg.lastChild.firstChild.nextSibling should exist', 
+                       child);
+      top.assertEquals('svg.lastChild.firstChild.nextSibling.nodeName == rect',
+                   'rect', child.nodeName);
+      top.assertEquals('svg.lastChild.firstChild.nextSibling.id == rect5688',
+                   'rect5688', child.id);
+      top.assertEquals('lastChild.lastChild.nodeName == #text',
+                   '#text', svg.lastChild.lastChild.nodeName);
+      top.assertEquals('lastChild.lastChild.nodeType == 3', 3, 
+                       svg.lastChild.lastChild.nodeType);
+      top.assertEquals('lastChild.firstChild.nextSibling.parentNode == '
+                       + 'this (g)', svg.lastChild, child.parentNode);
       top.assertEquals('lastChild.lastChild.parentNode == this (g)',
-                   child, child.lastChild.parentNode);
+                   svg.lastChild, svg.lastChild.lastChild.parentNode);
 
       // metadata node
       metadata = document.getElementsByTagNameNS(svgns, 'metadata')[0];
@@ -1119,8 +1135,8 @@
       top.assertEquals('circle.getAttribute(id) == myCircle', 'myCircle',
                    circle.getAttribute('id'));
       group = document.getElementById('layer4');
-      top.assertExists('myGroup should exist', group);
-      top.assertEquals('group.id == myGroup', 'myGroup', group.getAttribute('id'));
+      top.assertExists('layer4 should exist', group);
+      top.assertEquals('group.id == layer4', 'layer4', group.getAttribute('id'));
       lengthBefore = group.childNodes.length;
       group.appendChild(circle);
       // test our post-append properties using the circle object reference
@@ -1262,7 +1278,7 @@
       top.assertNull('path.nextSibling == null', path.nextSibling);
       // NOTE: It is a known issue that on IE sometimes two text nodes that
       // should be identical won't have == be true
-      if (!isIE) {
+      if (!top.isIE) {
         top.assertEquals('path.previousSibling == svg.childNodes[2nd to last child]', 
                      svg.childNodes[svg.childNodes.length - 2], 
                      path.previousSibling);
@@ -1298,7 +1314,7 @@
       top.assertExists('child should exist', child);
       // NOTE: It is a known issue that on IE sometimes two text nodes that
       // should be identical won't have == be true
-      if (!isIE) {
+      if (!top.isIE) {
         top.assertEquals('path.previousSibling == child', child, 
                      path.previousSibling);
       }
@@ -1427,7 +1443,7 @@
       path = document.createElementNS(svgns, 'path');
       path.id = 'group_path5';
       group.appendChild(path);
-      svg = document.getElementById('svg11242');
+      svg = document.getElementById('svg2');
       nextToLast = svg.lastChild;
       svg.appendChild(group);
       group = nextToLast.nextSibling; // should be our new group
@@ -1452,15 +1468,15 @@
 
       // remove a normal circle element _after_ appending to DOM
       // after getting circle element through getElementById
-      rect = document.getElementById('myRect');
+      rect = document.getElementById('rect5690');
       parent = rect.parentNode;
       lengthBefore = parent.childNodes.length;
       rect.parentNode.removeChild(rect);
       top.assertEquals('parent.childNodes.length == lengthBefore - 1',
                    lengthBefore - 1, parent.childNodes.length);
       top.assertNull('rect.parentNode == null', rect.parentNode);
-      top.assertNull('doc.getElementById(myRect) == null',
-                 document.getElementById('myRect'));
+      top.assertNull('doc.getElementById(rect5690) == null',
+                 document.getElementById('rect5690'));
 
       // remove a text node _before_ appending to DOM on an SVG Title
       // element
@@ -1545,7 +1561,7 @@
       rect.setAttribute('width', 20);
       rect.setAttribute('height', 20);
       rect.setAttribute('fill', 'orange');
-      svg = getElementById('svg2');
+      svg = document.getElementById('svg2');
       svg.appendChild(group);
       temp = group.replaceChild(rect, circle);
       top.assertNull('circle.parentNode == null', circle.parentNode);
@@ -1653,7 +1669,7 @@
                   textNode.hasChildNodes());
 
       // test an SVG root node
-      svg = getElementById('svg2');
+      svg = document.getElementById('svg2');
       top.assertTrue('svg.hasChildNodes() == true', svg.hasChildNodes());
     }
     
@@ -1842,10 +1858,9 @@
       // and display, but not others like fill.
       runTests = true;
       // break the word top into pieces so it doesn't get transformed
-      top.assertExists('t' + 'o' + 'p.renderer should exist', top.renderer);
-      top.assertEqualsAny('t' + 'o' + 'p.renderer should be native or flash',
-                      ['native', 'flash'], top.renderer);
-      if (isFF && top.renderer == 'native') {
+      top.assertEqualsAny('renderer should be native or flash',
+                      ['native', 'flash'], renderer);
+      if (top.isFF && renderer == 'native') {
         runTests = false;
       }
       if (runTests) {
@@ -3552,8 +3567,7 @@
           font-family="Verdana" 
           font-size="24" 
           fill="blue">hello world</text><desc id="myDesc">This is a description</desc><title id="myTitle">This is a title</title>
-  </g>
-  <g
+  </g><g
      inkscape:groupmode="layer"
      id="layer4"
      inkscape:label="mask"
@@ -3588,5 +3602,4 @@
        x="-50.173149"
        y="-533.83899"
        transform="matrix(0,1,-1,0,0,0)" />
-  </g>
-</svg>
+  </g></svg>
