@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = false;
+var printAsserts = true;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure
@@ -51,6 +51,11 @@ var shouldNotClash = 'set globally in test_js.js';
 // a global function we define to ensure that it doesn't clash with local
 // functions in our SVG files; checked in testScope() inside of embed2.svg
 var globalFunction = function() { return 'returned from test_js.js'; }
+
+// a flag we set on our window object; we compare this inside of our embed2.svg
+// tests to ensure we have a separate, independent window object 
+// inside testScope()
+window._outerWindow = true;
 
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";
@@ -106,7 +111,7 @@ function runTests(embedTypes) {
               renderer == 'native' 
               || renderer == 'flash');
               
-  if (_hasObjects) {
+  /*if (_hasObjects) {
     testScope();
   }
   
@@ -129,13 +134,7 @@ function runTests(embedTypes) {
   testIsSupported();
   testStyle();
   testCreateSVGObject();
-  testBugFixes();
-  
-  // run tests inside of an SVG file embedded with the OBJECT tag
-  if (_hasObjects) {
-    svg = document.getElementById('svg2');
-    svg.contentDocument.runObjectTests();
-  }
+  testBugFixes();*/
   
   // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
   
@@ -230,11 +229,11 @@ function runTests(embedTypes) {
   testUnload();
   
   // our SVG OBJECTs located in the page source itself should have loaded by now
-  if (_hasObjects) {
+  /*if (_hasObjects) {
     console.log('Testing SVG OBJECT onload listeners...');
     
     for (var i = 0; i < 3; i++) {
-      assertTrue('SVG OBJECT ' + (i + 1) + ' should have its onload() '
+      assertTrue('SVG file embed' + (i + 1) + '.svg should have its onload() '
                  + 'method called', objectLoaded[i]);
     }
   }
@@ -263,7 +262,7 @@ function runTests(embedTypes) {
     if (!_flashError) {
       console.log('All tests passed');
     }
-  }, 10000);
+  }, 10000);*/
 }
 
 function testScope() {

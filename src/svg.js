@@ -3223,6 +3223,11 @@ extend(NativeHandler, {
     var doc = win.document;    
     NativeHandler._patchDocumentObject(doc);
     
+    // expose the svgns and xlinkns variables inside in the SVG files 
+    // Window object
+    win.svgns = svgns;
+    win.xlinkns = xlinkns;
+    
     // build up list of namespaces so that getElementsByTagNameNS works with
     // foreign namespaces
     this._namespaces = this._getNamespaces(doc);
@@ -5712,9 +5717,10 @@ extend(_SVGObject, {
     // instead
     script = script.replace(/document\./g, replaceText + 'document.');
     
-    // change any calls to the window.* object to point to our fake Window
-    // object
-    script = script.replace(/window\./g, replaceText + 'window.');
+    // change some calls to the window object to point to our fake window
+    // object instead
+    script = script.replace(/window\.(location|addEventListener|onload)/g, 
+                            replaceText + 'window.$1');
     
     // Now create an iframe that we will use to 'silo' and execute our
     // code, which will act as a place for globals to be defined without
@@ -5731,21 +5737,24 @@ extend(_SVGObject, {
     body.appendChild(iframe);
     
     // get the iframes document object; IE differs on how to get this
-    var iframeDoc = (iframe.contentWindow) ? 
-                iframe.contentWindow.document : iframe.contentDocument;
+    var iframeDoc = (iframe.contentDocument) ? 
+                iframe.contentDocument : iframe.contentWindow.document;
                 
     // set the document.defaultView to the iframe's real Window object;
     // note that IE doesn't support defaultView
-    this._handler.document.defaultView = 
-        (iframeDoc.defaultView) ? iframeDoc.defaultView : iframe.contentWindow;
+    var iframeWin = iframe.contentWindow;
+    this._handler.document.defaultView = iframeWin;
+    
+    // expose svgns and xlinkns variables; IE requires us to do it this
+    // way rather than setting it as a variable on iframeWin above
+    script = "window.svgns = '" + svgns + "';\n"
+             + "window.xlinkns = '" + xlinkns + "';\n\n"
+             + script;
 
-    // now write the script into the iframe to execute it in a siloed way
-    var time1 = new Date().getTime();
+    // now insert the script into the iframe to execute it in a siloed way
     iframeDoc.write('<script>' + script + '</script>');
     iframeDoc.close();
-    var time2 = new Date().getTime();
-    //alert('total time='+(time2 - time1));
-
+    
     // execute any addEventListener(onloads) that might have been
     // registered
     this._handler.window._fireOnload();
@@ -5788,8 +5797,8 @@ extend(_SVGWindow, {
       try {
         this._onloadListeners[i]();
       } catch (exp) {
-        console.log('The follow exception occurred from an SVG onload listener: '
-                    + (exp.message || exp));
+        console.log('The following exception occurred from an SVG onload '
+                    + 'listener: ' + (exp.message || exp));
       }
     }
     
@@ -5798,8 +5807,8 @@ extend(_SVGWindow, {
       try {
         this.onload();
       } catch (exp) {
-        console.log('The follow exception occurred from an SVG onload listener: '
-                    + (exp.message || exp));
+        console.log('The following exception occurred from an SVG onload '
+                    + 'listener: ' + (exp.message || exp));
       }
     }
   },
