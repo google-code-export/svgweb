@@ -78,7 +78,7 @@
       'glyphOrientationVertical', 'kerning', 'textAnchor',
       'writingMode'
     ];
-  
+
     // save 'this' so we can make sure it points to our fake window object
     var outerThis = this;
     
@@ -122,7 +122,7 @@
       // so it can top.assert this later
       top.svgweb._objectLoaded(1);
     }
-    
+
     // test the different ways to register for the SVG file onload
     
     // anonymous function - onload
@@ -135,30 +135,30 @@
     function addEventListenerMethod() {
       top.svgweb._embedOnloads.push(3);
     }
-    
-    window.onload = function() {
-      top.svgweb._embedOnloads.push(4);
-      top.svgweb._validateOnloads();
-    }
-    
+
     // Note: we don't test document.rootElement.addEventListener(onload) for the 
     // following reason:
     // * Firefox only supports document.rootElement.addEventListener('SVGLoad')
     // * Safari only supports document.rootElement.addEventListener('onload')
     // So there is no common subset between them
-    
-    document.runObjectTests = function() {
-      top.console.log('Inside SVG OBJECT: Running suite of tests:');
+
+    window.onload = function() {
+      top.svgweb._embedOnloads.push(4);
+      top.svgweb._validateOnloads();
+      runObjectTests();
+    }
+
+    function runObjectTests() {
+      top.console.log('Inside SVG OBJECT: Running suite of tests');
       
       // a suite of tests to ensure that working with script inside of 
       // SVG OBJECTs works
       
       testScope();
-      testWindow();
       testIncorrectConversions();
+      testHostObjects();
       testTimingFunctions();
       testClassProgramming();
-      testTop();
       testGetElementById();
       testGetElementsByTagNameNS();
       testSVGSVGElementProperties();
@@ -202,21 +202,18 @@
                        'returned from embed2', globalFunction());
       top.assertEquals('t' + 'op.globalFunction() == returned from test_js.js',
                        'returned from test_js.js', top.globalFunction());
-    }
-    
-    function testClassProgramming() {
-        // TODO: Add a JavaScript OOP class to make sure 'this' keyword correctly
-        // points to instance and not HTML window object
-    }
-    
-    function testWindow() {
-      top.console.log('Testing using window object inside of SVG OBJECT '
-                      + 'files...');
-      // TODO: Have a bunch of tests where we use the window object
-      
-      // TODO: Test accessing window.defaultView.frameElement, including
-      // the location oject on the defaultView as well as accessing name
-      // value pairs
+                       
+      // make sure we have our own window object; we set this flag in
+      // test_js.js on the outer window object
+      top.assertUndefined('window._outerWindow should be undefined',
+                          window._outerWindow);
+      top.assertTrue('top.window._outerWindow == true', 
+                     top.window._outerWindow);
+                     
+      // our assertion functions should not be available without preceding
+      // with 'top'
+      top.assertTrue('assertEquals should be undefined', 
+                     (typeof assertEquals == 'undefined'));
     }
     
     function testIncorrectConversions() {
@@ -237,6 +234,33 @@
       // string
     }
     
+    function testHostObjects() {
+      top.console.log('Inside SVG OBJECT: Testing host objects...');
+      
+      // TODO: test the 'top' and 'self' variables
+      
+      // TODO: Have a bunch of tests where we use the window object
+      
+      // TODO: Test accessing window.defaultView.frameElement, including
+      // the location oject on the defaultView as well as accessing name
+      // value pairs
+      
+      // test accessing the svgns and xmlns variables
+      top.assertExists('w' + 'indow.svgns should exist', window.svgns);
+      top.assertExists('svgns should exist', svgns);
+      top.assertEquals('svgns == http://www.w3.org/2000/svg',
+                       'http://www.w3.org/2000/svg', svgns);
+      top.assertExists('w' + 'indow.xlinkns should exist', window.xlinkns);
+      top.assertExists('xlinkns should exist', xlinkns);
+      top.assertEquals('xlinkns == http://www.w3.org/1999/xlink',
+                       'http://www.w3.org/1999/xlink', xlinkns);
+    }
+    
+    function testClassProgramming() {
+        // TODO: Add a JavaScript OOP class to make sure 'this' keyword correctly
+        // points to instance and not HTML window object
+    }
+    
     function testTimingFunctions() {
       // TODO: add setTimeout and setIntervals here that call a global function
       // relative to ourselves (i.e. setTimeout("tick()", 500) with the 
@@ -253,10 +277,6 @@
       // the styles above
     }
     
-    function testTopSelf() {
-      // TODO: test the 'top' and 'self' variables
-    }
-    
     function testGetElementById() {
       // getElementById
       top.console.log('Inside SVG OBJECT: Testing getElementById...');
@@ -266,7 +286,7 @@
       top.assertExists('svg2 should exist', root);
       top.assertEquals('root.id == svg2', 'svg2', root.id);
       group = document.getElementById('layer4');
-      top.assertExists('layer4 should exist', layer4);
+      top.assertExists('layer4 should exist', group);
       top.assertEquals('group.getAttribute(id) == layer4', 'layer4',
                    group.getAttribute('id'));
 
