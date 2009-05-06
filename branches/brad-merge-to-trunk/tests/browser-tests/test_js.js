@@ -120,8 +120,8 @@ function runTests(embedTypes) {
   testChildNodes();
   testOwnerDocument();
   testTextNodes();
-  testDOMHierarchyAccessors();         
-  testAppendChild();   
+  testDOMHierarchyAccessors();   
+  testAppendChild();
   testRemoveChild();
   testReplaceChild();
   testInsertBefore();
@@ -2034,11 +2034,19 @@ function testAppendChild() {
   group = getDoc('svg2').getElementById('layer1');
   group.appendChild(desc);
   // bug test - embed2 already has a <desc> element; a bug was incorrectly
-  // causing _its_ data value to also change at this time
+  // causing _its_ data value to also change at this time (Issue 94)
   assertEquals('myDesc over in svg2 should _not_ have its value changed; it '
                + 'should be: This is a description',
                'This is a description',
-               getDoc('svg2').getElementById('myDesc').firstChild.data);  
+               getDoc('svg2').getElementById('myDesc').firstChild.data);
+  assertEquals('myDesc over in svg2 should _not_ have its value changed; it '
+               + 'should be: This is a description',
+               'This is a description',
+               getDoc('svg2').getElementById('myDesc').childNodes[0].data); 
+  assertEquals('myDesc over in svg2 should _not_ have its value changed; it '
+               + 'should be: This is a description',
+               'This is a description',
+               getDoc('svg2').getElementById('myDesc').lastChild.data);  
   // end bug test
   matches = getDoc('svg2').getElementsByTagNameNS(svgns, 'desc');
   desc = null;

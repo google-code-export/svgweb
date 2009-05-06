@@ -3732,6 +3732,22 @@ extend(_Node, {
       }
     }
     
+    // if this is a text node, remove from our childNode array
+    if (isIE && child.nodeType == _Node.TEXT_NODE && this._childNodes.length) {
+      // find the node with the given text value and remove it
+      var position = -1;
+      for (var i = 0; i < this._childNodes.length; i++) {
+        if (this._childNodes[i].nodeValue == child._nodeXML.nodeValue) {
+          position = i;
+          break;
+        }
+      }
+
+      if (position != -1) {
+        this._childNodes.splice(position, 1);
+      }
+    }
+    
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
       // just remove the last getter/setter, since they all resolve
@@ -3783,7 +3799,7 @@ extend(_Node, {
       depending on the browser. */
   appendChild: function(child /* _Node or DOM Node */) {
     //console.log('appendChild, child='+child.nodeName+', this='+this.nodeName);
-     
+    
     // the child could be a DOM node; turn it into something we can
     // work with, such as a _Node or _Element
     child = this._getFakeNode(child);
@@ -3926,11 +3942,19 @@ extend(_Node, {
     if (childXML == null) {
       return null;
     }
-    
+        
     if (!this._attached && this._cachedChildNodes[0]) {
       return this._cachedChildNodes[0]._getProxyNode();
     } else {
       // no node cached
+      if (isIE && childXML.nodeType == _Node.TEXT_NODE) {
+        // if all of our children are text nodes, force them to be
+        // cached and created -- this is to handle an edge condition on
+        // IE so that text node equality will hold when the text nodes
+        // are fetched in different ways
+        var children = this._getChildNodes(); // will create and cache children
+      }
+        
       return this._handler.document._getNode(childXML);
     }
   },
@@ -3952,6 +3976,14 @@ extend(_Node, {
       return child._getProxyNode();
     } else {
       // no node cached
+      if (isIE && childXML.nodeType == _Node.TEXT_NODE) {
+        // if all of our children are text nodes, force them to be
+        // cached and created -- this is to handle an edge condition on
+        // IE so that text node equality will hold when the text nodes
+        // are fetched in different ways
+        var children = this._getChildNodes(); // will create and cache children
+      }
+      
       return this._handler.document._getNode(childXML);
     }
   },
@@ -4274,7 +4306,7 @@ extend(_Node, {
         child._setId(id);
       }
     }
-    
+        
     child._handler = this._handler;
     
     if (attached && childXML.nodeType == _Node.ELEMENT_NODE) {
@@ -4361,7 +4393,10 @@ extend(_Node, {
                                   childId: id });
     } else if (attached && childXML.nodeType == _Node.TEXT_NODE) {
       // store a reference to our node so we can return it in the future
-      this._handler.document._nodeById['_' + textNodeID] = child;
+      if (child._textNodeID) {
+        // IE doesn't support expandos on XML objects
+        this._handler.document._nodeById['_' + child._textNodeID] = child;
+      }
       
       var parentID = childXML.parentNode.getAttribute('id');
       
@@ -4397,12 +4432,17 @@ extend(_Node, {
     
     // keep a pointer to any text nodes we made while unattached
     // so we can return the same instance later
-    if (attached && !isIE) { // no XML expandos on IE, so can't do this there
+    if (attached) {
       for (var i = 0; i < child._cachedChildNodes.length; i++) {
         var currentNode = child._cachedChildNodes[i];
         if (currentNode.nodeType == _Node.TEXT_NODE) {
-          var textNodeID = currentNode._nodeXML._textNodeID;
-          this._handler.document._nodeById['_' + textNodeID] = currentNode;
+          if (!isIE) { // no XML expandos on IE unfortunately
+            var textNodeID = currentNode._nodeXML._textNodeID;
+            this._handler.document._nodeById['_' + textNodeID] = currentNode;
+          } else {
+            // NOTE: FIXME: this won't work for XML mixed content
+            child._childNodes.push(currentNode._getProxyNode());
+          }
         }
       }
     }
@@ -6452,22 +6492,35 @@ extend(_Document, {
         this._nodeById['_' + elementId] = node;
       }
     } else if (nodeXML.nodeType == _Node.TEXT_NODE) {
-      // for all browsers but IE, we have an internal ID for text nodes that
-      // we use to refetch and return them if they have been created before;
-      // this is because we can set variables on XML text nodes whereas
-      // on IE we can't, so we can't track text nodes on IE unfortunately
-      node = this._nodeById['_' + nodeXML._textNodeID];
+      if (!isIE && nodeXML._textNodeID) {
+        // for all browsers but IE, we have an internal ID for text nodes that
+        // we use to refetch and return them if they have been created before;
+        // this is because we can set variables on XML text nodes whereas
+        // on IE we can't, so we can't track text nodes on IE unfortunately
+        node = this._nodeById['_' + nodeXML._textNodeID];
+      } else if (isIE) {
+        // get the parent of this node, and then attempt to find the child
+        // within it
+        var parentID = nodeXML.parentNode.getAttribute('id');
+        var parent = this._nodeById['_' + parentID];
+        for (var i = 0; parent && parent._childNodes 
+                        && i < parent._childNodes.length; i++) {
+          var checkMe = parent._childNodes[i]._fakeNode;
+          if (checkMe.nodeType == _Node.TEXT_NODE
+              && checkMe._nodeXML.nodeValue == nodeXML.nodeValue) {
+            node = checkMe;
+            break;
+          }
+        }
+      }
+      
       if (!node) {
-        // we always create these on demand since they have no ID to use
-        // for caching; unfortunately we can't cache an internal ID
-        // on XML text nodes for IE, so we have to just always produce them
-        // on demand
         node = new _Node(nodeXML.nodeName, _Node.TEXT_NODE, null, null, nodeXML,
                          this._handler, false);
         node._passThrough = true;
         
-        if (!isIE) {
-          this._nodeById['_' + node._nodeXML._textNodeID] = node;
+        if (!isIE && node._textNodeID) {
+          this._nodeById['_' + node._textNodeID] = node;
         }
       }
     } else {
