@@ -118,9 +118,20 @@
     }
     
     function testLoaded() {
+      // set top.window._objectsLoadedFirst to be false; we check for this
+      // in test_js.js testScope() function to ensure that objects load 
+      // before any onload listeners in embedded SVG files
+      top.window._objectsLoadedFirst = true;
+      
       // tell containing testing class that our particular file has loaded
       // so it can top.assert this later
       top.svgweb._objectLoaded(1);
+      
+      // kick off our suite of SVG OBJECT in-file unit tests; we do it here 
+      // instead of later such as in one of the other onload methods below
+      // because we can ensure they will run before the unit tests in the
+      // main HTML page by putting them here
+      runObjectTests();
     }
 
     // test the different ways to register for the SVG file onload
@@ -145,7 +156,6 @@
     window.onload = function() {
       top.svgweb._embedOnloads.push(4);
       top.svgweb._validateOnloads();
-      runObjectTests();
     }
 
     function runObjectTests() {
@@ -398,6 +408,8 @@
                   + "[0].getAttribute('gridtolerance') should now be 20000", 
                   20000,
                   sodipodi[0].getAttribute('gridtolerance'));
+      // restore original value to make page-level tests work
+      sodipodi[0].setAttribute('gridtolerance', 10000);
 
       rdf = document.getElementsByTagNameNS(rdf_ns, 'RDF');
       top.assertExists('RDF elements should exist', rdf);
@@ -1034,6 +1046,9 @@
       // append the node to an SVG node and ensure the values are correct, 
       // and when changed pass through to the Flash
       textNode = document.createTextNode('hello world', true);
+      if (format.childNodes.length != 0) { // normalize for later tests
+        format.removeChild(format.childNodes[0]);
+      }
       textNode = format.appendChild(textNode);
       top.assertExists('textNode should exist', textNode);
       top.assertEquals('textNode.nodeType == 3', 3, textNode.nodeType);
@@ -1082,6 +1097,8 @@
       top.assertEquals('After setting .textContent, textNode.textContent == '
                    + 'set through textContent', 'set through textContent',
                    textNode.textContent);
+      // reset value for later tests
+      textNode.textContent = 'image/svg+xml';
     }
 
     function testAppendChild() {
@@ -1625,7 +1642,7 @@
 
     function testHasChildNodes() {
       // Test hasChildNodes
-      top.console.log('Testing hasChildNodes...');
+      top.console.log('Inside SVG OBJECT: Testing hasChildNodes...');
 
       // grab a group element from the document that has child nodes
       group = document.getElementById('layer4');

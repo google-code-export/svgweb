@@ -1,6 +1,6 @@
 // if true, we print out each assertion as we run them; helps with
 // identifying where an assertion failed by printing the ones before it
-var printAsserts = true;
+var printAsserts = false;
 
 // used to record whether a Flash error has occurred asynchronously
 // so we can halt testing and report the failure
@@ -37,6 +37,11 @@ svgweb._validateOnloads = function() {
   assertEquals('4th onload in embeds2.svg should be "4"', 4,
                svgweb._embedOnloads[3]);
                
+  // make sure that embeded objects' onload listeners get called before us;
+  // at this point, window._objectsLoadedFirst should have been set to _true_
+  // by one of the embed*.svg files
+  assertTrue('window._objectsLoadedFirst == false', window._objectsLoadedFirst);
+               
   svgweb._validateOnloadsCalled = true;
 }
 
@@ -56,6 +61,11 @@ var globalFunction = function() { return 'returned from test_js.js'; }
 // tests to ensure we have a separate, independent window object 
 // inside testScope()
 window._outerWindow = true;
+
+// A variable that the embed1.svg, embed2.svg, etc. files try to set from
+// their onload listeners. The correct order is that embeded's objects should 
+// onload first, followed by the page-level onload.
+window._objectsLoadedFirst = false;
 
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";
@@ -111,7 +121,9 @@ function runTests(embedTypes) {
               renderer == 'native' 
               || renderer == 'flash');
               
-  /*if (_hasObjects) {
+  console.log('Running suite of page-level tests');
+              
+  if (_hasObjects) {
     testScope();
   }
   
@@ -134,7 +146,7 @@ function runTests(embedTypes) {
   testIsSupported();
   testStyle();
   testCreateSVGObject();
-  testBugFixes();*/
+  testBugFixes();
   
   // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
   
@@ -229,7 +241,7 @@ function runTests(embedTypes) {
   testUnload();
   
   // our SVG OBJECTs located in the page source itself should have loaded by now
-  /*if (_hasObjects) {
+  if (_hasObjects) {
     console.log('Testing SVG OBJECT onload listeners...');
     
     for (var i = 0; i < 3; i++) {
@@ -262,7 +274,7 @@ function runTests(embedTypes) {
     if (!_flashError) {
       console.log('All tests passed');
     }
-  }, 10000);*/
+  }, 10000);
 }
 
 function testScope() {
@@ -278,6 +290,9 @@ function testScope() {
   // make sure functions don't clash
   assertEquals('globalFunction() == returned from test_js.js',
                'returned from test_js.js', globalFunction());
+               
+  // make sure that the objects's onload listeners fired _before_ the page
+  assertTrue('window._objectsLoadedFirst == true', window._objectsLoadedFirst);
 }
 
 function testContentDocument() {
@@ -420,22 +435,22 @@ function testGetElementById() {
   assertEquals('svg.id == svg11242', 'svg11242', svg.id);
   
   // change the ID and make sure getElementById still sees it
-  path = getDoc('svg2').getElementById('path3182');
-  path.id = 'path3182_changed';
-  assertExists('document.getElementById(path3182_changed) should exist',
-               getDoc('svg2').getElementById('path3182_changed'));
-  assertNull('document.getElementById(path3182) == null',
-             getDoc('svg2').getElementById('path3182'));
+  path = getDoc('svg2').getElementById('path3180');
+  path.id = 'path3180_changed';
+  assertExists('document.getElementById(path3180_changed) should exist',
+               getDoc('svg2').getElementById('path3180_changed'));
+  assertNull('document.getElementById(path3180) == null',
+             getDoc('svg2').getElementById('path3180'));
              
   // change the ID through setAttribute and make sure getElementById
   // still sees it
-  path = getDoc('svg2').getElementById('path3182_changed');
-  path.setAttribute('id', 'path3182_changed_again');
-  assertExists('document.getElementById(path3182_changed_again) should '
+  path = getDoc('svg2').getElementById('path3180_changed');
+  path.setAttribute('id', 'path3180_changed_again');
+  assertExists('document.getElementById(path3180_changed_again) should '
                + 'exist',
-               getDoc('svg2').getElementById('path3182_changed_again'));
-  assertNull('document.getElementById(path3182_changed) == null',
-             getDoc('svg2').getElementById('path3182_changed'));
+               getDoc('svg2').getElementById('path3180_changed_again'));
+  assertNull('document.getElementById(path3180_changed) == null',
+             getDoc('svg2').getElementById('path3180_changed'));
              
   // change the ID and make sure getElementById still sees it for a
   // non-SVG, non-HTML element
@@ -474,8 +489,9 @@ function testGetElementsByTagNameNS() {
     // test inside of SVG OBJECT element
     rects = getDoc('svg2').getElementsByTagNameNS(svgns, 'rect');
     assertExists("svg2.contentDocument.getElementsByTagNameNS('rect')", rects);
+    // 2 rects were added by tested inside of embed2.svg
     assertEquals("svg2.contentDocument.getElementsByTagNameNS(rect).length "
-                 + "should be 5", 5, rects.length);
+                 + "should be 7", 7, rects.length);
   } else {
     assertEquals("document.getElementsByTagNameNS(svgns, 'rect').length "
                 + "should be 11", 11, rects.length);

@@ -1024,6 +1024,11 @@
          }
 
          function testLoaded() {
+           // set top.window._objectsLoadedFirst to be false; we check for this
+           // in test_js.js testScope() function to ensure that objects load 
+           // before any onload listeners in embedded SVG files
+           top.window._objectsLoadedFirst = true;
+         
            // tell containing testing class that our particular file has loaded
            // so it can assert this later
            top.svgweb._objectLoaded(2);
