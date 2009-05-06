@@ -5713,14 +5713,26 @@ extend(_SVGObject, {
   _executeScript: function(script) {
     var replaceText = 'top.svgweb.handlers["' + this._handler.id + '"].';
     
-    // change any calls to the document.* object to point to our Flash Handler
+    // change any calls to top.document or top.window, to a temporary different 
+    // string to avoid collisions when we transform next
+    script = script.replace(/top\.document/g, 'top.DOCUMENT');
+    script = script.replace(/top\.window/g, 'top.WINDOW');
+    
+    // change any calls to the document object to point to our Flash Handler
     // instead
-    script = script.replace(/document\./g, replaceText + 'document.');
+    script = script.replace(/document(\.|'|"|\,| |\))/g, 
+                            replaceText + 'document$1');
     
     // change some calls to the window object to point to our fake window
     // object instead
     script = script.replace(/window\.(location|addEventListener|onload)/g, 
                             replaceText + 'window.$1');
+                            
+    // change back any of our top.document or top.window calls to be
+    // their original lower case (we uppercased them earlier so that we
+    // wouldn't incorrectly transform them)
+    script = script.replace(/top\.DOCUMENT/g, 'top.document');
+    script = script.replace(/top\.WINDOW/g, 'top.window');
     
     // Now create an iframe that we will use to 'silo' and execute our
     // code, which will act as a place for globals to be defined without
@@ -6488,6 +6500,7 @@ extend(_Document, {
       // if we've created an _Element for this node before, we
       // stored a reference to it by ID so we could get it later
       node = this._nodeById['_' + nodeXML.getAttribute('id')];
+      
       if (!node) {
         // never seen before -- we'll have to create a new _Element now
         node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
