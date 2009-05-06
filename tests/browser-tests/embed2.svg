@@ -866,6 +866,8 @@
                    'This is a description4', text.data);
       top.assertEquals('text.textContent == This is a description4',
                    'This is a description4', text.textContent);
+      // restore original value for later tests
+      text.textContent = 'This is a description';
 
       title = document.getElementsByTagNameNS(svgns, 'title');
       top.assertExists('SVG title should exist', title);
@@ -1923,7 +1925,9 @@
       rect.style.display = 'block';
       top.assertEqualsAny('rect3926.style.display after changing == block',
                       ['block'],
-                      rect.style.display);              
+                      rect.style.display);
+      // restore value for later tests
+      rect.style.display = 'inline';         
       // change a visible SVG style
       group = document.getElementById('layer1');
       group.style.opacity = 0.4;
