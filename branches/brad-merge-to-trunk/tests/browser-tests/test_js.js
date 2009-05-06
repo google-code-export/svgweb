@@ -946,8 +946,8 @@ function testChildNodes() {
   assertNull('2nd SVG root element.nodeValue == null', child.nodeValue);
   if (_hasObjects) {
     // Firefox and Safari differ by one
-    assertEqualsAny('2nd SVG root element.childNodes.length == 40 or 39',
-                [40, 39], child.childNodes.length);
+    assertEqualsAny('2nd SVG root element.childNodes.length == 44 or 45',
+                [44, 45], child.childNodes.length);
   } else {
     assertEquals('2nd SVG root element.childNodes.length == 19', 19, 
                 child.childNodes.length);
@@ -2686,8 +2686,8 @@ function testRemoveChild() {
   assertExists('metadata.previousSibling should exist', 
                metadata.previousSibling);
   if (_hasObjects) {
-    assertEquals('metadata.previousSibling.nodeName == g',
-                 '#text', metadata.previousSibling.nodeName);
+    assertEquals('metadata.previousSibling.nodeName == text',
+                 'text', metadata.previousSibling.nodeName);
   } else {
     assertEquals('metadata.previousSibling.nodeName == g',
                  'g', metadata.previousSibling.nodeName);
@@ -4357,17 +4357,19 @@ function testStyle() {
   // Read style values off an element first.
   group = getDoc('svg2').getElementById('layer1');
   assertExists('layer1 should exist', group);
-  assertEqualsAny('layer1.style.opacity == 1',
-                  [1],
+  // Note: embed2.svg changes layer1.style.opacity from 1 to 0.4
+  assertEqualsAny('layer1.style.opacity == 0.4',
+                  [0.4],
                   group.style.opacity);
   assertEqualsAny('layer1.style.display == inline',
                   ['inline'],
                   group.style.display);
-  // Firefox and Safari put spaces in different places in their
-  // style strings; Safari also doesn't have a trailing semicolon
-  assertTrue('layer1.getAttribute(style) == opacity:1;display:inline;',
-             /opacity:\s*1;\s*display:\s*inline;?/.test(
-                                group.getAttribute('style')));
+  // For the native handler, Firefox and Safari put spaces in different places 
+  // in their style strings; Safari also doesn't have a trailing semicolon. 
+  // Safari also switches having 'display' before 'opacity' property.
+  assertTrue('layer1.getAttribute(style) == opacity:0.4;display:inline;',
+             (/\s*opacity:\s*0.4;?/.test(group.getAttribute('style'))
+             && /\s*display:\s*inline;?/.test(group.getAttribute('style'))));
   // repeat reading style values off another element
   rect = getDoc('svg2').getElementById('rect3926');
   // NOTE: unfortunately, FF has a bug where it doesn't mirror all
