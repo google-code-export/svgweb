@@ -60,7 +60,8 @@
         gradient, stop, defs, parent, textNode2, group2, renderer,
         origText, exp, html, ns, nextToLast, paths, styleStr, circle,
         image, line, defs, runTests, styleReturned, use, regExp, split, doc,
-        orig, rect1, rect2, obj1, obj2, obj3;
+        orig, rect1, rect2, obj1, obj2, obj3, params, hasParams, hasParam1,
+        hasParam2, param1Value, param2Value;
 
     var allStyles = [
       'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -235,30 +236,273 @@
     }
     
     function testIncorrectConversions() {
-      // TODO: put potential incorrect conversions around the document
+      // test having potential incorrect conversions around the document
       // and window objects in here to make sure they don't get incorrectly
       // transformed
+      var mydocument = 'should not be transformed';
+      top.assertEquals('mydocument == should not be transformed',
+                       'should not be transformed',
+                       mydocument);
       
-      // TODO: have a createTextNode function where the string runs over 
+      // have a createTextNode function where the string runs over 
       // several lines.
+      temp = document.createTextNode('This is a multi line string'
+                                     + ' that runs over multiple lines'
+                                     + ' and which is not very'
+                                     + ' interesting', true);
+      top.assertExists('multi line text node should exist', temp);
+      top.assertEquals('multi line text node should have its string',
+                   'This is a multi line string'
+                   + ' that runs over multiple lines'
+                   + ' and which is not very'
+                   + ' interesting',
+                   temp.nodeValue);
+      // repeat with double quotes
+      temp = document.createTextNode("This is a multi line string"
+                                     + " that runs over multiple lines"
+                                     + " and which is not very"
+                                     + " interesting", true);
+      top.assertExists('multi line text node should exist', temp);
+      top.assertEquals('multi line text node should have its string',
+                   'This is a multi line string'
+                   + ' that runs over multiple lines'
+                   + ' and which is not very'
+                   + ' interesting',
+                   temp.nodeValue);
       
-      // TODO: access the parent document or window object:
+      // ensure window.document is the same as document
+      top.assertEquals('window.doc' + 'ument == doc' + 'ument', document,
+                   window.document);
+      
+      // access the parent document or window object:
       // top.document and top.window
+      top.assertTrue('top.doc' + 'ument._topLevel == true', top.document);
+      top.assertTrue('top.win' + 'dow._topLevel == true', top.window);
       
-      // TODO: use document and window inside of a double and single quoted
-      // string
+      // use document and window inside of a double and single quoted
+      // string; if transformed incorrectly, will throw an exception
+      
+      // document with single quoted string
+      exp = null;
+      try {
+        tmp = 'var crazyTimes = document.getElementById("foobar");';
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Using doc' + 'ument in a single quoted string '
+                 + 'should work; there should be no exception', exp);
+                      
+      // document with double quoted string
+      exp = null;
+      try {
+        tmp = "var crazyTimes = document.getElementById('foobar');";
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Using doc' + 'ument in a double quoted string '
+                 + 'should work; there should be no exception', exp);
+                 
+      // window with single quoted string
+      exp = null;
+      try {
+        tmp = 'var crazyTimes = window.ownerDocument';
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Using win' + 'dow in a single quoted string '
+                 + 'should work; there should be no exception', exp);
+                 
+      // window with double quoted string
+      exp = null;
+      try {
+        tmp = "var crazyTimes = window.ownerDocument";
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Using win' + 'dow in a double quoted string '
+                 + 'should work; there should be no exception', exp);
     }
     
     function testHostObjects() {
       top.console.log('Inside SVG OBJECT: Testing host objects...');
       
-      // TODO: test the 'top' and 'self' variables
+      // top
+      top.assertExists('top should exist', top);
+      top.assertExists('window.top should exist', window.top);
+      // we set these in test_js.js to help with testing
+      top.assertExists('top.window._topWindow should exist',
+                   top.window._topWindow);
+      top.assertExists('top.window._topDocument should exist',
+                   top.window._topDocument);
+      top.assertEquals('top.window == top.window._topWindow',
+                   top.window._topWindow, top.window);
+                   
+      // window
+      top.assertExists('window should exist', window);
+      top.assertTrue('top.window !== window', (top.window !== window));
       
-      // TODO: Have a bunch of tests where we use the window object
+      // document
+      top.assertExists('document should exist', document);
+      top.assertTrue('top.doc' + 'ument !== doc' + 'ument', 
+                 (top.document !== document));
       
-      // TODO: Test accessing window.defaultView.frameElement, including
-      // the location oject on the defaultView as well as accessing name
-      // value pairs
+      // self
+      top.assertExists('self should exist', self);
+      top.assertExists('window.self should exist', window.self);
+      top.assertEquals('self == window', window, self);
+      top.assertTrue('self !== top.window._topWindow', 
+                 (self !== top.window._topWindow));
+                 
+      // window.location
+      assertExists('window.location should exist', window.location);
+      assertTrue('window.location != top.window._topWindow.location',
+                 (window.location !== top.window._topWindow));
+      assertEquals('window.location.hash == #someHash', '#someHash',
+                   window.location.hash);
+      assertEquals('window.location.host == '
+                   + 'top.window._topWindow.location.host',
+                   top.window._topWindow.location.host, window.location.host);
+      assertEquals('window.location.hostname == '
+                   + 'top.window._topWindow.location.hostname',
+                   top.window._topWindow.location.hostname, 
+                   window.location.hostname);
+      assertEquals('window.location.port == '
+                   + 'top.window._topWindow.location.port',
+                   top.window._topWindow.location.port, window.location.port);
+      assertEquals('window.location.protocol == '
+                   + 'top.window._topWindow.location.protocol',
+                   top.window._topWindow.location.protocol, 
+                   window.location.protocol);
+      assertEquals('window.location.pathname == '
+                   + 'top.window._topWindow.location.pathname',
+                   top.window._topWindow.location.pathname, 
+                   window.location.pathname);
+      assertEquals('window.location.search == '
+             + '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+             '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+             window.location.search); 
+      // build up what the full href should look like
+      temp = window.location.protocol + window.location.host
+             + window.location.pathname 
+             + 'embed2.svg?queryParam1=queryValue1&amp;'
+             + 'queryParam2=query%20with%20spaces#someHash';
+      assertTrue('window.location !== top.window._topWindow.location',
+                  (window.location !== top.window._topWindow.location));
+      assertTrue('window.location.href !== top.window._topWindow.location.href',
+                  (window.location.href !== 
+                      top.window._topWindow.location.href));            
+      assertEquals('window.location == ' + temp, temp, window.location);
+      assertEquals('window.location.href == ' + temp, temp, 
+                   window.location.href);
+                   
+      // test window.location but use a variable as an intermediary to ensure
+      // transformation happens correctly
+      var loc = loc;
+      assertExists('loc should exist', loc);
+      assertTrue('loc != top.window._topWindow',
+                 (loc !== top.window._topWindow));
+      assertEquals('loc.hash == #someHash', '#someHash',
+                   loc.hash);
+      assertEquals('loc.host == '
+                   + 'top.window._topWindow.host',
+                   top.window._topWindow.host, loc.host);
+      assertEquals('loc.hostname == '
+                   + 'top.window._topWindow.hostname',
+                   top.window._topWindow.hostname, 
+                   loc.hostname);
+      assertEquals('loc.port == '
+                   + 'top.window._topWindow.port',
+                   top.window._topWindow.port, loc.port);
+      assertEquals('loc.protocol == '
+                   + 'top.window._topWindow.protocol',
+                   top.window._topWindow.protocol, 
+                   loc.protocol);
+      assertEquals('loc.pathname == '
+                   + 'top.window._topWindow.pathname',
+                   top.window._topWindow.pathname, 
+                   loc.pathname);
+      assertEquals('loc.search == '
+             + '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+             '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+             loc.search); 
+      // build up what the full href should look like
+      // NOTE: browsers natively leave search portion URL encoded
+      temp = loc.protocol + loc.host
+             + loc.pathname 
+             + 'embed2.svg?queryParam1=queryValue1&amp;'
+             + 'queryParam2=query%20with%20spaces#someHash';
+      assertTrue('loc !== top.window._topWindow',
+                  (loc !== top.window._topWindow));
+      assertTrue('loc.href !== top.window._topWindow.href',
+                  (loc.href !== 
+                      top.window._topWindow.href));            
+      assertEquals('loc == ' + temp, temp, loc);
+      assertEquals('loc.href == ' + temp, temp, 
+                   loc.href);
+      
+      // access some name/value pairs on the window.location object, which
+      // in the real world would be used to pass in information to the SVG
+      // file for programmatic control
+      var search = decodeURIComponent(window.location.search);
+      assertExists('decoded search should exist', search);
+      search = search.split('&');
+      assertEquals('search.length == 2', 2, search.length);
+      param1Value = search[0].split('=')[1];
+      param2Value = search[1].split('=')[1];
+      assertEquals('query parameter 1 == queryValue1', 'queryValue1', 
+                    param1Value);
+      assertEquals('query parameter 2 == query with spaces', 
+                    'query with spaces', param2Value);
+      
+      // TODO: manually call _SVGWindow._createLocation() with some fake window
+      // object values
+      
+      // window.frameElement -- should be our SVG OBJECT or Flash element
+      top.assertExists('window.frameElement', window.frameElement);
+      top.assertEqualsAny('window.frameElement.nodeName == OBJECT or EMBED',
+                          ['OBJECT', 'EMBED', 'object', 'embed'],
+                          window.frameElement);
+                          
+      // test accessing PARAMs inside of the window.frameElement, which
+      // in the real world would be used to pass in information to the SVG
+      // file for programmatic control
+      assertExists('window.frameElement.childNodes should exist',
+                   window.frameElement.childNodes);
+      params = window.frameElement.childNodes;
+      assertTrue('window.frameElement.childNodes > 0', (params.length > 0));
+      // make sure there is at least one PARAM object
+      hasParams = false;
+      for (var i = 0; i < params.length; i++) {
+        if (params[i].nodeType == 1 
+            && params[i].nodeName.toUpperCase() == 'PARAM') {
+          hasParams = true;
+          break;
+        }
+      }
+      assertTrue('There should be at least one PARAM element', hasParams);
+      // in our markup when we embedded embed2.svg we have two custom PARAMs,
+      // Param1 and Param2
+      hasParam1 = hasParam2 = false;
+      param1Value = param2Value = null;
+      for (var i = 0; i < params.length; i++) {
+        if (params[i].nodeType == 1 
+            && params[i].nodeName.toUpperCase() == 'PARAM'
+            && params[i].getAttribute('name') == 'Param1') {
+          hasParam1 = true;
+          param1Value = params[i].getAttribute('value');
+        } else if (params[i].nodeType == 1 
+                   && params[i].nodeName.toUpperCase() == 'PARAM'
+                   && params[i].getAttribute('name') == 'Param2') {
+            hasParam2 = true;
+            param2Value = params[i].getAttribute('value');
+          }
+      }
+      assertTrue('Param1 should exist', hasParam1);
+      assertTrue('Param2 should exist', hasParam2);
+      assertTrue('Param1 should have the value ParamValue1', 'ParamValue1',
+                 param1Value);
+      assertTrue('Param2 should have the value ParamValue2', 'ParamValue2',
+                 param2Value);
       
       // test accessing the svgns and xmlns variables
       top.assertExists('w' + 'indow.svgns should exist', window.svgns);

@@ -3,7 +3,7 @@
   <!-- Runs a suite of unit tests against our JavaScript SVG DOM and CSS API -->
 
   <head>
-    <meta name="svg.render.forceflash" content="true" />
+    <meta name="svg.render.forceflash" content="false" />
 
     <script src="../../src/svg.js" data-path="../../src" data-debug="true">
     </script>
@@ -46,8 +46,10 @@
               classid="image/svg+xml" width="450" height="450">
       <![endif]-->
       <!--[if !IE]>-->
-      <object id="svg2" data="embed2.svg"
+      <object id="svg2" data="embed2.svg?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces#someHash"
               type="image/svg+xml" width="450" height="450">
+        <param name="Param1" value="ParamValue1"></param>
+        <param name="Param2" value="ParamValue2"></param>
       <!--<![endif]-->
         <h1>Fallback content 2</h1>
       </object>
