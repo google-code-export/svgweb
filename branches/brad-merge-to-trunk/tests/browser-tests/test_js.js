@@ -67,6 +67,17 @@ window._outerWindow = true;
 // onload first, followed by the page-level onload.
 window._objectsLoadedFirst = false;
 
+// two flags we create so that testIncorrectConversions() inside of 
+// of embed2.svg can make sure that we can correctly access this top-level
+// document and window
+document._topLevel = true;
+window._topLevel = true;
+
+// we store a reference to the outer window and document objects to help
+// with testing inside of embed2.svg inside of testHostObjects()
+window._topWindow = window;
+document._topDocument = document;
+
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";
 var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";

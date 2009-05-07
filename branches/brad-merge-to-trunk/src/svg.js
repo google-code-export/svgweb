@@ -1094,6 +1094,12 @@ obj.addEventListener('load', function() {
   alert(obj.parentNode); // correctly prints 'myParentNode'
 }, false);
 svgweb.appendChild(obj, myParentNode);
+
+* Inside of an SVG OBJECT for the Flash handler, if you access the 
+window.location value for that file and try to change it, nothing will happen.
+You can, however, read the values off this object and they will correctly
+represent the URL of the object. You could use this to pass parameters into
+your SVG file, for example.
   
 What SVG Features Are Not Supported
 -------------------------------------------
@@ -5781,12 +5787,8 @@ function _SVGWindow(handler) {
   this._handler = handler;
   this.fake = true; // helps to detect fake abstraction
   
-  this.defaultView = {};
-  this.defaultView.fake = true;
-  this.defaultView.frameElement = this._handler.flash;
-  this.defaultView.location = this._createLocation();
   this.frameElement = this._handler.flash;
-  this.location = this.defaultView.location;
+  this.location = this._createLocation();
   this.alert = window.alert;
   this.top = this.parent = window;
   
