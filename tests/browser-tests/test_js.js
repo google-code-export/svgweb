@@ -76,7 +76,7 @@ window._topLevel = true;
 // we store a reference to the outer window and document objects to help
 // with testing inside of embed2.svg inside of testHostObjects()
 window._topWindow = window;
-document._topDocument = document;
+window._topDocument = document;
 
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";

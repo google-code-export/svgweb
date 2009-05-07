@@ -61,7 +61,7 @@
         origText, exp, html, ns, nextToLast, paths, styleStr, circle,
         image, line, defs, runTests, styleReturned, use, regExp, split, doc,
         orig, rect1, rect2, obj1, obj2, obj3, params, hasParams, hasParam1,
-        hasParam2, param1Value, param2Value;
+        hasParam2, param1Value, param2Value, pathname;
 
     var allStyles = [
       'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -354,104 +354,102 @@
                  (self !== top.window._topWindow));
                  
       // window.location
-      assertExists('window.location should exist', window.location);
-      assertTrue('window.location != top.window._topWindow.location',
+      top.assertExists('window.location should exist', window.location);
+      top.assertTrue('window.location != top.window._topWindow.location',
                  (window.location !== top.window._topWindow));
-      assertEquals('window.location.hash == #someHash', '#someHash',
+      top.assertEquals('window.location.hash == #someHash', '#someHash',
                    window.location.hash);
-      assertEquals('window.location.host == '
+      top.assertEquals('window.location.host == '
                    + 'top.window._topWindow.location.host',
                    top.window._topWindow.location.host, window.location.host);
-      assertEquals('window.location.hostname == '
+      top.assertEquals('window.location.hostname == '
                    + 'top.window._topWindow.location.hostname',
                    top.window._topWindow.location.hostname, 
                    window.location.hostname);
-      assertEquals('window.location.port == '
+      top.assertEquals('window.location.port == '
                    + 'top.window._topWindow.location.port',
                    top.window._topWindow.location.port, window.location.port);
-      assertEquals('window.location.protocol == '
+      top.assertEquals('window.location.protocol == '
                    + 'top.window._topWindow.location.protocol',
                    top.window._topWindow.location.protocol, 
                    window.location.protocol);
-      assertEquals('window.location.pathname == '
-                   + 'top.window._topWindow.location.pathname',
-                   top.window._topWindow.location.pathname, 
-                   window.location.pathname);
-      assertEquals('window.location.search == '
-             + '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
-             '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+      pathname = 
+              top.window._topWindow.location.pathname.replace(/\/[^\/]*$/, '/');
+      top.assertEquals('window.location.pathname == ' + pathname + 'embed2.svg',
+                   pathname + 'embed2.svg', window.location.pathname);
+      top.assertEquals('window.location.search == '
+             + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+             '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
              window.location.search); 
       // build up what the full href should look like
-      temp = window.location.protocol + window.location.host
-             + window.location.pathname 
-             + 'embed2.svg?queryParam1=queryValue1&amp;'
+      temp = window.location.protocol + '//' + window.location.host + pathname 
+             + 'embed2.svg?queryParam1=queryValue1&'
              + 'queryParam2=query%20with%20spaces#someHash';
-      assertTrue('window.location !== top.window._topWindow.location',
+      top.assertTrue('window.location !== top.window._topWindow.location',
                   (window.location !== top.window._topWindow.location));
-      assertTrue('window.location.href !== top.window._topWindow.location.href',
+      top.assertTrue('window.location.href !== top.window._topWindow.location.href',
                   (window.location.href !== 
                       top.window._topWindow.location.href));            
-      assertEquals('window.location == ' + temp, temp, window.location);
-      assertEquals('window.location.href == ' + temp, temp, 
+      top.assertEquals('window.location == ' + temp, temp, window.location);
+      top.assertEquals('window.location.href == ' + temp, temp, 
                    window.location.href);
                    
       // test window.location but use a variable as an intermediary to ensure
       // transformation happens correctly
-      var loc = loc;
-      assertExists('loc should exist', loc);
-      assertTrue('loc != top.window._topWindow',
+      var loc = window.location;
+      top.assertExists('loc should exist', loc);
+      top.assertTrue('loc != top.window._topWindow',
                  (loc !== top.window._topWindow));
-      assertEquals('loc.hash == #someHash', '#someHash',
+      top.assertEquals('loc.hash == #someHash', '#someHash',
                    loc.hash);
-      assertEquals('loc.host == '
-                   + 'top.window._topWindow.host',
-                   top.window._topWindow.host, loc.host);
-      assertEquals('loc.hostname == '
-                   + 'top.window._topWindow.hostname',
-                   top.window._topWindow.hostname, 
+      top.assertEquals('loc.host == '
+                   + 'top.window._topWindow.location.host',
+                   top.window._topWindow.location.host, loc.host);
+      top.assertEquals('loc.hostname == '
+                   + 'top.window._topWindow.location.hostname',
+                   top.window._topWindow.location.hostname, 
                    loc.hostname);
-      assertEquals('loc.port == '
-                   + 'top.window._topWindow.port',
-                   top.window._topWindow.port, loc.port);
-      assertEquals('loc.protocol == '
-                   + 'top.window._topWindow.protocol',
-                   top.window._topWindow.protocol, 
+      top.assertEquals('loc.port == '
+                   + 'top.window._topWindow.location.port',
+                   top.window._topWindow.location.port, loc.port);
+      top.assertEquals('loc.protocol == '
+                   + 'top.window._topWindow.location.protocol',
+                   top.window._topWindow.location.protocol, 
                    loc.protocol);
-      assertEquals('loc.pathname == '
-                   + 'top.window._topWindow.pathname',
-                   top.window._topWindow.pathname, 
-                   loc.pathname);
-      assertEquals('loc.search == '
-             + '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
-             '?queryParam1=queryValue1&amp;queryParam2=query%20with%20spaces',
+      pathname = 
+              top.window._topWindow.location.pathname.replace(/\/[^\/]*$/, '/');
+      top.assertEquals('loc == ' + pathname, pathname + 'embed2.svg', 
+                       loc.pathname);
+      top.assertEquals('loc.search == '
+             + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+             '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
              loc.search); 
       // build up what the full href should look like
       // NOTE: browsers natively leave search portion URL encoded
-      temp = loc.protocol + loc.host
-             + loc.pathname 
-             + 'embed2.svg?queryParam1=queryValue1&amp;'
+      temp = loc.protocol + '//' + loc.host + pathname 
+             + 'embed2.svg?queryParam1=queryValue1&'
              + 'queryParam2=query%20with%20spaces#someHash';
-      assertTrue('loc !== top.window._topWindow',
+      top.assertTrue('loc !== top.window._topWindow',
                   (loc !== top.window._topWindow));
-      assertTrue('loc.href !== top.window._topWindow.href',
+      top.assertTrue('loc.href !== top.window._topWindow.location.href',
                   (loc.href !== 
-                      top.window._topWindow.href));            
-      assertEquals('loc == ' + temp, temp, loc);
-      assertEquals('loc.href == ' + temp, temp, 
+                      top.window._topWindow.location.href));            
+      top.assertEquals('loc == ' + temp, temp, loc);
+      top.assertEquals('loc.href == ' + temp, temp, 
                    loc.href);
       
       // access some name/value pairs on the window.location object, which
       // in the real world would be used to pass in information to the SVG
       // file for programmatic control
       var search = decodeURIComponent(window.location.search);
-      assertExists('decoded search should exist', search);
+      top.assertExists('decoded search should exist', search);
       search = search.split('&');
-      assertEquals('search.length == 2', 2, search.length);
+      top.assertEquals('search.length == 2', 2, search.length);
       param1Value = search[0].split('=')[1];
       param2Value = search[1].split('=')[1];
-      assertEquals('query parameter 1 == queryValue1', 'queryValue1', 
+      top.assertEquals('query parameter 1 == queryValue1', 'queryValue1', 
                     param1Value);
-      assertEquals('query parameter 2 == query with spaces', 
+      top.assertEquals('query parameter 2 == query with spaces', 
                     'query with spaces', param2Value);
       
       // TODO: manually call _SVGWindow._createLocation() with some fake window
@@ -460,16 +458,16 @@
       // window.frameElement -- should be our SVG OBJECT or Flash element
       top.assertExists('window.frameElement', window.frameElement);
       top.assertEqualsAny('window.frameElement.nodeName == OBJECT or EMBED',
-                          ['OBJECT', 'EMBED', 'object', 'embed'],
-                          window.frameElement);
+                          ['OBJECT', 'EMBED'],
+                          window.frameElement.nodeName.toUpperCase());
                           
       // test accessing PARAMs inside of the window.frameElement, which
       // in the real world would be used to pass in information to the SVG
       // file for programmatic control
-      assertExists('window.frameElement.childNodes should exist',
+      top.assertExists('window.frameElement.childNodes should exist',
                    window.frameElement.childNodes);
       params = window.frameElement.childNodes;
-      assertTrue('window.frameElement.childNodes > 0', (params.length > 0));
+      top.assertTrue('window.frameElement.childNodes > 0', (params.length > 0));
       // make sure there is at least one PARAM object
       hasParams = false;
       for (var i = 0; i < params.length; i++) {
@@ -479,7 +477,7 @@
           break;
         }
       }
-      assertTrue('There should be at least one PARAM element', hasParams);
+      top.assertTrue('There should be at least one PARAM element', hasParams);
       // in our markup when we embedded embed2.svg we have two custom PARAMs,
       // Param1 and Param2
       hasParam1 = hasParam2 = false;
@@ -497,11 +495,11 @@
             param2Value = params[i].getAttribute('value');
           }
       }
-      assertTrue('Param1 should exist', hasParam1);
-      assertTrue('Param2 should exist', hasParam2);
-      assertTrue('Param1 should have the value ParamValue1', 'ParamValue1',
+      top.assertTrue('Param1 should exist', hasParam1);
+      top.assertTrue('Param2 should exist', hasParam2);
+      top.assertTrue('Param1 should have the value ParamValue1', 'ParamValue1',
                  param1Value);
-      assertTrue('Param2 should have the value ParamValue2', 'ParamValue2',
+      top.assertTrue('Param2 should have the value ParamValue2', 'ParamValue2',
                  param2Value);
       
       // test accessing the svgns and xmlns variables
