@@ -239,16 +239,31 @@
       // test having potential incorrect conversions around the document
       // and window objects in here to make sure they don't get incorrectly
       // transformed
+      
+      // variable with document in its name
       exp = null;
       try {
         var mydocument = 'should not be transformed';
-        top.assertEquals('mydocument == should not be transformed',
+        top.assertEquals('mydoc' + 'ument == should not be transformed',
                          'should not be transformed',
                          mydocument);
       } catch (e) {
         exp = e;
       }
       assertNull('Using myd' + 'ocument variable should not have thrown an '
+                 + 'exception', exp);
+      
+      // variable with window in its name
+      exp = null;
+      try {
+        var mywindow = 'should not be transformed';
+        top.assertEquals('mywin' + 'dow == should not be transformed',
+                         'should not be transformed',
+                         mywindow);
+      } catch (e) {
+        exp = e;
+      }
+      assertNull('Using myw' + 'indow variable should not have thrown an '
                  + 'exception', exp);
       
       // have a createTextNode function where the string runs over 

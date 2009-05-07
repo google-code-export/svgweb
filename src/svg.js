@@ -5725,14 +5725,15 @@ extend(_SVGObject, {
     script = script.replace(/top\.window/g, 'top.WINDOW');
     
     // change any calls to the document object to point to our Flash Handler
-    // instead
-    script = script.replace(/document(\.|'|"|\,| |\))/g, 
-                            replaceText + 'document$1');
+    // instead; avoid variable names that have the word document in them,
+    // and pick up document* used with different endings
+    script = script.replace(/(^|[^A-Za-z0-9_])document(\.|'|"|\,| |\))/g, 
+                            replaceText + '$1document$2');
     
     // change some calls to the window object to point to our fake window
     // object instead
     script = script.replace(/window\.(location|addEventListener|onload)/g, 
-                            replaceText + 'window.$1');
+                            replaceText + '$1window.$2');
                             
     // change back any of our top.document or top.window calls to be
     // their original lower case (we uppercased them earlier so that we
