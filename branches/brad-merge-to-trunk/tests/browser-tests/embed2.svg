@@ -239,36 +239,50 @@
       // test having potential incorrect conversions around the document
       // and window objects in here to make sure they don't get incorrectly
       // transformed
-      var mydocument = 'should not be transformed';
-      top.assertEquals('mydocument == should not be transformed',
-                       'should not be transformed',
-                       mydocument);
+      exp = null;
+      try {
+        var mydocument = 'should not be transformed';
+        top.assertEquals('mydocument == should not be transformed',
+                         'should not be transformed',
+                         mydocument);
+      } catch (e) {
+        exp = e;
+      }
+      assertNull('Using myd' + 'ocument variable should not have thrown an '
+                 + 'exception', exp);
       
       // have a createTextNode function where the string runs over 
       // several lines.
-      temp = document.createTextNode('This is a multi line string'
-                                     + ' that runs over multiple lines'
-                                     + ' and which is not very'
-                                     + ' interesting', true);
-      top.assertExists('multi line text node should exist', temp);
-      top.assertEquals('multi line text node should have its string',
-                   'This is a multi line string'
-                   + ' that runs over multiple lines'
-                   + ' and which is not very'
-                   + ' interesting',
-                   temp.nodeValue);
-      // repeat with double quotes
-      temp = document.createTextNode("This is a multi line string"
-                                     + " that runs over multiple lines"
-                                     + " and which is not very"
-                                     + " interesting", true);
-      top.assertExists('multi line text node should exist', temp);
-      top.assertEquals('multi line text node should have its string',
-                   'This is a multi line string'
-                   + ' that runs over multiple lines'
-                   + ' and which is not very'
-                   + ' interesting',
-                   temp.nodeValue);
+      exp = null;
+      try {
+        temp = document.createTextNode('This is a multi line string'
+                                       + ' that runs over multiple lines'
+                                       + ' and which is not very'
+                                       + ' interesting', true);
+        top.assertExists('multi line text node should exist', temp);
+        top.assertEquals('multi line text node should have its string',
+                     'This is a multi line string'
+                     + ' that runs over multiple lines'
+                     + ' and which is not very'
+                     + ' interesting',
+                     temp.nodeValue);
+        // repeat with double quotes
+        temp = document.createTextNode("This is a multi line string"
+                                       + " that runs over multiple lines"
+                                       + " and which is not very"
+                                       + " interesting", true);
+        top.assertExists('multi line text node should exist', temp);
+        top.assertEquals('multi line text node should have its string',
+                     'This is a multi line string'
+                     + ' that runs over multiple lines'
+                     + ' and which is not very'
+                     + ' interesting',
+                     temp.nodeValue);
+      } catch (e) {
+        exp = e;
+      }
+      assertNull('Doing multiline createTextNode should not have thrown an '
+                 + 'exception', exp);
       
       // ensure window.document is the same as document
       top.assertEquals('window.doc' + 'ument == doc' + 'ument', document,
