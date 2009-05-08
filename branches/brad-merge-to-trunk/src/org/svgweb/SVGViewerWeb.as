@@ -310,11 +310,12 @@ package org.svgweb
         }
 
         override public function handleScript(script:String):void {
-            if (!this.scriptSentToJS) {           
-                script = script.split('\\n').join(';_SVGNL_;');
-                script = script.replace(/<script.*/, '');
-                script = script.replace(/<svg:script.*/, '');
-                script = script.replace(/]].*$/, '');
+            if (!this.scriptSentToJS) {
+                // strip off starting SCRIPT cruft; example: <script><![CDATA
+                script = script.replace(/<[A-Za-z\-_0-9]*:?script[^>]*>(<\!\[CDATA\[)?/, '');
+                // strip off ending SCRIPT scruft; example: ]]></svg:script>
+                script = script.replace(/(]]>)?<\/[A-Za-z\-_0-9]*:?script>$/, '');
+                
                 try {
                     ExternalInterface.call(this.js_handler + "onMessage",  
                                                                { type: 'script',
@@ -332,6 +333,7 @@ package org.svgweb
          * JavaScript interface handlers
          **/
         public function js_handleLoad(jsMsg:Object):Object {
+            //this.debug('js_handleLoad, msg='+this.debugMsg(jsMsg));
             if (jsMsg.sourceType == 'string') {
                 this.setSVGString(jsMsg.svgString);
             }
@@ -448,7 +450,7 @@ package org.svgweb
                     }
                 }
                 if (jsMsg.method == 'getXML') {
-                    jsMsg.xmlString = this.js_savedXML.split('\\n').join(';_SVGNL_;');
+                    jsMsg.xmlString = this.js_savedXML;
                 }
                 if (jsMsg.method == 'getAttribute') {
                     if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {

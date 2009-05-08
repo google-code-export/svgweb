@@ -148,16 +148,17 @@
       top.svgweb._embedOnloads.push(3);
     }
 
+    // .onload on the window object
+    window.onload = function() {
+      top.svgweb._embedOnloads.push(4);
+      top.svgweb._validateOnloads();
+    }
+    
     // Note: we don't test document.rootElement.addEventListener(onload) for the 
     // following reason:
     // * Firefox only supports document.rootElement.addEventListener('SVGLoad')
     // * Safari only supports document.rootElement.addEventListener('onload')
     // So there is no common subset between them
-
-    window.onload = function() {
-      top.svgweb._embedOnloads.push(4);
-      top.svgweb._validateOnloads();
-    }
 
     function runObjectTests() {
       top.console.log('Inside SVG OBJECT: Running suite of tests');
@@ -165,6 +166,7 @@
       // a suite of tests to ensure that working with script inside of 
       // SVG OBJECTs works
       
+      // test the scope before calling top.svgweb.getHandlerType()
       testScope();
       
       renderer = top.svgweb.getHandlerType();
@@ -236,6 +238,8 @@
     }
     
     function testIncorrectConversions() {
+      top.console.log('Inside SVG OBJECT: Testing code conversions...');
+      
       // test having potential incorrect conversions around the document
       // and window objects in here to make sure they don't get incorrectly
       // transformed
@@ -250,8 +254,8 @@
       } catch (e) {
         exp = e;
       }
-      assertNull('Using myd' + 'ocument variable should not have thrown an '
-                 + 'exception', exp);
+      top.assertNull('Using myd' + 'ocument variable should not have thrown an '
+                     + 'exception', exp);
       
       // variable with window in its name
       exp = null;
@@ -263,8 +267,8 @@
       } catch (e) {
         exp = e;
       }
-      assertNull('Using myw' + 'indow variable should not have thrown an '
-                 + 'exception', exp);
+      top.assertNull('Using myw' + 'indow variable should not have thrown an '
+                     + 'exception', exp);
       
       // have a createTextNode function where the string runs over 
       // several lines.
@@ -296,8 +300,8 @@
       } catch (e) {
         exp = e;
       }
-      assertNull('Doing multiline createTextNode should not have thrown an '
-                 + 'exception', exp);
+      top.assertNull('Doing multiline createTextNode should not have thrown an '
+                     + 'exception', exp);
       
       // ensure window.document is the same as document
       top.assertEquals('window.doc' + 'ument == doc' + 'ument', document,
@@ -350,63 +354,124 @@
       }
       top.assertNull('Using win' + 'dow in a double quoted string '
                  + 'should work; there should be no exception', exp);
+      
+      // new lines in our strings; make sure they don't have _SVGNL_ in them
+      tmp = '\nhello world\n';
+      top.assertTrue('hello world string with newlines should not have _SVGNL_ '
+                     + 'in it', (tmp.indexOf('_SVGNL') == -1));
+                     
+      // test using double backslashes
+      exp = null;
+      try {
+        tmp = "\\";
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Two backslashes should have worked with no exception', 
+                     exp);
+      top.assertEquals('tmp should be equal to one backslash', '\\', tmp);
+                     
+      // test using backslashed single and double quotes
+      exp = null;
+      try {
+        tmp = "\"\"";
+      } catch (e) {
+        top.console.log(e);
+        exp = e;
+      }
+      top.assertNull("Backslashed double quotes should have worked with "
+                     + "no exception", exp);
+      top.assertEquals('tmp should be equal to two double quotes', '""', tmp);
+      exp = null;
+      try {
+        tmp = '\'\'';
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Backslashed single quotes should have worked with no '
+                     + 'exception', exp);
+      top.assertEquals('tmp should be equal to two single quotes', "''", tmp);
+                     
+      // complicated nested string, mimicing someone building up dynamic code 
+      // as a script
+      exp = null;
+      try {
+        var tmp = 
+            "var tmp = 'var crazyTimes = document.getElementById(\"foobar\");\n " // string starts
+            + "alert(\"dogtimes\");\n "
+            + "alert(\'Something Else\');\n "
+            + "var fooDocument = document.getElementsByTagNameNS(svgns, \\'circle\\');';\n " // string ends
+            + "var matches = document.getElementsByTagNameNS(svgns, \"rect\");\n " // normal non-string statement
+            + "var anotherString = 'alert(\"should not match: \" + document)';\n"; // another string
+      } catch (e) {
+        exp = e;
+      }
+      top.assertNull('Complicated string expression with host objects should '
+                     + 'work; there should be no exception', exp);
+                     
+      // TODO: test using eval() on a dynamic string and ensure it runs
+      // in the correct context
+      
+      // TODO: have a test string where we have all sorts of strange characters
+      // to ensure the Flash/JS boundry correctly passes them over
     }
-    
+  
     function testHostObjects() {
       top.console.log('Inside SVG OBJECT: Testing host objects...');
-      
+
       // top
       top.assertExists('top should exist', top);
       top.assertExists('window.top should exist', window.top);
       // we set these in test_js.js to help with testing
       top.assertExists('top.window._topWindow should exist',
-                   top.window._topWindow);
+                       top.window._topWindow);
       top.assertExists('top.window._topDocument should exist',
-                   top.window._topDocument);
+                       top.window._topDocument);
       top.assertEquals('top.window == top.window._topWindow',
-                   top.window._topWindow, top.window);
-                   
+                       top.window._topWindow, top.window);
+
       // window
       top.assertExists('window should exist', window);
       top.assertTrue('top.window !== window', (top.window !== window));
-      
+
       // document
       top.assertExists('document should exist', document);
       top.assertTrue('top.doc' + 'ument !== doc' + 'ument', 
                  (top.document !== document));
-      
+
       // self
       top.assertExists('self should exist', self);
       top.assertExists('window.self should exist', window.self);
       top.assertEquals('self == window', window, self);
       top.assertTrue('self !== top.window._topWindow', 
                  (self !== top.window._topWindow));
-                 
+
       // window.location
-      top.assertExists('window.location should exist', window.location);
-      top.assertTrue('window.location != top.window._topWindow.location',
+      top.assertExists('w' + 'indow.location should exist', window.location);
+      top.assertTrue('w' + 'indow.location != top.window._topWindow.location',
                  (window.location !== top.window._topWindow));
-      top.assertEquals('window.location.hash == #someHash', '#someHash',
+      top.assertEquals('w' + 'indow.location.hash == #someHash', '#someHash',
                    window.location.hash);
-      top.assertEquals('window.location.host == '
+      top.assertEquals('w' + 'indow.location.host == '
                    + 'top.window._topWindow.location.host',
                    top.window._topWindow.location.host, window.location.host);
-      top.assertEquals('window.location.hostname == '
+      top.assertEquals('w' + 'indow.location.hostname == '
                    + 'top.window._topWindow.location.hostname',
                    top.window._topWindow.location.hostname, 
                    window.location.hostname);
-      top.assertEquals('window.location.port == '
+      top.assertEquals('w' + 'indow.location.port == '
                    + 'top.window._topWindow.location.port',
                    top.window._topWindow.location.port, window.location.port);
-      top.assertEquals('window.location.protocol == '
+      top.assertEquals('w' + 'indow.location.protocol == '
                    + 'top.window._topWindow.location.protocol',
                    top.window._topWindow.location.protocol, 
                    window.location.protocol);
       pathname = 
               top.window._topWindow.location.pathname.replace(/\/[^\/]*$/, '/');
-      top.assertEquals('window.location.pathname == ' + pathname + 'embed2.svg',
-                   pathname + 'embed2.svg', window.location.pathname);
-      top.assertEquals('window.location.search == '
+      top.assertEquals('w' + 'indow.location.pathname == ' + pathname 
+                      + 'embed2.svg', pathname + 'embed2.svg', 
+                      window.location.pathname);
+      top.assertEquals('w' + 'indow.location.search == '
              + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
              '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
              window.location.search); 
@@ -414,15 +479,15 @@
       temp = window.location.protocol + '//' + window.location.host + pathname 
              + 'embed2.svg?queryParam1=queryValue1&'
              + 'queryParam2=query%20with%20spaces#someHash';
-      top.assertTrue('window.location !== top.window._topWindow.location',
+      top.assertTrue('w' + 'indow.location !== top.window._topWindow.location',
                   (window.location !== top.window._topWindow.location));
-      top.assertTrue('window.location.href !== top.window._topWindow.location.href',
+      top.assertTrue('w' + 'indow.location.href !== top.window._topWindow.location.href',
                   (window.location.href !== 
                       top.window._topWindow.location.href));            
-      top.assertEquals('window.location == ' + temp, temp, window.location);
-      top.assertEquals('window.location.href == ' + temp, temp, 
+      top.assertEquals('w' + 'indow.location == ' + temp, temp, window.location);
+      top.assertEquals('w' + 'indow.location.href == ' + temp, temp, 
                    window.location.href);
-                   
+
       // test window.location but use a variable as an intermediary to ensure
       // transformation happens correctly
       var loc = window.location;
@@ -466,7 +531,7 @@
       top.assertEquals('loc == ' + temp, temp, loc);
       top.assertEquals('loc.href == ' + temp, temp, 
                    loc.href);
-      
+
       // access some name/value pairs on the window.location object, which
       // in the real world would be used to pass in information to the SVG
       // file for programmatic control
@@ -480,16 +545,16 @@
                     param1Value);
       top.assertEquals('query parameter 2 == query with spaces', 
                     'query with spaces', param2Value);
-      
+
       // TODO: manually call _SVGWindow._createLocation() with some fake window
       // object values
-      
+
       // window.frameElement -- should be our SVG OBJECT or Flash element
       top.assertExists('window.frameElement', window.frameElement);
       top.assertEqualsAny('window.frameElement.nodeName == OBJECT or EMBED',
                           ['OBJECT', 'EMBED'],
                           window.frameElement.nodeName.toUpperCase());
-                          
+
       // test accessing PARAMs inside of the window.frameElement, which
       // in the real world would be used to pass in information to the SVG
       // file for programmatic control
@@ -530,7 +595,7 @@
                  param1Value);
       top.assertTrue('Param2 should have the value ParamValue2', 'ParamValue2',
                  param2Value);
-      
+
       // test accessing the svgns and xmlns variables
       top.assertExists('w' + 'indow.svgns should exist', window.svgns);
       top.assertExists('svgns should exist', svgns);
@@ -2207,7 +2272,6 @@
                       group.style.opacity);
     }
   ]]></script>
-  
   <g
      inkscape:label="bg"
      inkscape:groupmode="layer"
