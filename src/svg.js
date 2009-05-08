@@ -1936,6 +1936,11 @@ extend(SVGWeb, {
     // support anyway for now?
     svg = svg.replace(/<!DOCTYPE svg PUBLIC "\-\/\/W3C\/\/DTD SVG 1\.1\/\/EN"\s*"http:\/\/www\.w3\.org\/Graphics\/SVG\/1\.1\/DTD\/svg11\.dtd"\>\s*/m, '');
     
+    // handle Flash encoding issues
+    if (this.renderer == FlashHandler) {
+      svg = FlashHandler._encodeFlashData(svg);
+    }
+    
     // add missing IDs to all elements and get the root SVG elements ID
     var xml = this._addIDs(svg);
     if (typeof XMLSerializer != 'undefined') { // non-IE browsers
@@ -1970,11 +1975,11 @@ extend(SVGWeb, {
     }
     
     var handler = new this.renderer({type: 'script', 
-                                      svgID: rootID,
-                                      xml: xml, 
-                                      svgString: svg,
-                                      scriptNode: script,
-                                      finishedCallback: finishedCallback});
+                                     svgID: rootID,
+                                     xml: xml, 
+                                     svgString: svg,
+                                     scriptNode: script,
+                                     finishedCallback: finishedCallback});
     // NOTE: FIXME: If someone chooses a rootID that starts with a number
     // this will break
     this.handlers[rootID] = handler;
@@ -2773,6 +2778,22 @@ FlashHandler._importNodeFunc = function(doc, node, allChildren) {
       return doc.createTextNode(node.nodeValue);
       break;
   }
+}
+
+/** Flash has a number of encoding issues when talking over the Flash/JS
+    boundry. This method encapsulates fixing these issues. 
+    
+    @param str String before fixing encoding issues.
+    
+    @returns String suitable for sending to Flash. */
+FlashHandler._encodeFlashData = function(str) {
+  // Flash has a surprising bug: backslashing certain characters will
+  // cause an 'Illegal Character' error. For example, if I have a SCRIPT
+  // inside my SVG OBJECT as follows: var temp = "\"\"" then I will get
+  // this exception. To handle this we double encode back slashes.
+  str = str.replace(/\\/g, '\\\\');
+  
+  return str;
 }
 // end static singleton functions
 
@@ -3681,10 +3702,11 @@ extend(_Node, {
                                     parentId: parentId,
                                     position: position });
       } else if (oldChild.nodeType == _Node.TEXT_NODE) {
+         var flashStr = FlashHandler._encodeFlashData(newChild._nodeValue);
          this._handler.sendToFlash({ type: 'invoke', 
                                      method: 'setText',
                                      parentId: parentId,
-                                     text: newChild._nodeValue });
+                                     text: flashStr });
       }
     }
     
@@ -4270,10 +4292,11 @@ extend(_Node, {
         return newValue;
       }
       
+      var flashStr = FlashHandler._encodeFlashData(newValue);
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
                                   parentId: parentID,
-                                  text: newValue});
+                                  text: flashStr});
     }
 
     return newValue;
@@ -4346,12 +4369,13 @@ extend(_Node, {
           var styleValue = child.style.getPropertyValue(styleName);
           var stylePropName = child.style._fromCamelCase(styleName);
           
+          var flashStr = FlashHandler._encodeFlashData(styleValue);
           this._handler.sendToFlash({ type: 'invoke', 
                                       method: 'setAttribute',
                                       elementId: id,
                                       applyToStyle: true,
                                       attrName: stylePropName, 
-                                      attrValue: styleValue });
+                                      attrValue: flashStr });
         }
       }
                                   
@@ -4389,12 +4413,13 @@ extend(_Node, {
           }
         }
         
+        var flashStr = FlashHandler._encodeFlashData(attrValue);
         this._handler.sendToFlash({ type: 'invoke', 
                                     method: 'setAttribute',
                                     elementId: id,
                                     attrNamespace: ns,
                                     attrName: attrName, 
-                                    attrValue: attrValue });
+                                    attrValue: flashStr });
       }
            
       // now append the element      
@@ -4412,10 +4437,11 @@ extend(_Node, {
       var parentID = childXML.parentNode.getAttribute('id');
       
       // tell Flash about our new text node
+      var flashStr = FlashHandler._encodeFlashData(childXML.nodeValue);
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
                                   parentId: parentID,
-                                  text: childXML.nodeValue });
+                                  text: flashStr });
     }
     
     // set the ownerDocument based on how we were embedded
@@ -4791,9 +4817,10 @@ extend(_Element, {
     
     if (this._passThrough) {
       var elementId = this._nodeXML.getAttribute('id');
-      var msg = this._handler.sendToFlash(
-                       { type: 'invoke', method: 'getAttribute',
-                         elementId: elementId, attrName: attrName});
+      var msg = this._handler.sendToFlash({ type: 'invoke', 
+                                            method: 'getAttribute',
+                                            elementId: elementId, 
+                                            attrName: attrName});
       if (msg) {
         value = msg.attrValue;
       }
@@ -4892,7 +4919,7 @@ extend(_Element, {
                          elementId: elementId,
                          attrNamespace: ns,
                          attrName: localName, 
-                         attrValue: attrValue });
+                         attrValue: FlashHandler._encodeFlashData(attrValue) });
     }
   },
   
@@ -5270,13 +5297,14 @@ extend(_Style, {
     
     // tell Flash about the change
     if (this._element._attached && this._element._passThrough) {
+      var flashStr = FlashHandler._encodeFlashData(styleValue);
       this._element._handler.sendToFlash({ 
                                   type: 'invoke', 
                                   method: 'setAttribute',
                                   elementId: this._element._getId(),
                                   applyToStyle: true,
                                   attrName: stylePropName, 
-                                  attrValue: styleValue });
+                                  attrValue: flashStr });
     }
   },
   
@@ -5543,6 +5571,7 @@ function _SVGObject(svgNode, handler) {
     hitch(this, function(svgStr) {
       // clean up and parse our SVG
       svgStr = svgweb._cleanSVG(svgStr, false, false).svg;
+      
       this._svgString = svgStr;
       this._xml = parseXML(this._svgString, true);
 
@@ -5717,23 +5746,34 @@ extend(_SVGObject, {
       
       @param script String with script to execute. */
   _executeScript: function(script) {
-    var replaceText = 'top.svgweb.handlers["' + this._handler.id + '"].';
+    // expose the handler as a global object at the top of the script; also
+    // expose the svgns and xlinkns variables
+    script = 'var __svgHandler = top.svgweb.handlers["' 
+                  + this._handler.id + '"];\n' 
+                  + 'window.svgns = "' + svgns + '";\n'
+                  + 'window.xlinkns = "' + xlinkns + '";\n\n'
+                  + script;
     
     // change any calls to top.document or top.window, to a temporary different 
     // string to avoid collisions when we transform next
     script = script.replace(/top\.document/g, 'top.DOCUMENT');
     script = script.replace(/top\.window/g, 'top.WINDOW');
     
+    // intercept any calls to document. or window. inside of a string;
+    // transform to this to a different temporary token so we can handle
+    // it differently (i.e. we will put backslashes around certain portions:
+    // top.svgweb.handlers[\"svg2\"].document for example)
+    
     // change any calls to the document object to point to our Flash Handler
     // instead; avoid variable names that have the word document in them,
     // and pick up document* used with different endings
     script = script.replace(/(^|[^A-Za-z0-9_])document(\.|'|"|\,| |\))/g, 
-                            replaceText + '$1document$2');
+                            '$1__svgHandler.document$2');
     
     // change some calls to the window object to point to our fake window
     // object instead
     script = script.replace(/window\.(location|addEventListener|onload)/g, 
-                            replaceText + '$1window.$2');
+                            '__svgHandler.window.$1');
                             
     // change back any of our top.document or top.window calls to be
     // their original lower case (we uppercased them earlier so that we
@@ -5749,6 +5789,7 @@ extend(_SVGObject, {
     
     // create an iframe and attach it offscreen
     var iframe = document.createElement('iframe');
+    iframe.setAttribute('src', 'about:blank');
     iframe.style.position = 'absolute';
     iframe.style.top = '-1000px';
     iframe.style.left = '-1000px';
@@ -5758,17 +5799,11 @@ extend(_SVGObject, {
     // get the iframes document object; IE differs on how to get this
     var iframeDoc = (iframe.contentDocument) ? 
                 iframe.contentDocument : iframe.contentWindow.document;
-                
+
     // set the document.defaultView to the iframe's real Window object;
     // note that IE doesn't support defaultView
     var iframeWin = iframe.contentWindow;
     this._handler.document.defaultView = iframeWin;
-    
-    // expose svgns and xlinkns variables; IE requires us to do it this
-    // way rather than setting it as a variable on iframeWin above
-    script = "window.svgns = '" + svgns + "';\n"
-             + "window.xlinkns = '" + xlinkns + "';\n\n"
-             + script;
 
     // now insert the script into the iframe to execute it in a siloed way
     iframeDoc.write('<script>' + script + '</script>');
