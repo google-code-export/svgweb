@@ -396,7 +396,7 @@
       // as a script
       exp = null;
       try {
-        var tmp = 
+        tmp = 
             "var tmp = 'var crazyTimes = document.getElementById(\"foobar\");\n " // string starts
             + "alert(\"dogtimes\");\n "
             + "alert(\'Something Else\');\n "
@@ -409,11 +409,18 @@
       top.assertNull('Complicated string expression with host objects should '
                      + 'work; there should be no exception', exp);
                      
-      // TODO: test using eval() on a dynamic string and ensure it runs
+      // test using eval() on a dynamic string and ensure it runs
       // in the correct context
+      tmp = 'top.assertExists("shouldNotClash should exist", shouldNotClash);'
+            + 'top.assertEquals("shouldNotClash == set globally in embed2", '
+            + '"set globally in embed2", shouldNotClash);';
+      eval(tmp);
       
-      // TODO: have a test string where we have all sorts of strange characters
+      // have a test string where we have all sorts of strange characters
       // to ensure the Flash/JS boundry correctly passes them over
+      tmp = '!@#$%^&*()\u000B~`-\u0027=_+\n\r\f\t{}[]\\:";\u0009\'<>?,	\u0022./\"';
+      // no assertion needed; this script will get passed around in general over
+      // the boundry for the Flash Handler
     }
   
     function testHostObjects() {
