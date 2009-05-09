@@ -5930,6 +5930,9 @@ extend(_SVGWindow, {
     loc.search = (results[5]) ? results[5] : '';
     loc.hash = (results[6]) ? results[6] : '';
     
+    loc.href = loc.protocol + '//' + loc.host + loc.pathname + loc.search
+               + loc.hash;
+    
     loc.toString = function() {
       return this.protocol + '//' + this.host + this.pathname + this.search
                            + this.hash;
