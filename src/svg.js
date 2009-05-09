@@ -5917,13 +5917,14 @@ extend(_SVGWindow, {
       loc.protocol += ':';
     }
     loc.hostname = results[2];
-    
+        
+    // NOTE: browsers natively drop the port if its not explicitly specified
     loc.port = (results[3]) ? results[3] : windowLocation.port;
-    if (!loc.port) {
-      loc.port = 80;
+    if (windowLocation.port) {
+      loc.host = loc.hostname + ':' + loc.port;
+    } else {
+      loc.host = loc.hostname;
     }
-    
-    loc.host = loc.hostname + ':' + loc.port;
     
     loc.pathname = (results[4]) ? results[4] : '';
     loc.search = (results[5]) ? results[5] : '';
