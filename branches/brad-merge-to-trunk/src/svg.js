@@ -2791,9 +2791,11 @@ FlashHandler._encodeFlashData = function(str) {
   // cause an 'Illegal Character' error. For example, if I have a SCRIPT
   // inside my SVG OBJECT as follows: var temp = "\"\"" then I will get
   // this exception. To handle this we double encode back slashes.
-  str = str.replace(/\\/g, '\\\\');
-  
-  return str;
+  if (typeof str == 'string') {
+    return str.replace(/\\/g, '\\\\');
+  } else {
+    return str;
+  }
 }
 // end static singleton functions
 
@@ -5580,7 +5582,11 @@ function _SVGObject(svgNode, handler) {
 
       // insert our Flash and replace the SVG OBJECT tag
       var nodeXML = this._xml.documentElement;
-
+      
+      // save any custom PARAM tags that might be nested inside our SVG OBJECT
+      this._savedParams = this._getPARAMs(this._svgNode);
+      
+      // now insert the Flash
       var inserter = new FlashInserter('object', document, 
                                        this._xml.documentElement,
                                        this._svgNode, this._handler);
@@ -5633,6 +5639,19 @@ extend(_SVGObject, {
     // store a reference to our Flash object
     this._handler.flash = document.getElementById(this._handler.flashID);
     
+    // copy any custom developer PARAM tags on the original SVG OBJECT 
+    // over to the Flash element so that SVG scripts can programmatically 
+    // access them; we saved these earlier in the _SVGObject constructor
+    if (this._savedParams.length) {
+      for (var i = 0; i < this._savedParams.length; i++) {
+        var param = this._savedParams[i];
+        this._handler.flash.appendChild(param);
+        param = null;
+      }
+      
+      this._savedParams = null;
+    }
+    
     // expose top and parent attributes on Flash OBJECT
     this._handler.flash.top = this._handler.flash.parent = window;
     
@@ -5644,7 +5663,8 @@ extend(_SVGObject, {
       // if IE, force the HTC file to asynchronously load with a dummy element;
       // we want to do the async operation now so that external API users don't 
       // get hit with the async nature of the HTC file first loading when they
-      // make a sync call.
+      // make a sync call; we will send the SVG over to the Flash _after_ the
+      // HTC file is done loading.
       this._dummyNode = document.createElement('svg:__force__load');
       this._dummyNode._handler = this._handler;
       
@@ -5772,7 +5792,7 @@ extend(_SVGObject, {
     
     // change some calls to the window object to point to our fake window
     // object instead
-    script = script.replace(/window\.(location|addEventListener|onload)/g, 
+    script = script.replace(/window\.(location|addEventListener|onload|frameElement)/g, 
                             '__svgHandler.window.$1');
                             
     // change back any of our top.document or top.window calls to be
@@ -5812,6 +5832,28 @@ extend(_SVGObject, {
     // execute any addEventListener(onloads) that might have been
     // registered
     this._handler.window._fireOnload();
+  },
+  
+  /** Developers can nest custom PARAM tags inside our SVG OBJECT in order
+      to pass parameters into their SVG file. This function gets these,
+      and makes a clone of them suitable for us to re-attach and use in the
+      future.
+      
+      @param svgNode The SVG OBJECT DOM node.
+      
+      @returns An array of cloned PARAM objects. If none, then the array has
+      zero length. */
+  _getPARAMs: function(svgNode) {
+    var params = [];
+    
+    for (var i = 0; i < svgNode.childNodes.length; i++) {
+      var child = svgNode.childNodes[i];
+      if (child.nodeName.toUpperCase() == 'PARAM') {
+        params.push(child.cloneNode(false));
+      }
+    }
+    
+    return params;
   }
 });
 
