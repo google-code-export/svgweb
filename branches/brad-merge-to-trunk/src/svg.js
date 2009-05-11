@@ -5874,10 +5874,6 @@ function _SVGWindow(handler) {
 }
 
 extend(_SVGWindow, {
-  /** Variable that makes it easy to inject a fake window.location for
-      testing. */
-  _windowLocation: window.location,
-  
   addEventListener: function(type, listener, capture) {
     if (type == 'load' || type == 'SVGLoad') {
       this._onloadListeners.push(listener);
@@ -5905,11 +5901,20 @@ extend(_SVGWindow, {
     }
   },
   
-  /** Creates a fake window.location object. */
-  _createLocation: function() {
+  /** Creates a fake window.location object. 
+  
+      @param fakeLocation A full window.location object (i.e. it has .port,
+      .hash, etc.) used for testing purposes to give a fake value
+      to the containing HTML page's window.location value. */
+  _createLocation: function(fakeLocation) {
     var loc = {};
-    var url = this._handler._svgObject.url;   
-    var windowLocation = this._windowLocation; // helps unit testing
+    var url = this._handler._svgObject.url;
+    var windowLocation;
+    if (fakeLocation) {
+      windowLocation = fakeLocation;
+    } else {
+      windowLocation = window.location;
+    }
     
     // expand URL
     
@@ -5922,9 +5927,10 @@ extend(_SVGWindow, {
       // get the pathname of the page we are on, clearing out everything after
       // the last slash
       if (windowLocation.pathname.indexOf('/') == -1) {
-        url = windowLocation.protocol + '//' + windowLocation.host + url;
+        url = windowLocation.protocol + '//' + windowLocation.host + '/' + url;
       } else {
         var relativeTo = windowLocation.pathname;
+
         // walk the string in reverse removing characters until we hit a slash
         for (var i = relativeTo.length - 1; i >= 0; i--) {
           if (relativeTo.charAt(i) == '/') {
@@ -5938,7 +5944,7 @@ extend(_SVGWindow, {
               + relativeTo + url;
       }
     }
-    
+        
     // parse URL
     
     // FIXME: NOTE: href, search, and pathname should be URL-encoded; the others
@@ -5961,8 +5967,24 @@ extend(_SVGWindow, {
     loc.hostname = results[2];
         
     // NOTE: browsers natively drop the port if its not explicitly specified
-    loc.port = (results[3]) ? results[3] : windowLocation.port;
-    if (windowLocation.port) {
+    loc.port = '';
+    if (results[3]) {
+      loc.port = results[3];
+    }
+        
+    // is the URL and the containing page at different domains?
+    var sameDomain = true;
+    if (loc.protocol != windowLocation.protocol
+        || loc.hostname != windowLocation.hostname
+        || (loc.port && loc.port != windowLocation.port)) {
+      sameDomain = false;
+    }
+        
+    if (sameDomain && !loc.port) {
+      loc.port = windowLocation.port;
+    }
+        
+    if (loc.port) {
       loc.host = loc.hostname + ':' + loc.port;
     } else {
       loc.host = loc.hostname;
@@ -5977,7 +5999,7 @@ extend(_SVGWindow, {
     
     loc.toString = function() {
       return this.protocol + '//' + this.host + this.pathname + this.search
-                           + this.hash;
+             + this.hash;
     };
     
     return loc;
