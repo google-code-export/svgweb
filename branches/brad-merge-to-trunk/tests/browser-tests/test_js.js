@@ -2586,8 +2586,8 @@ function testRemoveChild() {
   // remove a group and make sure all of it's elements disappear
   group = getDoc('mySVG').getElementById('removeMe');
   group.parentNode.removeChild(group);
-  console.log('Look at the rendered image and make sure that you do not '
-              + 'see the text "You should not see this" as well as not '
+  console.log('1ST IMAGE: Look at the rendered image and make sure that you '
+              + 'do not see the text "You should not see this" as well as not '
               + 'seeing a green rectangle next to it. If they are '
               + 'present than removeChild is not working correctly.');
   
@@ -4120,7 +4120,7 @@ function testStyle() {
                   [5, '5px'],
                   line.style.strokeWidth);
   // make sure stroke color got inherited from the group
-  console.log('There should be a green line on the screen');
+  console.log('1ST IMAGE: There should be a green line on the screen');
   
   // path
   svg = getRoot('mySVG');
@@ -4169,7 +4169,7 @@ function testStyle() {
   assertEqualsAny('path.style.strokeOpacity == 1',
                   ['1'],
                   path.style.strokeOpacity);
-  console.log('There should be a red path on the screen');
+  console.log('1ST IMAGE: There should be a red path on the screen');
   
   // linearGradient
   gradient = getDoc('svg2').createElementNS(svgns, 'linearGradient');
@@ -4277,8 +4277,8 @@ function testStyle() {
   assertEqualsAny('third stop.style.stopOpacity == 1',
                   [1],
                   stop.style.stopOpacity);
-  console.log('There should be a circle with a linear gradient in it '
-              + 'on the upper left of the second SVG');
+  console.log('2ND IMAGE: There should be a circle with a linear gradient in it '
+              + 'on the upper left');
        
   // image
   image = getDoc('svg11242').createElementNS(svgns, 'image');
@@ -4293,8 +4293,8 @@ function testStyle() {
   assertEqualsAny('svg11242.lastChild.style.opacity == 0.8',
                   [0.8],
                   svg.lastChild.style.opacity);
-  console.log('There should be a scaled black and white image of '
-              + 'balloons in the third SVG');
+  console.log('3RD IMAGE: There should be a scaled black and white image of '
+              + 'balloons');
           
   // text
   text = getDoc('mySVG').createElementNS(svgns, 'text');
@@ -4320,8 +4320,8 @@ function testStyle() {
   assertEqualsAny('text.style.fontWeight == bold',
                   ['bold'],
                   text.style.fontWeight);
-  console.log('There should be some bolded text that says '
-              + '"Some bolded text!" in the first SVG');
+  console.log('1ST IMAGE: There should be some bolded text that says '
+              + '"Some bolded text!"');
           
   // desc
   desc = getDoc('mySVG').createElementNS(svgns, 'desc');
@@ -4500,8 +4500,8 @@ function testStyle() {
   assertNotExists('use.style.stroke should not exist',
                   use.style.stroke);
   assertNull('use.getAttribute(fill) == null', use.getAttribute('fill'));
-  console.log('There should be a brown rectangle with 5px stroke on the '
-              + 'second SVG in the lower right corner of the image');
+  console.log('2ND IMAGE: There should be a brown rectangle with 5px stroke '
+              + 'in the lower right corner of the image');
   
   // test display and visibility properties
   
@@ -4528,8 +4528,8 @@ function testStyle() {
   rect.style.strokeMiterlimit = 15;
   assertEquals('rect.style.visibility == hidden', 'hidden',
                rect.style.visibility);
-  console.log('You should _not_ see a small light blue rectangle with '
-              + 'curved corners in the upper right of the first SVG');
+  console.log('1ST IMAGE: You should _not_ see a small light blue rectangle '
+              + 'with curved corners in the upper right');
 
   // make some text invisible
   text = getDoc('mySVG').createElementNS(svgns, 'text');
@@ -4542,8 +4542,8 @@ function testStyle() {
   text.style.visibility = 'hidden';
   assertEquals('text.style.visibility == hidden', 'hidden',
                text.style.visibility);
-  console.log('You should _not_ see the text '
-              + '"This text should be hidden" in the first SVG');
+  console.log('1ST IMAGE: You should _not_ see the text '
+              + '"This text should be hidden"');
 
   // make some text invisible than visible
   text = getDoc('mySVG').createElementNS(svgns, 'text');
@@ -4577,8 +4577,8 @@ function testStyle() {
   svg.appendChild(group);
   // now make the whole group display: none
   svg.lastChild.style.display = 'none';
-  console.log('You should _not_ see the text "Display: none text" with '
-              + 'a small circle near it in the first SVG');
+  console.log('1ST IMAGE: You should _not_ see the text "Display: none text" '
+              + 'with a small circle near it');
   // check values
   assertEquals('group.style.display == none', 'none',
                svg.lastChild.style.display);
@@ -4709,8 +4709,7 @@ function testStyle() {
                /background\-image:url\((?:FOOBAR.SVG)?\);fill\-opacity:1;fill:(?:purple|\#008000);opacity:0\.5;stroke\-width:(?:3|8)px;stroke:(?:green|\#800080);/i
                     .test(styleStr));
   }
-  console.log('There should be a purple circle with a green outline on '
-              + 'the first SVG');
+  console.log('1ST IMAGE: There should be a purple circle with a green outline');
   
   // TODO: manually set style="" string on an element with a preexisting
   // style="" string

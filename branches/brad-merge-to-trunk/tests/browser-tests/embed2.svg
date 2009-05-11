@@ -192,6 +192,16 @@
       testInsertBefore();
       testHasChildNodes();
       testStyle();
+      
+      top.console.log('2ND IMAGE: There should be blue text saying '
+                      + '"set through textContent" near the top');
+      top.console.log('2ND IMAGE: There should be bolded yellow text saying '
+                      + '"Some bolded text!" near the bottom');
+      top.console.log('2ND IMAGE: There should be a green circle with a blue '
+                      + 'border in the middle');
+      top.console.log('2ND IMAGE: There should be a rectangle with some opacity '
+                      + 'in the upper right corner with blue fill and multiple '
+                      + 'green stroke around the outside');
     }
     
     function testScope() {
