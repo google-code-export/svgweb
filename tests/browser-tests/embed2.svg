@@ -61,7 +61,8 @@
         origText, exp, html, ns, nextToLast, paths, styleStr, circle,
         image, line, defs, runTests, styleReturned, use, regExp, split, doc,
         orig, rect1, rect2, obj1, obj2, obj3, params, hasParams, hasParam1,
-        hasParam2, param1Value, param2Value, pathname;
+        hasParam2, param1Value, param2Value, pathname, origUrl, origWindowLoc,
+        loc, fakeLoc;
 
     var allStyles = [
       'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -453,108 +454,435 @@
       top.assertTrue('self !== top.window._topWindow', 
                  (self !== top.window._topWindow));
 
-      // window.location
-      top.assertExists('w' + 'indow.location should exist', window.location);
-      top.assertTrue('w' + 'indow.location != top.window._topWindow.location',
-                 (window.location !== top.window._topWindow));
-      top.assertEquals('w' + 'indow.location.hash == #someHash', '#someHash',
-                   window.location.hash);
-      top.assertEquals('w' + 'indow.location.host == '
-                   + 'top.window._topWindow.location.host',
-                   top.window._topWindow.location.host, window.location.host);
-      top.assertEquals('w' + 'indow.location.hostname == '
-                   + 'top.window._topWindow.location.hostname',
-                   top.window._topWindow.location.hostname, 
-                   window.location.hostname);
-      top.assertEquals('w' + 'indow.location.port == '
-                   + 'top.window._topWindow.location.port',
-                   top.window._topWindow.location.port, window.location.port);
-      top.assertEquals('w' + 'indow.location.protocol == '
-                   + 'top.window._topWindow.location.protocol',
-                   top.window._topWindow.location.protocol, 
-                   window.location.protocol);
-      pathname = 
-              top.window._topWindow.location.pathname.replace(/\/[^\/]*$/, '/');
-      top.assertEquals('w' + 'indow.location.pathname == ' + pathname 
-                      + 'embed2.svg', pathname + 'embed2.svg', 
-                      window.location.pathname);
-      top.assertEquals('w' + 'indow.location.search == '
-             + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
-             '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
-             window.location.search); 
-      // build up what the full href should look like
-      temp = window.location.protocol + '//' + window.location.host + pathname 
-             + 'embed2.svg?queryParam1=queryValue1&'
-             + 'queryParam2=query%20with%20spaces#someHash';
-      top.assertTrue('w' + 'indow.location !== top.window._topWindow.location',
-                  (window.location !== top.window._topWindow.location));
-      top.assertTrue('w' + 'indow.location.href !== top.window._topWindow.location.href',
-                  (window.location.href !== 
-                      top.window._topWindow.location.href));            
-      top.assertEquals('w' + 'indow.location == ' + temp, temp, window.location);
-      top.assertEquals('w' + 'indow.location.href == ' + temp, temp, 
-                   window.location.href);
+      // test window.location
+      
+      // only possible to override for Flash handler
+      if (renderer == 'flash') {
+        // internal variable to override SVG URL for testing
+        origUrl = document._handler._svgObject.url;
+        // internal variable to override window.location of containing HTML
+        // page for testing
+        origWindowLoc = window.location;
+        // force the value so we can have consistency across testing
+        // environments
+        fakeLoc =
+                 { href: 'http://brad.com/dev/sgweb-brad-merge-to-trunk/tests/browser-tests/test_js2.html',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/dev/sgweb-brad-merge-to-trunk/tests/browser-tests/test_js2.html',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        window.location = document._handler.window._createLocation(fakeLoc);
+                 
+        // basic test of window.location
+        top.assertExists('w' + 'indow.location should exist', window.location);
+        top.assertTrue('w' + 'indow.location != top.window._topWindow.location',
+                   (window.location !== top.window._topWindow));
+        top.assertEquals('w' + 'indow.location.hash == #someHash', '#someHash',
+                     window.location.hash);
+        top.assertEquals('w' + 'indow.location.host == '
+                     + 'top.window._topWindow.location.host',
+                     'brad.com', window.location.host);
+        top.assertEquals('w' + 'indow.location.hostname == brad.com', 'brad.com', 
+                         window.location.hostname);
+        top.assertEquals('w' + 'indow.location.port == ""', "", 
+                         window.location.port);
+        top.assertEquals('w' + 'indow.location.protocol == http:', 'http:', 
+                         window.location.protocol);
+        pathname = '/dev/sgweb-brad-merge-to-trunk/tests/browser-tests/';
+        top.assertEquals('w' + 'indow.location.pathname == /dev/sgweb-brad-merge-to-trunk/tests/browser-tests/embed2.svg', 
+                        '/dev/sgweb-brad-merge-to-trunk/tests/browser-tests/embed2.svg', 
+                        window.location.pathname);
+        top.assertEquals('w' + 'indow.location.search == '
+               + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+               '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+               window.location.search); 
+        // build up what the full href should look like
+        temp = window.location.protocol + '//' + window.location.host + pathname 
+               + 'embed2.svg?queryParam1=queryValue1&'
+               + 'queryParam2=query%20with%20spaces#someHash';
+        top.assertTrue('w' + 'indow.location !== top.window._topWindow.location',
+                    (window.location !== top.window._topWindow.location));
+        top.assertTrue('w' + 'indow.location.href !== top.window._topWindow.location.href',
+                    (window.location.href !== 
+                        top.window._topWindow.location.href));            
+        top.assertEquals('w' + 'indow.location == ' + temp, temp, window.location);
+        top.assertEquals('w' + 'indow.location.href == ' + temp, temp, 
+                         window.location.href);
 
-      // test window.location but use a variable as an intermediary to ensure
-      // transformation happens correctly
-      var loc = window.location;
-      top.assertExists('loc should exist', loc);
-      top.assertTrue('loc != top.window._topWindow',
-                 (loc !== top.window._topWindow));
-      top.assertEquals('loc.hash == #someHash', '#someHash',
-                   loc.hash);
-      top.assertEquals('loc.host == '
-                   + 'top.window._topWindow.location.host',
-                   top.window._topWindow.location.host, loc.host);
-      top.assertEquals('loc.hostname == '
-                   + 'top.window._topWindow.location.hostname',
-                   top.window._topWindow.location.hostname, 
-                   loc.hostname);
-      top.assertEquals('loc.port == '
-                   + 'top.window._topWindow.location.port',
-                   top.window._topWindow.location.port, loc.port);
-      top.assertEquals('loc.protocol == '
-                   + 'top.window._topWindow.location.protocol',
-                   top.window._topWindow.location.protocol, 
-                   loc.protocol);
-      pathname = 
-              top.window._topWindow.location.pathname.replace(/\/[^\/]*$/, '/');
-      top.assertEquals('loc == ' + pathname, pathname + 'embed2.svg', 
-                       loc.pathname);
-      top.assertEquals('loc.search == '
-             + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
-             '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
-             loc.search); 
-      // build up what the full href should look like
-      // NOTE: browsers natively leave search portion URL encoded
-      temp = loc.protocol + '//' + loc.host + pathname 
-             + 'embed2.svg?queryParam1=queryValue1&'
-             + 'queryParam2=query%20with%20spaces#someHash';
-      top.assertTrue('loc !== top.window._topWindow',
-                  (loc !== top.window._topWindow));
-      top.assertTrue('loc.href !== top.window._topWindow.location.href',
-                  (loc.href !== 
-                      top.window._topWindow.location.href));            
-      top.assertEquals('loc == ' + temp, temp, loc);
-      top.assertEquals('loc.href == ' + temp, temp, 
-                   loc.href);
+        // test window.location but use a variable as an intermediary to ensure
+        // transformation happens correctly
+        loc = window.location;
+        top.assertExists('loc should exist', loc);
+        top.assertTrue('loc != top.window._topWindow',
+                       (loc !== top.window._topWindow));
+        top.assertEquals('loc.hash == #someHash', '#someHash',
+                     loc.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', loc.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', loc.hostname);
+        top.assertEquals('loc.port == ""', "", loc.port);
+        top.assertEquals('loc.protocol == http:', 'http:', loc.protocol);
+        top.assertEquals('loc == ' + pathname, pathname + 'embed2.svg', 
+                         loc.pathname);
+        top.assertEquals('loc.search == '
+               + '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+               '?queryParam1=queryValue1&queryParam2=query%20with%20spaces',
+               loc.search); 
+        // build up what the full href should look like
+        // NOTE: browsers natively leave search portion URL encoded
+        temp = loc.protocol + '//' + loc.host + pathname 
+               + 'embed2.svg?queryParam1=queryValue1&'
+               + 'queryParam2=query%20with%20spaces#someHash';
+        top.assertTrue('loc !== top.window._topWindow',
+                    (loc !== top.window._topWindow));
+        top.assertTrue('loc.href !== top.window._topWindow.location.href',
+                    (loc.href !== 
+                        top.window._topWindow.location.href));            
+        top.assertEquals('loc == ' + temp, temp, loc);
+        top.assertEquals('loc.href == ' + temp, temp, 
+                     loc.href);
 
-      // access some name/value pairs on the window.location object, which
-      // in the real world would be used to pass in information to the SVG
-      // file for programmatic control
-      var search = decodeURIComponent(window.location.search);
-      top.assertExists('decoded search should exist', search);
-      search = search.split('&');
-      top.assertEquals('search.length == 2', 2, search.length);
-      param1Value = search[0].split('=')[1];
-      param2Value = search[1].split('=')[1];
-      top.assertEquals('query parameter 1 == queryValue1', 'queryValue1', 
-                    param1Value);
-      top.assertEquals('query parameter 2 == query with spaces', 
-                    'query with spaces', param2Value);
+        // access some name/value pairs on the window.location object, which
+        // in the real world would be used to pass in information to the SVG
+        // file for programmatic control
+        var search = decodeURIComponent(window.location.search);
+        top.assertExists('decoded search should exist', search);
+        search = search.split('&');
+        top.assertEquals('search.length == 2', 2, search.length);
+        param1Value = search[0].split('=')[1];
+        param2Value = search[1].split('=')[1];
+        top.assertEquals('query parameter 1 == queryValue1', 'queryValue1', 
+                      param1Value);
+        top.assertEquals('query parameter 2 == query with spaces', 
+                      'query with spaces', param2Value);
 
-      // TODO: manually call _SVGWindow._createLocation() with some fake window
-      // object values
+        // manually call _SVGWindow._createLocation() with some fake window
+        // object values
+      
+        // have a different protocol and port with an IP address, with a 
+        // hash and search query on the containing HTML page; have no hash or 
+        // search query on the SVG object
+        fakeLoc =
+                 { href: 'https://10.0.1.3:9000/foobar/nested?someQuery=SomeValue#fooHash',
+                   protocol: 'https:',
+                   port: '9000',
+                   host: '10.0.1.3:9000',
+                   hostname: '10.0.1.3',
+                   pathname: '/foobar/nested',
+                   search: '?someQuery=SomeValue',
+                   hash: '#fooHash',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 'embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == 10.0.1.3:9000', '10.0.1.3:9000', 
+                         window.location.host);
+        top.assertEquals('loc.hostname == 10.0.1.3', '10.0.1.3', 
+                         window.location.hostname);
+        top.assertEquals('loc.protocol == https:', 'https:', 
+                         window.location.protocol);
+        top.assertEquals('loc.port == 9000', 9000, window.location.port);
+        top.assertEquals('loc.pathname == /foobar/embed2.svg', 
+                         '/foobar/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == https://10.0.1.3:9000/foobar/embed2.svg',
+                         'https://10.0.1.3:9000/foobar/embed2.svg',
+                         window.location.href);
+        top.assertEquals('loc == https://10.0.1.3:9000/foobar/embed2.svg',
+                         'https://10.0.1.3:9000/foobar/embed2.svg', 
+                         window.location);
+                       
+        // have no path on the containing HTML page's window.location but
+        // have a search query string
+        fakeLoc =
+                 { href: 'http://brad.com?someQuery=SomeValue',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '',
+                   search: '?someQuery=SomeValue',
+                   hash: '',
+                    toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 'dynamic_file.php';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /dynamic_file.php', '/dynamic_file.php', 
+                         window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == http://brad.com/dynamic_file.php',
+                         'http://brad.com/dynamic_file.php', window.location.href);
+        top.assertEquals('loc == http://brad.com/dynamic_file.php',
+                         'http://brad.com/dynamic_file.php', window.location);
+                       
+        // have no path on the containing HTML page's window.location
+        fakeLoc =
+                 { href: 'http://brad.com',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 'index.php';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /index.php', '/index.php', 
+                         window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == http://brad.com/index.php',
+                         'http://brad.com/index.php', window.location.href);
+        top.assertEquals('loc == http://brad.com/index.php',
+                         'http://brad.com/index.php', window.location);
+                       
+        // have a path with no trailing slash
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 'embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /foobar/embed2.svg', 
+                         '/foobar/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == http://brad.com/foobar/embed2.svg',
+                         'http://brad.com/foobar/embed2.svg', window.location.href);
+        top.assertEquals('loc == http://brad.com/foobar/embed2.svg',
+                         'http://brad.com/foobar/embed2.svg', window.location);
+      
+        // have a path _with_ a trailing slash
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested/',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 'embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /foobar/nested/embed2.svg', 
+                        '/foobar/nested/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == http://brad.com/foobar/nested/embed2.svg',
+                         'http://brad.com/foobar/nested/embed2.svg', window.location.href);
+        top.assertEquals('loc == http://brad.com/foobar/nested/embed2.svg',
+                         'http://brad.com/foobar/nested/embed2.svg', window.location);
+      
+        // have an absolute directory path on the SVG file
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested2/',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested2/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = '/somewhereElse/nested7/embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /somewhereElse/nested7/embed2.svg', 
+                         '/somewhereElse/nested7/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == '
+                         + 'http://brad.com/somewhereElse/nested7/embed2.svg',
+                         'http://brad.com/somewhereElse/nested7/embed2.svg', 
+                         window.location.href);
+        top.assertEquals('loc == '
+                         + 'http://brad.com/somewhereElse/nested7/embed2.svg',
+                         'http://brad.com/somewhereElse/nested7/embed2.svg', 
+                         window.location);
+      
+        // have a full URL that is the same as our containing HTML page's
+        // window.location
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested/',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 
+                'http://brad.com/foobar/nested/embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /foobar/nested/embed2.svg', 
+                         '/foobar/nested/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == http://brad.com/foobar/nested/embed2.svg',
+                         'http://brad.com/foobar/nested/embed2.svg', window.location.href);
+        top.assertEquals('loc == http://brad.com/foobar/nested/embed2.svg',
+                         'http://brad.com/foobar/nested/embed2.svg', window.location);
+                       
+        // have a full URL that is on a different path than the containing
+        // HTML page
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested/',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 
+                'http://brad.com/somewhereElse/nested99/embed2.svg';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == ""', "", window.location.hash);
+        top.assertEquals('loc.host == brad.com', 'brad.com', window.location.host);
+        top.assertEquals('loc.hostname == brad.com', 'brad.com', window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /somewhereElse/nested99/embed2.svg', 
+                         '/somewhereElse/nested99/embed2.svg', window.location.pathname);
+        top.assertEquals('loc.search == ""', "", window.location.search);
+        top.assertEquals('loc.href == '
+                         + 'http://brad.com/somewhereElse/nested99/embed2.svg',
+                         'http://brad.com/somewhereElse/nested99/embed2.svg', 
+                         window.location.href);
+        top.assertEquals('loc == '
+                         + 'http://brad.com/somewhereElse/nested99/embed2.svg',
+                         'http://brad.com/somewhereElse/nested99/embed2.svg', 
+                         window.location);
+      
+        // have a full URL that is on a different domain than the containing
+        // HTML page
+        fakeLoc =
+                 { href: 'http://brad.com/foobar/nested/',
+                   protocol: 'http:',
+                   port: '',
+                   host: 'brad.com',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 
+                'http://example.com:1010/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == #myHash', "#myHash", window.location.hash);
+        top.assertEquals('loc.host == example.com:1010', 'example.com:1010', 
+                         window.location.host);
+        top.assertEquals('loc.hostname == example.com', 'example.com', 
+                         window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == 1010', 1010, window.location.port);
+        top.assertEquals('loc.pathname == /foobar/example.svg', 
+                         '/foobar/example.svg', window.location.pathname);
+        top.assertEquals('loc.search =='
+                    + '?someQuery=someValue&anotherQuery=anotherValue', 
+                    '?someQuery=someValue&anotherQuery=anotherValue', window.location.search);
+        top.assertEquals('loc.href == http://example.com:1010/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         'http://example.com:1010/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         window.location.href);
+        top.assertEquals('loc == http://example.com:1010/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         'http://example.com:1010/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         window.location);
+                       
+        // have a full URL that is on a different domain than the containing
+        // HTML page, and have the containing HTML have a port
+        fakeLoc =
+                 { href: 'http://brad.com:9000/foobar/nested/',
+                   protocol: 'http:',
+                   port: '9000',
+                   host: 'brad.com:9000',
+                   hostname: 'brad.com',
+                   pathname: '/foobar/nested/',
+                   search: '',
+                   hash: '',
+                   toString: function() { return this.href } 
+                 };
+        document._handler._svgObject.url = 
+                'http://example.com/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash';
+        window.location = document._handler.window._createLocation(fakeLoc);
+        top.assertExists('Custom created loc should exist', window.location);
+        top.assertEquals('loc.hash == #myHash', "#myHash", window.location.hash);
+        top.assertEquals('loc.host == example.com', 'example.com', 
+                         window.location.host);
+        top.assertEquals('loc.hostname == example.com', 'example.com', 
+                         window.location.hostname);
+        top.assertEquals('loc.protocol == http:', 'http:', window.location.protocol);
+        top.assertEquals('loc.port == ""', "", window.location.port);
+        top.assertEquals('loc.pathname == /foobar/example.svg', 
+                         '/foobar/example.svg', window.location.pathname);
+        top.assertEquals('loc.search =='
+                    + '?someQuery=someValue&anotherQuery=anotherValue', 
+                    '?someQuery=someValue&anotherQuery=anotherValue', window.location.search);
+        top.assertEquals('loc.href == http://example.com/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         'http://example.com/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         window.location.href);
+        top.assertEquals('loc == http://example.com/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         'http://example.com/foobar/example.svg?someQuery=someValue&anotherQuery=anotherValue#myHash',
+                         window.location);
+      
+        // restore the original window.location URL value
+        window.location = origWindowLoc;
+        document._handler._svgObject.url = origUrl;
+      }
 
       // window.frameElement -- should be our SVG OBJECT or Flash element
       top.assertExists('window.frameElement', window.frameElement);
