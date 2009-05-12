@@ -104,11 +104,18 @@
     // timer functions work correctly; used by testTimingFunctions(). We
     // also store a lookup from the name of the function to it's timing
     // ID so we can clear it out later. Once we have cleared out the given
-    // timing functions using clearTimeout or clearInterval, we change the
+    // timing functions using clearTimeout, we change the
     // value for this ID to the word 'deleted'. We check for this when the
     // timing function calls to ensure that it is truly deleted; if not, we
-    // can fail our assertion.
+    // can fail our assertion. We don't do this for setInterval though;
+    // see the variable 'numIntervals' below for how we handle testing 
+    // when to remove setIntervals.
     var timingFuncsCalled = [];
+    
+    // To test setInterval, we use a lookup table keyed by the name
+    // of the timing function (such as 'intervalFunc1') to the number of times
+    // it has run. After two such runs we know to clear out the interval.
+    var numIntervals = {};
     
     // expose this on the window object so that the test_js.js file can make
     // sure all of our timing functions ran at the end of everything
@@ -1022,21 +1029,23 @@
     }
     
     function timeoutFuncPointer() {
-      timeoutFunc('timeoutFuncPointer');
+      timeoutFunc(3);
     }
     
     function intervalFunc(timerNumber) {
       // make sure we aren't being incorrectly called more than twice
       timingID = timingFuncsCalled['intervalFunc' + timerNumber];
-      // we store the number of times we've been called on the timingID itself
-      if (timingID._numTimesCalled == undefined) {
-        timingID._numTimesCalled = 1;
+      // see how many times this interval has been run
+      var numTimes = numIntervals['intervalFunc' + timerNumber];
+      if (numTimes == undefined) {
+        numTimes = 1;
       } else {
-        timingID._numTimesCalled++;
+        numTimes++;
       }
+      numIntervals['intervalFunc' + timerNumber] = numTimes;
       
-      top.assertEquals('Timer intervalFunc' + timerNumber + ' should only '
-                       + 'run 2 times', 2, timingID._numTimesCalled);
+      top.assertTrue('Timer intervalFunc' + timerNumber + ' should only '
+                       + 'run 2 times', (numTimes <= 2));
 
       // do some tests on the first interval
       if (timingID._numTimesCalled == 1) {
@@ -1045,14 +1054,14 @@
         timingFuncsCalled.push('intervalFunc' + timerNumber);
       }
       
-      if (timingID._numTimesCalled == 2) {
+      if (numTimes == 2) {
         // clear this timing function after two intervals
         window.clearInterval(timingID);
       }
     }
     
     function intervalFuncPointer() {
-      timeoutFunc('intervalFuncPointer');
+      intervalFunc(3);
     }
       
     function _testFromTimingFunc() {
@@ -1121,7 +1130,7 @@
       
       // setTimeout using a function pointer
       timerID = setTimeout(timeoutFuncPointer, 20);
-      timingFuncsCalled['timeoutFuncPointer'] = timerID;
+      timingFuncsCalled['timeoutFunc3'] = timerID;
       
       // setTimeout using multi-line string with double quotes using a
       // variable to pass value in
@@ -1130,16 +1139,16 @@
           + "timingID = timingFuncsCalled['timerFunc4'];\n"
           + "if (timingID == 'deleted') {\n"
           + " top.assertFailed('Timer timeoutFunc4 did not clear out');\n"
-          + " return;\n"
-          + "}\n"
-          + "\n"
-          + "testScope(true);\n"
-          + "_testFromTimingFunc();\n"
-          + "timingFuncsCalled.push('timeoutFunc4');\n"
-          + "\n"
-          + "// clear this timing function\n"
-          + "clearTimeout(timingID);\n"
-          + "timingFuncsCalled['timeoutFunc4'] = 'deleted';\n";
+          + "} else {\n"
+          + " \n"
+          + " testScope(true);\n"
+          + " _testFromTimingFunc();\n"
+          + " timingFuncsCalled.push('timeoutFunc4');\n"
+          + " \n"
+          + " // clear this timing function\n"
+          + " clearTimeout(timingID);\n"
+          + " timingFuncsCalled['timeoutFunc4'] = 'deleted';\n"
+          + "}\n";
       timerID = window.setTimeout(temp, 30);
       timingFuncsCalled['timoutFunc4'] = timerID;
       
@@ -1150,16 +1159,16 @@
                 + 'timingID = timingFuncsCalled["timerFunc5"];\n'
                 + 'if (timingID == "deleted") {\n'
                 + ' top.assertFailed(\'Timer timeoutFunc5 did not clear out\');\n'
-                + ' return;\n'
-                + '}\n'
-                + '\n'
-                + 'testScope(true);\n'
-                + '_testFromTimingFunc();\n'
-                + 'timingFuncsCalled.push(\'timeoutFunc5\');\n'
-                + '\n'
-                + '// clear this timing function\n'
-                + 'window.clearTimeout(timingID);\n'
-                + 'timingFuncsCalled[\'timeoutFunc5\'] = \"deleted\";\n',
+                + '} else {\n'
+                + ' \n'
+                + ' testScope(true);\n'
+                + ' _testFromTimingFunc();\n'
+                + ' timingFuncsCalled.push(\'timeoutFunc5\');\n'
+                + ' \n'
+                + ' // clear this timing function\n'
+                + ' window.clearTimeout(timingID);\n'
+                + ' timingFuncsCalled[\'timeoutFunc5\'] = \"deleted\";\n'
+                + '}\n',
                 40);
       timingFuncsCalled['timoutFunc5'] = timerID;
       
@@ -1204,22 +1213,24 @@
       
       // setInterval using a function pointer
       timerID = setInterval(intervalFuncPointer, 20);
-      timingFuncsCalled['intervalFuncPointer'] = timerID;
+      timingFuncsCalled['intervalFunc3'] = timerID;
       
       // setInterval using multi-line string with single quotes using a
       // variable to pass value in
       temp = 
           '// make sure we arent being incorrectly called more than twice\n'
           + 'timingID = timingFuncsCalled[\'intervalFunc4\'];\n'
-          + '// we store the number of times weve been called on the timingID itself\n'
-          + 'if (timingID._numTimesCalled == undefined) {\n'
-          + '  timingID._numTimesCalled = 1;\n'
+          + '// see how many times this interval has been run\n'
+          + 'var numTimes = numIntervals[\"intervalFunc\" + 4];\n'
+          + 'if (numTimes == undefined) {\n'
+          + '  numTimes = 1;\n'
           + '} else {\n'
-          + '  timingID._numTimesCalled++;\n'
+          + '  numTimes++;\n'
           + '}\n'
+          + 'numIntervals[\'intervalFunc\' + 4] = numTimes;\n'
           + '\n'
-          + 'top.assertEquals("Timer intervalFunc" + 4 + \' should only \'\n'
-          + '                 + "run 2 times", 2, timingID._numTimesCalled);\n'
+          + 'top.assertTrue("Timer intervalFunc" + 4 + \' should only \'\n'
+          + '                 + "run 2 times", (numTimes <= 2));\n'
           + '\n'
           + '// do some tests\n'
           + 'if (timingID._numTimesCalled == 1) {\n'
@@ -1229,7 +1240,7 @@
           + '}\n'
           + '\n'
           + '// clear this timing function\n'
-          + 'if (timingID._numTimesCalled == 2) {\n'
+          + 'if (numTimes == 2) {\n'
           + ' window.clearInterval(timingID);\n'
           + '}\n';
       timerID = window.setInterval(temp, 30);
@@ -1239,26 +1250,28 @@
       // to run passed right in
       timerID = setInterval(
                 "// make sure we arent being incorrectly called more than twice\n"
-                + "timingID = timingFuncsCalled[\'intervalFunc\' + 5];\n"
-                + "// we store the number of times weve been called on the timingID itself\n"
-                + "if (timingID._numTimesCalled == undefined) {\n"
-                + "  timingID._numTimesCalled = 1;\n"
+                + "var timingID = timingFuncsCalled[\'intervalFunc\' + 5];\n"
+                + "// see how many times this interval has been run\n"
+                + "var numTimes = numIntervals[\"intervalFunc\" + 5];\n"
+                + "if (numTimes == undefined) {\n"
+                + "  numTimes = 1;\n"
                 + "} else {\n"
-                + "  timingID._numTimesCalled++;\n"
+                + "  numTimes++;\n"
                 + "}\n"
+                + "numIntervals['intervalFunc\' + 5] = numTimes;\n"
                 + "\n"
-                + "top.assertEquals('Timer intervalFunc' + 5 + \' should only \'\n"
-                + "                 + \"run 2 times\", 2, timingID._numTimesCalled);\n"
+                + "top.assertTrue(\"Timer intervalFunc\" + 5 + ' should only '\n"
+                + "                 + \"run 2 times\", (numTimes <= 2));\n"
                 + "\n"
                 + "// do some tests\n"
-                + "if (timingID._numTimesCalled == 1) {\n"
+                + "if (numTimes == 1) {\n"
                 + " testScope(true);\n"
                 + " _testFromTimingFunc();\n"
                 + " timingFuncsCalled.push(\"intervalFunc\" + 5);\n"
                 + "}\n"
                 + "\n"
                 + "// clear this timing function\n"
-                + "if (timingID._numTimesCalled == 2) {\n"
+                + "if (numTimes == 2) {\n"
                 + " window.clearInterval(timingID);\n"
                 + "}\n",
                 40);
@@ -1266,7 +1279,7 @@
       
       // setInterval using anonymous inline function
       var intervalDefinedTimerNumber = 6;
-      timerID = 
+      var closureTimerID =
         setTimeout(function() {
           // make sure we can see closure variables
           top.assertExists('intervalDefinedTimerNumber should exist',
@@ -1274,33 +1287,32 @@
           top.assertEquals('intervalDefinedTimerNumber == 6', 6,
                            intervalDefinedTimerNumber);
                            
-          // make sure we aren't being incorrectly called more than twice
-          timingID = timingFuncsCalled['intervalFunc' 
-                                       + intervalDefinedTimerNumber];
-          // we store the number of times we've been called on the timingID itself
-          if (timingID._numTimesCalled == undefined) {
-            timingID._numTimesCalled = 1;
+          // see how many times this interval has been run
+          var numTimes = numIntervals['intervalFunc' + intervalDefinedTimerNumber];
+          if (numTimes == undefined) {
+            numTimes = 1;
           } else {
-            timingID._numTimesCalled++;
+            numTimes++;
           }
+          numIntervals['intervalFunc' + intervalDefinedTimerNumber] = numTimes;
       
-          top.assertEquals('Timer intervalFunc' + intervalDefinedTimerNumber 
-                           + ' should only 'run 2 times', 2, 
-                           timingID._numTimesCalled);
+          top.assertTrue('Timer intervalFunc' + intervalDefinedTimerNumber + ' should only '
+                           + 'run 2 times', (numTimes <= 2));
 
           // do some tests on the first interval
-          if (timingID._numTimesCalled == 1) {
+          if (numTimes == 1) {
             testScope(true);
             _testFromTimingFunc();
             timingFuncsCalled.push('intervalFunc' + intervalDefinedTimerNumber);
-          }
-      
-          if (timingID._numTimesCalled == 2) {
+          } else if (numTimes == 2) {
+            // make sure our closureTimerID can be seen
+            top.assertExists('closureTimerID should exist', closureTimerID);
+            
             // clear this timing function after two intervals
-            clearInterval(timingID);
+            clearInterval(closureTimerID);
           }
         }, 50);
-      timingFuncsCalled['intervalFunc6'] = timerID;
+      timingFuncsCalled['intervalFunc6'] = closureTimerID;
     } 
     
     function testGetElementById() {
