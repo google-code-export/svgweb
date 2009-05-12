@@ -1501,9 +1501,6 @@
                   + "'*')", bad);
       top.assertEquals("doc.getElementsByTagNameNS('http://bad-namespace.com', "
                    + "'*') length should be 0", 0, bad.length);
-
-      // TODO: add tests when we support contextual getElementsByTagNameNS
-      // (i.e. myGroup.getElementsByTagNameNS(svgns, 'rect') )
     }
 
     function testSVGSVGElementProperties() {
@@ -1520,13 +1517,6 @@
                    root.width.baseVal.value);
       top.assertEquals("svg2.height.baseVal.value should be 450", 450, 
                    root.height.baseVal.value);
-    }
-
-    function testSVGUseElementProperties() {
-      // SVGUseElement.x, .y, .width, .height
-      //top.console.log('Inside SVG OBJECT: Testing SVGUseElement.x, .y, .width, '
-      //             + 'and .height...');
-      // TODO
     }
 
     function testGetAttribute() {
