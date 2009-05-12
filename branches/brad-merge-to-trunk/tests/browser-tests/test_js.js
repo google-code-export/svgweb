@@ -280,6 +280,16 @@ function runTests(embedTypes) {
     // onload function that we want to check for
     assertEquals('onload should have fired for our 3 listeners for dynamic '
                  + 'objects', 3, svgweb._dynamicObjOnloads);
+                 
+    if (_hasObjects) {
+      // make sure that all of our timing functions inside of embed2.svg
+      // in testTimingFunctions() ran
+      assertExists('window._timingFuncsCalled should exist',
+                   window._timingFuncsCalled);
+      assertEquals('12 timing functions should have run in embed2.svg '
+                   + 'inside testTimingFunctions()', 12,
+                   window._timingFuncsCalled.length);
+    }
     
     // check for any Flash errors           
     if (!_flashError) {

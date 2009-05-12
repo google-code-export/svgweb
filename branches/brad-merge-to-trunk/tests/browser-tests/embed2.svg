@@ -62,7 +62,7 @@
         image, line, defs, runTests, styleReturned, use, regExp, split, doc,
         orig, rect1, rect2, obj1, obj2, obj3, params, hasParams, hasParam1,
         hasParam2, param1Value, param2Value, pathname, origUrl, origWindowLoc,
-        loc, fakeLoc;
+        loc, fakeLoc, timerID;
 
     var allStyles = [
       'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -99,6 +99,20 @@
     // a global function we define to ensure that it doesn't clash with local
     // functions in our SVG files
     var globalFunction = function() { return 'returned from embed2'; }
+    
+    // A list of timer functions that have been called so we can ensure
+    // timer functions work correctly; used by testTimingFunctions(). We
+    // also store a lookup from the name of the function to it's timing
+    // ID so we can clear it out later. Once we have cleared out the given
+    // timing functions using clearTimeout or clearInterval, we change the
+    // value for this ID to the word 'deleted'. We check for this when the
+    // timing function calls to ensure that it is truly deleted; if not, we
+    // can fail our assertion.
+    var timingFuncsCalled = [];
+    
+    // expose this on the window object so that the test_js.js file can make
+    // sure all of our timing functions ran at the end of everything
+    top.window._timingFuncsCalled = timingFuncsCalled;
 
     function loaded(_passedInThis) {
       // save the 'this' in this variable for later testing in testScope()
@@ -193,6 +207,7 @@
       testHasChildNodes();
       testStyle();
       
+      // print out what should be visible after all tests
       top.console.log('2ND IMAGE: There should be blue text saying '
                       + '"set through textContent" near the top');
       top.console.log('2ND IMAGE: There should be bolded yellow text saying '
@@ -204,8 +219,16 @@
                       + 'green stroke around the outside');
     }
     
-    function testScope() {
-      top.console.log('Inside SVG OBJECT: Testing scope...');
+    // @param calledFromTimer Optional. If true, we are being called from
+    // a timer function in testTimingFunctions.
+    function testScope(calledFromTimer) {
+      if (calledFromTimer == undefined) {
+        calledFromTimer = false;
+      }
+      
+      if (!calledFromTimer) {
+        top.console.log('Inside SVG OBJECT: Testing scope...');
+      }
       
       // test various scoping issues between us and our containing page
       
@@ -953,12 +976,126 @@
     }
     
     function testClassProgramming() {
-        // TODO: Add a JavaScript OOP class to make sure 'this' keyword correctly
-        // points to instance and not HTML window object
+      top.console.log('Inside SVG OBJECT: Testing JavaScript OOP '
+                      + 'Programming...');
+      // have a JavaScript OOP class to make sure 'this' keyword correctly
+      // points to instance and not HTML window object to ensure we don't
+      // mess up JavaScript OOP programming with our transformations
+      
+      function MyClass() {
+        this._privateVar = 'hello world';
+      }
+      
+      MyClass.prototype.someMethod = function() {
+        this._thisPointer = this;
+        return '_privateVar = ' + this._privateVar;
+      };
+      
+      var instance = new MyClass();
+      
+      top.assertEquals('instance.someMethod() == _privateVar = hello world',
+                       '_privateVar = hello world', instance.someMethod());
+      top.assertEquals('instance._thisPointer == instance', instance,
+                       instance._thisPointer);
+      top.assertTrue('instance._thisPointer != window',
+                     (instance._thisPointer != window));
     }
     
+    // start of functions used by testTimingFunctions
+    
+    function timeoutFunc(timerNumber) {
+      // make sure we aren't being incorrectly called again
+      timingID = timingFuncsCalled['timerFunc' + timerNumber];
+      if (timingID == 'deleted') {
+        top.assertFailed('Timer timeoutFunc' + timerNumber + ' did not clear '
+                         + 'out');
+        return;
+      }
+      
+      testScope(true);
+      _testFromTimingFunc();
+      timingFuncsCalled.push('timeoutFunc' + timerNumber);
+      
+      // clear this timing function
+      clearTimeout(timingID);
+      timingFuncsCalled['timeoutFunc' + timerNumber] = 'deleted';
+    }
+    
+    function timeoutFuncPointer() {
+      timeoutFunc('timeoutFuncPointer');
+    }
+    
+    function intervalFunc(timerNumber) {
+      // make sure we aren't being incorrectly called more than twice
+      timingID = timingFuncsCalled['intervalFunc' + timerNumber];
+      // we store the number of times we've been called on the timingID itself
+      if (timingID._numTimesCalled == undefined) {
+        timingID._numTimesCalled = 1;
+      } else {
+        timingID._numTimesCalled++;
+      }
+      
+      top.assertEquals('Timer intervalFunc' + timerNumber + ' should only '
+                       + 'run 2 times', 2, timingID._numTimesCalled);
+
+      // do some tests on the first interval
+      if (timingID._numTimesCalled == 1) {
+        testScope(true);
+        _testFromTimingFunc();
+        timingFuncsCalled.push('intervalFunc' + timerNumber);
+      }
+      
+      if (timingID._numTimesCalled == 2) {
+        // clear this timing function after two intervals
+        window.clearInterval(timingID);
+      }
+    }
+    
+    function intervalFuncPointer() {
+      timeoutFunc('intervalFuncPointer');
+    }
+      
+    function _testFromTimingFunc() {
+      // do a small number of tests to ensure they can run within a timing 
+      // function
+      
+      // getElementById
+      group = document.getElementById('layer4');
+      top.assertExists('SVG g element with ID layer4 should exist', group);
+      top.assertEquals('group.nodeName == g', 'g', group.nodeName);
+      top.assertEquals('group.id == layer4', 'layer4', group.id);
+      
+      // .style
+      circle = document.createElementNS(svgns, 'circle');
+      circle.id = 'deleteMeWhenDone';
+      svg = document.getElementById('svg2');
+      svg.appendChild(circle);
+      circle.setAttribute('cx', 200);
+      circle.setAttribute('cy', 200);
+      circle.setAttribute('r', 50);
+      circle.style.fill = 'red';
+      circle.style.stroke = 'blue';
+      circle.style.strokeWidth = 10;
+      // test style values
+      top.assertEqualsAny('circle.style.fill == red or #FF0000 or #ff0000',
+                      ['red', '#FF0000', '#ff0000'], 
+                      circle.style.fill);
+      top.assertEqualsAny('circle.style.stroke == blue or #0000FF or #0000ff',
+                      ['blue', '#0000FF', '#0000ff'],
+                      circle.style.stroke);
+      top.assertEqualsAny('circle.style.strokeWidth == 10 or 10px',
+                      [10, '10px'],
+                      circle.style.strokeWidth);
+      // cleanup so we have no side-effects
+      circle.parentNode.removeChild(circle);
+    }
+      
+    // end of functions used by testTimingFunctions
+    
     function testTimingFunctions() {
-      // TODO: add setTimeout and setIntervals here that call a global function
+      top.console.log('Inside SVG OBJECT: Testing timing functions...');
+      
+      // add setTimeout and setIntervals here that call a global function
       // relative to ourselves (i.e. setTimeout("tick()", 500) with the 
       // following tests:
       //  * Pass in string functions to both, using both double and single
@@ -971,7 +1108,200 @@
       //  * Preface call with window.setTimeout and window.setInterval
       // Also call clearTimeout and clearInterval to ensure these work with
       // the styles above
-    }
+      
+      // setTimeout tests
+      
+      // setTimeout calling global function using string
+      timerID = setTimeout('timeoutFunc(1)', 1);
+      timingFuncsCalled['timeoutFunc1'] = timerID;
+      
+      // window.setTimeout calling global function using string
+      timerID = window.setTimeout('timeoutFunc(2)', 10);
+      timingFuncsCalled['timeoutFunc2'] = timerID;
+      
+      // setTimeout using a function pointer
+      timerID = setTimeout(timeoutFuncPointer, 20);
+      timingFuncsCalled['timeoutFuncPointer'] = timerID;
+      
+      // setTimeout using multi-line string with double quotes using a
+      // variable to pass value in
+      temp = 
+          "// make sure we arent being incorrectly called again\n"
+          + "timingID = timingFuncsCalled['timerFunc4'];\n"
+          + "if (timingID == 'deleted') {\n"
+          + " top.assertFailed('Timer timeoutFunc4 did not clear out');\n"
+          + " return;\n"
+          + "}\n"
+          + "\n"
+          + "testScope(true);\n"
+          + "_testFromTimingFunc();\n"
+          + "timingFuncsCalled.push('timeoutFunc4');\n"
+          + "\n"
+          + "// clear this timing function\n"
+          + "clearTimeout(timingID);\n"
+          + "timingFuncsCalled['timeoutFunc4'] = 'deleted';\n";
+      timerID = window.setTimeout(temp, 30);
+      timingFuncsCalled['timoutFunc4'] = timerID;
+      
+      // setTimeout using multi-line string with single quotes with string
+      // to run passed right in
+      timerID = setTimeout(
+                '// make sure we arent being incorrectly called again\n'
+                + 'timingID = timingFuncsCalled["timerFunc5"];\n'
+                + 'if (timingID == "deleted") {\n'
+                + ' top.assertFailed(\'Timer timeoutFunc5 did not clear out\');\n'
+                + ' return;\n'
+                + '}\n'
+                + '\n'
+                + 'testScope(true);\n'
+                + '_testFromTimingFunc();\n'
+                + 'timingFuncsCalled.push(\'timeoutFunc5\');\n'
+                + '\n'
+                + '// clear this timing function\n'
+                + 'window.clearTimeout(timingID);\n'
+                + 'timingFuncsCalled[\'timeoutFunc5\'] = \"deleted\";\n',
+                40);
+      timingFuncsCalled['timoutFunc5'] = timerID;
+      
+      // setTimeout using anonymous inline function
+      var inlineDefinedTimerNumber = 6;
+      timerID = 
+        setTimeout(function() {
+          // make sure we can see closure variables
+          top.assertExists('inlineDefinedTimerNumber should exist',
+                           inlineDefinedTimerNumber);
+          top.assertEquals('inlineDefinedTimerNumber == 6', 6,
+                           inlineDefinedTimerNumber);
+                           
+          // make sure we aren't being incorrectly called again
+          timingID = timingFuncsCalled['timerFunc' + inlineDefinedTimerNumber];
+          if (timingID == 'deleted') {
+            top.assertFailed('Timer timeoutFunc' + inlineDefinedTimerNumber 
+                             + ' did not clear out');
+            return;
+          }
+
+          testScope(true);
+          _testFromTimingFunc();
+          timingFuncsCalled.push('timeoutFunc' + inlineDefinedTimerNumber);
+
+          // clear this timing function
+          window.clearTimeout(timingID);
+          timingFuncsCalled['timeoutFunc' + inlineDefinedTimerNumber] = 
+                                                                    'deleted';
+        }, 50);
+      timingFuncsCalled['timoutFunc6'] = timerID;
+      
+      // setInterval tests
+      
+      // setInterval calling global function using string
+      timerID = setInterval('intervalFunc(1)', 1);
+      timingFuncsCalled['intervalFunc1'] = timerID;
+      
+      // window.setInterval calling global function using string
+      timerID = window.setInterval('intervalFunc(2)', 10);
+      timingFuncsCalled['intervalFunc2'] = timerID;
+      
+      // setInterval using a function pointer
+      timerID = setInterval(intervalFuncPointer, 20);
+      timingFuncsCalled['intervalFuncPointer'] = timerID;
+      
+      // setInterval using multi-line string with single quotes using a
+      // variable to pass value in
+      temp = 
+          '// make sure we arent being incorrectly called more than twice\n'
+          + 'timingID = timingFuncsCalled[\'intervalFunc4\'];\n'
+          + '// we store the number of times weve been called on the timingID itself\n'
+          + 'if (timingID._numTimesCalled == undefined) {\n'
+          + '  timingID._numTimesCalled = 1;\n'
+          + '} else {\n'
+          + '  timingID._numTimesCalled++;\n'
+          + '}\n'
+          + '\n'
+          + 'top.assertEquals("Timer intervalFunc" + 4 + \' should only \'\n'
+          + '                 + "run 2 times", 2, timingID._numTimesCalled);\n'
+          + '\n'
+          + '// do some tests\n'
+          + 'if (timingID._numTimesCalled == 1) {\n'
+          + ' testScope(true);\n'
+          + ' _testFromTimingFunc();\n'
+          + ' timingFuncsCalled.push(\"intervalFunc\" + 4);\n'
+          + '}\n'
+          + '\n'
+          + '// clear this timing function\n'
+          + 'if (timingID._numTimesCalled == 2) {\n'
+          + ' window.clearInterval(timingID);\n'
+          + '}\n';
+      timerID = window.setInterval(temp, 30);
+      timingFuncsCalled['intervalFunc4'] = timerID;
+      
+      // setInterval using multi-line string with double quotes with string
+      // to run passed right in
+      timerID = setInterval(
+                "// make sure we arent being incorrectly called more than twice\n"
+                + "timingID = timingFuncsCalled[\'intervalFunc\' + 5];\n"
+                + "// we store the number of times weve been called on the timingID itself\n"
+                + "if (timingID._numTimesCalled == undefined) {\n"
+                + "  timingID._numTimesCalled = 1;\n"
+                + "} else {\n"
+                + "  timingID._numTimesCalled++;\n"
+                + "}\n"
+                + "\n"
+                + "top.assertEquals('Timer intervalFunc' + 5 + \' should only \'\n"
+                + "                 + \"run 2 times\", 2, timingID._numTimesCalled);\n"
+                + "\n"
+                + "// do some tests\n"
+                + "if (timingID._numTimesCalled == 1) {\n"
+                + " testScope(true);\n"
+                + " _testFromTimingFunc();\n"
+                + " timingFuncsCalled.push(\"intervalFunc\" + 5);\n"
+                + "}\n"
+                + "\n"
+                + "// clear this timing function\n"
+                + "if (timingID._numTimesCalled == 2) {\n"
+                + " window.clearInterval(timingID);\n"
+                + "}\n",
+                40);
+      timingFuncsCalled['intervalFunc5'] = timerID;
+      
+      // setInterval using anonymous inline function
+      var intervalDefinedTimerNumber = 6;
+      timerID = 
+        setTimeout(function() {
+          // make sure we can see closure variables
+          top.assertExists('intervalDefinedTimerNumber should exist',
+                           intervalDefinedTimerNumber);
+          top.assertEquals('intervalDefinedTimerNumber == 6', 6,
+                           intervalDefinedTimerNumber);
+                           
+          // make sure we aren't being incorrectly called more than twice
+          timingID = timingFuncsCalled['intervalFunc' 
+                                       + intervalDefinedTimerNumber];
+          // we store the number of times we've been called on the timingID itself
+          if (timingID._numTimesCalled == undefined) {
+            timingID._numTimesCalled = 1;
+          } else {
+            timingID._numTimesCalled++;
+          }
+      
+          top.assertEquals('Timer intervalFunc' + intervalDefinedTimerNumber 
+                           + ' should only 'run 2 times', 2, 
+                           timingID._numTimesCalled);
+
+          // do some tests on the first interval
+          if (timingID._numTimesCalled == 1) {
+            testScope(true);
+            _testFromTimingFunc();
+            timingFuncsCalled.push('intervalFunc' + intervalDefinedTimerNumber);
+          }
+      
+          if (timingID._numTimesCalled == 2) {
+            // clear this timing function after two intervals
+            clearInterval(timingID);
+          }
+        }, 50);
+      timingFuncsCalled['intervalFunc6'] = timerID;
+    } 
     
     function testGetElementById() {
       // getElementById
@@ -2380,7 +2710,7 @@
       // Test .style property
       top.console.log('Inside SVG OBJECT: Testing style property...');
 
-      // repeat the above steps, but with a node that is attached
+      // change the style of a node that is attached
       circle = document.createElementNS(svgns, 'circle');
       svg = document.getElementById('svg2');
       svg.appendChild(circle);
