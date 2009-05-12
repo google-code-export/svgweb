@@ -105,11 +105,7 @@
     // also store a lookup from the name of the function to it's timing
     // ID so we can clear it out later. Once we have cleared out the given
     // timing functions using clearTimeout, we change the
-    // value for this ID to the word 'deleted'. We check for this when the
-    // timing function calls to ensure that it is truly deleted; if not, we
-    // can fail our assertion. We don't do this for setInterval though;
-    // see the variable 'numIntervals' below for how we handle testing 
-    // when to remove setIntervals.
+    // value for this ID to the word 'finished'.
     var timingFuncsCalled = [];
     
     // To test setInterval, we use a lookup table keyed by the name
@@ -200,7 +196,6 @@
       testGetElementById();
       testGetElementsByTagNameNS();
       testSVGSVGElementProperties();
-      testSVGUseElementProperties();
       testGetAttribute();
       testSetAttribute();
       testChildNodes();
@@ -1013,7 +1008,7 @@
     function timeoutFunc(timerNumber) {
       // make sure we aren't being incorrectly called again
       timingID = timingFuncsCalled['timerFunc' + timerNumber];
-      if (timingID == 'deleted') {
+      if (timingID == 'finished') {
         top.assertFailed('Timer timeoutFunc' + timerNumber + ' did not clear '
                          + 'out');
         return;
@@ -1025,7 +1020,7 @@
       
       // clear this timing function
       clearTimeout(timingID);
-      timingFuncsCalled['timeoutFunc' + timerNumber] = 'deleted';
+      timingFuncsCalled['timeoutFunc' + timerNumber] = 'finished';
     }
     
     function timeoutFuncPointer() {
@@ -1051,10 +1046,12 @@
       if (timingID._numTimesCalled == 1) {
         testScope(true);
         _testFromTimingFunc();
-        timingFuncsCalled.push('intervalFunc' + timerNumber);
       }
       
       if (numTimes == 2) {
+        timingFuncsCalled['intervalFunc' + timerNumber] = 'finished';
+        timingFuncsCalled.push('intervalFunc' + timerNumber);
+        
         // clear this timing function after two intervals
         window.clearInterval(timingID);
       }
@@ -1137,7 +1134,7 @@
       temp = 
           "// make sure we arent being incorrectly called again\n"
           + "timingID = timingFuncsCalled['timerFunc4'];\n"
-          + "if (timingID == 'deleted') {\n"
+          + "if (timingID == 'finished') {\n"
           + " top.assertFailed('Timer timeoutFunc4 did not clear out');\n"
           + "} else {\n"
           + " \n"
@@ -1147,17 +1144,17 @@
           + " \n"
           + " // clear this timing function\n"
           + " clearTimeout(timingID);\n"
-          + " timingFuncsCalled['timeoutFunc4'] = 'deleted';\n"
+          + " timingFuncsCalled['timeoutFunc4'] = 'finished';\n"
           + "}\n";
       timerID = window.setTimeout(temp, 30);
-      timingFuncsCalled['timoutFunc4'] = timerID;
+      timingFuncsCalled['timeoutFunc4'] = timerID;
       
       // setTimeout using multi-line string with single quotes with string
       // to run passed right in
       timerID = setTimeout(
                 '// make sure we arent being incorrectly called again\n'
                 + 'timingID = timingFuncsCalled["timerFunc5"];\n'
-                + 'if (timingID == "deleted") {\n'
+                + 'if (timingID == "finished") {\n'
                 + ' top.assertFailed(\'Timer timeoutFunc5 did not clear out\');\n'
                 + '} else {\n'
                 + ' \n'
@@ -1167,10 +1164,10 @@
                 + ' \n'
                 + ' // clear this timing function\n'
                 + ' window.clearTimeout(timingID);\n'
-                + ' timingFuncsCalled[\'timeoutFunc5\'] = \"deleted\";\n'
+                + ' timingFuncsCalled[\'timeoutFunc5\'] = \"finished\";\n'
                 + '}\n',
                 40);
-      timingFuncsCalled['timoutFunc5'] = timerID;
+      timingFuncsCalled['timeoutFunc5'] = timerID;
       
       // setTimeout using anonymous inline function
       var inlineDefinedTimerNumber = 6;
@@ -1184,7 +1181,7 @@
                            
           // make sure we aren't being incorrectly called again
           timingID = timingFuncsCalled['timerFunc' + inlineDefinedTimerNumber];
-          if (timingID == 'deleted') {
+          if (timingID == 'finished') {
             top.assertFailed('Timer timeoutFunc' + inlineDefinedTimerNumber 
                              + ' did not clear out');
             return;
@@ -1197,9 +1194,9 @@
           // clear this timing function
           window.clearTimeout(timingID);
           timingFuncsCalled['timeoutFunc' + inlineDefinedTimerNumber] = 
-                                                                    'deleted';
+                                                                    'finished';
         }, 50);
-      timingFuncsCalled['timoutFunc6'] = timerID;
+      timingFuncsCalled['timeoutFunc6'] = timerID;
       
       // setInterval tests
       
@@ -1236,11 +1233,12 @@
           + 'if (timingID._numTimesCalled == 1) {\n'
           + ' testScope(true);\n'
           + ' _testFromTimingFunc();\n'
-          + ' timingFuncsCalled.push(\"intervalFunc\" + 4);\n'
           + '}\n'
           + '\n'
           + '// clear this timing function\n'
           + 'if (numTimes == 2) {\n'
+          + ' timingFuncsCalled[\"intervalFunc\" + 4] = \'finished\';\n'
+          + ' timingFuncsCalled.push(\"intervalFunc\" + 4);\n'
           + ' window.clearInterval(timingID);\n'
           + '}\n';
       timerID = window.setInterval(temp, 30);
@@ -1267,11 +1265,12 @@
                 + "if (numTimes == 1) {\n"
                 + " testScope(true);\n"
                 + " _testFromTimingFunc();\n"
-                + " timingFuncsCalled.push(\"intervalFunc\" + 5);\n"
                 + "}\n"
                 + "\n"
                 + "// clear this timing function\n"
                 + "if (numTimes == 2) {\n"
+                + " timingFuncsCalled[\"intervalFunc\" + 5] = 'finished';\n"
+                + " timingFuncsCalled.push(\"intervalFunc\" + 5);\n"
                 + " window.clearInterval(timingID);\n"
                 + "}\n",
                 40);
@@ -1280,7 +1279,7 @@
       // setInterval using anonymous inline function
       var intervalDefinedTimerNumber = 6;
       var closureTimerID =
-        setTimeout(function() {
+        setInterval(function() {
           // make sure we can see closure variables
           top.assertExists('intervalDefinedTimerNumber should exist',
                            intervalDefinedTimerNumber);
@@ -1303,12 +1302,13 @@
           if (numTimes == 1) {
             testScope(true);
             _testFromTimingFunc();
-            timingFuncsCalled.push('intervalFunc' + intervalDefinedTimerNumber);
           } else if (numTimes == 2) {
             // make sure our closureTimerID can be seen
             top.assertExists('closureTimerID should exist', closureTimerID);
             
             // clear this timing function after two intervals
+            timingFuncsCalled['intervalFunc' + intervalDefinedTimerNumber] = 'finished';
+            timingFuncsCalled.push('intervalFunc' + intervalDefinedTimerNumber);
             clearInterval(closureTimerID);
           }
         }, 50);
