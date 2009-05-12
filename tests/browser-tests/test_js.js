@@ -264,9 +264,11 @@ function runTests(embedTypes) {
   console.log('Waiting for final setTimeout check to run and ensure '
               + 'everything passes (10 seconds)...');
   
-  // set a slight timeout before reporting success in case a flash
+  // set a timeout before reporting success in case a flash
   // error occurred; our various onloads in embed2.svg can also run after
   // our main function has finished (on Firefox, for example, but not Safari).
+  // also make sure that the timing functions in embed2.svg inside
+  // testTimingFunctions have completed successfuly.
   window.setTimeout(function() {
     if (_hasObjects) {
       // make sure that embed2.svg called our _validateOnloads() method
@@ -280,7 +282,7 @@ function runTests(embedTypes) {
     // onload function that we want to check for
     assertEquals('onload should have fired for our 3 listeners for dynamic '
                  + 'objects', 3, svgweb._dynamicObjOnloads);
-                 
+       
     if (_hasObjects) {
       // make sure that all of our timing functions inside of embed2.svg
       // in testTimingFunctions() ran
@@ -4379,18 +4381,30 @@ function testStyle() {
   group = getDoc('svg2').getElementById('layer1');
   assertExists('layer1 should exist', group);
   // Note: embed2.svg changes layer1.style.opacity from 1 to 0.4
-  assertEqualsAny('layer1.style.opacity == 0.4',
-                  [0.4],
-                  group.style.opacity);
+  if (_hasObjects) {
+    assertEqualsAny('layer1.style.opacity == 0.4',
+                    [0.4],
+                    group.style.opacity);
+  } else {
+    assertEqualsAny('layer1.style.opacity == 1',
+                    [1],
+                    group.style.opacity);
+  }
   assertEqualsAny('layer1.style.display == inline',
                   ['inline'],
                   group.style.display);
   // For the native handler, Firefox and Safari put spaces in different places 
   // in their style strings; Safari also doesn't have a trailing semicolon. 
   // Safari also switches having 'display' before 'opacity' property.
-  assertTrue('layer1.getAttribute(style) == opacity:0.4;display:inline;',
-             (/\s*opacity:\s*0.4;?/.test(group.getAttribute('style'))
-             && /\s*display:\s*inline;?/.test(group.getAttribute('style'))));
+  if (_hasObjects) {
+    assertTrue('layer1.getAttribute(style) == opacity:0.4;display:inline;',
+               (/\s*opacity:\s*0.4;?/.test(group.getAttribute('style'))
+               && /\s*display:\s*inline;?/.test(group.getAttribute('style'))));
+  } else {
+    assertTrue('layer1.getAttribute(style) == opacity:1;display:inline;',
+               (/\s*opacity:\s*1;?/.test(group.getAttribute('style'))
+               && /\s*display:\s*inline;?/.test(group.getAttribute('style'))));
+  }
   // repeat reading style values off another element
   rect = getDoc('svg2').getElementById('rect3926');
   // NOTE: unfortunately, FF has a bug where it doesn't mirror all

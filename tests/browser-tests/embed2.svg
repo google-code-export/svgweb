@@ -1148,7 +1148,7 @@
           + "}\n";
       timerID = window.setTimeout(temp, 30);
       timingFuncsCalled['timeoutFunc4'] = timerID;
-      
+            
       // setTimeout using multi-line string with single quotes with string
       // to run passed right in
       timerID = setTimeout(
@@ -1203,7 +1203,7 @@
       // setInterval calling global function using string
       timerID = setInterval('intervalFunc(1)', 1);
       timingFuncsCalled['intervalFunc1'] = timerID;
-      
+            
       // window.setInterval calling global function using string
       timerID = window.setInterval('intervalFunc(2)', 10);
       timingFuncsCalled['intervalFunc2'] = timerID;
@@ -1211,7 +1211,7 @@
       // setInterval using a function pointer
       timerID = setInterval(intervalFuncPointer, 20);
       timingFuncsCalled['intervalFunc3'] = timerID;
-      
+            
       // setInterval using multi-line string with single quotes using a
       // variable to pass value in
       temp = 
