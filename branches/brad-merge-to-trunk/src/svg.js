@@ -1109,6 +1109,71 @@ SVG Viewer introduced due to technical limations on supporting this in Firefox.
 
 */
 
+// TODO!!! Remove timing functions when done with Issue 96
+window.timer = {};
+
+function start(subject, subjectStarted) {
+  //console.log('start('+subject+','+subjectStarted+')');
+  if (subjectStarted && !ifStarted(subjectStarted)) {
+    //console.log(subjectStarted + ' not started yet so returning for ' + subject);
+    return;
+  }
+  //console.log('storing time for ' + subject);
+  window.timer[subject] = {start: new Date().getTime()};
+}
+
+function end(subject, subjectStarted) {
+  //console.log('end('+subject+','+subjectStarted+')');
+  if (subjectStarted && !ifStarted(subjectStarted)) {
+    //console.log(subjectStarted + ' not started yet so returning for ' + subject);
+    return;
+  }
+  
+  if (!window.timer[subject]) {
+    console.log('Unknown subject: ' + subject);
+    return;
+  }
+  
+  window.timer[subject].end = new Date().getTime();
+  
+  //console.log('at end, storing total time: ' + total(subject));
+}
+
+function total(subject) {
+  if (!window.timer[subject]) {
+    console.log('Unknown subject: ' + subject);
+    return;
+  }
+  
+  var t = window.timer[subject];
+  if (t) {
+    return t.end - t.start;
+  } else {
+    return null;
+  }
+}
+
+function ifStarted(subject) {
+  for (var i in window.timer) {
+    var t = window.timer[i];
+    if (i == subject && t.start != undefined && t.end == undefined) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+function report() {
+  for (var i in window.timer) {
+    var t = total(i);
+    if (t !== null) {
+      console.log(i + ': ' + t + 'ms');
+    }
+  }
+}
+// END!!! Remove these functions when done with Issue 96
+
 (function(){ // hide everything externally to avoid name collisions
  
 // expose namespaces globally to ease developer authoring
@@ -2882,7 +2947,8 @@ extend(FlashHandler, {
   },
   
   _onLog: function(msg) {
-    console.log('FLASH: ' + msg.logString);
+    // UNCOMMENT!!!
+    //console.log('FLASH: ' + msg.logString);
   },
   
   _onEvent: function(msg) {
@@ -2914,9 +2980,10 @@ extend(FlashHandler, {
   
   /** Calls if the Flash encounters an error. */
   _onFlashError: function(msg) {
-    this._onLog(msg);
+    // UNCOMMENT!!!
+    /*this._onLog(msg);
     svgweb._fireFlashError('FLASH: ' + msg.logString);
-    throw new Error('FLASH: ' + msg.logString);
+    throw new Error('FLASH: ' + msg.logString);*/
   },
   
   /** Stores any SCRIPT that might be inside an SVG file embedded through
@@ -3429,6 +3496,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // handle nodes that were created with createElementNS but are not yet
   // attached to the document yet
   if (nodeType == _Node.ELEMENT_NODE && !this._nodeXML && !this._handler) {
+    start('parseXML', 'createElementNS');
     // build up an empty XML node for this element
     var xml = '<?xml version="1.0"?>\n';
     if (namespaceURI == svgns && !prefix) {
@@ -3438,6 +3506,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     }
     
     this._nodeXML = parseXML(xml).documentElement;
+    end('parseXML', 'createElementNS');
   } 
   
   if (nodeType == _Node.ELEMENT_NODE) {
@@ -3482,7 +3551,15 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   }
   this._passThrough = passThrough;
   
+  // create empty stub methods for certain methods to help IE's HTC be
+  // smaller
+  if (isIE) {
+    this._createEmptyMethods();
+  }
+  
+  start('createChildNodes', 'createElementNS');
   this._childNodes = this._createChildNodes();
+  end('createChildNodes', 'createElementNS');
   
   // We keep an cachedChildNodes array around until we are truly
   // attached that we can depend on to serve out our childNodes; we can't
@@ -3493,6 +3570,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   this._cachedChildNodes = [];
   this._cachedParentNode = null;
   
+  start('generateID', 'createElementNS');
   // We track text nodes with an internal node ID.
   if (nodeType == _Node.TEXT_NODE) {
     this._textNodeID = svgweb._generateID('__svg__random__', '__text');
@@ -3500,6 +3578,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
       this._nodeXML._textNodeID = this._textNodeID;
     }
   }
+  end('generateID', 'createElementNS');
   
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
@@ -3514,7 +3593,9 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     if (this.nodeName == 'svg' && this._handler.type == 'script') {
       // do nothing; _SVGSVGElement will do the HTC node handling in this case
     } else { // everything else
+      start('createHTC', 'createElementNS');
       this._createHTC();
+      end('createHTC', 'createElementNS');
     }
   }
 }
@@ -3856,7 +3937,7 @@ extend(_Node, {
       this._defineChildNodeAccessor(this._childNodes.length);
       this._childNodes.length++;
     }
-    
+  
     // process the children (add IDs, add a handler, etc.)
     this._processAppendedChildren(child, this._attached, this._passThrough);
     
@@ -3865,7 +3946,7 @@ extend(_Node, {
     if (!this._attached) {
       this._setupCachedSiblings();
     }
-
+    
     return child._getProxyNode();
   },
   
@@ -4240,12 +4321,15 @@ extend(_Node, {
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
     if (!this._htcContainer) {
+      start('fetching container', 'createElementNS');
       this._htcContainer = document.getElementById('__htc_container');
+      end('fetching container', 'createElementNS');
       if (!this._htcContainer) {
         // strangely, onpropertychange does _not_ fire for HTC elements
         // that are in the HEAD of the document, which is where we used
         // to put the htc_container. Instead, we have to put it into the BODY
         // of the document and position it offscreen.
+        start('creating container', 'createElementNS');
         var body = document.getElementsByTagName('body')[0];
         var c = document.createElement('div');
         c.id = '__htc_container';
@@ -4255,6 +4339,7 @@ extend(_Node, {
         c.style.left = '-5000px';
         body.appendChild(c);
         this._htcContainer = c;
+        end('creating container', 'createElementNS');
       }
     }
     
@@ -4269,10 +4354,16 @@ extend(_Node, {
     if (nodeName == '#text') {
       nodeName = '__text'; // text nodes
     }
+    start('htcNode1', 'createElementNS');
     var htcNode = document.createElement('svg:' + this.nodeName);
+    end('htcNode1', 'createElementNS');
+    start('htcNode2', 'createElementNS');
     htcNode._fakeNode = this;
     htcNode._handler = this._handler;
+    end('htcNode2', 'createElementNS');
+    start('htcNode3', 'createElementNS');
     this._htcContainer.appendChild(htcNode);
+    end('htcNode3', 'createElementNS');
     this._htcNode = htcNode;
   },
   
@@ -4748,6 +4839,62 @@ extend(_Node, {
     }
     
     return childNodes;
+  },
+  
+  // the following getters and setters for textContent and data are called
+  // by the HTC; we put them here to minimize the size of the HTC which
+  // has a very strong correlation with performance
+  
+  _getTextContent: function() {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return this._nodeValue;
+    } else {
+      return ''; // Firefox and Safari return empty strings for .textContent
+    }
+  },
+  
+  _setTextContent: function(newValue) {
+    if (this.nodeType == _Node.TEXT_NODE) { 
+      return this._setNodeValue(newValue);
+    } else {
+      return ''; // Firefox and Safari return empty strings for .textContent
+    }
+  },
+  
+  _getData: function() {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return this._nodeValue;
+    } else {
+      return undefined;
+    }
+  },
+  
+  _setData: function(newValue) {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      return this._setNodeValue(newValue);
+    } else {
+      return undefined;
+    }
+  },
+  
+  /** For Internet Explorer, the length of the script in our HTC is a major
+      determinant in the amount of time it takes to create a new HTC element.
+      In order to minimize the size of this code, we have many 'no-op'
+      implementations of some methods so that we can just safely call
+      them from the HTC without checking the type of the node. */
+  _createEmptyMethods: function() {
+    if (this.nodeType == _Node.TEXT_NODE) {
+      this.getAttribute 
+          = this.setAttribute 
+          = this.setAttributeNS 
+          = this._getId
+          = this._setId
+          = this._getX
+          = this._getY
+          = this._getWidth
+          = this._getHeight
+          = function() { return undefined; };
+    }
   }
 });
 
@@ -4770,13 +4917,17 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   }
   
   // superclass constructor
+  start('calling node constructor', 'createElementNS');
   _Node.apply(this, [nodeName, _Node.ELEMENT_NODE, prefix, namespaceURI, nodeXML,
                      handler, passThrough]);
+  end('calling node constructor', 'createElementNS');
                      
+  start('importAttributes', 'createElementNS');
   // setup our attributes
   this._attributes = {};
   this._attributes['_id'] = ''; // default id is empty string on FF and Safari
   this._importAttributes(this, this._nodeXML);
+  end('importAttributes', 'createElementNS');
   
   // define our accessors if we are not IE; IE does this by using the HTC
   // file rather than doing it here
@@ -4794,7 +4945,9 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
       // SVG SCRIPT tag, don't setup the style object for the SVG root now; we
       // do that later in _SVGSVGElement
     } else {
+      start('new style', 'createElementNS');
       this.style = new _Style(this);
+      end('new style', 'createElementNS');
     }
     
     // handle style changes for HTCs
@@ -6480,8 +6633,9 @@ extend(_Document, {
     if (prefix == 'xmlns' || !prefix) { // default SVG namespace
       prefix = null;
     }
-
+    start('element constructor', 'createElementNS');
     var node = new _Element(qname, prefix, ns);
+    end('element constructor', 'createElementNS');
     return node._getProxyNode();
   },
   
