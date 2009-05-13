@@ -277,180 +277,56 @@ The 'lightWeight' attribute below is important for two reasons:
     }
   }
   
-  function getAttribute(attrName) { 
-    // _Node.TEXT_NODE is not visible here (global variables aren't
-    // shared between HTC and it's host page)
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode.getAttribute(attrName);
-    }
-  }
+  // there is a very strong correlation between the length of this script
+  // and performance, so we minimize size as much as possible
   
-  function setAttribute(attrName, attrValue) {
-    // _Node.TEXT_NODE is not visible here (global variables aren't
-    // shared between HTC and it's host page)
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode.setAttribute(attrName, attrValue);
-    }
-  }
-  
-  function setAttributeNS(ns, qName, attrValue) {
-    // _Node.TEXT_NODE is not visible here (global variables aren't
-    // shared between HTC and it's host page)
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode.setAttributeNS(ns, qName, attrValue);
-    }
-  }
-  
-  function appendChild(child) {
-    return this._fakeNode.appendChild(child);
-  }
-  
-  function removeChild(child) {
-    return this._fakeNode.removeChild(child);
-  }
-  
-  function replaceChild(newChild, oldChild) {
-    return this._fakeNode.replaceChild(newChild, oldChild);
-  }
-  
-  function insertBefore(newChild, refChild) {
-    return this._fakeNode.insertBefore(newChild, refChild);
-  }
-  
-  function hasChildNodes() {
-    return this._fakeNode.hasChildNodes();
-  }
-  
-  function hasAttributes() {
-    return this._fakeNode.hasAttributes();
-  }
-  
-  function isSupported(feature, version) {
-    return this._fakeNode.isSupported(feature, version);
-  }
-  
-  // getter/setter accessors; they delegate back into the
-  // svg.js _Element and _Node classes
-  
+  function getAttribute(n) { return this._fakeNode.getAttribute(n); }  
+  function setAttribute(n, v) { return this._fakeNode.setAttribute(n, v); }  
+  function setAttributeNS(ns, qName, v) { return this._fakeNode.setAttributeNS(ns, qName, v); }
+  function appendChild(c) { return this._fakeNode.appendChild(c); }
+  function removeChild(c) { return this._fakeNode.removeChild(c); }
+  function replaceChild(n, o) { return this._fakeNode.replaceChild(n, o); }
+  function insertBefore(n, o) { return this._fakeNode.insertBefore(n, o); }
+  function hasChildNodes() { return this._fakeNode.hasChildNodes(); }
+  function hasAttributes() { return this._fakeNode.hasAttributes(); }
+  function isSupported(f, v) { return this._fakeNode.isSupported(f, v); }
+
   function _getNodeName() { return this._fakeNode.nodeName; }
   function _getNodeType() { return this._fakeNode.nodeType; }
   function _getLocalName() { return this._fakeNode.localName; }
   function _getPrefix() { return this._fakeNode.prefix; }
   function _getNamespaceURI() { return this._fakeNode.namespaceURI; }
   
-  function _getChildNodes() {
-    return this._fakeNode._getChildNodes();
-  }
+  function _getChildNodes() { return this._fakeNode._getChildNodes(); }
   
   function _getParentNode() { return this._fakeNode._getParentNode(); }
   function _getFirstChild() { return this._fakeNode._getFirstChild(); }
   function _getLastChild() { return this._fakeNode._getLastChild(); }
-  function _getPreviousSibling() { 
-      return this._fakeNode._getPreviousSibling(); 
-  }
+  function _getPreviousSibling() { return this._fakeNode._getPreviousSibling(); }
   function _getNextSibling() { return this._fakeNode._getNextSibling(); }
   
   function _getNodeValue() { return this._fakeNode._nodeValue; }
-  function _setNodeValue(newValue) {
-    return this._fakeNode._setNodeValue(newValue);
-  }
+  function _setNodeValue(v) { return this._fakeNode._setNodeValue(v); }
   
-  function _getTextContent() {
-    // _Node.TEXT_NODE is not visible here (global variables aren't
-    // shared between HTC and it's host page)
-    if (this._fakeNode.nodeType == 3) { // text node
-      return this._fakeNode._nodeValue;
-    } else {
-      return ''; // Firefox and Safari return empty strings for .textContent
-    }
-  }
+  function _getTextContent() { return this._fakeNode._getTextContent(); }  
+  function _setTextContent(v) { return this._fakeNode._setTextContent(v); }
+  function _getData() { return this._fakeNode._getData(); }  
+  function _setData(v) { return this._fakeNode._setData(v); }
   
-  function _setTextContent(newValue) {
-    if (this._fakeNode.nodeType == 3) { // text node
-      return this._fakeNode._setNodeValue(newValue);
-    } else {
-      return ''; // Firefox and Safari return empty strings for .textContent
-    }
-  }
+  function _getOwnerDocument() { return this._fakeNode.ownerDocument; }
   
-  function _getData() {
-    if (this._fakeNode.nodeType == 3) { // text node
-      return this._fakeNode._nodeValue;
-    } else {
-      return undefined;
-    }
-  }
-  
-  function _setData(newValue) { 
-    if (this._fakeNode.nodeType == 3) { // text node
-      return this._fakeNode._setNodeValue(newValue);
-    } else {
-      return undefined;
-    }
-  }
-  
-  function _getOwnerDocument() {
-    return this._fakeNode.ownerDocument;
-  }
-  
-  function _getId() {
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._getId(); 
-    }
-  }
-  
-  function _setId(v) { 
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._setId(v); 
-    }
-  }
+  function _getId() { return this._fakeNode._getId(); }
+  function _setId(v) { return this._fakeNode._setId(v); }
   
   function _getInnerHTML() { return this._fakeNode._getInnerHTML(); }
   function _setInnerHTML(v) { return this._fakeNode._setInnerHTML(v); }
   
   // SVGSVGElement and SVGUseElement only properties
   
-  function _getX() {
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._getX(); 
-    }
-  }
-  
-  function _getY() { 
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._getY(); 
-    }
-  }
-  
-  function _getWidth() { 
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._getWidth(); 
-    }
-  }
-  
-  function _getHeight() { 
-    if (this._fakeNode.nodeType == 3) { // text node
-      return undefined;
-    } else {
-      return this._fakeNode._getHeight(); 
-    }
-  }
+  function _getX() { return this._fakeNode._getX(); }  
+  function _getY() { return this._fakeNode._getY(); }  
+  function _getWidth() { return this._fakeNode._getWidth(); }
+  function _getHeight() { return this._fakeNode._getHeight(); }
 </script>
 
 <!-- IE has a bug where if a JScript portion is greater than 512 bytes,
