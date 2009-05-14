@@ -2969,12 +2969,6 @@ extend(FlashHandler, {
         this._svgObject._onFlashLoaded(msg);
       }
       return;
-    } else if (msg.eventType == 'onHTCLoaded') {
-      if (this.type == 'script') {
-        this.document.documentElement._onHTCLoaded(msg);
-      } else if (this.type == 'object') {
-        this._svgObject._onHTCLoaded(msg);
-      }
     }
   },
   
@@ -5821,10 +5815,14 @@ extend(_SVGObject, {
       this._dummyNode = document.createElement('svg:__force__load');
       this._dummyNode._handler = this._handler;
       
-      // set flag so that svg.htc can know this is a __force__load method,
-      // since we can't check dummy.nodeName as that will cause us to
-      // incorrectly call our overridden HTC nodeName property instead
-      this._dummyNode._realNodeName = '__force__load';
+      // find out when the content is ready
+      // NOTE: we do this here instead of inside the HTC file using an
+      // internal oncontentready event in order to make the HTC file faster
+      // and use less memory. Note also that 'oncontentready' is not available 
+      // outside HTC files, only 'onreadystatechange' is available.
+      this._readyStateListener = hitch(this, this._onHTCLoaded); // cleanup later
+      this._dummyNode.attachEvent('onreadystatechange', 
+                                  this._readyStateListener);
       
       var head = document.getElementsByTagName('head')[0];
       // NOTE: as _soon_ as we append the dummy element the HTC file will
@@ -5834,15 +5832,19 @@ extend(_SVGObject, {
     }
   },
   
-  _onHTCLoaded: function(msg) {
-    //console.log('_SVGObject, onHTCLoaded, msg='+this._handler.debugMsg(msg));
-    // can't use htcNode.parentNode since we override that inside svg.htc
+  _onHTCLoaded: function() {
+    //console.log('_SVGObject, onHTCLoaded');
+    // can't use htcNode.parentNode to get the parent and remove the child
+    // since we override that inside svg.htc
     var head = document.getElementsByTagName('head')[0];
-    head.removeChild(msg.htcNode);
+    head.removeChild(this._dummyNode);
+    
+    // cleanup our event handler
+    this._dummyNode.detachEvent('onreadystatechange', this._readyStateListener);
     
     // prevent IE memory leaks
-    htcNode = null;
-    msg = null;
+    this._dummyNode = null;
+    head = null;
     
     // send the SVG string over to Flash
     this._handler.sendToFlash({type: 'load', sourceType: 'string',
@@ -6496,6 +6498,14 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     // track .style changes
     this.style = new _Style(this);
     
+    // find out when the content is ready
+    // NOTE: we do this here instead of inside the HTC file using an
+    // internal oncontentready event in order to make the HTC file faster
+    // and use less memory. Note also that 'oncontentready' is not available 
+    // outside HTC files, only 'onreadystatechange' is available.
+    this._readyStateListener = hitch(this, this._onHTCLoaded); // cleanup later
+    this._htcNode.attachEvent('onreadystatechange', this._readyStateListener);
+    
     // now kick off replacing the SCRIPT node with a Flash object
     scriptNode.parentNode.replaceChild(svgDOM, scriptNode);
     
@@ -6525,30 +6535,25 @@ extend(_SVGSVGElement, {
   
   // end of SVGLocatable
   
-  /** Called when the Microsoft Behavior HTC file is loaded; called for
-      each HTC node element (which will correspond with each SVG element
-      in the document). The message object is a literal with two values:
-      
-      htcNode A reference to the HTC node itself.
-      elemDoc The element.document of the HTC file. */
-  _onHTCLoaded: function(msg) {
-    //console.log('onHTCLoaded, msg=' + this._handler.debugMsg(msg));
-    var elemDoc = msg.elemDoc;
-    var htcNode = msg.htcNode;
+  /** Called when the Microsoft Behavior HTC file is loaded. */
+  _onHTCLoaded: function() {
+    //console.log('onHTCLoaded');
     
-    // TODO: We are not handling dynamically created nodes yet
+    // cleanup our event handler
+    this._htcNode.detachEvent('onreadystatechange', this._readyStateListener);
+
+    // get the document object _inside_ the HTC
+    var elemDoc = this._htcNode._getHTCDocument();
     
-    if (htcNode.nodeName.toUpperCase() == 'SVG') {
-      this._htcNode = htcNode;
-      
-      // now insert our Flash
-      var inserter = new FlashInserter('script', elemDoc, this._nodeXML,
-                                        this._scriptNode, this._handler,
-                                        this._htcNode);
-                             
-      // pay attention to style changes now in the HTC
-      this.style._ignoreStyleChanges = false;
-    }
+    // now insert our Flash
+    var inserter = new FlashInserter('script', elemDoc, this._nodeXML,
+                                      this._scriptNode, this._handler,
+                                      this._htcNode);
+                           
+    // pay attention to style changes now in the HTC
+    this.style._ignoreStyleChanges = false;
+    
+    // TODO: we are not handling dynamically created nodes yet
   },
   
   /** Called when the Flash SWF file has been loaded. Note that this doesn't
