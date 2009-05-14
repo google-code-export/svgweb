@@ -6217,12 +6217,9 @@ extend(FlashInserter, {
     // get a Flash object and insert it into our document
     var flash = this._createFlash(size, elementID, background, style, 
                                   className, doc);
-    if (this._embedType == 'script' && isIE) {
-      // have the HTC node insert the actual Flash so that it gets
-      // hidden in the HTC's shadow DOM
-      htcNode._insertFlash(flash, size, background, style, className);
-    } else if (this._embedType == 'object' && isIE) {
-      this._insertFlashIE(flash);
+    if (isIE) {
+      this._insertFlashIE(flash, size, background, style, className, htcNode,
+                          doc);
     } else {
       this._insertFlash(flash);
     }
@@ -6266,12 +6263,100 @@ extend(FlashInserter, {
       string control immediately leaves us and asynchronously starts 
       initializing the Flash control, so we have to do the outerHTML
       assignment last. */
-  _insertFlashIE: function(flash) {
-    // Note: as _soon_ as we make this call the Flash will load, even
-    // before the rest of this method has finished. The Flash can
-    // therefore finish loading before anything after the next statement
-    // has run, so be careful of timing bugs.
-    this._replaceMe.outerHTML = flash; 
+  _insertFlashIE: function(flash, size, background, style, className, htcNode,
+                           htcDoc) {
+    if (this._embedType == 'object') {
+      // Note: as _soon_ as we make this call the Flash will load, even
+      // before the rest of this method has finished. The Flash can
+      // therefore finish loading before anything after the next statement
+      // has run, so be careful of timing bugs.
+      this._replaceMe.outerHTML = flash; 
+    } else if (this._embedType == 'script') {
+      // apply width and height
+      htcNode.style.width = size.width;
+      htcNode.style.height = size.height;
+      
+      // apply our style to the HTC node
+      var rules = style.split(';');
+      for (var i = 0; i < rules.length; i++) {
+        var rule = rules[i].split(':');
+        if (!rules[i] || rules[i].indexOf(':') == -1) {
+          continue;
+        }
+        var propName = rule[0].replace(/^\s*|\s*$/, '');
+        var propValue = rule[1].replace(/^\s*|\s*$/, '');
+        htcNode.style[propName] = propValue;
+      }
+
+      // apply our class name to the HTC node
+      if (className) {
+        htcNode.className = className;
+      }
+      
+      /**
+        Now insert the Flash.
+
+        We use a Behavior ViewLink trick to 'hide' this shadow content from 
+        the external page, so that we don't see the Flash object in the 
+        external DOM. For more details on ViewLinks: 
+
+        http://msdn.microsoft.com/en-us/library/ms531428(VS.85).aspx
+
+        Note, though, that we want to keep almost all of our SVG elements
+        'lightWeight' (see the lightWeight attribute on the
+        'component' tag at the top of the HTC file) because
+        non-lightWeight components have performance and caching issues.
+        LightWeight HTC components however can not use View Links or have
+        shadow content.
+
+        As a trick, we 'convert' our HTC into having a shadow DOM
+        just for the SVG root tag by manually creating an HTML document below,
+        then storing this document inside the HTC file for later retrieval.
+        For the trick to work we also have to set some 'defaults'
+        above at the top of the HTC file.
+
+        This approach successfully keeps the performance benefits of
+        lightWeight HTCs while being able to have shadow content that
+        doesn't show up in the external DOM.
+      */
+      var html = htcDoc.createElement('html');
+      var body = htcDoc.createElement('body');
+      var div = htcDoc.createElement('div');
+      body.appendChild(div);
+      html.appendChild(body);
+      var defaults = htcNode._getHTCDefaults();
+      defaults.viewLink = html.document; // ViewLink magic
+      htcNode._setHTCDocument(html.document); // store doc reference for later
+
+      // If we want to allow the background of the Flash movie to be transparent
+      // and 'show through' HTML elements underneath, then we need to make our
+      // inner shadow document also be transparent; the line below makes this
+      // magic happen 
+      if (background.transparent) {
+        body.style.backgroundColor = 'transparent';
+      }
+      
+      // IE memory leaks
+      html = null;
+      body = null;
+
+      // We have to use a DIV container for the Flash object; since we don't
+      // want this DIV to stay around, acting almost like a DocumentFragment,
+      // we use div.outerHTML on it to have the Flash control go into it and
+      // have the DIV 'disappear' in a poof of smoke
+
+      // outerHTML must be set _after_ DIV is added to DOM for
+      // Flash ExternalInterface to work correctly
+
+      // Note: as _soon_ as we make this call the Flash will load, even
+      // before the rest of this method has finished. The Flash can
+      // therefore finish loading before anything after the next statement
+      // has run, so be careful of timing bugs.
+      div.outerHTML = flash;
+      
+      // IE memory leaks
+      div = null;
+    }
   },
   
   /** Determines a width and height for the parsed SVG XML. Returns an

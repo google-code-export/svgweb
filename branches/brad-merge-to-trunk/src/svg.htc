@@ -58,8 +58,10 @@ The 'lightWeight' attribute below is important for two reasons:
     <method name="hasAttributes" />
     <method name="isSupported" />
     
-    <!-- Internal method we use to get the HTCs internal document object -->
+    <!-- Internal method we use to get the HTC internal objects -->
     <method name="_getHTCDocument" />
+    <method name="_setHTCDocument" />
+    <method name="_getHTCDefaults" />
 
     <attach event="onpropertychange" onevent="propertyChange()" />
     
@@ -74,6 +76,14 @@ The 'lightWeight' attribute below is important for two reasons:
   /** Called from _SVGSVGElement._onHTCLoaded() in order to get an internal
       document reference to insert our Flash. */
   function _getHTCDocument() { return this.element.document; }
+  
+  /** Called from FlashInserter._insertFlashIE() to store our manually
+      created ViewLink document. */
+  function _setHTCDocument(doc) { this._doc = doc; }
+  
+  /** Called from FlashInserter._insertFlashIE() in order to insert our 
+      Flash. */
+  function _getHTCDefaults() { return this.defaults; }
   
   /** Watch to see when anyone changes a 'style' property so we
       can mirror it in the Flash control. */
@@ -116,100 +126,6 @@ The 'lightWeight' attribute below is important for two reasons:
       // tell our fake node and Flash about style change
       this._fakeNode.style._styleChange(styleName, styleValue);
     }
-  }
-  
-  /** Does some magic to have the Flash object show up in our SVG 
-      root element 'hidden' from the external DOM. Called by
-      the FlashInserter class inside of svg.js.
-      
-      @param flash Flash object as HTML string.
-      @param size An object literal with two values, width and height,
-      with our width and height either in pixels or percentages.
-      @param style A style string that we can apply to ourselves
-      to have the correct style on the SVG root tag, since that
-      is what is visible to the outside DOM. Applying it to the
-      Flash object is not enough.
-      @param background Object literal with background color and 
-      transparent boolean.
-      @param className A string of class names to apply to ourselves, null
-      if there is none. */
-  this._insertFlash = function(flash, size, background, style, className) {
-    // apply width and height
-    this.style.width = size.width;
-    this.style.height = size.height;
-    
-    // apply our style to ourselves
-    var rules = style.split(';');
-    for (var i = 0; i < rules.length; i++) {
-      var rule = rules[i].split(':');
-      if (!rules[i] || rules[i].indexOf(':') == -1) {
-        continue;
-      }
-      var propName = rule[0].replace(/^\s*|\s*$/, '');
-      var propValue = rule[1].replace(/^\s*|\s*$/, '');
-      this.style[propName] = propValue;
-    }
-    
-    // apply our class name
-    if (className) {
-      this.className = className;
-    }
-    
-    /**
-      Now insert the Flash.
-      
-      We use a Behavior ViewLink trick to 'hide' this shadow content from 
-      the external page, so that we don't see the Flash object in the 
-      external DOM. For more details on ViewLinks: 
-      
-      http://msdn.microsoft.com/en-us/library/ms531428(VS.85).aspx
-      
-      Note, though, that we want to keep almost all of our SVG elements
-      'lightWeight' (see the lightWeight attribute on the
-      'component' tag at the top of this file) because
-      non-lightWeight components have performance and caching issues.
-      LightWeight HTC components however can not use View Links or have
-      shadow content.
-      
-      As a trick, we 'convert' ourselves into having a shadow DOM
-      just for the SVG root tag by manually creating an HTML document below,
-      then storing this document in this._doc for later retrieval.
-      For the trick to work we also have to set some 'defaults'
-      above at the top of this file.
-      
-      This approach successfully keeps the performance benefits of
-      lightWeight HTCs while being able to have shadow content that
-      doesn't show up in the external DOM.
-    */
-    var html = element.document.createElement('html');
-    var body = element.document.createElement('body');
-    var div = element.document.createElement('div');
-    body.appendChild(div);
-    html.appendChild(body);
-    defaults.viewLink = html.document; // ViewLink magic
-    this._doc = html.document;
-    
-    // If we want to allow the background of the Flash movie to be transparent
-    // and 'show through' HTML elements underneath, then we need to make our
-    // inner shadow document also be transparent; the line below makes this
-    // magic happen 
-    if (background.transparent) {
-      body.style.backgroundColor = 'transparent';
-    }
-    
-    // We have to use a DIV container for the Flash object; since we don't
-    // want this DIV to stay around, acting almost like a DocumentFragment,
-    // we use div.outerHTML on it to have the Flash control go into it and
-    // have the DIV 'disappear' in a poof of smoke
-    
-    // outerHTML must be set _after_ DIV is added to DOM for
-    // Flash ExternalInterface to work correctly
-    
-    // Note: as _soon_ as we make this call the Flash will load, even
-    // before the rest of this method has finished. The Flash can
-    // therefore finish loading before anything after the next statement
-    // has run, so be careful of timing bugs.
-    div.outerHTML = flash;
   }
   
   /** Gets the Flash DOM object. */
