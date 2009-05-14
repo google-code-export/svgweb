@@ -5320,12 +5320,6 @@ extend(_Style, {
       due to style changes. Used when we are internally making style changes. */
   _ignoreStyleChanges: true,
   
-  /** Called when a style change has occurred; called from the Internet
-      Explorer HTC. */
-  _styleChange: function(styleName, styleValue) {
-    return this._setStyleAttribute(styleName, styleValue);
-  },
-  
   /** Initializes our magic getters and setters for non-IE browsers. For IE
       we set our initial style values on the HTC. */
   _setup: function() {
@@ -5346,13 +5340,6 @@ extend(_Style, {
       this.__defineGetter__('length', hitch(this, this._getLength));
     } else { // Internet Explorer setup
       var htcStyle = this._element._htcNode.style;
-      
-      // NOTE: as we manipulate the HTC's style object below, onpropertychange
-      // events will fire each time. We want to ignore this. However, we
-      // can't use our this._ignoreStyleChange property here because we
-      // are run as part of our _Style constructor, and we won't exist yet
-      // when viewed from the HTC's propertyChange() method! Just check there
-      // for the lack of a _Style instance.
       
       // parse style string
       var parsedStyle = this._fromStyleString();
@@ -5375,6 +5362,11 @@ extend(_Style, {
       htcStyle.item = hitch(this, this.item);
       htcStyle.setProperty = hitch(this, this.setProperty);
       htcStyle.getPropertyValue = hitch(this, this.getPropertyValue);
+      
+      // start paying attention to style change events on the HTC node
+      this._changeListener = hitch(this, this._onPropertyChange);
+      this._element._htcNode.attachEvent('onpropertychange', 
+                                         this._changeListener);
     }
   },
   
@@ -5448,12 +5440,12 @@ extend(_Style, {
     if (this._element._attached && this._element._passThrough) {
       var flashStr = FlashHandler._encodeFlashData(styleValue);
       this._element._handler.sendToFlash({ 
-                                  type: 'invoke', 
-                                  method: 'setAttribute',
-                                  elementId: this._element._getId(),
-                                  applyToStyle: true,
-                                  attrName: stylePropName, 
-                                  attrValue: flashStr });
+                                          type: 'invoke', 
+                                          method: 'setAttribute',
+                                          elementId: this._element._getId(),
+                                          applyToStyle: true,
+                                          attrName: stylePropName, 
+                                          attrValue: flashStr });
     }
   },
   
@@ -5668,6 +5660,28 @@ extend(_Style, {
     this._element._passThrough = false;
     this._element.setAttribute('style', results);
     this._element._passThrough = origPassThrough;
+  },
+  
+  /** For Internet Explorer, this method is called whenever a
+      propertychange event fires on the HTC. */
+  _onPropertyChange: function() {
+    // watch to see when anyone changes a 'style' property so we
+    // can mirror it in the Flash control
+    
+    if (this._ignoreStyleChanges) {
+      return;
+    }
+    
+    var prop = window.event.propertyName;
+
+    if (prop && /^style\./.test(prop) && prop != 'style.length') {        
+      // extract the style name and value
+      var styleName = prop.match(/^style\.(.*)$/)[1];
+      var styleValue = this._element._htcNode.style[styleName];
+      
+      // tell Flash and our fake node about our style change
+      this._setStyleAttribute(styleName, styleValue);
+    }
   }
 });
 
@@ -6661,7 +6675,7 @@ extend(_SVGSVGElement, {
     // store a reference to the Flash object so we can send it messages
     if (isIE) {
       // use the shadow document we created earlier 
-      // in FlashInserter._insertFlashIE
+      // in FlashInserter._insertFlashIE() to get a reference to our Flash
       this._handler.flash = 
                 this._inserter._shadowDoc.getElementById(this._handler.flashID);
       
