@@ -61,8 +61,6 @@ The 'lightWeight' attribute below is important for two reasons:
     <!-- Internal method we use to get the HTC internal objects -->
     <method name="_getHTCDocument" />
     <method name="_getHTCDefaults" />
-
-    <attach event="onpropertychange" onevent="propertyChange()" />
     
     <defaults tabStop="false" contentEditable="false"
               canHaveHTML="true" viewInheritStyle="true"
@@ -79,49 +77,6 @@ The 'lightWeight' attribute below is important for two reasons:
   /** Called from FlashInserter._insertFlashIE() in order to insert our 
       Flash. */
   function _getHTCDefaults() { return this.defaults; }
-  
-  /** Watch to see when anyone changes a 'style' property so we
-      can mirror it in the Flash control. */
-  function propertyChange() {
-    var prop = window.event.propertyName;
-    // svgns property exposed by svg.js not visible here
-    var svgns = 'http://www.w3.org/2000/svg';
-    
-    // called as the page is unloaded and we clean things up, the fakeNode
-    // will disappear under us as we remove its reference to prevent
-    // memory leaks; detect this and return if so
-    if (!this._fakeNode) {
-      return;
-    }
-    
-    if (this._fakeNode.nodeType != 1
-        || this._fakeNode.namespaceURI != svgns) { // only SVG Element nodes
-      return;
-    }
-    
-    // ignore propertychange events for various CSSStyleDeclaration interface
-    // methods and properties since those are fired from us setting them 
-    // inside of the _Style class
-    if (prop == 'style.length' 
-        || prop == 'style.item'
-        || prop == 'style.setProperty' 
-        || prop == 'style.getPropertyValue') {
-      return;
-    }
-
-    if (!this._fakeNode.style || this._fakeNode.style._ignoreStyleChanges) {
-      return;
-    }
-    
-    if (prop && /^style\./.test(prop)) {        
-      // extract the style name and value
-      var styleName = prop.match(/^style\.(.*)$/)[1];
-      var styleValue = this.style[styleName];
-      
-      // tell our fake node and Flash about style change
-      this._fakeNode.style._styleChange(styleName, styleValue);
-    }
-  }
   
   // there is a very strong correlation between the length of this script
   // and performance, so we minimize size as much as possible
