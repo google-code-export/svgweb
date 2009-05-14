@@ -57,55 +57,23 @@ The 'lightWeight' attribute below is important for two reasons:
     <method name="hasChildNodes" />
     <method name="hasAttributes" />
     <method name="isSupported" />
+    
+    <!-- Internal method we use to get the HTCs internal document object -->
+    <method name="_getHTCDocument" />
 
-    <attach event="oncontentready" onevent="contentReady()" />
     <attach event="onpropertychange" onevent="propertyChange()" />
     
     <defaults tabStop="false" contentEditable="false"
-                      canHaveHTML="true" viewInheritStyle="true"
-                      viewMasterTab="false" viewLinkContent="false"
-                      style="display: block" />
+              canHaveHTML="true" viewInheritStyle="true"
+              viewMasterTab="false" viewLinkContent="false"
+              style="display: block" />
 
 </component>
 
 <script type="text/javascript">
-  /** Called when the content is ready for some SVG tag in the HTML
-      page. This method is called for each individual SVG tag. */
-  function contentReady() {
-    /*if (this._fakeNode) {
-      console.log('contentReady, nodeName='+this._fakeNode.nodeName);
-    } else {
-      console.log('contentReady');
-    }*/
-    
-    // if we are dealing with an SVG OBJECT, we 'prime the pump' and create
-    // a fake tag named svg:__force__load (see _SVGObject._onFlashLoaded()
-    // for details). We can't look at our nodeName since that will recursively
-    // call our overridden method, so we set a flag when we created the
-    // svg:__force__load element
-    if (this._realNodeName == '__force__load') {
-      // indicate that we are now loaded
-      var msg = { type: 'event', 
-                  eventType: 'onHTCLoaded',
-                  htcNode: this.element };
-      this._handler.onMessage(msg);
-    } else if (this._fakeNode._attached && this._fakeNode.nodeName == 'svg'
-               && this._handler.type == 'script') {
-      // This checks to see if we are even really attached. contentReady() will 
-      // incorrectly get fired when we create and append the HTC node, even if 
-      // it isn't really appended to our actual SVG DOM. Also only fire for SVG 
-      // root nodes since we don't really care about this event for other node 
-      // types.
-      
-      // indicate that we are now loaded
-      var msg = { type: 'event', 
-                  eventType: 'onHTCLoaded',
-                  uniqueId: this.id, 
-                  elemDoc: element.document,
-                  htcNode: this.element };
-      this._handler.onMessage(msg);
-    }
-  }
+  /** Called from _SVGSVGElement._onHTCLoaded() in order to get an internal
+      document reference to insert our Flash. */
+  function _getHTCDocument() { return this.element.document; }
   
   /** Watch to see when anyone changes a 'style' property so we
       can mirror it in the Flash control. */
