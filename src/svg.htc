@@ -60,7 +60,6 @@ The 'lightWeight' attribute below is important for two reasons:
     
     <!-- Internal method we use to get the HTC internal objects -->
     <method name="_getHTCDocument" />
-    <method name="_setHTCDocument" />
     <method name="_getHTCDefaults" />
 
     <attach event="onpropertychange" onevent="propertyChange()" />
@@ -76,10 +75,6 @@ The 'lightWeight' attribute below is important for two reasons:
   /** Called from _SVGSVGElement._onHTCLoaded() in order to get an internal
       document reference to insert our Flash. */
   function _getHTCDocument() { return this.element.document; }
-  
-  /** Called from FlashInserter._insertFlashIE() to store our manually
-      created ViewLink document. */
-  function _setHTCDocument(doc) { this._doc = doc; }
   
   /** Called from FlashInserter._insertFlashIE() in order to insert our 
       Flash. */
@@ -125,39 +120,6 @@ The 'lightWeight' attribute below is important for two reasons:
       
       // tell our fake node and Flash about style change
       this._fakeNode.style._styleChange(styleName, styleValue);
-    }
-  }
-  
-  /** Gets the Flash DOM object. */
-  this._getFlashObj = function() {
-   var flashObj = this._doc.getElementById(this._handler.flashID);
-   
-   return flashObj; 
-  }
-  
-  /** Makes calling ExternalInterface functions on the Flash object
-      work. */
-  this._makeFlashCallable = function(flashObj) {
-    // If we use the Behavior ViewLink trick to 'hide' the Flash object
-    // from the external page's DOM, then Flash's ExternalInterface
-    // doesn't work correctly. That's ok, we can fix this with some
-    // tricks from Dojo Flash. More details on these
-    // hidden Flash methods here:
-    // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
-    flashObj.sendToFlash = getFlashFunction('sendToFlash');
-  }
-  
-  /** A function that makes it possible to call Flash functions
-      exposed through ExternalInterface. We need to do some magic
-      to call Flash functions even though we are embedded inside
-      of a Microsoft Behavior. This function encapsulates this magic.
-      This function actually returns a function which is then suitable
-      for calling. */
-  function getFlashFunction(method) {
-    return function() {
-      return eval(this.CallFunction(
-        "<invoke name=\"" + method + "\" returntype=\"javascript\">" 
-        + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
     }
   }
   

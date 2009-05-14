@@ -6326,9 +6326,11 @@ extend(FlashInserter, {
       html.appendChild(body);
       var defaults = htcNode._getHTCDefaults();
       defaults.viewLink = html.document; // ViewLink magic
-      htcNode._setHTCDocument(html.document); // store doc reference for later
+      // store doc reference for use later in _SVGSVGElement._onHTCLoaded
+      // so that we can get a reference to the actual created Flash object
+      this._shadowDoc = html.document;
 
-      // If we want to allow the background of the Flash movie to be transparent
+      // if we want to allow the background of the Flash movie to be transparent
       // and 'show through' HTML elements underneath, then we need to make our
       // inner shadow document also be transparent; the line below makes this
       // magic happen 
@@ -6351,11 +6353,19 @@ extend(FlashInserter, {
       // Note: as _soon_ as we make this call the Flash will load, even
       // before the rest of this method has finished. The Flash can
       // therefore finish loading before anything after the next statement
-      // has run, so be careful of timing bugs.
-      div.outerHTML = flash;
-      
-      // IE memory leaks
-      div = null;
+      // has run, so be careful of timing bugs. We do it on a slight
+      // timeout; if we don't, the Flash will incorrectly start executing
+      // immediately and the rest of our SVG on the page won't be rendered!
+      // If we do it on a timeout this execution happens away from our 
+      // primary program flow here.
+      (function(div, flash) {
+          window.setTimeout(function() {
+            div.outerHTML = flash;
+        
+            // IE memory leaks
+            div = null;
+          }, 1);
+      })(div, flash); // closure magic to prevent IE memory leaks
     }
   },
   
@@ -6597,8 +6607,8 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     // now wait for the HTC file to load for the SVG root element
   } else if (!isIE && this._handler.type == 'script') { 
     // non-IE browsers; immediately insert the Flash
-    var inserter = new FlashInserter('script', document, this._nodeXML,
-                                      this._scriptNode, this._handler);
+    this._inserter = new FlashInserter('script', document, this._nodeXML,
+                                       this._scriptNode, this._handler);
   }
 }  
 
@@ -6631,9 +6641,9 @@ extend(_SVGSVGElement, {
     var elemDoc = this._htcNode._getHTCDocument();
     
     // now insert our Flash
-    var inserter = new FlashInserter('script', elemDoc, this._nodeXML,
-                                      this._scriptNode, this._handler,
-                                      this._htcNode);
+    this._inserter = new FlashInserter('script', elemDoc, this._nodeXML,
+                                       this._scriptNode, this._handler,
+                                       this._htcNode);
                            
     // pay attention to style changes now in the HTC
     this.style._ignoreStyleChanges = false;
@@ -6650,8 +6660,17 @@ extend(_SVGSVGElement, {
     
     // store a reference to the Flash object so we can send it messages
     if (isIE) {
-      this._handler.flash = this._htcNode._getFlashObj();
-      this._htcNode._makeFlashCallable(this._handler.flash);
+      // use the shadow document we created earlier 
+      // in FlashInserter._insertFlashIE
+      this._handler.flash = 
+                this._inserter._shadowDoc.getElementById(this._handler.flashID);
+      
+      // IE memory leaks
+      this._inserter._shadowDoc = null;
+      this._inserter = null;
+      
+      // now make the Flash callable
+      this._makeFlashCallable(this._handler.flash);
     } else {
       this._handler.flash = document.getElementById(this._handler.flashID);
     }
@@ -6675,6 +6694,23 @@ extend(_SVGSVGElement, {
     
     var elementId = this._nodeXML.getAttribute('id');
     this._handler.fireOnLoad(elementId, 'script');
+  },
+  
+  /** For Internet Explorer; makes calling ExternalInterface functions on the 
+      Flash object work. */
+  _makeFlashCallable: function(flash) {
+    // if we use the Behavior ViewLink trick to 'hide' the Flash object
+    // from the external page's DOM (see FlashInserter._insertFlashIE for
+    // the SCRIPT embedType), then Flash's ExternalInterface
+    // doesn't work correctly. That's ok, we can fix this with some
+    // tricks from Dojo Flash. More details on these
+    // hidden Flash methods here:
+    // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
+    flash.sendToFlash = function() {
+      return eval(this.CallFunction(
+                    "<invoke name=\"sendToFlash\" returntype=\"javascript\">" 
+                    + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
+    };
   }
 });
 
