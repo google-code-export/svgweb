@@ -55,9 +55,9 @@ build/src/svg.htc: src/svg.htc
 	# we use sed to do the bulk of the work. We store the intermediate results into
 	# shell variables then paste them all together at the end to produce the final
 	# result.
-	(compressed_js=`sed -n -e '/script/, /\/script/ p' -e 's/script//' <src/svg.htc | grep -v 'script>' | grep -v '<script' | java -jar src/build-utils/yuicompressor-2.4.1.jar --type js --nomunge --preserve-semi 2>&1`; \
+	(compressed_js=`sed -n -e '/script/, /\/script/ p' -e 's/script//' <src/svg.htc | sed -e '/\/script/, /\/script/d' | grep -v 'script>' | grep -v '<script' | java -jar src/build-utils/yuicompressor-2.4.1.jar --type js --nomunge --preserve-semi 2>&1`; \
    top_of_htc=`sed -e '/script/,/<\/html>/ s/.*//' <src/svg.htc | sed 's/[ ]*<\!\-\-[^>]*>[ ]*//g;' | sed '/\<\!\-\-/,/\-\-\>/ s/.*//' | cat -s`; \
-   echo $$top_of_htc '<script type="text/javascript">' $$compressed_js '</script></body></html>' >build/src/svg.htc;)
+   echo $$top_of_htc '<script type="text/javascript">' $$compressed_js '</script><script type="text/vbscript"></script>' >build/src/svg.htc;)
 	@echo Final size: svg.htc \(`ls -lrt build/src/svg.htc | awk '{print $$5}'` bytes\)
 else
 build/src/svg.htc: src/svg.htc
