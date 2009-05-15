@@ -47,9 +47,9 @@ The 'lightWeight' attribute below is important for two reasons:
          to 'break' the abstraction if needed. -->
     <property name="fake" value="true"/>
              
+    <method name="getAttribute" />
     <method name="setAttribute" />
     <method name="setAttributeNS" />
-    <method name="getAttribute" />
     <method name="appendChild" />
     <method name="removeChild" />
     <method name="replaceChild" />
