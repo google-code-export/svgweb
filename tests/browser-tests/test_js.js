@@ -84,7 +84,7 @@ var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
 var cc_ns = "http://web.resource.org/cc/";
 
 var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect, 
-    path, gradient, group, child, whitespaceAreNodes, metadata,
+    path, gradient, group, group2, child, whitespaceAreNodes, metadata,
     cc, svg, svgText, textNode, text, desc, title, format, type,
     className, htmlTitle, head, circle, lengthBefore, matches, temp,
     gradient, stop, defs, parent, textNode2, group2, renderer,
@@ -133,7 +133,7 @@ function runTests(embedTypes) {
               || renderer == 'flash');
               
   console.log('Running suite of page-level tests');
-              
+  /*            
   if (_hasObjects) {
     testScope();
   }
@@ -151,13 +151,13 @@ function runTests(embedTypes) {
   testDOMHierarchyAccessors();   
   testAppendChild();
   testRemoveChild();
-  testReplaceChild();
+  testReplaceChild();*/
   testInsertBefore();
-  testHasChildNodes();       
+  /*testHasChildNodes();       
   testIsSupported();
   testStyle();
   testCreateSVGObject();
-  testBugFixes();
+  testBugFixes();*/
   
   // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
   
@@ -1181,12 +1181,7 @@ function testTextNodes() {
   
   svg = getDoc('mySVG').getElementById('mySVG');
   if (_hasObjects) {
-    // Firefox and Safari differ by one for native handler
-    if (isFF && renderer == 'native') {
-      svgText = svg.childNodes[4].childNodes[1];
-    } else { // Safari native and Flash handler for others
-      svgText = svg.childNodes[3].childNodes[1];
-    }
+    svgText = svg.childNodes[3].childNodes[1];
   } else {
     svgText = svg.childNodes[0].childNodes[1];
   }
@@ -2157,6 +2152,7 @@ function testAppendChild() {
   // next/previous sibling relationships work correctly on all the
   // nodes. Everything should be unattached.
   group = getDoc('svg11242').createElementNS(svgns, 'g');
+  group.id = 'testPathsGroup';
   paths = [];
   paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
   // note that we've used this ID before; should be ok and should still
@@ -2204,6 +2200,8 @@ function testAppendChild() {
              paths[0].previousSibling);
   assertEquals('group_path100.nextSibling == group_path200',
                paths[1], paths[0].nextSibling);
+  assertEquals('group_path100.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[0].parentNode.id);
   assertEquals('group_path100.parentNode == group', group,
                paths[0].parentNode);
   // nextSibling/previousSibling for group_path200
@@ -2211,6 +2209,8 @@ function testAppendChild() {
              paths[0], paths[1].previousSibling);
   assertEquals('group_path200.nextSibling == group_path300',
                paths[2], paths[1].nextSibling);
+  assertEquals('group_path200.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[1].parentNode.id);
   assertEquals('group_path200.parentNode == group', group,
                paths[1].parentNode);
   // nextSibling/previousSibling for group_path300
@@ -2218,6 +2218,8 @@ function testAppendChild() {
              paths[1], paths[2].previousSibling);
   assertEquals('group_path300.nextSibling == group_path400',
                paths[3], paths[2].nextSibling);
+  assertEquals('group_path300.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[2].parentNode.id);
   assertEquals('group_path300.parentNode == group', group,
                paths[2].parentNode);
   // nextSibling/previousSibling for group_path400
@@ -2225,6 +2227,8 @@ function testAppendChild() {
              paths[2], paths[3].previousSibling);
   assertEquals('group_path400.nextSibling == group_path500',
                paths[4], paths[3].nextSibling);
+  assertEquals('group_path400.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[3].parentNode.id);
   assertEquals('group_path400.parentNode == group', group,
                paths[3].parentNode);
   // nextSibling/previousSibling for group_path500
@@ -2232,6 +2236,8 @@ function testAppendChild() {
              paths[3], paths[4].previousSibling);
   assertNull('group_path500.nextSibling == null',
              paths[4].nextSibling);
+  assertEquals('group_path500.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[4].parentNode.id);
   assertEquals('group_path500.parentNode == group', group,
                paths[4].parentNode);
   // append the group node, then remove it, and make sure all the
@@ -2257,6 +2263,8 @@ function testAppendChild() {
              paths[0].previousSibling);
   assertEquals('group_path100.nextSibling == group_path200',
                paths[1], paths[0].nextSibling);
+  assertEquals('group_path100.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[0].parentNode.id);
   assertEquals('group_path100.parentNode == group', group,
                paths[0].parentNode);
   // nextSibling/previousSibling for group_path200
@@ -2264,6 +2272,8 @@ function testAppendChild() {
              paths[0], paths[1].previousSibling);
   assertEquals('group_path200.nextSibling == group_path300',
                paths[2], paths[1].nextSibling);
+  assertEquals('group_path200.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[1].parentNode.id);
   assertEquals('group_path200.parentNode == group', group,
                paths[1].parentNode);
   // nextSibling/previousSibling for group_path300
@@ -2271,6 +2281,8 @@ function testAppendChild() {
              paths[1], paths[2].previousSibling);
   assertEquals('group_path300.nextSibling == group_path400',
                paths[3], paths[2].nextSibling);
+  assertEquals('group_path300.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[2].parentNode.id);
   assertEquals('group_path300.parentNode == group', group,
                paths[2].parentNode);
   // nextSibling/previousSibling for group_path400
@@ -2278,6 +2290,8 @@ function testAppendChild() {
              paths[2], paths[3].previousSibling);
   assertEquals('group_path400.nextSibling == group_path500',
                paths[4], paths[3].nextSibling);
+  assertEquals('group_path400.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[3].parentNode.id);
   assertEquals('group_path400.parentNode == group', group,
                paths[3].parentNode);
   // nextSibling/previousSibling for group_path500
@@ -2285,8 +2299,74 @@ function testAppendChild() {
              paths[3], paths[4].previousSibling);
   assertNull('group_path500.nextSibling == null',
              paths[4].nextSibling);
+  assertEquals('group_path500.parentNode.id == testPathsGroup', 
+               'testPathsGroup', paths[4].parentNode.id);
   assertEquals('group_path500.parentNode == group', group,
                paths[4].parentNode);
+               
+  // append then remove a group of elements that are multiple levels deep
+  // to ensure that the cached parent node is correct
+  group = getDoc('svg11242').createElementNS(svgns, 'g');
+  group.id = 'outerBigGroup';
+  group2 = getDoc('svg11242').createElementNS(svgns, 'g');
+  group2.id = 'anotherBigGroup';
+  group.appendChild(group2); // have multiple nested groups
+  paths = [];
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
+  paths[0].id = 'anothergroup_path100';
+  group2.appendChild(paths[0]);
+  paths.push(getDoc('svg11242').createElementNS(svgns, 'path'));
+  paths[1].id = 'anothergroup_path200';
+  group2.appendChild(paths[1]);
+  // now check child nodes
+  assertNull('group.parentNode == null', group.parentNode);
+  group2 = group.childNodes[0];
+  assertEquals('group2.parentNode.id == outerBigGroup', 'outerBigGroup',
+               group2.parentNode.id);
+  assertEquals('group2.parentNode == group', group, group2.parentNode);
+  assertEquals('group2.firstChild.parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.firstChild.parentNode.id);
+  assertEquals('group2.firstChild.parentNode == group2', group2, 
+               group2.firstChild.parentNode);
+  assertEquals('group2.lastChild.parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.lastChild.parentNode.id);
+  assertEquals('group2.lastChild.parentNode == group2', group2, 
+               group2.lastChild.parentNode);
+  assertEquals('group2.childNodes[0].parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.childNodes[0].parentNode.id);
+  assertEquals('group2.childNodes[0].parentNode == group2', group2, 
+               group2.childNodes[0].parentNode);
+  assertEquals('group2.childNodes[1].parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.childNodes[1].parentNode.id);
+  assertEquals('group2.childNodes[1].parentNode == group2', group2, 
+               group2.childNodes[1].parentNode);
+  // append then remove and check child nodes to ensure cached child nodes
+  // are correct
+  svg = getRoot('svg11242');
+  svg.appendChild(group);
+  group = svg.removeChild(group);
+  // check parentNode info
+  assertNull('group.parentNode == null', group.parentNode);
+  group2 = group.childNodes[0];
+  assertEquals('group2.parentNode.id == outerBigGroup', 'outerBigGroup',
+               group2.parentNode.id);
+  assertEquals('group2.parentNode == group', group, group2.parentNode);
+  assertEquals('group2.firstChild.parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.firstChild.parentNode.id);
+  assertEquals('group2.firstChild.parentNode == group2', group2, 
+               group2.firstChild.parentNode);
+  assertEquals('group2.lastChild.parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.lastChild.parentNode.id);
+  assertEquals('group2.lastChild.parentNode == group2', group2, 
+               group2.lastChild.parentNode);
+  assertEquals('group2.childNodes[0].parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.childNodes[0].parentNode.id);
+  assertEquals('group2.childNodes[0].parentNode == group2', group2, 
+               group2.childNodes[0].parentNode);
+  assertEquals('group2.childNodes[1].parentNode.id == anotherBigGroup',
+               'anotherBigGroup', group2.childNodes[1].parentNode.id);
+  assertEquals('group2.childNodes[1].parentNode == group2', group2, 
+               group2.childNodes[1].parentNode);
 }
 
 function testRemoveChild() {
@@ -2441,7 +2521,7 @@ function testRemoveChild() {
   // remove a text node _after_ appending to DOM on an SVG Title
   // element using object reference
   textNode = getDoc('mySVG').createTextNode('text for an svg title element', 
-                                     true);
+                                            true);
   title = getDoc('mySVG').createElementNS(svgns, 'title');
   title.appendChild(textNode);
   group = getDoc('mySVG').createElementNS(svgns, 'g');
@@ -2598,7 +2678,7 @@ function testRemoveChild() {
   // remove a group and make sure all of it's elements disappear
   group = getDoc('mySVG').getElementById('removeMe');
   group.parentNode.removeChild(group);
-  console.log('1ST IMAGE: Look at the rendered image and make sure that you '
+  console.log('FIRST IMAGE: Look at the rendered image and make sure that you '
               + 'do not see the text "You should not see this" as well as not '
               + 'seeing a green rectangle next to it. If they are '
               + 'present than removeChild is not working correctly.');
@@ -2632,6 +2712,7 @@ function testRemoveChild() {
   // and its such an edge condition that I doubt it's needed
   assertNull('stop.parentNode == null', stop.parentNode);
   assertEquals('temp == stop', temp, stop);
+  return; // DELETE ME!!!
   
   // remove a node then test the firstChild, lastChild, nextSibling,
   // and previousSibling properties on the removed tree
@@ -3492,7 +3573,7 @@ function testReplaceChild() {
 function testInsertBefore() {
   // Test insertBefore
   console.log('Testing insertBefore...');
-  
+  /*
   // before anything is appended to the DOM, insert an SVG GROUP
   // before another SVG GROUP
   group = getDoc('svg11242').createElementNS(svgns, 'g');
@@ -3516,16 +3597,30 @@ function testInsertBefore() {
   assertEquals('parentNode.firstChild.getAttribute(fill) == red',
                'red', parentNode.firstChild.getAttribute('fill'));
   assertNull('parentNode.lastChild.getAttribute(fill) == null',
-             parentNode.lastChild.getAttribute('fill'));
+             parentNode.lastChild.getAttribute('fill'));*/
   
   // after things are appended to the DOM, insert an SVG GROUP before
   // another SVG GROUP
   group = getDoc('svg11242').getElementById('g3269');
   group2 = getDoc('svg11242').getElementById('layer1A');
+  assertEquals('g3269.parentNode.id == g4337', 'g4337', group.parentNode.id);
+  assertEquals('layer1A.parentNode.id == g4337', 'g4337', group2.parentNode.id);
+  console.log('--------------Calling removeChild');
   group2.parentNode.removeChild(group2);
+  console.log('removeChild called');
+  // DELETE ME!!!
+  var g11138 = group2.childNodes[1];
+  console.log('g11138='+g11138.id);
+  var rect7099 = g11138.childNodes[1];
+  console.log('rect7099='+rect7099.id);
+  console.log('rect7099.nextSibling='+rect7099.nextSibling.nodeType);
+  console.log('rect7099.nextSibling.nextSibling='+rect7099.nextSibling.nextSibling.id);
+  console.log('rect7099.nextSibling.nextSibling.nextSibling='+rect7099.nextSibling.nextSibling.nextSibling.nodeType);
+  return;
+  // END DELETE ME!!!
   assertNull('document.getElementById(layer1A) == null',
              getDoc('svg11242').getElementById('layer1A'));
-  assertEquals('group2.parentNode == null', group2.parentNode);
+  assertNull('group2.parentNode == null', group2.parentNode);
   temp = group.parentNode.insertBefore(group2, group);
   parentNode = getDoc('svg11242').getElementById('g4337');
   assertEquals('group2.parentNode == parentNode', parentNode,
@@ -3535,6 +3630,9 @@ function testInsertBefore() {
                group.previousSibling);
   assertExists('document.getElementById(layer1A) should exist',
                getDoc('svg11242').getElementById('layer1A'));
+               
+               // DELETE ME!!!
+               return;
   
   // after things are appended to the DOM, insert an SVG PATH before
   // an SVG CIRCLE
@@ -3891,7 +3989,7 @@ function testStyle() {
   circle.setAttribute('fill', 'blue');
   circle.setAttribute('stroke', 'red');
   circle.setAttribute('stroke-width', 5);
-  assertEqualsAny('1, circle.getAttribute(fill) == blue '
+  assertEqualsAny('circle.getAttribute(fill) == blue '
                   + 'or #0000FF or #0000ff',
                   ['blue', '#0000FF', '#0000ff'],
                   circle.getAttribute('fill'));
@@ -4132,7 +4230,7 @@ function testStyle() {
                   [5, '5px'],
                   line.style.strokeWidth);
   // make sure stroke color got inherited from the group
-  console.log('1ST IMAGE: There should be a green line on the screen');
+  console.log('FIRST IMAGE: There should be a green line on the screen');
   
   // path
   svg = getRoot('mySVG');
@@ -4181,7 +4279,7 @@ function testStyle() {
   assertEqualsAny('path.style.strokeOpacity == 1',
                   ['1'],
                   path.style.strokeOpacity);
-  console.log('1ST IMAGE: There should be a red path on the screen');
+  console.log('FIRST IMAGE: There should be a red path on the screen');
   
   // linearGradient
   gradient = getDoc('svg2').createElementNS(svgns, 'linearGradient');
@@ -4289,7 +4387,7 @@ function testStyle() {
   assertEqualsAny('third stop.style.stopOpacity == 1',
                   [1],
                   stop.style.stopOpacity);
-  console.log('2ND IMAGE: There should be a circle with a linear gradient in it '
+  console.log('SECOND IMAGE: There should be a circle with a linear gradient in it '
               + 'on the upper left');
        
   // image
@@ -4305,7 +4403,7 @@ function testStyle() {
   assertEqualsAny('svg11242.lastChild.style.opacity == 0.8',
                   [0.8],
                   svg.lastChild.style.opacity);
-  console.log('3RD IMAGE: There should be a scaled black and white image of '
+  console.log('THIRD IMAGE: There should be a scaled black and white image of '
               + 'balloons');
           
   // text
@@ -4332,7 +4430,7 @@ function testStyle() {
   assertEqualsAny('text.style.fontWeight == bold',
                   ['bold'],
                   text.style.fontWeight);
-  console.log('1ST IMAGE: There should be some bolded text that says '
+  console.log('FIRST IMAGE: There should be some bolded text that says '
               + '"Some bolded text!"');
           
   // desc
@@ -4524,7 +4622,7 @@ function testStyle() {
   assertNotExists('use.style.stroke should not exist',
                   use.style.stroke);
   assertNull('use.getAttribute(fill) == null', use.getAttribute('fill'));
-  console.log('2ND IMAGE: There should be a brown rectangle with 5px stroke '
+  console.log('SECOND IMAGE: There should be a brown rectangle with 5px stroke '
               + 'in the lower right corner of the image');
   
   // test display and visibility properties
@@ -4552,7 +4650,7 @@ function testStyle() {
   rect.style.strokeMiterlimit = 15;
   assertEquals('rect.style.visibility == hidden', 'hidden',
                rect.style.visibility);
-  console.log('1ST IMAGE: You should _not_ see a small light blue rectangle '
+  console.log('FIRST IMAGE: You should _not_ see a small light blue rectangle '
               + 'with curved corners in the upper right');
 
   // make some text invisible
@@ -4566,7 +4664,7 @@ function testStyle() {
   text.style.visibility = 'hidden';
   assertEquals('text.style.visibility == hidden', 'hidden',
                text.style.visibility);
-  console.log('1ST IMAGE: You should _not_ see the text '
+  console.log('FIRST IMAGE: You should _not_ see the text '
               + '"This text should be hidden"');
 
   // make some text invisible than visible
@@ -4601,7 +4699,7 @@ function testStyle() {
   svg.appendChild(group);
   // now make the whole group display: none
   svg.lastChild.style.display = 'none';
-  console.log('1ST IMAGE: You should _not_ see the text "Display: none text" '
+  console.log('FIRST IMAGE: You should _not_ see the text "Display: none text" '
               + 'with a small circle near it');
   // check values
   assertEquals('group.style.display == none', 'none',
@@ -4733,7 +4831,7 @@ function testStyle() {
                /background\-image:url\((?:FOOBAR.SVG)?\);fill\-opacity:1;fill:(?:purple|\#008000);opacity:0\.5;stroke\-width:(?:3|8)px;stroke:(?:green|\#800080);/i
                     .test(styleStr));
   }
-  console.log('1ST IMAGE: There should be a purple circle with a green outline');
+  console.log('FIRST IMAGE: There should be a purple circle with a green outline');
   
   // TODO: manually set style="" string on an element with a preexisting
   // style="" string

@@ -100,7 +100,7 @@ package org.svgweb.core
         protected function parse():void {
             for each (var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'element') {
-                    // This handle strange gradient bugs with negative transforms
+                    // This handles strange gradient bugs with negative transforms
                     // by separating the transform from every object
                     if (String(childXML.@['transform']) != "") {
                         var newChildXML:XML = childXML.copy();
@@ -142,8 +142,7 @@ package org.svgweb.core
 
         public function parseNode(childXML:XML):SVGNode {
             var childNode:SVGNode = null;
-            var nodeName:String = childXML.localName();
-                    
+            var nodeName:String = childXML.localName();                    
             nodeName = nodeName.toLowerCase();
 
             switch(nodeName) {
@@ -252,6 +251,23 @@ package org.svgweb.core
                     break;    
             }
             return childNode;
+        }
+        
+        /**
+         * Called when a node is created after page load with XML content
+         * added as a child. Forces a parse.
+         */
+        public function forceParse():void {
+            if (this._xml != null && !this._parsedChildren) {
+                this.parse();
+                for (var i:uint = 0; i < this.numChildren; i++) {
+                    var child = this.getChildAt(i);
+                    if (child is SVGNode) {
+                        SVGNode(child).forceParse();
+                    }
+                }
+                this._parsedChildren = true;
+            } 
         }
 
         /**
@@ -1457,7 +1473,6 @@ package org.svgweb.core
             super.removeChild(child);
             if (child is SVGNode) {
                 var node:SVGNode = child as SVGNode;
-                
                 // unregister the element
                 var id:String = node._xml.@id;
                 if (id != "") {
@@ -1474,7 +1489,6 @@ package org.svgweb.core
                         break;
                     }
                 }
-                
                 this.invalidateDisplay();
             }
             

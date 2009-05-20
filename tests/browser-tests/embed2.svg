@@ -185,7 +185,7 @@
       // SVG OBJECTs works
       
       // test the scope before calling top.svgweb.getHandlerType()
-      testScope();
+      /*testScope();
       
       renderer = top.svgweb.getHandlerType();
       
@@ -207,7 +207,7 @@
       testReplaceChild();
       testInsertBefore();
       testHasChildNodes();
-      testStyle();
+      testStyle();*/
       
       // print out what should be visible after all tests
       top.console.log('2ND IMAGE: There should be blue text saying '
