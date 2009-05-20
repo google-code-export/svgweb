@@ -1531,7 +1531,7 @@ function SVGWeb() {
   
   // prepare IE by inserting special markup into the page to have the HTC
   // be available
-  if (document.namespaces) { // IE
+  if (isIE) {
     this._prepareBehavior();
   }
   
@@ -2947,8 +2947,7 @@ extend(FlashHandler, {
   },
   
   _onLog: function(msg) {
-    // UNCOMMENT!!!
-    //console.log('FLASH: ' + msg.logString);
+    console.log('FLASH: ' + msg.logString);
   },
   
   _onEvent: function(msg) {
@@ -2974,10 +2973,9 @@ extend(FlashHandler, {
   
   /** Calls if the Flash encounters an error. */
   _onFlashError: function(msg) {
-    // UNCOMMENT!!!
-    /*this._onLog(msg);
+    this._onLog(msg);
     svgweb._fireFlashError('FLASH: ' + msg.logString);
-    throw new Error('FLASH: ' + msg.logString);*/
+    throw new Error('FLASH: ' + msg.logString);
   },
   
   /** Stores any SCRIPT that might be inside an SVG file embedded through
@@ -3490,7 +3488,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   // handle nodes that were created with createElementNS but are not yet
   // attached to the document yet
   if (nodeType == _Node.ELEMENT_NODE && !this._nodeXML && !this._handler) {
-    start('parseXML', 'createElementNS');
     // build up an empty XML node for this element
     var xml = '<?xml version="1.0"?>\n';
     if (namespaceURI == svgns && !prefix) {
@@ -3500,7 +3497,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     }
     
     this._nodeXML = parseXML(xml).documentElement;
-    end('parseXML', 'createElementNS');
   } 
   
   if (nodeType == _Node.ELEMENT_NODE) {
@@ -3551,9 +3547,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     this._createEmptyMethods();
   }
   
-  start('createChildNodes', 'createElementNS');
   this._childNodes = this._createChildNodes();
-  end('createChildNodes', 'createElementNS');
   
   // We keep an cachedChildNodes array around until we are truly
   // attached that we can depend on to serve out our childNodes; we can't
@@ -3564,7 +3558,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   this._cachedChildNodes = [];
   this._cachedParentNode = null;
   
-  start('generateID', 'createElementNS');
   // We track text nodes with an internal node ID.
   if (nodeType == _Node.TEXT_NODE) {
     this._textNodeID = svgweb._generateID('__svg__random__', '__text');
@@ -3572,7 +3565,6 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
       this._nodeXML._textNodeID = this._textNodeID;
     }
   }
-  end('generateID', 'createElementNS');
   
   // prepare the getter and setter magic for non-IE browsers
   if (!isIE) {
@@ -3587,9 +3579,7 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
     if (this.nodeName == 'svg' && this._handler.type == 'script') {
       // do nothing; _SVGSVGElement will do the HTC node handling in this case
     } else { // everything else
-      start('createHTC', 'createElementNS');
       this._createHTC();
-      end('createHTC', 'createElementNS');
     }
   }
 }
@@ -3604,6 +3594,7 @@ mixin(_Node, {
 
 extend(_Node, {
   insertBefore: function(newChild /* _Node */, refChild /* _Node */) {
+    console.log('insertBefore, newChild='+newChild.id+', refChild='+refChild.id);
     // TODO: Throw an exception if either child is a text node, either native
     // or a text _Node
     
@@ -3639,7 +3630,12 @@ extend(_Node, {
     // the newChild and all its descendants
     var importedNode = this._importNode(newChild, false);
     this._nodeXML.insertBefore(importedNode, refChild._nodeXML);
-    this._processAppendedChildren(newChild, this._attached, this._passThrough);
+    var parentID = this._nodeXML.getAttribute('id');
+    console.log('newChild='+newChild);
+    console.log('newChild.id='+newChild._getId());
+    console.log('parentID='+parentID);
+    this._processAppendedChildren(newChild, parentID, this._attached, 
+                                  this._passThrough);
     
     // add to our cached list of child nodes
     if (!this._attached) {
@@ -3675,7 +3671,6 @@ extend(_Node, {
       // native SVG OBJECT support
       position = this._findChild(refChild, true).position;
       
-      var parentID = this._nodeXML.getAttribute('id');
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'insertBefore',
                                   newChildId: newChildID,
@@ -3708,7 +3703,7 @@ extend(_Node, {
     var findResults = this._findChild(oldChild);
     if (findResults === null) {
       // TODO: Throw the correct DOM error instead
-      throw new Error('Invalid child passed to removeChild');
+      throw new Error('Invalid child passed to replaceChild');
     }
     var position = findResults.position;
     
@@ -3751,7 +3746,9 @@ extend(_Node, {
     }
     
     // now process the newChild's node
-    this._processAppendedChildren(newChild, this._attached, this._passThrough);
+    var parentID = this._getId();
+    this._processAppendedChildren(newChild, parentID, this._attached, 
+                                  this._passThrough);
     
     // recursively set the removed node to be unattached and to not
     // pass through changes to Flash anymore
@@ -3765,7 +3762,6 @@ extend(_Node, {
     
     // tell Flash about the removal of oldChild
     if (this._attached) {
-      var parentId = this._getId();
       if (oldChild.nodeType == _Node.ELEMENT_NODE) {
         // find the position again, but this time ignore text nodes; 
         // this is because on the Flash side we ignore white space but 
@@ -3776,13 +3772,13 @@ extend(_Node, {
         this._handler.sendToFlash({ type: 'invoke', 
                                     method: 'addChildAt',
                                     elementId: newChild._getId(),
-                                    parentId: parentId,
+                                    parentId: parentID,
                                     position: position });
       } else if (oldChild.nodeType == _Node.TEXT_NODE) {
          var flashStr = FlashHandler._encodeFlashData(newChild._nodeValue);
          this._handler.sendToFlash({ type: 'invoke', 
                                      method: 'setText',
-                                     parentId: parentId,
+                                     parentId: parentID,
                                      text: flashStr });
       }
     }
@@ -3933,7 +3929,9 @@ extend(_Node, {
     }
   
     // process the children (add IDs, add a handler, etc.)
-    this._processAppendedChildren(child, this._attached, this._passThrough);
+    var parentID = this._getId();
+    this._processAppendedChildren(child, parentID, this._attached, 
+                                  this._passThrough);
     
     // set our new correct cached next and previous siblings, which we keep
     // around to hand out in case we become unattached
@@ -4150,7 +4148,7 @@ extend(_Node, {
     if (siblingXML == null) {
       return null;
     }
-    
+
     if (this._attached) {
       return this._handler.document._getNode(siblingXML);
     } else {
@@ -4291,7 +4289,7 @@ extend(_Node, {
       // was called that we can depend on until we are attached to a
       // real, live DOM.
       for (var i = 0; i < this._cachedChildNodes.length; i++) {
-        results.push(this._cachedChildNodes[i]._htcNode);
+        results.push(this._cachedChildNodes[i]._getProxyNode());
       }
       
       return results;
@@ -4315,15 +4313,12 @@ extend(_Node, {
     // we store our HTC nodes into a hidden container located in the
     // HEAD of the document; either get it now or create one on demand
     if (!this._htcContainer) {
-      start('fetching container', 'createElementNS');
       this._htcContainer = document.getElementById('__htc_container');
-      end('fetching container', 'createElementNS');
       if (!this._htcContainer) {
         // strangely, onpropertychange does _not_ fire for HTC elements
         // that are in the HEAD of the document, which is where we used
         // to put the htc_container. Instead, we have to put it into the BODY
         // of the document and position it offscreen.
-        start('creating container', 'createElementNS');
         var body = document.getElementsByTagName('body')[0];
         var c = document.createElement('div');
         c.id = '__htc_container';
@@ -4333,7 +4328,6 @@ extend(_Node, {
         c.style.left = '-5000px';
         body.appendChild(c);
         this._htcContainer = c;
-        end('creating container', 'createElementNS');
       }
     }
     
@@ -4348,16 +4342,11 @@ extend(_Node, {
     if (nodeName == '#text') {
       nodeName = '__text'; // text nodes
     }
-    start('htcNode1', 'createElementNS');
+
     var htcNode = document.createElement('svg:' + this.nodeName);
-    end('htcNode1', 'createElementNS');
-    start('htcNode2', 'createElementNS');
     htcNode._fakeNode = this;
     htcNode._handler = this._handler;
-    end('htcNode2', 'createElementNS');
-    start('htcNode3', 'createElementNS');
     this._htcContainer.appendChild(htcNode);
-    end('htcNode3', 'createElementNS');
     this._htcNode = htcNode;
   },
   
@@ -4411,170 +4400,211 @@ extend(_Node, {
       recursively for the child and all of it's children.
       
       @param child _Node to work with.
+      @param parentID The ID of the parent of this child.
       @param attached Boolean on whether we are attached or not yet.
       @param passThrough Boolean on whether to pass values through
       to Flash or not. */
-  _processAppendedChildren: function(child, attached, passThrough) {
-    //console.log('processAppendedChildren, this.nodeName='+this.nodeName+', child.nodeName='+child.nodeName+', attached='+attached+', passThrough='+passThrough);
-    var childXML = child._nodeXML;
+  _processAppendedChildren: function(child, parentID, attached, passThrough) {
+    console.log('processAppendedChildren, this.nodeName='+this.nodeName+', child.nodeName='+child.nodeName+', attached='+attached+', passThrough='+passThrough);
+    start('processAppendedChildren', 'board');
     
-    // generate a random ID if none is present
-    var id;
-    if (childXML.nodeType == _Node.ELEMENT_NODE) {
-      id = childXML.getAttribute('id');
-      if (!id) {
-        id = svgweb._generateID('__svg__random__', null);
-        child._setId(id);
+    // we build up a list of all the nodes we visit, so at the very end
+    // we can iterate through all of them and clear their cached children
+    // if we are attached
+    var visitedNodes = [];
+    
+    // walk the DOM from the child using an iterative algorithm, which was 
+    // found to be faster than a recursive one
+    start('total walk', 'board');
+    var current = child;
+    var lastParent = this;
+    // DELETE ME!!!
+    var testCounter = 0;
+    
+    console.log('!!!Start of loop');
+    while (current && testCounter < 200) {
+      testCounter++; // DELETE ALL TESTCOUNTER STUFF!!!
+      console.log('!!!new loop');
+      if (attached) {
+        visitedNodes.push(current);
       }
-    }
-        
-    child._handler = this._handler;
-    
-    if (attached && childXML.nodeType == _Node.ELEMENT_NODE) {
-      // store a reference to our node so we can return it in the future
-      this._handler.document._nodeById['_' + id] = child;
+      
+      // visit this node
+      var currentXML = current._nodeXML;
+      console.log('current='+current);
+      console.log('current.nodeName='+current.nodeName);
+      // DELETE ME!!!
+      if (currentXML.nodeType == 1) {
+        console.log('current.id='+current._getId());
+      }
 
-      // tell Flash about our new element
-      
-      // FIXME: I'm sure we can do this much more efficiently then calling
-      // Flash over and over; instead, send over a giant String XML
-      // representation of the children and parse it on the other side in one
-      // shot
-      
-      // create the element
-      this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'createElementNS',
-                                  elementType: child.nodeName, 
-                                  elementId: id,
-                                  prefix: child.prefix,
-                                  namespaceURI: child.namespaceURI });
-                                  
-      // send over each of our styles for SVG nodes to Flash
-      if (child.namespaceURI == svgns) {
-        for (var i = 0; i < child.style.length; i++) {
-          var styleName = child.style.item(i);
-          var styleValue = child.style.getPropertyValue(styleName);
-          var stylePropName = child.style._fromCamelCase(styleName);
-          
-          var flashStr = FlashHandler._encodeFlashData(styleValue);
-          this._handler.sendToFlash({ type: 'invoke', 
-                                      method: 'setAttribute',
-                                      elementId: id,
-                                      applyToStyle: true,
-                                      attrName: stylePropName, 
-                                      attrValue: flashStr });
+      // generate a random ID if none is present
+      var id = null;
+      if (currentXML.nodeType == _Node.ELEMENT_NODE) {
+        id = currentXML.getAttribute('id');
+        if (!id) {
+          id = svgweb._generateID('__svg__random__', null);
+          current._setId(id);
         }
       }
-                                  
-      // send over each of our attributes
-      for (var i in child._attributes) {
-        if (!child._attributes.hasOwnProperty(i)) {
-          continue;
-        }
-        
-        var attrName = i.replace(/^_/, '');
-        // ignore ID and XML namespace declarations
-        if (attrName == 'id' || /^xmlns:?/.test(attrName)) {
-          continue;
-        }
-        
-        var attrValue = child._attributes[i];
-        
-        // get a namespace if a prefix is present
-        var ns = null;
-        if (attrName.indexOf(':') != -1) {
-          // get the namespace prefix
-          var prefix = attrName.split(':')[0];
-          
-          // transform the attribute name into a local name 
-          // (i.e. xlink:href becomes just href)
-          attrName = attrName.split(':')[1];
-          
-          // get the actual namespace URI
-          if (this._handler.document._namespaces['_' + prefix]) {
-            ns = this._handler.document._namespaces['_' + prefix];
-          } else {
-            console.log('Note: no namespace declared for ' + prefix
-                        + ' attribute ' + attrName + '; ignoring');
-            continue;
-          }
-        }
-        
-        var flashStr = FlashHandler._encodeFlashData(attrValue);
-        this._handler.sendToFlash({ type: 'invoke', 
-                                    method: 'setAttribute',
-                                    elementId: id,
-                                    attrNamespace: ns,
-                                    attrName: attrName, 
-                                    attrValue: flashStr });
-      }
-           
-      // now append the element      
-      this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'appendChild',
-                                  elementId: this._getId(),
-                                  childId: id });
-    } else if (attached && childXML.nodeType == _Node.TEXT_NODE) {
+
+      // set its handler
+      current._handler = this._handler;
+      
       // store a reference to our node so we can return it in the future
-      if (child._textNodeID) {
-        // IE doesn't support expandos on XML objects
-        this._handler.document._nodeById['_' + child._textNodeID] = child;
+      if (attached && currentXML.nodeType == _Node.ELEMENT_NODE) {
+        this._handler.document._nodeById['_' + id] = current;
+      } else if (attached && currentXML.nodeType == _Node.TEXT_NODE) {
+        if (current._textNodeID) {
+          // IE doesn't support expandos on XML objects
+          this._handler.document._nodeById['_' + current._textNodeID] = current;
+        }
       }
       
-      var parentID = childXML.parentNode.getAttribute('id');
-      
-      // tell Flash about our new text node
-      var flashStr = FlashHandler._encodeFlashData(childXML.nodeValue);
-      this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'setText',
-                                  parentId: parentID,
-                                  text: flashStr });
-    }
-    
-    // set the ownerDocument based on how we were embedded
-    if (attached) {
-      if (this._handler.type == 'script') {
-        child.ownerDocument = document;
-      } else if (this._handler.type == 'object') {
-        child.ownerDocument = this._handler.document;
+      // set the ownerDocument based on how we were embedded
+      if (attached) {
+        if (this._handler.type == 'script') {
+          current.ownerDocument = document;
+        } else if (this._handler.type == 'object') {
+          current.ownerDocument = this._handler.document;
+        }
       }
-    }
-    
-    // recursively process each child
-    var children = child._getChildNodes();
-    for (var i = 0; i < children.length; i++) {
-      var fakeNode = children[i];
-      if (isIE) {
-        fakeNode = fakeNode._fakeNode;
-      }
-      child._processAppendedChildren(fakeNode, attached, passThrough);
-    }
-    
-    child._attached = attached;
-    child._passThrough = passThrough;
-    child._cachedParentNode = this;
-    
-    // keep a pointer to any text nodes we made while unattached
-    // so we can return the same instance later
-    if (attached) {
-      for (var i = 0; i < child._cachedChildNodes.length; i++) {
-        var currentNode = child._cachedChildNodes[i];
-        if (currentNode.nodeType == _Node.TEXT_NODE) {
-          if (!isIE) { // no XML expandos on IE unfortunately
-            var textNodeID = currentNode._nodeXML._textNodeID;
-            this._handler.document._nodeById['_' + textNodeID] = currentNode;
-          } else {
-            // NOTE: FIXME: this won't work for XML mixed content
-            child._childNodes.push(currentNode._getProxyNode());
+            
+      // keep a pointer to any text nodes we made while unattached
+      // so we can return the same instance later
+      if (attached) {
+        for (var i = 0; i < current._cachedChildNodes.length; i++) {
+          var currentNode = current._cachedChildNodes[i];
+          if (currentNode.nodeType == _Node.TEXT_NODE) {
+            if (!isIE) { // no XML expandos on IE unfortunately
+              var textNodeID = currentNode._nodeXML._textNodeID;
+              this._handler.document._nodeById['_' + textNodeID] = currentNode;
+            } else {
+              // NOTE: FIXME: this won't work for XML mixed content
+              current._childNodes.push(currentNode._getProxyNode());
+            }
           }
         }
       }
+      
+      // set our cached parent
+      current._cachedParentNode = lastParent;
+    
+      // now continue visiting other nodes
+      var lastVisited = current;
+      var children = current._getChildNodes();
+      var next = (children && children.length > 0) ? children[0] : null;
+      if (next) {
+        current = next;
+        if (isIE) {
+          current = current._fakeNode;
+        }
+        console.log('For next iteration, using first child');
+        lastParent = lastVisited;
+      }
+      
+      while (!next && current) {
+        console.log('in the loop of doom');
+        if (current != child) {
+          next = current._getNextSibling();
+          if (next) {
+            current = next;
+            if (isIE) {
+              current = current._fakeNode;
+            }
+            console.log('For next iteration, using next sibling');
+            break;
+          }
+        }
+        if (current == child) {
+          current = null;
+        } else {
+          current = current._getParentNode();
+          if (current && isIE) {
+            current = current._fakeNode;
+          }
+
+          if (current && 
+                  (current.nodeType != 1 || 
+                   current.nodeName.toUpperCase() == 'SVG')) {
+            current = null;
+          } else {
+            lastParent = current._getParentNode();
+            if (isIE) {
+              lastParent = lastParent._fakeNode;
+            }
+          }
+          console.log('For next iteration, using parent node');
+        }
+      }
+      
+      // set our attached information
+      lastVisited._attached = attached;
+      lastVisited._passThrough = passThrough;
     }
     
-    // clear out the cachedChildNodes structure if we are now truly attached
-    if (attached) {
-      child._cachedChildNodes = createNodeList();
+    // if we are attached then clear all of the cached children
+    for (var i = 0; attached && i < visitedNodes.length; i++) {
+      visitedNodes[i]._cachedChildNodes = createNodeList();
     }
+    
+    end('total walk', 'board');
+
+    // now serialize this node and all its children into an XML string and
+    // send that over to Flash
+    if (attached) {
+      start('sending appendChild flash', 'board');
+      if (child.nodeType == _Node.ELEMENT_NODE) {
+        var xmlString = FlashHandler._encodeFlashData(this._toXML(child));
+        this._handler.sendToFlash({ type: 'invoke', 
+                                    method: 'appendChild',
+                                    parentId: parentID, 
+                                    childXML: xmlString });
+      } else if (child.nodeType == _Node.TEXT_NODE) {
+        var flashStr = FlashHandler._encodeFlashData(child._nodeValue);
+        this._handler.sendToFlash({ type: 'invoke', 
+                                    method: 'setText',
+                                    parentId: parentID,
+                                    text: flashStr });
+      }
+      end('sending appendChild flash', 'board');
+    }
+    
+    end('processAppendedChildren', 'board');
+  },
+  
+  /** Transforms the given node and all of its children into an XML string,
+      suitable for us to send over to Flash for adding to the document. 
+      
+      @param node The _Element or _Node to transform into XML. 
+      
+      @returns XML String suitable for sending to Flash. */
+  _toXML: function(node) {
+    var nodeXML = node._nodeXML;
+    var xml;
+    
+    if (typeof XMLSerializer != 'undefined') { // non-IE browsers
+      xml = (new XMLSerializer().serializeToString(nodeXML));
+    } else {
+      xml = nodeXML.xml;
+    }
+    
+    // add our namespace declarations; having repeats is ok if some are
+    // already there
+    var nsString = '';
+    for (var i = 0; i < this._handler.document._namespaces.length; i++) {
+      var uri = this._handler.document._namespaces[i];
+      var prefix = this._handler.document._namespaces['_' + uri];
+      if (prefix != 'xmlns') {
+        nsString += 'xmlns:' + prefix + '="' + uri + '" ';
+      } else {
+        nsString += 'xmlns' + '="' + uri + '" ';
+      }
+    }
+
+    xml = xml.replace(/<([^ ]+)/, '<$1 ' + nsString + ' ');
+    
+    return xml;
   },
   
   /** Imports the given child and all it's children's XML into our XML. 
@@ -4789,8 +4819,16 @@ extend(_Node, {
       as with insertBefore(). These cached data structures are used to
       return our values if we are unattached from the DOM. */
   _setupCachedSiblings: function() {
+    console.log('setupCachedSiblings');
+    console.log('this._cachedChildNodes.length='+this._cachedChildNodes.length);
     for (var i = 0; i < this._cachedChildNodes.length; i++) {
+      console.log('looping setupCachedSiblings');
       var currentChild = this._cachedChildNodes[i];
+      console.log('currentChild='+currentChild);
+      console.log('currentChild.nodeName='+currentChild.nodeName);
+      // DELETE ME!!!
+      if (currentChild.nodeType == 1)
+        console.log('currentChild.id='+currentChild.id);
     
       if (i == 0) {
         currentChild._cachedPreviousSibling = null;
@@ -4911,17 +4949,13 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
   }
   
   // superclass constructor
-  start('calling node constructor', 'createElementNS');
   _Node.apply(this, [nodeName, _Node.ELEMENT_NODE, prefix, namespaceURI, nodeXML,
                      handler, passThrough]);
-  end('calling node constructor', 'createElementNS');
                      
-  start('importAttributes', 'createElementNS');
   // setup our attributes
   this._attributes = {};
   this._attributes['_id'] = ''; // default id is empty string on FF and Safari
   this._importAttributes(this, this._nodeXML);
-  end('importAttributes', 'createElementNS');
   
   // define our accessors if we are not IE; IE does this by using the HTC
   // file rather than doing it here
@@ -4939,9 +4973,7 @@ function _Element(nodeName, prefix, namespaceURI, nodeXML, handler,
       // SVG SCRIPT tag, don't setup the style object for the SVG root now; we
       // do that later in _SVGSVGElement
     } else {
-      start('new style', 'createElementNS');
       this.style = new _Style(this);
-      end('new style', 'createElementNS');
     }
     
     // handle style changes for HTCs
@@ -5053,7 +5085,8 @@ extend(_Element, {
         origParent.appendChild(this._nodeXML);
       }
     } else { // we are an attrname other than style, or on a non-Safari browser
-      // update our XML; we store the full qname (i.e. xlink:href)
+      // update our XML; we store the full qname (i.e. xlink:href) since
+      // IE has no native setAttributeNS support
       this._nodeXML.setAttribute(qName, attrValue);
     }
 
@@ -6773,9 +6806,8 @@ extend(_Document, {
     if (prefix == 'xmlns' || !prefix) { // default SVG namespace
       prefix = null;
     }
-    start('element constructor', 'createElementNS');
+
     var node = new _Element(qname, prefix, ns);
-    end('element constructor', 'createElementNS');
     return node._getProxyNode();
   },
   
@@ -6894,6 +6926,7 @@ extend(_Document, {
       magic happen; if other browsers, returns the _Node or _Element
       itself. */
   _getNode: function(nodeXML) {
+    //console.log('getNode, nodeXML='+nodeXML);
     var node;
 
     if (nodeXML.nodeType == _Node.ELEMENT_NODE) {

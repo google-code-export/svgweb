@@ -328,7 +328,6 @@ package org.svgweb
             }
         }
 
-
         /**
          * JavaScript interface handlers
          **/
@@ -394,26 +393,20 @@ package org.svgweb
                 }
                 if (jsMsg.method == 'appendChild') {
                     // Get the parent node
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element=this.js_createdElements[jsMsg.elementId];
+                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
+                        parent=this.js_createdElements[jsMsg.parentId];
                     }
                     else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
+                        parent = this.svgRoot.getNode(jsMsg.parentId);
                     }
                     
-                    // Get the child node
-
-                    // Add the SVGNode
-                    var childNode;
-                    if (typeof(this.js_createdElements[jsMsg.childId]) != "undefined") {
-                        childNode=this.js_createdElements[jsMsg.childId];
-                    } else {
-                        childNode = this.svgRoot.getNode(jsMsg.childId);
-                    }
-                
-                    if (element && childNode) {
-                        element.appendChild(childNode);
-                    }
+                    // parse this element into an SVGNode and all its children
+                    // as well
+                    element = parent.parseNode(new XML(jsMsg.childXML));
+                    element.forceParse();
+                    
+                    // now actually append the element to our display
+                    parent.appendChild(element);
                 }
                 if (jsMsg.method == 'addChildAt') {
                     // Get the newChild
