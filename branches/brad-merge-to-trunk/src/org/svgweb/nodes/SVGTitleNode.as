@@ -38,27 +38,12 @@ package org.svgweb.nodes
         }
         
         override public function setText(newValue):String {
-            if (newValue !== null) {
-                this._xml.setChildren(newValue);
-                this._title = newValue;
-                return newValue;
-            } else {
-                this._xml.setChildren(null);
-                this._title = "";
-                return "";
-            }
+            this._title = newValue;
+            return newValue;
         }
         
         override public function hasText():Boolean {
             return true;
-        }
-
-        override protected function parse():void {
-            this._title = '';
-            
-            if (this._xml.text().length() > 0) {
-                this._title = this._xml.text().toString();
-            }
         }
         
         override protected function setAttributes():void {

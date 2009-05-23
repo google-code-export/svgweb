@@ -20,10 +20,10 @@
 
 package org.svgweb.nodes
 {
+    import org.svgweb.SVGViewerWeb;
     import org.svgweb.core.SVGNode;
     import org.svgweb.utils.SVGColors;
     import org.svgweb.utils.SVGUnits;
-
     
     import flash.text.TextField;
     import flash.text.TextFieldAutoSize;
@@ -61,14 +61,22 @@ package org.svgweb.nodes
         }
         
         /**
-         * Get any child text (not text inside child nodes)
          * If this node has any text create a TextField at this._textField
          * Call SVGNode.parse()
          **/
         override protected function parse():void {
-            if (this._xml.text() && this._xml.text().toString() != '') {
-                this._textField = new TextField();
-                this._textField.autoSize = TextFieldAutoSize.LEFT;
+            if (this.svgRoot.parent is SVGViewerWeb) {
+                if (this._xml.children().length() > 0 
+                    && this._xml.children()[0].text() 
+                    && this._xml.children()[0].text().toString() != '') {
+                    this._textField = new TextField();
+                    this._textField.autoSize = TextFieldAutoSize.LEFT;
+                }
+            } else {
+                if (this._xml.text() && this._xml.text().toString() != '') {
+                    this._textField = new TextField();
+                    this._textField.autoSize = TextFieldAutoSize.LEFT;
+                }
             }
             
             super.parse();

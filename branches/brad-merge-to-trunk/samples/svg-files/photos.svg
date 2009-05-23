@@ -7,13 +7,14 @@
  onload="loaded()">
 
   <script type="text/javascript"><![CDATA[
-      const SVG = "http://www.w3.org/2000/svg";
-      const XLINK = "http://www.w3.org/1999/xlink";
-      const hotspot = "rgba(0,200,200,0.3)";
+      var SVG = "http://www.w3.org/2000/svg";
+      var XLINK = "http://www.w3.org/1999/xlink";
+      var hotspot = "rgba(0,200,200,0.3)";
 
       var currentTransform = null;
 
       function loaded() {
+          top.console.log('loaded');
           // change onloadFunc to point to your real onload function that you
           // want called when the page is truly ready
           var onloadFunc = doload;
@@ -26,6 +27,7 @@
       }   
 
       function doload() {
+          top.console.log('doload');
           var images;
 
           // Load a few images; some extra stuff here to make
@@ -113,6 +115,7 @@
       // and the clickable hotspots used for rotating the image.
       var nextImageId = 0;
       function addImage(url, initOpacity) {
+          top.console.log('addImage');
           var imgw = 1000;
           var imgh = 700;
 
@@ -171,9 +174,7 @@
           */
 
           g.appendChild(g2);
-
           document.getElementById("canvas").appendChild(g);
-
           return g;
       }
 

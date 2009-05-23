@@ -37,6 +37,7 @@ package org.svgweb
     import org.svgweb.core.SVGViewer;
     import org.svgweb.nodes.SVGSVGNode;
     import org.svgweb.nodes.SVGGroupNode;
+    import org.svgweb.nodes.SVGDOMTextNode;
     
     import flash.display.Sprite;
     import flash.display.StageScaleMode;
@@ -62,9 +63,8 @@ package org.svgweb
     public class SVGViewerWeb extends SVGViewer
     {
         private var js_handler:String = '';
-        private var js_uniqueId:String = "";
-        private var js_createdElements:Object = {};
-        private var js_savedXML:String = "";
+        private var js_uniqueId:String = '';
+        private var js_guidLookup:Object = {};
         protected var svgIdParam:String = "";
         public var scaleModeParam:String = "showAll_svg";
         protected var scriptSentToJS:Boolean = false;
@@ -209,13 +209,7 @@ package org.svgweb
 
         protected function setSVGString(xmlString:String) {
             this.renderStartTime =  (new Date()).valueOf();
-            this.js_savedXML = xmlString;
             var dataXML:XML = new XML(SVGViewerWeb.expandEntities(xmlString));
-            // Make sure there is an id to identify the root node, in order to support
-            // javascript access to the documentElement.
-            if (dataXML.@id == undefined) {
-                dataXML.@id = "rand" + Math.random();
-            }
             while(this.numChildren) {
                 this.removeChildAt(0);
             }
@@ -310,6 +304,11 @@ package org.svgweb
         }
 
         override public function handleScript(script:String):void {
+            // TODO: FIXME: Scripts should be batched up in the order they
+            // are in the document and sent over all at once. This will become
+            // more important as we support external scripts which load
+            // asynchronously; we don't want these to arrive at different times
+            // and get executed in the wrong order.
             if (!this.scriptSentToJS) {
                 // strip off starting SCRIPT cruft; example: <script><![CDATA
                 script = script.replace(/<[A-Za-z\-_0-9]*:?script[^>]*>(<\!\[CDATA\[)?/, '');
@@ -344,32 +343,12 @@ package org.svgweb
 
         public function js_handleInvoke(jsMsg:Object):Object {
             //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
-            var element:SVGNode, parent:SVGNode;
-            var textNode:XMLNode;
+            var element, parent;
             
             try {
-                if (jsMsg.method == 'createElementNS') {       
-                    var xmlString:String = '<' + jsMsg.elementType 
-                                               + ' id="' + jsMsg.elementId + '"';
-                    if (jsMsg.prefix) {
-                        xmlString += ' xmlns:' + jsMsg.prefix + '="' 
-                                                + jsMsg.namespaceURI + '"';
-                    } else {
-                        xmlString += ' xmlns="http://www.w3.org/2000/svg"'
-                                   + ' xmlns:xlink="http://www.w3.org/1999/xlink"';
-                    }
-                    xmlString +=  ' />';
-                    var childXML:XML = new XML(xmlString);
-                    this.js_createdElements[jsMsg.elementId] = this.svgRoot.parseNode(childXML);
-                }
                 if (jsMsg.method == 'addEventListener') {
                     // Get the parent node
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element=this.js_createdElements[jsMsg.elementId];
-                    }
-                    else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
-                    }
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
                     if (element) {
                         if (jsMsg.eventType == 'mouseup') {
                             element.addEventListener(MouseEvent.MOUSE_UP, handleAction);
@@ -388,20 +367,21 @@ package org.svgweb
                         }
                     }
                     else {
-                        this.debug("AddEvent:not found: " + jsMsg.elementId);
+                        this.error("addEventListener: GUID not found: " 
+                                   + jsMsg.elementGUID);
                     }
                 }
                 if (jsMsg.method == 'appendChild') {
                     // Get the parent node
-                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
-                        parent=this.js_createdElements[jsMsg.parentId];
-                    }
-                    else {
-                        parent = this.svgRoot.getNode(jsMsg.parentId);
+                    parent = this.svgRoot.getNodeByGUID(jsMsg.parentGUID);
+                    
+                    if (!parent) {
+                        this.error('appendChild: parent with GUID '
+                                   + jsMsg.parentGUID + ' not found');
                     }
                     
-                    // parse this element into an SVGNode and all its children
-                    // as well
+                    // parse the newly appended element into an SVGNode and 
+                    // all of its children as well
                     element = parent.parseNode(new XML(jsMsg.childXML));
                     element.forceParse();
                     
@@ -409,185 +389,136 @@ package org.svgweb
                     parent.appendChild(element);
                 }
                 if (jsMsg.method == 'addChildAt') {
-                    // Get the newChild
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element = this.js_createdElements[jsMsg.elementId];
-                    }
-                    else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
-                    }
-                    
-                    if (!element) {
-                        throw new Error('Programming error: ' 
-                                        + jsMsg.elementId + ' not found');
-                    }
-                    
                     // Get the parent
-                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
-                        parent = this.js_createdElements[jsMsg.parentId];
-                    }
-                    else {
-                        parent = this.svgRoot.getNode(jsMsg.parentId);
+                    parent = this.svgRoot.getNodeByGUID(jsMsg.parentGUID);
+                    
+                    if (!parent) {
+                        this.error('addChildAt: parent with GUID '
+                                   + jsMsg.parentGUID + ' not found');
                     }
                     
-                    // If both children are elements, append things now
+                    // parse the newly appended element into an SVGNode and 
+                    // all of its children as well
+                    element = parent.parseNode(new XML(jsMsg.childXML));
+                    element.forceParse();
+                    
+                    // append things now
                     parent.addChildAt(element, jsMsg.position);
                     parent.invalidateDisplay();
                 }
-                if (jsMsg.method == 'getRoot') {
-                    if (this.svgRoot.xml.@id) {
-                        jsMsg.elementId = this.svgRoot.xml.@id.toString();
-                    }
-                    else {
-                        this.debug("SVGViewer: root id not found");
-                    }
-                }
-                if (jsMsg.method == 'getXML') {
-                    jsMsg.xmlString = this.js_savedXML;
-                }
                 if (jsMsg.method == 'getAttribute') {
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element=this.js_createdElements[jsMsg.elementId];
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
+
+                    if (!element) {
+                        this.error('getAttribute: GUID not found: '
+                                   + jsMsg.elementGUID);
                     }
-                    else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
-                    }
-                    if (element) {
-                        if (  (typeof(element.xml.@[jsMsg.attrName]) != 'undefined')
-                           && (element.xml.@[jsMsg.attrName] != null) ) {
-                            if (jsMsg.getFromStyle) {
-                                // Firefox and Safari both return '' for
-                                // default inherited styles (i.e. if I check
-                                // someNode.style.display, I get an empty string
-                                // rather than 'inline'), so only get 
-                                // explicitly set styles on this node
-                                jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
-                                if (jsMsg.attrValue == null) {
-                                    jsMsg.attrValue = '';
-                                }
-                            }
-                            else {
-                                jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false);
+                    
+                    var attrValue = element.xml.@[jsMsg.attrName]; 
+                    if (typeof(attrValue) != 'undefined' && attrValue != null) {
+                        if (jsMsg.getFromStyle) {
+                            // Firefox and Safari both return '' for
+                            // default inherited styles (i.e. if I check
+                            // someNode.style.display, I get an empty string
+                            // rather than 'inline'), so only get 
+                            // explicitly set styles on this node
+                            jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
+                            if (jsMsg.attrValue == null) {
+                                jsMsg.attrValue = '';
                             }
                         }
                         else {
-                            this.error("error:getAttribute: id not found: " + jsMsg.elementId);
+                            jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false);
                         }
                     }
                     else {
-                        this.error("error:getAttribute: id not found: " + jsMsg.elementId);
+                        this.error("error:getAttribute: attrName not found: " + jsMsg.attrName);
                     }
                 }
                 if (jsMsg.method == 'setAttribute') {
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element=this.js_createdElements[jsMsg.elementId];
-                        
-                        if (jsMsg.attrName == 'id') {
-                            this.js_createdElements[element.id] = undefined;
-                            this.svgRoot.unregisterNode(element);
-                        }
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
+                    
+                    if (!element) {
+                        this.error('setAttribute: GUID not found: '
+                                   + jsMsg.elementGUID);
                     }
-                    else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    
+                    if (jsMsg.attrName == 'id') {
+                        this.svgRoot.unregisterNode(element);
                     }
-                    if (element) {
-                        if (jsMsg.applyToStyle) {
-                            element.setStyle(jsMsg.attrName, jsMsg.attrValue);
-                            element.invalidateDisplay();
-                        }
-                        else if (jsMsg.attrNamespace != null) {
-                            // namespaced attribute, such as xlink:href
-                            var ns = new Namespace(jsMsg.attrNamespace);
-                            element.xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
-                        } else {
-                            element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
-                        }
+ 
+                    if (jsMsg.applyToStyle) {
+                        element.setStyle(jsMsg.attrName, jsMsg.attrValue);
+                        element.invalidateDisplay();
+                    }
+                    else if (jsMsg.attrNamespace != null) {
+                        // namespaced attribute, such as xlink:href
+                        var ns = new Namespace(jsMsg.attrNamespace);
+                        element.xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
+                    } else {
+                        element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
+                    }
 
-                        if (jsMsg.attrName == 'id') {
-                            this.js_createdElements[jsMsg.attrValue] = element;
-                            this.svgRoot.registerNode(element);
-                        }
-                    }
-                    else {
-                        this.debug("error:setAttribute: id not found: " + jsMsg.elementId);
+                    if (jsMsg.attrName == 'id') {
+                        this.svgRoot.registerNode(element);
                     }
                 }
                 if (jsMsg.method == 'removeChild') {
                     // Removes the element
-                
-                    // Get the element to remove if we are dealing with an element
-                    // or the parent if we are dealing with a text node
-                    if (typeof(this.js_createdElements[jsMsg.elementId]) != "undefined") {
-                        element = this.js_createdElements[jsMsg.elementId];
-                    }
-                    else {
-                        element = this.svgRoot.getNode(jsMsg.elementId);
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
+                    
+                    if (!element) {
+                        this.error('removeChild: GUID not found: '
+                                   + jsMsg.elementGUID);
                     }
                     
-                    if (jsMsg.nodeType == 1) { // ELEMENT
-                        element.parent.removeChild(element);
-                    } else if (jsMsg.nodeType == 3) { // TEXT
-                        if (element.hasText()) {
-                            element.setText(null);
-                        }
-                    }
+                    element.parent.removeChild(element);
                 }
                 if (jsMsg.method == 'insertBefore') {
                     // Inserts newChild before refChild
-                
-                    // note that newChild can not be a DOM TEXT_NODE at this time,
-                    // as we don't support XML Mixed Content yet as SVG doesn't
-                    // use it (i.e. content of the form 
+                    
+                    // TODO: Test this to see if its working correctly with
+                    // XML Mixed Content (i.e. content of the form 
                     // TEXT<element>foo</element>TEXT)
                 
-                    // Get the newChild, refChild, and the parent
-                    var newChild, refChild, parent;
+                    // get the refChild and the parent
+                    var refChild, parent;
                 
-                    if (typeof(this.js_createdElements[jsMsg.newChildId]) != "undefined") {
-                        newChild = this.js_createdElements[jsMsg.newChildId];
-                    }
-                    else {
-                        newChild = this.svgRoot.getNode(jsMsg.newChildId);
-                    }
-                    if (!newChild) {
-                        this.error("error:insertBefore: newChildId not found: " + jsMsg.newChildId);
-                    }
-                
-                    if (typeof(this.js_createdElements[jsMsg.refChildId]) != "undefined") {
-                        refChild = this.js_createdElements[jsMsg.refChildId];
-                    }
-                    else {
-                        refChild = this.svgRoot.getNode(jsMsg.refChildId);
-                    }
+                    refChild = this.svgRoot.getNodeByGUID(jsMsg.refChildGUID);
                     if (!refChild) {
-                        this.error("error:insertBefore: refChildId not found: " + jsMsg.refChildId);
+                        this.error("error:insertBefore: refChildGUID not found: " + jsMsg.refChildGUID);
                     }
-
-                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
-                        parent = this.js_createdElements[jsMsg.parentId];
-                    }
-                    else {
-                        parent = this.svgRoot.getNode(jsMsg.parentId);
-                    }
+                    
+                    parent = this.svgRoot.getNodeByGUID(jsMsg.parentGUID);
                     if (!parent) {
-                        this.error("error:insertBefore: parentId not found: " + jsMsg.parentId);
+                        this.error("error:insertBefore: parentGUID not found: " + jsMsg.parentGUID);
                     }
+                    
+                    // parse the newly appended element into an SVGNode and 
+                    // all of its children as well
+                    var newChild = parent.parseNode(new XML(jsMsg.childXML));
+                    element.forceParse();
 
+                    // now insert the element
                     parent.insertBefore(jsMsg.position, newChild, refChild);
                     parent.invalidateDisplay();
                 }
-                if (jsMsg.method == 'setText') {                    
-                    if (typeof(this.js_createdElements[jsMsg.parentId]) != "undefined") {
-                        parent = this.js_createdElements[jsMsg.parentId];
-                    }
-                    else {
-                        parent = this.svgRoot.getNode(jsMsg.parentId);
-                    }
-                    
+                if (jsMsg.method == 'setText') {
+                    // Get the parent
+                    parent = this.svgRoot.getNodeByGUID(jsMsg.parentGUID);
                     if (!parent) {
-                        this.error("error:setText: parent with ID not found: " + jsMsg.parentId);
+                        this.error("error:setText: parent with GUID not found: " + jsMsg.parentGUID);
                     }
                     
+                    // Get the fake text node element
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
+                    if (!element) {
+                        this.error("error:setText: element with GUID not found: " + jsMsg.elementGUID);
+                    }
+                    var textNode = element as SVGDOMTextNode;
+                    textNode.nodeValue = jsMsg.text;
+                    
+                    // Tell its parent that its text value has changed
                     if (parent.hasText()) {
                         parent.setText(jsMsg.text);
                     }

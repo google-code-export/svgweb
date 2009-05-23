@@ -133,7 +133,7 @@ function runTests(embedTypes) {
               || renderer == 'flash');
               
   console.log('Running suite of page-level tests');
-  /*            
+              
   if (_hasObjects) {
     testScope();
   }
@@ -151,13 +151,13 @@ function runTests(embedTypes) {
   testDOMHierarchyAccessors();   
   testAppendChild();
   testRemoveChild();
-  testReplaceChild();*/
+  testReplaceChild();
   testInsertBefore();
-  /*testHasChildNodes();       
+  testHasChildNodes();       
   testIsSupported();
   testStyle();
   testCreateSVGObject();
-  testBugFixes();*/
+  testBugFixes();
   
   // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
   
@@ -3568,12 +3568,16 @@ function testReplaceChild() {
              paths[7].nextSibling);
   assertEquals('group_path500_replacer.parentNode == group', group,
                paths[7].parentNode);
+               
+  // TODO!!! Have a test where we do a replaceChild on a visual element with
+  // another visual element to make sure the Flash side shows the correct
+  // updates
 }
 
 function testInsertBefore() {
   // Test insertBefore
   console.log('Testing insertBefore...');
-  /*
+  
   // before anything is appended to the DOM, insert an SVG GROUP
   // before another SVG GROUP
   group = getDoc('svg11242').createElementNS(svgns, 'g');
@@ -3597,7 +3601,7 @@ function testInsertBefore() {
   assertEquals('parentNode.firstChild.getAttribute(fill) == red',
                'red', parentNode.firstChild.getAttribute('fill'));
   assertNull('parentNode.lastChild.getAttribute(fill) == null',
-             parentNode.lastChild.getAttribute('fill'));*/
+             parentNode.lastChild.getAttribute('fill'));
   
   // after things are appended to the DOM, insert an SVG GROUP before
   // another SVG GROUP
@@ -3605,19 +3609,7 @@ function testInsertBefore() {
   group2 = getDoc('svg11242').getElementById('layer1A');
   assertEquals('g3269.parentNode.id == g4337', 'g4337', group.parentNode.id);
   assertEquals('layer1A.parentNode.id == g4337', 'g4337', group2.parentNode.id);
-  console.log('--------------Calling removeChild');
   group2.parentNode.removeChild(group2);
-  console.log('removeChild called');
-  // DELETE ME!!!
-  var g11138 = group2.childNodes[1];
-  console.log('g11138='+g11138.id);
-  var rect7099 = g11138.childNodes[1];
-  console.log('rect7099='+rect7099.id);
-  console.log('rect7099.nextSibling='+rect7099.nextSibling.nodeType);
-  console.log('rect7099.nextSibling.nextSibling='+rect7099.nextSibling.nextSibling.id);
-  console.log('rect7099.nextSibling.nextSibling.nextSibling='+rect7099.nextSibling.nextSibling.nextSibling.nodeType);
-  return;
-  // END DELETE ME!!!
   assertNull('document.getElementById(layer1A) == null',
              getDoc('svg11242').getElementById('layer1A'));
   assertNull('group2.parentNode == null', group2.parentNode);
@@ -3630,9 +3622,6 @@ function testInsertBefore() {
                group.previousSibling);
   assertExists('document.getElementById(layer1A) should exist',
                getDoc('svg11242').getElementById('layer1A'));
-               
-               // DELETE ME!!!
-               return;
   
   // after things are appended to the DOM, insert an SVG PATH before
   // an SVG CIRCLE
@@ -4964,6 +4953,9 @@ function testCreateSVGObject() {
   // both by setting their parents .innerHTML to blank as well as through
   // removeChild. Test removing then reattaching them to the page, as well
   // as testing changing their @data property while unattached.
+  
+  // TODO: have more tests with CDATA content, including setting it, getting
+  // it, working with append/remove DOM operations, etc.
 }
 
 function testBugFixes() {
@@ -4994,6 +4986,16 @@ function testBugFixes() {
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
   assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
+  
+  // make sure that we don't end up with any _undefined names in the
+  // _nodeById or GUID lookup tables
+  temp = svgweb._guidLookup['_undefined'];
+  assertUndefined('_guidLookup["_undefined"] should be undefined');
+  for (var i = 0; i < svgweb.handlers.length; i++) {
+    temp = svgweb.handlers[i]._nodeById['_undefined'];
+    assertUndefined('svgweb.handlers[' + i + ']._nodeById["_undefined"] '
+                    + 'should be undefined');
+  }
 }
 
 function testUnload() {

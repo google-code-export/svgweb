@@ -30,8 +30,11 @@ The 'lightWeight' attribute below is important for two reasons:
     <property name="ownerDocument" get="_getOwnerDocument" />
 
     <!-- Non-standard defacto properties -->
+    <!-- TODO: Implement -->
+    <!--
     <property name="innerHTML" 
                      get="_getInnerHTML" put="_setInnerHTML" />
+    -->
                      
     <!-- _Element properties -->
     <property name="id" get="_getId" put="_setId" />
@@ -57,6 +60,8 @@ The 'lightWeight' attribute below is important for two reasons:
     <method name="hasChildNodes" />
     <method name="hasAttributes" />
     <method name="isSupported" />
+    <method name="addEventListener" />
+    <method name="removeEventListener" />
     
     <!-- Internal method we use to get the HTC internal objects -->
     <method name="_getHTCDocument" />
@@ -91,6 +96,8 @@ The 'lightWeight' attribute below is important for two reasons:
   function hasChildNodes() { return this._fakeNode.hasChildNodes(); }
   function hasAttributes() { return this._fakeNode.hasAttributes(); }
   function isSupported(f, v) { return this._fakeNode.isSupported(f, v); }
+  function addEventListener(t, l, u) { return this._fakeNode.addEventListener(t, l, u); }
+  function removeEventListener(t, l, u) { return this._fakeNode.removeEventListener(t, l, u); }
 
   function _getNodeName() { return this._fakeNode.nodeName; }
   function _getNodeType() { return this._fakeNode.nodeType; }
@@ -119,8 +126,11 @@ The 'lightWeight' attribute below is important for two reasons:
   function _getId() { return this._fakeNode._getId(); }
   function _setId(v) { return this._fakeNode._setId(v); }
   
+  // TODO: Implement
+  /*
   function _getInnerHTML() { return this._fakeNode._getInnerHTML(); }
   function _setInnerHTML(v) { return this._fakeNode._setInnerHTML(v); }
+  */
   
   // SVGSVGElement and SVGUseElement only properties
   

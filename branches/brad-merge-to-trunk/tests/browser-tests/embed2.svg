@@ -457,6 +457,15 @@
       tmp = '!@#$%^&*()\u000B~`-\u0027=_+\n\r\f\t{}[]\\:";\u0009\'<>?,	\u0022./\"';
       // no assertion needed; this script will get passed around in general over
       // the boundry for the Flash Handler
+      
+      // make sure that we don't end up with incorrect <__text> sections
+      // inside CDATA blocks
+      tmp = '<foo>This is some text!!</foo> if (foo > bar && bar < foo)';
+      top.assertEquals('Our tmp string with markup should not have <__text>'
+                       'blocks',
+                       '\u003Cfoo\u003EThis is some text!!\u003C/foo\u003E if '
+                       + '(foo \u003E bar && bar \u003C foo)',
+                       tmp);
     }
   
     function testHostObjects() {
