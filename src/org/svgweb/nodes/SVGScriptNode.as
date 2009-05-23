@@ -19,7 +19,9 @@
 
 
 package org.svgweb.nodes {
+    import org.svgweb.SVGViewerWeb;
     import org.svgweb.core.SVGNode;
+    
     import flash.events.Event;
 
     public class SVGScriptNode extends SVGNode {
@@ -35,7 +37,14 @@ package org.svgweb.nodes {
             //This way drawNode is only called once
             //this._invalidDisplay = false;
 
-            this.svgRoot.handleScript(this._xml.toXMLString());
+            var content;
+            if (this.svgRoot.parent is SVGViewerWeb) {
+                content = this._xml.children()[0].text().toString();
+            } else {
+                content = this._xml.toXMLString();
+            }
+            
+            this.svgRoot.handleScript(content);
 
             this.visible = false;
 

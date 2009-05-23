@@ -20,6 +20,7 @@
 
 package org.svgweb.core
 {
+    import org.svgweb.SVGViewerWeb;
     import org.svgweb.core.SVGViewer;
     import org.svgweb.utils.SVGColors;
     import org.svgweb.utils.SVGUnits;
@@ -100,6 +101,17 @@ package org.svgweb.core
         protected function parse():void {
             for each (var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'element') {
+                    // If we support text values then set them
+                    if (this.hasText()) {
+                        if (this.svgRoot.parent is SVGViewerWeb
+                              && this._xml.children().length() > 0 
+                              && this._xml.children()[0].text()) {
+                            this.setText(this._xml.children()[0].text().toString());
+                        } else {
+                            this.setText(this._xml.text().toString());
+                        }
+                    }
+                    
                     // This handles strange gradient bugs with negative transforms
                     // by separating the transform from every object
                     if (String(childXML.@['transform']) != "") {
@@ -241,6 +253,11 @@ package org.svgweb.core
                     break; 
                 case "use":
                     childNode = new SVGUseNode(this.svgRoot, childXML);
+                    break;
+                case "__text":
+                    /** These are fake text nodes necessary for integration
+                        with the browser through JavaScript. */
+                    childNode = new SVGDOMTextNode(this.svgRoot, childXML);
                     break;
                 case "null":
                     break;
@@ -1473,18 +1490,19 @@ package org.svgweb.core
             super.removeChild(child);
             if (child is SVGNode) {
                 var node:SVGNode = child as SVGNode;
+                
                 // unregister the element
-                var id:String = node._xml.@id;
-                if (id != "") {
-                    this.svgRoot.unregisterNode(node);
-                } else {
-                    this.err('Programming error: ID required for removeChild');
-                    throw new Error('Programming error: ID required for removeChild');
+                this.svgRoot.unregisterNode(node);
+                
+                // if we are dealing with a fake text node, change our
+                // text node contents
+                if (node is SVGDOMTextNode && this.hasText()) {
+                    this.setText(null);
                 }
                 
                 // remove from our XML children
                 for (var i = 0; i < this._xml.children().length(); i++) {
-                    if (this._xml.children()[i] == node._xml) {
+                    if (this._xml.children()[i].@__guid == node._xml.@__guid) {
                         delete this._xml.children()[i];
                         break;
                     }
@@ -1591,6 +1609,10 @@ package org.svgweb.core
         public function get id():String {
             var id:String = this._xml.@id;
             return id;
+        }
+        
+        public function get guid():String {
+            return this._xml.@__guid;
         }
 
         public function get invalidDisplay():Boolean {

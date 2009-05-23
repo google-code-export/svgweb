@@ -32,6 +32,7 @@ package org.svgweb.nodes
         protected var scaleModeParam:String = 'svg_all';
 
         private var _nodeLookup:Object;
+        private var _guidLookup:Object;
         protected var _referersById:Object;
 
         public var title:String;
@@ -46,6 +47,7 @@ package org.svgweb.nodes
         public override function set xml(value:XML):void {
             default xml namespace = svg;        
             this._nodeLookup = new Object();
+            this._guidLookup = new Object();
             this._referersById = new Object();    
             super.xml = value;
 
@@ -53,6 +55,7 @@ package org.svgweb.nodes
             if (this.parentSVGRoot == null) {
                 if (this.xml && this.xml.@id) {
                     this._nodeLookup[this.xml.@id] = this;
+                    this._guidLookup[this.xml.@__guid] = this;
                 }
                 this._pendingRenderCount = 1;
             }
@@ -119,11 +122,17 @@ package org.svgweb.nodes
         }
        
         public function registerNode(node:SVGNode):void {
-            _nodeLookup[node.id] = node;
+            if (node.id) {
+                _nodeLookup[node.id] = node;
+            }
+            _guidLookup[node.guid] = node;
         }
 
         public function unregisterNode(node:SVGNode):void {
-            delete _nodeLookup[node.id];
+            if (node.id) {
+                delete _nodeLookup[node.id];
+            }
+            delete _guidLookup[node.guid];
         }
 
         override protected function registerID():void {
@@ -154,7 +163,6 @@ package org.svgweb.nodes
          * 
          **/
         public function addReference(node:SVGNode, referencedId:String):void {
-
             if (!this._referersById[referencedId]) {
                  this._referersById[referencedId]= new Array();
             }
@@ -177,6 +185,13 @@ package org.svgweb.nodes
         public function getNode(name:String):SVGNode {
             if (_nodeLookup.hasOwnProperty(name)) {
                 return _nodeLookup[name];
+            }
+            return null;
+        }
+
+        public function getNodeByGUID(guid:String):SVGNode {            
+            if (_guidLookup.hasOwnProperty(guid)) {
+                return _guidLookup[guid];
             }
             return null;
         }
