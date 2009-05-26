@@ -118,7 +118,7 @@ function assertUndefined(comment, actual) {
   }
   
   if (actual !== undefined) {
-    var msg = 'assertNull failed: ' + comment 
+    var msg = 'assertUndefined failed: ' + comment 
               + '\n(actual: ' + actual + ')';
     console.log(msg);
     throw new Error(msg);
