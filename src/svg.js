@@ -1101,6 +1101,7 @@ window.location value for that file and try to change it, nothing will happen.
 You can, however, read the values off this object and they will correctly
 represent the URL of the object. You could use this to pass parameters into
 your SVG file, for example.
+
   
 What SVG Features Are Not Supported
 -------------------------------------------
@@ -2676,7 +2677,7 @@ FlashHandler._prepareBehavior = function(libraryPath) {
     that external callers can manipulate it and have getter/setter magic happen; 
     if other browsers, returns the _Node or _Element itself. */
 FlashHandler._getNode = function(nodeXML, handler) {
-  //console.log('getNode, nodeXML='+nodeXML+', nodeName='+nodeXML.nodeName+', guid='+nodeXML.getAttribute('__guid'));
+  //console.log('getNode, nodeXML='+nodeXML+', nodeName='+nodeXML.nodeName+', guid='+nodeXML.getAttribute('__guid')+', handler='+handler);
   var node;
   
   // if we've created an _Element or _Node for this XML before, we
@@ -2691,18 +2692,16 @@ FlashHandler._getNode = function(nodeXML, handler) {
   }
   
   if (!node && !fakeTextNode && nodeXML.nodeType == _Node.ELEMENT_NODE) {
+    //console.log('Creating element node on demand');
+    
     // never seen before -- we'll have to create a new _Element now
     node = new _Element(nodeXML.nodeName, nodeXML.prefix, 
                         nodeXML.namespaceURI, nodeXML, handler, true);
-
-    // store a reference to ourselves
-    svgweb._guidLookup['_' + node._guid] = node;
   } else if (!node && (nodeXML.nodeType == _Node.TEXT_NODE || fakeTextNode)) {
+    //console.log('Creating text node on demand');
+    
     node = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML,
                      handler, false);
-    
-    // store a reference to ourselves
-    svgweb._guidLookup['_' + node._guid] = node;
   } else if (!node) {
     throw new Error('Unknown node type given to _getNode: ' 
                     + nodeXML.nodeType);
@@ -2848,6 +2847,7 @@ FlashHandler._createElementNS = function(ns, qname) {
   }
 
   var node = new _Element(qname, prefix, ns);
+  
   return node._getProxyNode(); 
 }
 
@@ -3630,6 +3630,10 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
       this._nodeXML.setAttribute('__guid', guid());
     }
     this._guid = this._nodeXML.getAttribute('__guid');
+    
+    // store a reference to the new node so that later fetching of this
+    // node will respect object equality
+    svgweb._guidLookup['_' + this._guid] = this;
   }
   
   if (nodeType == _Node.ELEMENT_NODE) {
@@ -3868,8 +3872,13 @@ extend(_Node, {
       this._handler.document._nodeById['_' + childID] = undefined;
     }
     
-    // remove from our GUID lookup table
-    svgweb._guidLookup['_' + child._guid] = undefined;
+    // TODO: FIXME: Note that we don't remove the node from the GUID lookup
+    // table; this is because developers might still be working with the
+    // node while detached, and we want object equality to hold. This means
+    // that memory will grow over time however. Find a good solution to this
+    // issue without having to have the complex unattached child node structure
+    // we had before.    
+    //svgweb._guidLookup['_' + child._guid] = undefined;
     
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
@@ -4226,7 +4235,7 @@ extend(_Node, {
     
     this._childNodes.__defineGetter__(i, function() {
       var childXML = self._nodeXML.childNodes[i];
-      return FlashHandler._getNode(childXML, this._handler);
+      return FlashHandler._getNode(childXML, self._handler);
     });
   },
   
@@ -4324,16 +4333,9 @@ extend(_Node, {
     // which is actually a DOM Element so that we can do tracking
     this._nodeXML.firstChild.nodeValue = newValue;
     
-    if (this._passThrough) {
-      // get the ID of our parent
-      var parentID = this._nodeXML.parentNode.getAttribute('id');
-      if (!parentID 
-          || this._nodeXML.parentNode.nodeType != _Node.ELEMENT_NODE) {
-        return newValue;
-      }
-      
+    if (this._attached && this._passThrough) {
       var flashStr = FlashHandler._encodeFlashData(newValue);
-      var parentGUID = this._nodeXML.parentNode.getAttribute('_guid');
+      var parentGUID = this._nodeXML.parentNode.getAttribute('__guid');
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'setText',
                                   parentGUID: parentGUID,
@@ -4385,7 +4387,6 @@ extend(_Node, {
       current._handler = this._handler;
       
       // store a reference to our node so we can return it in the future
-      svgweb._guidLookup['_' + current._guid] = current;
       var id = currentXML.getAttribute('id');
       if (attached && current.nodeType == _Node.ELEMENT_NODE && id) {
         this._handler.document._nodeById['_' + id] = current;
@@ -4548,7 +4549,7 @@ extend(_Node, {
   _importChildXML: function(newXML) {
     this._nodeXML = newXML;
     var children = this._getChildNodes();
-    for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
+    for (var i = 0; i < children.length; i++) {
       var currentChild = children[i];
       if (isIE && currentChild._fakeNode) { // IE
         currentChild = currentChild._fakeNode;
@@ -4801,6 +4802,11 @@ extend(_Element, {
     //console.log('getAttribute, attrName='+attrName+', this.nodeName='+this.nodeName);  
     var value;
     
+    // ignore internal __guid property
+    if (attrName == '__guid') {
+      return null;
+    }
+    
     if (this._attached && this._passThrough) {
       var msg = this._handler.sendToFlash({ type: 'invoke', 
                                             method: 'getAttribute',
@@ -4991,7 +4997,13 @@ extend(_Element, {
   _getId: function() {
     // note: all attribute names are prefixed with _ to prevent attribute names
     // starting numbers from being interpreted as array indexes
-    return this._attributes['_id'];
+    if (this._attributes['_id']) {
+      return this._attributes['_id'];
+    } else {
+      // id property is special; we return empty string instead of null
+      // to mimic native behavior on Firefox and Safari
+      return '';
+    }
   },
   
   _setId: function(id) {
@@ -5112,13 +5124,9 @@ extend(_Element, {
       this.__defineGetter__('height', function() { return self._getHeight(); });
     }
     
-    // read/write props
-    var props = ['id'];
-    
-    // make getters for each property
-    for (var i = 0; i < props.length; i++) {
-      this._defineAccessor(props[i], true);  
-    }
+    // id property
+    this.__defineGetter__('id', hitch(this, this._getId));
+    this.__defineSetter__('id', hitch(this, this._setId));
   },
   
   /** @param prop String property name, such as 'x'.
@@ -5746,7 +5754,6 @@ extend(_SVGObject, {
     doc.rootElement = root._getProxyNode();
     // add to our lookup tables so that fetching this node in the future works
     doc._nodeById['_' + rootID] = root;
-    svgweb._guidLookup['_' + root._guid] = root;
 
     // add our contentDocument property
     this._handler.flash.contentDocument = doc;
@@ -6441,7 +6448,6 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
     var rootID = this._nodeXML.getAttribute('id');
     var doc = this._handler.document;
     doc._nodeById['_' + rootID] = this;
-    svgweb._guidLookup['_' + this._guid] = this;
   }
   
   // when being embedded by a SCRIPT element, the _SVGSVGElement class
@@ -6642,6 +6648,7 @@ extend(_Document, {
     }
 
     var node = new _Element(qname, prefix, ns);
+    
     return node._getProxyNode();
   },
   

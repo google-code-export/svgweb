@@ -1025,24 +1025,26 @@ package org.svgweb.core
          */
 
         protected function onAddedToStage(event:Event):void {
-            this.registerID();
+            this.registerSelf();
             if (this.original) {
                 this.original.registerClone(this);
             }
         }
 
         protected function onRemovedFromStage(event:Event):void {
-            this.unregisterID();
+            this.unregisterSelf();
             if (this.original) {
                 this.original.unregisterClone(this);
             }
         }
 
-        protected function registerID():void {
+        protected function registerSelf():void {
             if (this._isClone || (getMaskAncestor() != null)) {
                 return;
             }
-
+            
+            this.svgRoot.registerGUID(this);
+            
             var id:String = this.getAttribute('id');
 
             if (id == _id) {
@@ -1059,7 +1061,9 @@ package org.svgweb.core
             }
         }
 
-        protected function unregisterID():void {
+        protected function unregisterSelf():void {
+            this.svgRoot.unregisterGUID(this);
+            
             if (this._id) {
                 this.svgRoot.unregisterNode(this);
                 _id = null;

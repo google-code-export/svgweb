@@ -444,7 +444,7 @@ package org.svgweb
                     }
                     
                     if (jsMsg.attrName == 'id') {
-                        this.svgRoot.unregisterNode(element);
+                        this.svgRoot.unregisterID(element);
                     }
  
                     if (jsMsg.applyToStyle) {
@@ -460,7 +460,7 @@ package org.svgweb
                     }
 
                     if (jsMsg.attrName == 'id') {
-                        this.svgRoot.registerNode(element);
+                        this.svgRoot.registerID(element);
                     }
                 }
                 if (jsMsg.method == 'removeChild') {
