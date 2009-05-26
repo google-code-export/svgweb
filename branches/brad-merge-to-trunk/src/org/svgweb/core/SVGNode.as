@@ -1393,7 +1393,7 @@ package org.svgweb.core
         /**
          * Sets any text content this node might have as a child.
          */
-        public function setText(newValue):String {
+        public function setText(newValue:String):void {
             // subclasses should implement this if they want to have text
             throw new Error("Unimplemented");
         }
@@ -1533,6 +1533,19 @@ package org.svgweb.core
             // update our Flash display list
             super.addChildAt(newChild, position);
             this.invalidateDisplay();
+        }
+        
+        override public function addChildAt(child:DisplayObject, index:int):DisplayObject {
+            super.addChildAt(child, index);
+            
+            if (child is SVGDOMTextNode) {
+                var node:SVGNode = child as SVGNode;
+                if (this.hasText()) {
+                    this.setText(node.xml.text());
+                }
+            }
+            
+            return child;
         }
 
         public function getWidth():Number {

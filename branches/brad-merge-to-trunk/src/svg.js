@@ -4495,6 +4495,12 @@ extend(_Node, {
 
     xml = xml.replace(/<([^ ]+)/, '<$1 ' + nsString + ' ');
     
+    // capitalization on our __text nodes is handled like HTML, not XML,
+    // because we used document.createElement() for it 
+    // (i.e. __text incorrectly becomes __TEXT)
+    xml = xml.replace(/__TEXT/g, '__text');
+    xml = xml.replace(/__faketextnode/g, '__fakeTextNode');
+    
     return xml;
   },
   
