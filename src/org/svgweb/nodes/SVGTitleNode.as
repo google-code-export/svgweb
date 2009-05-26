@@ -37,9 +37,8 @@ package org.svgweb.nodes
             return this._xml.text().toString();
         }
         
-        override public function setText(newValue):String {
+        override public function setText(newValue:String):void {
             this._title = newValue;
-            return newValue;
         }
         
         override public function hasText():Boolean {

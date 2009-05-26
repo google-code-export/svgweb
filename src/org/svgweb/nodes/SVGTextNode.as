@@ -54,10 +54,9 @@ package org.svgweb.nodes
             return true;
         }
         
-        override public function setText(newValue):String {
+        override public function setText(newValue:String):void {
             this._xml.setChildren(newValue);
             this.invalidateDisplay();
-            return newValue;
         }
         
         /**

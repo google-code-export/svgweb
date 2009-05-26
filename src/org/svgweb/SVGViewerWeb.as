@@ -401,6 +401,7 @@ package org.svgweb
                     // all of its children as well
                     element = parent.parseNode(new XML(jsMsg.childXML));
                     element.forceParse();
+                    this.debug('element='+element);
                     
                     // append things now
                     parent.addChildAt(element, jsMsg.position);
