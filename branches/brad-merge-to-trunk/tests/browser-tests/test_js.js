@@ -90,7 +90,7 @@ var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect,
     gradient, stop, defs, parent, textNode2, group2, renderer,
     origText, exp, html, ns, nextToLast, paths, styleStr, circle,
     image, line, defs, runTests, styleReturned, use, regExp, split, doc,
-    orig, rect1, rect2, obj1, obj2, obj3;
+    orig, rect1, rect2, obj1, obj2, obj3, handler;
     
 var allStyles = [
   'font', 'fontFamily', 'fontSize', 'fontSizeAdjust', 'fontStretch', 'fontStyle',
@@ -291,6 +291,20 @@ function runTests(embedTypes) {
       assertEquals('12 timing functions should have run in embed2.svg '
                    + 'inside testTimingFunctions()', 12,
                    window._timingFuncsCalled.length);
+    }
+    
+    // make sure that we don't end up with any _undefined names in the
+    // _nodeById or GUID lookup tables
+    if (svgweb.getHandlerType() == 'flash') {
+      temp = svgweb._guidLookup['_undefined'];
+      assertUndefined('_guidLookup["_undefined"] should be undefined');
+      for (var i = 0; i < svgweb.handlers.length; i++) {
+        handler = svgweb.handlers[i];
+        temp = handler.document._nodeById['_undefined'];
+        assertUndefined('svgweb.handlers[' + i 
+                        + '].document._nodeById["_undefined"] should be '
+                        + 'undefined');
+      }
     }
     
     // check for any Flash errors           
@@ -4926,7 +4940,13 @@ function testCreateSVGObject() {
     }
     assertExists('SVG OBJECT should exist', obj3);
     
-    assertEquals('SVG OBJECT should have no id', '', obj3.id);
+    if (svgweb.getHandlerType() == 'flash') {
+      assertExists('SVG OBJECT should have an id', obj3.id);
+      assertTrue('SVG OBJECT should have a random id',
+                 (obj3.id.indexOf('random') != -1));
+    } else {
+      assertEquals('SVG OBJECT should have no id', '', obj3.id);
+    }
     
     // make sure 'this' points to the right thing
     assertEquals('this == SVG OBJECT', obj3, this);
@@ -4980,18 +5000,6 @@ function testBugFixes() {
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
   assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
-  
-  // make sure that we don't end up with any _undefined names in the
-  // _nodeById or GUID lookup tables
-  if (svgweb.getHandlerType() == 'flash') {
-    temp = svgweb._guidLookup['_undefined'];
-    assertUndefined('_guidLookup["_undefined"] should be undefined');
-    for (var i = 0; i < svgweb.handlers.length; i++) {
-      temp = svgweb.handlers[i]._nodeById['_undefined'];
-      assertUndefined('svgweb.handlers[' + i + ']._nodeById["_undefined"] '
-                      + 'should be undefined');
-    }
-  }
 }
 
 function testUnload() {

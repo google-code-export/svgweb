@@ -483,7 +483,7 @@ package org.svgweb
                 
                     // get the refChild and the parent
                     var refChild, parent;
-                
+                    
                     refChild = this.svgRoot.getNodeByGUID(jsMsg.refChildGUID);
                     if (!refChild) {
                         this.error("error:insertBefore: refChildGUID not found: " + jsMsg.refChildGUID);
@@ -496,11 +496,11 @@ package org.svgweb
                     
                     // parse the newly appended element into an SVGNode and 
                     // all of its children as well
-                    var newChild = parent.parseNode(new XML(jsMsg.childXML));
+                    element = parent.parseNode(new XML(jsMsg.childXML));
                     element.forceParse();
 
                     // now insert the element
-                    parent.insertBefore(jsMsg.position, newChild, refChild);
+                    parent.insertBefore(jsMsg.position, element, refChild);
                     parent.invalidateDisplay();
                 }
                 if (jsMsg.method == 'setText') {
