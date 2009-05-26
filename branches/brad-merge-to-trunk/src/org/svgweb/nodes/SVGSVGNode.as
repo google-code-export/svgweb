@@ -31,7 +31,7 @@ package org.svgweb.nodes
         protected var firedOnLoad:Boolean = false;
         protected var scaleModeParam:String = 'svg_all';
 
-        private var _nodeLookup:Object;
+        private var _idLookup:Object;
         private var _guidLookup:Object;
         protected var _referersById:Object;
 
@@ -46,15 +46,17 @@ package org.svgweb.nodes
 
         public override function set xml(value:XML):void {
             default xml namespace = svg;        
-            this._nodeLookup = new Object();
+            this._idLookup = new Object();
             this._guidLookup = new Object();
             this._referersById = new Object();    
             super.xml = value;
 
             // If this is the top SVG element, then start the render tracking process.
             if (this.parentSVGRoot == null) {
-                if (this.xml && this.xml.@id) {
-                    this._nodeLookup[this.xml.@id] = this;
+                if (this.xml) {
+                    if (this.xml.@id) {
+                        this._idLookup[this.xml.@id] = this;
+                    }
                     this._guidLookup[this.xml.@__guid] = this;
                 }
                 this._pendingRenderCount = 1;
@@ -120,31 +122,47 @@ package org.svgweb.nodes
                 }
             }
         }
-       
+        
         public function registerNode(node:SVGNode):void {
+            registerID(node);
+            registerGUID(node);
+        }
+        
+        public function unregisterNode(node:SVGNode):void {
+            unregisterID(node);
+            unregisterGUID(node);
+        }
+       
+        public function registerID(node:SVGNode):void {
             if (node.id) {
-                _nodeLookup[node.id] = node;
+                _idLookup[node.id] = node;
             }
+        }
+
+        public function unregisterID(node:SVGNode):void {
+            if (node.id) {
+                delete _idLookup[node.id];
+            }
+        }
+        
+        public function registerGUID(node:SVGNode):void {
             _guidLookup[node.guid] = node;
         }
 
-        public function unregisterNode(node:SVGNode):void {
-            if (node.id) {
-                delete _nodeLookup[node.id];
-            }
+        public function unregisterGUID(node:SVGNode):void {
             delete _guidLookup[node.guid];
         }
 
-        override protected function registerID():void {
-            super.registerID();
+        override protected function registerSelf():void {
+            super.registerSelf();
 
             if (parentSVGRoot) {
                 parentSVGRoot.registerNode(this);
             }
         }
 
-        override protected function unregisterID():void {
-            super.unregisterID();
+        override protected function unregisterSelf():void {
+            super.unregisterSelf();
 
             if (parentSVGRoot) {
                 parentSVGRoot.unregisterNode(this);
@@ -183,8 +201,8 @@ package org.svgweb.nodes
         }
 
         public function getNode(name:String):SVGNode {
-            if (_nodeLookup.hasOwnProperty(name)) {
-                return _nodeLookup[name];
+            if (_idLookup.hasOwnProperty(name)) {
+                return _idLookup[name];
             }
             return null;
         }
