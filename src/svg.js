@@ -3735,9 +3735,11 @@ extend(_Node, {
     refChild = this._getFakeNode(refChild);
     
     // add an ID entry for newChild into nodeById
-    var newChildID = newChild._getId();
-    if (newChildID && this._attached) {
-      this._handler.document._nodeById['_' + newChildID] = newChild;
+    if (newChild.nodeType == _Node.ELEMENT_NODE) {
+      var newChildID = newChild._getId();
+      if (newChildID && this._attached) {
+        this._handler.document._nodeById['_' + newChildID] = newChild;
+      }
     }
     
     // get an index position for where refChild is
@@ -3867,9 +3869,11 @@ extend(_Node, {
     this._nodeXML.removeChild(findResults.nodeXML);
 
     // remove from our nodeById lookup table
-    var childID = child._getId();
-    if (childID && this._attached) {
-      this._handler.document._nodeById['_' + childID] = undefined;
+    if (child.nodeType == _Node.ELEMENT_NODE) {
+      var childID = child._getId();
+      if (childID && this._attached) {
+        this._handler.document._nodeById['_' + childID] = undefined;
+      }
     }
     
     // TODO: FIXME: Note that we don't remove the node from the GUID lookup
