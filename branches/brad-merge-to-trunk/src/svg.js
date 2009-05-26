@@ -4738,9 +4738,7 @@ extend(_Node, {
           = this._getY
           = this._getWidth
           = this._getHeight
-          = function() { 
-              throw new _DOMException(_DOMException.NOT_SUPPORTED_ERR);
-            };
+          = function() { return undefined; };
     }
   }
 });
