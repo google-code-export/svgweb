@@ -526,7 +526,7 @@ function testGetElementsByTagNameNS() {
     // test inside of SVG OBJECT element
     rects = getDoc('svg2').getElementsByTagNameNS(svgns, 'rect');
     assertExists("svg2.contentDocument.getElementsByTagNameNS('rect')", rects);
-    // 2 rects were added by tested inside of embed2.svg
+    // 2 rects were added by tests inside of embed2.svg
     assertEquals("svg2.contentDocument.getElementsByTagNameNS(rect).length "
                  + "should be 7", 7, rects.length);
   } else {
@@ -1203,7 +1203,12 @@ function testTextNodes() {
   
   svg = getDoc('mySVG').getElementById('mySVG');
   if (_hasObjects) {
-    svgText = svg.childNodes[3].childNodes[1];
+    // Firebug inserts an html:div into our SVG DOM!
+    if (renderer == 'native' && console.firebug) {
+      svgText = svg.childNodes[4].childNodes[1];
+    } else {
+      svgText = svg.childNodes[3].childNodes[1];
+    }
   } else {
     svgText = svg.childNodes[0].childNodes[1];
   }

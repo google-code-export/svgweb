@@ -5865,7 +5865,7 @@ extend(_SVGObject, {
     // clobbering globals on the HTML document's window or from other
     // embedded SVG files. This is necessary so that setTimeouts and
     // setIntervals will work later on, for example.
-            
+                
     // create an iframe and attach it offscreen
     var iframe = document.createElement('iframe');
     iframe.setAttribute('src', 'about:blank');
