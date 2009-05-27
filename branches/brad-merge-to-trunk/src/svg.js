@@ -3799,7 +3799,7 @@ extend(_Node, {
   },
   
   replaceChild: function(newChild /* _Node */, oldChild /* _Node */) {
-    //console.log('replaceChild, newChild='+newChild.id+', oldChild='+oldChild.id);
+    //console.log('replaceChild, newChild='+newChild.nodeName+', oldChild='+oldChild.nodeName);
     
     if (this.nodeType != _Node.ELEMENT_NODE) {
       throw new _DOMException(_DOMException.NOT_SUPPORTED_ERR);
@@ -3884,8 +3884,8 @@ extend(_Node, {
       // TODO: Throw the correct DOM error instead
       throw new Error('Invalid child passed to removeChild');
     }
-
     var position = findResults.position;
+    
     this._nodeXML.removeChild(findResults.nodeXML);
 
     // remove from our nodeById lookup table
@@ -3912,11 +3912,11 @@ extend(_Node, {
       this._childNodes.length--;
     } else {
       // for IE, remove from _childNodes data structure
-      this._childNodes.splice(position);
+      this._childNodes.splice(position, 1);
     }
     
     // inform Flash about the change
-    if (this._attached && child._passThrough) {
+    if (this._attached && this._passThrough) {
       this._handler.sendToFlash({ type: 'invoke', 
                                   method: 'removeChild',
                                   elementGUID: child._guid,
