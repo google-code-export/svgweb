@@ -2643,7 +2643,14 @@ function FlashHandler(args) {
   }
 }
 
-// start of 'static' singleton functions
+// start of 'static' singleton functions and properties
+
+// when someone calls createElementNS or createTextNode we are not attached
+// to a handler yet; we need an XML document object in order to generate things
+// though, so this single unattached XML document object serves that purpose
+FlashHandler._unattachedDoc = parseXML('<?xml version="1.0"?>\n'
+                                       + '<svg xmlns="' + svgns + '"></svg>',
+                                       false);
 
 /** Prepares the svg.htc behavior for IE. */
 FlashHandler._prepareBehavior = function(libraryPath) {
@@ -2916,9 +2923,18 @@ FlashHandler._createTextNode = function(data, forSVG) {
   } else {
     // we create a DOM Element instead of a DOM Text Node so that we can
     // assign it a _guid and do tracking on it; we assign the data value
-    // to a DOM Text Node that is a child of our fake DOM Element
-    var nodeXML = document.createElement('__text');
-    nodeXML.appendChild(document._createTextNode(data));
+    // to a DOM Text Node that is a child of our fake DOM Element. Note
+    // that since we are unattached we use an XML document object we
+    // created earlier (FlashHandler._unattachedDoc) in order to
+    // generate things.
+    var doc = FlashHandler._unattachedDoc;
+    var nodeXML;
+    if (isIE) {
+      nodeXML = doc.createElement('__text');
+    } else {
+      nodeXML = doc.createElementNS(svgns, '__text');
+    }
+    nodeXML.appendChild(doc.createTextNode(data));
     var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML);
     textNode._nodeValue = data;
     textNode.ownerDocument = document;
@@ -2932,12 +2948,16 @@ FlashHandler._createTextNode = function(data, forSVG) {
     since it is a recursive function and needs to call itself, and we
     don't want to do this on an object instance to avoid memory leaks
     from closures on IE. Note that this function runs in the global scope
-    so 'this' will point to the Window object. */
+    so 'this' will point to the Window object. 
+    
+    @param doc The document object to work with.
+    @param node An XML node to import
+    @param allChildren Whether to import the node's children as well. */
 FlashHandler._importNodeFunc = function(doc, node, allChildren) {
   switch (node.nodeType) {
     case 1: // ELEMENT NODE
       var newNode = doc.createElement(node.nodeName);
-      
+
       // does the node have any attributes to add?
       if (node.attributes && node.attributes.length > 0) {
         for (var i = 0; i < node.attributes.length; i++) {
@@ -2946,7 +2966,7 @@ FlashHandler._importNodeFunc = function(doc, node, allChildren) {
           newNode.setAttribute(attrName, attrValue);
         }
       }
-      
+
       // are we going after children too, and does the node have any?
       if (allChildren && node.childNodes && node.childNodes.length > 0) {
         for (var i = 0; i < node.childNodes.length; i++) {
@@ -2954,7 +2974,7 @@ FlashHandler._importNodeFunc = function(doc, node, allChildren) {
               document._importNodeFunc(doc, node.childNodes[i], allChildren));
         }
       }
-      
+
       return newNode;
       break;
     case 3: // TEXT NODE
@@ -4494,12 +4514,6 @@ extend(_Node, {
     }
 
     xml = xml.replace(/<([^ ]+)/, '<$1 ' + nsString + ' ');
-    
-    // capitalization on our __text nodes is handled like HTML, not XML,
-    // because we used document.createElement() for it 
-    // (i.e. __text incorrectly becomes __TEXT)
-    xml = xml.replace(/__TEXT/g, '__text');
-    xml = xml.replace(/__faketextnode/g, '__fakeTextNode');
     
     return xml;
   },
@@ -6668,9 +6682,11 @@ extend(_Document, {
     // This is due to a limitation on Internet Explorer where you can not
     // store 'expandos' on XML node objects (i.e. you can't add custom
     // properties). We store the actual data as a DOM Text Node of our DOM
-    // Element.
-    var nodeXML = document.createElement('__text');
-    nodeXML.appendChild(document._createTextNode(data));
+    // Element. Note that since we have no handler yet we simply use a default
+    // XML document object (_unattachedDoc) to create things for now.
+    var doc = FlashHandler._unattachedDoc;
+    var nodeXML = doc.createElementNS(svgns, '__text');
+    nodeXML.appendChild(doc.createTextNode(data));
     var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML,
                              this._handler);
     textNode._nodeValue = data;
