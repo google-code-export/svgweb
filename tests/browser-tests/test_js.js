@@ -3106,6 +3106,9 @@ function testReplaceChild() {
   temp = group.replaceChild(rect, circle);
   assertNull('circle.parentNode == null', circle.parentNode);
   assertEquals('rect.parentNode == group', group, rect.parentNode);
+  assertEquals('group.childNodes.length == 1', 1, group.childNodes.length);
+  assertEquals('group.childNodes[0].nodeName == rect', 'rect',
+               group.childNodes[0].nodeName);
   assertEquals('group.childNodes[0] == rect', rect,
                group.childNodes[0]);
   assertEquals('temp == circle', temp, circle);
