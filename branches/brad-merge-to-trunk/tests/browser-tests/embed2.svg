@@ -2334,10 +2334,7 @@
                    path.getAttribute('fill'));
       // break word top into pieces so it doesn't get transformed
       top.assertExists('t' + 'o' + 'p.svgweb should exist', top.svgweb);
-      if (top.svgweb.getHandlerType() == 'flash') {
-        top.assertEquals('path.id.indexOf(__svg__random__) != -1', true,
-                      path.id.indexOf('__svg__random__') != -1);
-      }
+      top.assertEquals('path.id == ""', "", path.id);
       // get the element through getElementsByTagNameNS, then check it's
       // DOM sibling/child properties
       matches = document.getElementsByTagNameNS(svgns, 'path');
@@ -2362,11 +2359,9 @@
       top.assertEquals('child.nextSibling == path', path, child.nextSibling);
       top.assertNull('path.firstChild == null', path.firstChild);
       top.assertNull('path.lastChild == null', path.lastChild);
-      top.assertEquals('path.childNodes.length == 0', 0, path.childNodes.length);
-      if (top.svgweb.getHandlerType() == 'flash') {
-        top.assertEquals('path.id.indexOf(__svg__random__) != -1', true,
-                      path.id.indexOf('__svg__random__') != -1);
-      }
+      top.assertEquals('path.childNodes.length == 0', 0, 
+                       path.childNodes.length);
+      top.assertEquals('path.id == ""', '', path.id);
       path.setAttribute('stroke-width', '5px');
       top.assertEquals('path.getAttribute(stroke-width) == 5px', '5px',
                    path.getAttribute('stroke-width'));
