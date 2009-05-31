@@ -6706,10 +6706,16 @@ extend(_Document, {
     // Element. Note that since we have no handler yet we simply use a default
     // XML document object (_unattachedDoc) to create things for now.
     var doc = FlashHandler._unattachedDoc;
-    var nodeXML = doc.createElementNS(svgns, '__text');
+    var nodeXML;
+    if (isIE) { // no createElementNS available
+      nodeXML = doc.createElement('__text');
+    } else {
+      nodeXML = doc.createElementNS(svgns, '__text');
+    }
     nodeXML.appendChild(doc.createTextNode(data));
     var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML,
                              this._handler);
+
     textNode._nodeValue = data;
     textNode.ownerDocument = this;
     
