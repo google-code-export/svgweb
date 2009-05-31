@@ -3592,9 +3592,55 @@ function testReplaceChild() {
   assertEquals('group_path500_replacer.parentNode == group', group,
                paths[7].parentNode);
                
-  // TODO!!! Have a test where we do a replaceChild on a visual element with
+  // have a test where we do a replaceChild on a visual element with
   // another visual element to make sure the Flash side shows the correct
   // updates
+  // create group and children to replace
+  group = getDoc('svg2').createElementNS(svgns, 'g');
+  group.id = 'replaceMePlease';
+  group.setAttribute('x', 0);
+  group.setAttribute('y', 0);
+  group.setAttribute('transform', 'translate(200, 300)');
+  circle = getDoc('svg2').createElementNS(svgns, 'circle');
+  circle.setAttribute('cx', 30);
+  circle.setAttribute('cy', 30);
+  circle.setAttribute('r', 50);
+  circle.style.fill = 'orange';
+  group.appendChild(circle);
+  text = getDoc('svg2').createElementNS(svgns, 'text');
+  text.setAttribute('x', 30);
+  text.setAttribute('y', 100);
+  text.style.fill = 'red';
+  text.style.fontWeight = 'bold';
+  text.appendChild(getDoc('svg2').createTextNode('I should be replaced', true));
+  group.appendChild(text);
+  // append to DOM
+  svg = getRoot('svg2');
+  svg.appendChild(group);
+  // create group and children that will be the replacee
+  group = getDoc('svg2').createElementNS(svgns, 'g');
+  group.setAttribute('x', 0);
+  group.setAttribute('y', 0);
+  group.setAttribute('transform', 'translate(220, 320)');
+  circle = getDoc('svg2').createElementNS(svgns, 'circle');
+  circle.setAttribute('cx', 30);
+  circle.setAttribute('cy', 30);
+  circle.setAttribute('r', 50);
+  circle.style.fill = 'yellow';
+  group.appendChild(circle);
+  text = getDoc('svg2').createElementNS(svgns, 'text');
+  text.setAttribute('x', 30);
+  text.setAttribute('y', 100);
+  text.style.fill = 'red';
+  text.style.fontWeight = 'bold';
+  text.appendChild(getDoc('svg2').createTextNode('I\'m the replacee!', true));
+  group.appendChild(text);
+  // do the replaceChild
+  svg.replaceChild(group, getDoc('svg2').getElementById('replaceMePlease'));
+  console.log('SECOND IMAGE: You should see a yellow circle and the text '
+               + '"I\'m the replacee!" near the middle bottom of the image; '
+               + 'you should _not_ see an orange circle and the '
+               + 'text "I should be replaced"');
 }
 
 function testInsertBefore() {
