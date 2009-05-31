@@ -443,23 +443,26 @@ package org.svgweb
                                    + jsMsg.elementGUID);
                     }
                     
-                    if (jsMsg.attrName == 'id') {
+                    var attrName = jsMsg.attrName;
+                    var attrValue = jsMsg.attrValue;
+                    
+                    if (attrName == 'id') {
                         this.svgRoot.unregisterID(element);
                     }
  
                     if (jsMsg.applyToStyle) {
-                        element.setStyle(jsMsg.attrName, jsMsg.attrValue);
+                        element.setStyle(attrName, attrValue);
                         element.invalidateDisplay();
                     }
                     else if (jsMsg.attrNamespace != null) {
                         // namespaced attribute, such as xlink:href
                         var ns = new Namespace(jsMsg.attrNamespace);
-                        element.xml.@ns::[jsMsg.attrName] = jsMsg.attrValue.toString();
+                        element.xml.@ns::[attrName] = attrValue.toString();
                     } else {
-                        element.setAttribute(jsMsg.attrName, jsMsg.attrValue.toString());
+                        element.setAttribute(attrName, attrValue.toString());
                     }
 
-                    if (jsMsg.attrName == 'id') {
+                    if (attrName == 'id') {
                         this.svgRoot.registerID(element);
                     }
                 }

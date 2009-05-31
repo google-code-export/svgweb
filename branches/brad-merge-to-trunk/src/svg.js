@@ -4073,7 +4073,6 @@ extend(_Node, {
     }
     
     var node = FlashHandler._getNode(parentXML, this._handler);
-    node._passThrough = this._passThrough;
     
     return node;
   },
@@ -4419,7 +4418,7 @@ extend(_Node, {
   _processAppendedChildren: function(child, parent, attached, passThrough) {
     //console.log('processAppendedChildren, this.nodeName='+this.nodeName+', child.nodeName='+child.nodeName+', attached='+attached+', passThrough='+passThrough);
     start('processAppendedChildren', 'board');
-    
+
     // walk the DOM from the child using an iterative algorithm, which was 
     // found to be faster than a recursive one
     start('total walk', 'board');
@@ -4445,7 +4444,7 @@ extend(_Node, {
           current.ownerDocument = this._handler.document;
         }
       }
-    
+          
       // now continue visiting other nodes
       var lastVisited = current;
       var children = current._getChildNodes();
@@ -4468,6 +4467,7 @@ extend(_Node, {
             break;
           }
         }
+
         if (current == child) {
           current = null;
         } else {
