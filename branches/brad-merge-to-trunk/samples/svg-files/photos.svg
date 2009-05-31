@@ -14,7 +14,6 @@
       var currentTransform = null;
 
       function loaded() {
-          top.console.log('loaded');
           // change onloadFunc to point to your real onload function that you
           // want called when the page is truly ready
           var onloadFunc = doload;
@@ -27,7 +26,6 @@
       }   
 
       function doload() {
-          top.console.log('doload');
           var images;
 
           // Load a few images; some extra stuff here to make
@@ -115,7 +113,6 @@
       // and the clickable hotspots used for rotating the image.
       var nextImageId = 0;
       function addImage(url, initOpacity) {
-          top.console.log('addImage');
           var imgw = 1000;
           var imgh = 700;
 
