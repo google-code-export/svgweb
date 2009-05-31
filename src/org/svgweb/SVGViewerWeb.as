@@ -515,12 +515,13 @@ package org.svgweb
                     if (!element) {
                         this.error("error:setText: element with GUID not found: " + jsMsg.elementGUID);
                     }
-                    var textNode = element as SVGDOMTextNode;
+                    var textNode:SVGDOMTextNode = element as SVGDOMTextNode;
                     textNode.nodeValue = jsMsg.text;
                     
                     // Tell its parent that its text value has changed
                     if (parent.hasText()) {
                         parent.setText(jsMsg.text);
+                        parent.invalidateDisplay();
                     }
                 }
             } catch (err) {

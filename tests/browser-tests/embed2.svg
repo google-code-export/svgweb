@@ -1776,6 +1776,7 @@
                    + 'set through nodeValue', 'set through data',
                    textNode.textContent);
       textNode.textContent = 'set through textContent';
+      
       top.assertEquals('After setting .textContent, textNode.nodeValue == '
                    + 'set through textContent', 'set through textContent',
                    textNode.nodeValue);

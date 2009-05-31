@@ -56,7 +56,6 @@ package org.svgweb.nodes
         
         override public function setText(newValue:String):void {
             this._xml.setChildren(newValue);
-            this.invalidateDisplay();
         }
         
         /**

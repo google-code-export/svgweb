@@ -36,7 +36,7 @@ package org.svgweb.nodes
         protected var _referersById:Object;
 
         public var title:String;
-
+        
         public function SVGSVGNode(svgRoot:SVGSVGNode = null, xml:XML = null, original:SVGNode = null):void {
             if (svgRoot) {
                 this.parentSVGRoot = svgRoot;

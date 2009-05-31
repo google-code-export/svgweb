@@ -1554,7 +1554,7 @@ function SVGWeb() {
   }
   
   // wait for our page's DOM content to be available
-  this._initDomContentLoaded();
+  this._initDOMContentLoaded();
 }
 
 extend(SVGWeb, {
@@ -1675,7 +1675,7 @@ extend(SVGWeb, {
   },
   
   /** Sets up an onContentLoaded listener */
-  _initDomContentLoaded: function() {
+  _initDOMContentLoaded: function() {
     // code adapted from Dean Edwards/Matthias Miller/John Resig/others
   
     var self = this;
@@ -4072,7 +4072,10 @@ extend(_Node, {
       return null;
     }
     
-    return FlashHandler._getNode(parentXML, this._handler);
+    var node = FlashHandler._getNode(parentXML, this._handler);
+    node._passThrough = this._passThrough;
+    
+    return node;
   },
   
   _getFirstChild: function() {
@@ -4084,8 +4087,11 @@ extend(_Node, {
     if (childXML == null) {
       return null;
     }
+    
+    var node = FlashHandler._getNode(childXML, this._handler);
+    node._passThrough = this._passThrough;
         
-    return FlashHandler._getNode(childXML, this._handler);
+    return node;
   },
   
   _getLastChild: function() {
@@ -4098,7 +4104,10 @@ extend(_Node, {
       return null;
     }
     
-    return FlashHandler._getNode(childXML, this._handler);
+    var node = FlashHandler._getNode(childXML, this._handler);
+    node._passThrough = this._passThrough;
+    
+    return node;
   },
   
   _getPreviousSibling: function() {
@@ -4125,7 +4134,10 @@ extend(_Node, {
       return null;
     }
     
-    return FlashHandler._getNode(siblingXML, this._handler);
+    var node = FlashHandler._getNode(siblingXML, this._handler);
+    node._passThrough = this._passThrough;
+    
+    return node;
   },
   
   _getNextSibling: function() {
@@ -4149,8 +4161,11 @@ extend(_Node, {
     if (siblingXML == null) {
       return null;
     }
+    
+    var node = FlashHandler._getNode(siblingXML, this._handler);
+    node._passThrough = this._passThrough;
 
-    return FlashHandler._getNode(siblingXML, this._handler);
+    return node;
   },
   
   // Note: 'attributes' property not supported since we don't support
@@ -4259,7 +4274,9 @@ extend(_Node, {
     
     this._childNodes.__defineGetter__(i, function() {
       var childXML = self._nodeXML.childNodes[i];
-      return FlashHandler._getNode(childXML, self._handler);
+      var node = FlashHandler._getNode(childXML, self._handler);
+      node._passThrough = self._passThrough;
+      return node;
     });
   },
   
@@ -4299,7 +4316,9 @@ extend(_Node, {
     } else {
       for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
         var childXML = this._nodeXML.childNodes[i];
-        results.push(FlashHandler._getNode(childXML, this._handler));
+        var node = FlashHandler._getNode(childXML, this._handler);
+        node._passThrough = this._passThrough;
+        results.push(node);
       }
       
       this._childNodes = results;
@@ -4346,6 +4365,8 @@ extend(_Node, {
   },
   
   _setNodeValue: function(newValue) {
+    //console.log('setNodeValue, newValue='+newValue);
+    
     if (this.nodeType != _Node.TEXT_NODE) {
       // FIXME: Is this correct? Can other kinds of nodes other than
       // text nodes have a nodeValue?
@@ -6709,7 +6730,9 @@ extend(_Document, {
     }
     
     // create or get an _Element for this XML DOM node for node
-    return FlashHandler._getNode(nodeXML, this._handler);
+    node = FlashHandler._getNode(nodeXML, this._handler);
+    node._passThrough = true;
+    return node;
   },
   
   /** NOTE: on IE we don't support calls like the following:
@@ -6772,6 +6795,7 @@ extend(_Document, {
     var nodes = createNodeList();
     for (var i = 0; i < results.length; i++) {
       var elem = FlashHandler._getNode(results[i], this._handler);
+      elem._passThrough = true;
       nodes.push(elem);
     }
     

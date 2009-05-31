@@ -106,6 +106,11 @@ package org.svgweb.core
                         if (this.svgRoot.parent is SVGViewerWeb
                               && this._xml.children().length() > 0 
                               && this._xml.children()[0].text()) {
+                            // for the SVGViewerWeb we use a nested
+                            // SVGDOMTextNode to store the actual value; this
+                            // class is necessary so that we can do text
+                            // node detection in the browser and have a unique
+                            // GUID per DOM text node
                             this.setText(this._xml.children()[0].text().toString());
                         } else {
                             this.setText(this._xml.text().toString());
@@ -1404,7 +1409,7 @@ package org.svgweb.core
         public function invalidateDisplay():void {
             if (this._invalidDisplay == false) {
                 this._invalidDisplay = true;
-                this.addEventListener(Event.ENTER_FRAME, drawNode);                
+                this.addEventListener(Event.ENTER_FRAME, drawNode);
             }            
         }
 
