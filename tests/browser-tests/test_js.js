@@ -1214,6 +1214,7 @@ function testTextNodes() {
   }
   assertExists('svgText should exist', svgText);
   assertEquals('svgText.nodeName == text', 'text', svgText.nodeName);
+  assertEquals('svgText.id == myText', 'myText', svgText.id);
   assertEquals('svgText.childNodes.length == 1', 1, 
                svgText.childNodes.length);
   textNode = svgText.childNodes[0];
@@ -2732,8 +2733,7 @@ function testRemoveChild() {
   // and its such an edge condition that I doubt it's needed
   assertNull('stop.parentNode == null', stop.parentNode);
   assertEquals('temp == stop', temp, stop);
-  return; // DELETE ME!!!
-  
+    
   // remove a node then test the firstChild, lastChild, nextSibling,
   // and previousSibling properties on the removed tree
   metadata = getDoc('svg2').getElementsByTagNameNS(svgns, 'metadata')[0];
@@ -4668,7 +4668,7 @@ function testStyle() {
   // make some text invisible
   text = getDoc('mySVG').createElementNS(svgns, 'text');
   text.appendChild(getDoc('mySVG').createTextNode('This text should be hidden',
-                                           true));
+                                                  true));
   text.setAttribute('x', 50);
   text.setAttribute('y', 300);
   svg = getRoot('mySVG');
@@ -4678,7 +4678,7 @@ function testStyle() {
                text.style.visibility);
   console.log('FIRST IMAGE: You should _not_ see the text '
               + '"This text should be hidden"');
-
+              
   // make some text invisible than visible
   text = getDoc('mySVG').createElementNS(svgns, 'text');
   text.appendChild(getDoc('mySVG').createTextNode('This text should not be '
@@ -4843,7 +4843,11 @@ function testStyle() {
                /background\-image:url\((?:FOOBAR.SVG)?\);fill\-opacity:1;fill:(?:purple|\#008000);opacity:0\.5;stroke\-width:(?:3|8)px;stroke:(?:green|\#800080);/i
                     .test(styleStr));
   }
-  console.log('FIRST IMAGE: There should be a purple circle with a green outline');
+  // TODO: FIXME: Native Firefox renders this as a green circle with a 
+  // purple outline, while native Safari renders it as a purpe circle
+  // with a green outline! Determine which is correct.
+  console.log('THIRD IMAGE: There should be a purple circle with a green '
+              + 'outline and partial transparency');
   
   // TODO: manually set style="" string on an element with a preexisting
   // style="" string

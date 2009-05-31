@@ -1516,6 +1516,7 @@ package org.svgweb.core
                         break;
                     }
                 }
+                
                 this.invalidateDisplay();
             }
             
