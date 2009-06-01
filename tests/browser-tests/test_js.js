@@ -14,7 +14,7 @@ var _hasObjects = false;
 var objectLoaded = [false, false, false];
 svgweb._objectLoaded = function(position) {
   objectLoaded[position] = true;
-}
+};
 
 // a variable that embed2.svg accesses to make sure that multiple onload
 // listeners added in different ways run in the right order
@@ -43,7 +43,7 @@ svgweb._validateOnloads = function() {
   assertTrue('window._objectsLoadedFirst == false', window._objectsLoadedFirst);
                
   svgweb._validateOnloadsCalled = true;
-}
+};
 
 // a variable that we use to make sure that the different ways we listen
 // for the onload event when dynamically creating SVG OBJECT tags works
@@ -55,7 +55,7 @@ var shouldNotClash = 'set globally in test_js.js';
 
 // a global function we define to ensure that it doesn't clash with local
 // functions in our SVG files; checked in testScope() inside of embed2.svg
-var globalFunction = function() { return 'returned from test_js.js'; }
+var globalFunction = function() { return 'returned from test_js.js'; };
 
 // a flag we set on our window object; we compare this inside of our embed2.svg
 // tests to ensure we have a separate, independent window object 
@@ -87,9 +87,9 @@ var myRect, mySVG, rects, sodipodi, rdf, div, dc, bad, root, rect,
     path, gradient, group, group2, child, whitespaceAreNodes, metadata,
     cc, svg, svgText, textNode, text, desc, title, format, type,
     className, htmlTitle, head, circle, lengthBefore, matches, temp,
-    gradient, stop, defs, parent, textNode2, group2, renderer,
-    origText, exp, html, ns, nextToLast, paths, styleStr, circle,
-    image, line, defs, runTests, styleReturned, use, regExp, split, doc,
+    stop, defs, parent, textNode2, renderer,
+    origText, exp, html, ns, nextToLast, paths, styleStr,
+    image, line, doTests, styleReturned, use, regExp, split, doc,
     orig, rect1, rect2, obj1, obj2, obj3, handler;
     
 var allStyles = [
@@ -124,7 +124,7 @@ function runTests(embedTypes) {
   svgweb._fireFlashError = function(logMessage) {
     _flashError = true;
     assertFailed(logMessage);
-  }
+  };
   
   // make sure renderer string gets set
   renderer = svgweb.getHandlerType();
@@ -736,9 +736,9 @@ function testSVGSVGElementProperties() {
               root.x.baseVal.value);
   assertEquals("svg11242.y.baseVal.value should be 100", 100, 
               root.y.baseVal.value);
-  assertEquals("svg11242.width.baseVal.value should be 466.11172", 
+  assertEquals("svg11242.width.baseVal.value should be 466.11172",
               466.11172, root.width.baseVal.value.toPrecision(8));
-  assertEquals("svg11242.height.baseVal.value should be 265.35126", 
+  assertEquals("svg11242.height.baseVal.value should be 265.35126",
               265.35126, root.height.baseVal.value.toPrecision(8));
 }
 
@@ -2654,7 +2654,7 @@ function testRemoveChild() {
   lengthBefore = matches.length;
   assertTrue('title matches >= 1', matches.length >= 1);
   title = matches[0];
-  assertTrue('title.parentNode != null', title.parentNode != null);
+  assertTrue('title.parentNode != null', title.parentNode !== null);
   parentNode = title.parentNode;
   title.parentNode.removeChild(title);
   assertNull('title.parentNode == null', title.parentNode);
@@ -4567,11 +4567,11 @@ function testStyle() {
   // styles set with the style="" attribute into the 
   // element.style.* namespace! It only mirrors some, such as opacity
   // and display, but not others like fill.
-  runTests = true;
+  doTests = true;
   if (isFF && renderer == 'native') {
-    runTests = false;
+    doTests = false;
   }
-  if (runTests) {
+  if (doTests) {
     assertEqualsAny('rect3926.style.opacity == 1',
                     [1],
                     rect.style.opacity);
@@ -4977,7 +4977,7 @@ function testCreateSVGObject() {
     
     // indicate that this onload and its tests ran
     svgweb._dynamicObjOnloads++;
-  }
+  };
   svgweb.appendChild(obj2, div);
   
   // test having no ID on the dynamically created OBJECT

@@ -33,6 +33,8 @@ Third-Party Licenses, Versions, and Build Information:
 
 * src/svg.js - DOMContentLoaded code adapted from Dean Edwards blog article (http://dean.edwards.name/weblog/2005/09/busted/)
 
+* src/svg.js - GUID generation code in guid() adapted from blog post at http://note19.com/2007/05/27/javascript-guid-generator/
+
 * src/svg.htc - Flash embedding code adapted from Dojo Flash (Dojo 1.1.0); Brad Neuberg created Dojo Flash and owns the copyright so can freely relicense it (it's under the standard Dojo license anyway)
 
 * samples/svg-files/blocks_game.svg - Alex Fritze (http://www.croczilla.com/) - Permission given by email to freely use code under any license needed.

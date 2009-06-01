@@ -98,7 +98,7 @@
     
     // a global function we define to ensure that it doesn't clash with local
     // functions in our SVG files
-    var globalFunction = function() { return 'returned from embed2'; }
+    var globalFunction = function() { return 'returned from embed2'; };
     
     // A list of timer functions that have been called so we can ensure
     // timer functions work correctly; used by testTimingFunctions(). We
@@ -170,7 +170,7 @@
     window.onload = function() {
       top.svgweb._embedOnloads.push(4);
       top.svgweb._validateOnloads();
-    }
+    };
     
     // Note: we don't test document.rootElement.addEventListener(onload) for the 
     // following reason:
