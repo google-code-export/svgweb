@@ -1158,7 +1158,7 @@ function total(subject) {
 function ifStarted(subject) {
   for (var i in window.timer) {
     var t = window.timer[i];
-    if (i == subject && t.start != undefined && t.end == undefined) {
+    if (i == subject && t.start !== undefined && t.end === undefined) {
       return true;
     }
   }
@@ -1228,7 +1228,7 @@ function doDebugging() {
   for (var i = 0; i < scripts.length; i++) {
     if (scripts[i].src.indexOf('svg.js') != -1) {
       var debugSetting = scripts[i].getAttribute('data-debug');
-      debug = (debugSetting == 'true' || debugSetting == true) ? true : false;
+      debug = (debugSetting === 'true' || debugSetting === true) ? true : false;
     }
   }
   
@@ -1241,7 +1241,7 @@ if (typeof console == 'undefined' || !console.log) {
   console = {};
   
   if (!debug) {
-    console.log = function() {}
+    console.log = function() {};
   } else {
     console.log = function(msg) {
       var body = null;
@@ -1383,7 +1383,7 @@ function xpath(doc, context, expr, namespaces) {
     }
     
     var found = context.selectNodes(expr);
-    if (found == null || typeof found == 'undefined') {
+    if (found === null || typeof found == 'undefined') {
       found = createNodeList();
     }
     
@@ -1451,7 +1451,7 @@ function parseXML(xml, preserveWhiteSpace) {
       xmlDoc.async = 'false';
       var successful = xmlDoc.loadXML(xml);
       
-      if (!successful || xmlDoc.parseError.errorCode != 0) {
+      if (!successful || xmlDoc.parseError.errorCode !== 0) {
         throw new Error(xmlDoc.parseError.reason);
       }
     } catch (e) {
@@ -1487,7 +1487,7 @@ function hitch(context, method) {
   // this method shows up in the style string on IE's HTC object since we
   // use it to extend the HTC element's style object with methods like
   // item(), setProperty(), etc., so we want to keep it short
-  return function() { return method.apply(context, (arguments.length) ? arguments : []); }
+  return function() { return method.apply(context, (arguments.length) ? arguments : []); };
 }
 
 /* 
@@ -1534,7 +1534,12 @@ function S4() {
 // collisions (birthday paradox), or do we not have enough nodes for this
 // length to really matter?
 function guid() {
-   return '{'+S4()+S4()+'-'+S4()+'-'+S4()+'-'+S4()+'-'+S4()+S4()+S4()+'}';
+  // NOTE: IE 6 has a crazy bug: we used to have {} and - characters in 
+  // our GUIDs, but if you have these inside the ID of an OBJECT, such as 
+  // __svg__random__{0bd2b199-6e64-63da-1ff8-cd8ab4c3d6d0}__object, then
+  // IE 6 gives you an "Expected ;" error, which means that the
+  // ID gets interpreted as JavaScript! We use underscores instead.
+  return '_'+S4()+S4()+'_'+S4()+'_'+S4()+'_'+S4()+'_'+S4()+S4()+S4()+'_';
 }
 
 
@@ -1788,7 +1793,7 @@ extend(SVGWeb, {
     this.renderer._patchDocumentObject(document);
     
     // no SVG - we're done
-    if (this.totalSVG == 0) {
+    if (this.totalSVG === 0) {
       this._fireOnLoad();
       return;
     }
@@ -2086,7 +2091,7 @@ extend(SVGWeb, {
       xml = null;
 
       self._handleDone(id, type);
-    }
+    };
     
     var handler = new this.renderer({type: 'script', 
                                      svgID: rootID,
@@ -2114,7 +2119,7 @@ extend(SVGWeb, {
     var self = this;
     var finishedCallback = function(id, type){
       self._handleDone(id, type);
-    }
+    };
     
     var handler = new this.renderer({type: 'object', 
                                      objID: objID,
@@ -2237,7 +2242,7 @@ extend(SVGWeb, {
   _handleHTMLTitleBug: function() {
     var head = document.getElementsByTagName('head')[0];
     var title = head.getElementsByTagName('title');
-    if (title.length == 0) {
+    if (title.length === 0) {
       title = document.createElement('title');
       head.appendChild(title);
     }
@@ -2552,7 +2557,7 @@ FlashInfo.prototype = {
 			if (versionStr == -1 ) {
 				this.capable = false; 
 				return;
-			} else if (versionStr != 0) {
+			} else if (versionStr !== 0) {
 				var versionArray;
 				if (isIE) {
 					var tempArray = versionStr.split(" ");
@@ -2581,7 +2586,7 @@ FlashInfo.prototype = {
 	// information.
 	_JSFlashInfo: function(testVersion){
 		// NS/Opera version >= 3 check for Flash plugin in plugin array
-		if (navigator.plugins != null && navigator.plugins.length > 0) {
+		if (navigator.plugins !== null && navigator.plugins.length > 0) {
 			if (navigator.plugins["Shockwave Flash 2.0"] || 
 				 navigator.plugins["Shockwave Flash"]) {
 				var swVer2 = navigator.plugins["Shockwave Flash 2.0"] ? " 2.0" : "";
@@ -2671,7 +2676,7 @@ FlashHandler._prepareBehavior = function(libraryPath) {
   
   // attach SVG behavior to the page
   ns.doImport(libraryPath + 'svg.htc');
-}
+};
 
 /** Fetches an _Element or _Node or creates a new one on demand.
     
@@ -2715,7 +2720,7 @@ FlashHandler._getNode = function(nodeXML, handler) {
   }
     
   return node._getProxyNode();
-}
+};
 
 /** Patches the document object to also use the Flash backend. */
 FlashHandler._patchDocumentObject = function(doc) {
@@ -2748,7 +2753,7 @@ FlashHandler._patchDocumentObject = function(doc) {
   document.createTextNode = FlashHandler._createTextNode;
   
   document._importNodeFunc = FlashHandler._importNodeFunc;
-}
+};
 
 /** Our implementation of getElementById, which we patch into the 
     document object. We do it here to prevent a closure and therefore
@@ -2757,7 +2762,7 @@ FlashHandler._patchDocumentObject = function(doc) {
     the window object. */
 FlashHandler._getElementById = function(id) {
   var result = document._getElementById(id);
-  if (result != null) { // Firefox doesn't like 'if (result)'
+  if (result !== null) { // Firefox doesn't like 'if (result)'
     return result;
   }
 
@@ -2772,7 +2777,7 @@ FlashHandler._getElementById = function(id) {
   }
   
   return null;
-}
+};
 
 /** Our implementation of getElementsByTagNameNS, which we patch into the 
     document object. We do it here to prevent a closure and therefore
@@ -2805,7 +2810,7 @@ FlashHandler._getElementsByTagNameNS = function(ns, localName) {
   }
 
   return results;
-}
+};
 
 /** Our implementation of createElementNS, which we patch into the 
     document object. We do it here to prevent a closure and therefore
@@ -2813,7 +2818,7 @@ FlashHandler._getElementsByTagNameNS = function(ns, localName) {
     scope, so 'this' will not refer to our object instance but rather
     the window object. */
 FlashHandler._createElementNS = function(ns, qname) {
-  if (ns == null || ns == 'http://www.w3.org/1999/xhtml') {
+  if (ns === null || ns == 'http://www.w3.org/1999/xhtml') {
     if (isIE) {
       return document.createElement(qname);
     } else {
@@ -2856,7 +2861,7 @@ FlashHandler._createElementNS = function(ns, qname) {
   var node = new _Element(qname, prefix, ns);
   
   return node._getProxyNode(); 
-}
+};
 
 /** Our implementation of createElement, which we patch into the 
     document object. We do it here to prevent a closure and therefore
@@ -2901,7 +2906,7 @@ FlashHandler._createElement = function(nodeName, forSVG) {
     
     return obj;
   }
-}
+};
 
 /** Our implementation of createTextNode, which we patch into the 
     document object. We do it here to prevent a closure and therefore
@@ -2941,7 +2946,7 @@ FlashHandler._createTextNode = function(data, forSVG) {
     
     return textNode._getProxyNode();
   }
-}
+};
 
 /** IE doesn't support the importNode function. We define it on the
     document object as _importNodeFunc. Unfortunately we need it there
@@ -2981,7 +2986,7 @@ FlashHandler._importNodeFunc = function(doc, node, allChildren) {
       return doc.createTextNode(node.nodeValue);
       break;
   }
-}
+};
 
 /** Flash has a number of encoding issues when talking over the Flash/JS
     boundry. This method encapsulates fixing these issues. 
@@ -2999,7 +3004,8 @@ FlashHandler._encodeFlashData = function(str) {
   } else {
     return str;
   }
-}
+};
+
 // end static singleton functions
 
 // methods that every FlashHandler instance will have
@@ -3190,14 +3196,14 @@ NativeHandler._patchDocumentObject = function(doc) {
   doc._getElementById = doc.getElementById;
   doc.getElementById = function(id) {
     var result = doc._getElementById(id);
-    if (result != null) { // Firefox doesn't like 'if (result)'
+    if (result !== null) { // Firefox doesn't like 'if (result)'
       // This is to solve an edge bug on Safari 3;
       // if you do a replaceChild on a non-SVG, non-HTML node,
       // the element is still returned by getElementById!
       // The element has a null parentNode.
       // TODO: FIXME: Track down whether this is caused by a memory
       // leak of some kind
-      if (result.parentNode == null) {
+      if (result.parentNode === null) {
         return null;
       } else {
         return result;
@@ -3215,8 +3221,8 @@ NativeHandler._patchDocumentObject = function(doc) {
       // add an .id attribute for non-SVG and non-HTML nodes, which
       // don't have them by default in order to have parity with the
       // Flash viewer; note Firefox doesn't like if (node.namespaceURI)
-      // rather than (node.namespaceURI != null)
-      if (node.namespaceURI != null && node.namespaceURI != svgns
+      // rather than (node.namespaceURI !== null)
+      if (node.namespaceURI !== null && node.namespaceURI != svgns
           && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
         svgweb._exportID(node);
       }
@@ -3225,7 +3231,7 @@ NativeHandler._patchDocumentObject = function(doc) {
     } else {
       return null;
     }
-  }
+  };
   
   // we also have to patch getElementsByTagNameNS because it does 
   // not seem to work consistently with namepaced content in an HTML
@@ -3238,8 +3244,8 @@ NativeHandler._patchDocumentObject = function(doc) {
     var result = doc._getElementsByTagNameNS(ns, localName);
     
     // firefox doesn't like if (result)
-    if (result != null && result.length != 0) {
-      if (ns != null && ns != 'http://www.w3.org/1999/xhtml' && ns != svgns) {
+    if (result !== null && result.length !== 0) {
+      if (ns !== null && ns != 'http://www.w3.org/1999/xhtml' && ns != svgns) {
         // add an .id attribute for non-SVG and non-HTML nodes, which
         // don't have them by default in order to have parity with the
         // Flash viewer
@@ -3254,7 +3260,7 @@ NativeHandler._patchDocumentObject = function(doc) {
       return result;
     }
     
-    if (result == null || result.length == 0) {
+    if (result === null || result.length === 0) {
       result = createNodeList();
     }
     
@@ -3283,7 +3289,7 @@ NativeHandler._patchDocumentObject = function(doc) {
       
       xpathResults = xpath(doc, handler._svgRoot, expr, 
                            handler._namespaces);
-      if (xpathResults != null && xpathResults != undefined
+      if (xpathResults !== null && xpathResults !== undefined
           && xpathResults.length > 0) {
         for (var j = 0; j < xpathResults.length; j++) {
           var node = xpathResults[j];
@@ -3291,8 +3297,8 @@ NativeHandler._patchDocumentObject = function(doc) {
           // add an .id attribute for non-SVG and non-HTML nodes, which
           // don't have them by default in order to have parity with the
           // Flash viewer; note Firefox doesn't like if (node.namespaceURI)
-          // rather than (node.namespaceURI != null)
-          if (node.namespaceURI != null && node.namespaceURI != svgns
+          // rather than (node.namespaceURI !== null)
+          if (node.namespaceURI !== null && node.namespaceURI != svgns
               && node.namespaceURI != 'http://www.w3.org/1999/xhtml') {
             svgweb._exportID(node);
           }
@@ -3305,7 +3311,7 @@ NativeHandler._patchDocumentObject = function(doc) {
     }
     
     return createNodeList();
-  }
+  };
   
   // createElementNS
   
@@ -3321,7 +3327,7 @@ NativeHandler._patchDocumentObject = function(doc) {
     doc._createElementNS = doc.createElementNS;
     doc.createElementNS = NativeHandler._createElementNS(doc);
   }
-}
+};
 
 /** A patched version of createElementNS necessary for Firefox. See the
     documentation inside of patchDocumentObject for the reasons why. 
@@ -3371,16 +3377,16 @@ NativeHandler._createElementNS = function(doc) {
     // define other methods and properties from CSSStyleDeclaration interface
     customStyle.setProperty = function(styleName, styleValue, priority) {
       return origStyle.setProperty(styleName, styleValue, priority);
-    }
+    };
     customStyle.getPropertyValue = function(styleName) {
       return origStyle.getPropertyValue(styleName);
-    }
+    };
     customStyle.removeProperty = function(styleName) {
       return origStyle.removeProperty(styleName);
-    }
+    };
     customStyle.item = function(index) {
       return origStyle.item(index);
-    }
+    };
     customStyle.__defineGetter__('cssText', function() {
       return origStyle.cssText;
     });
@@ -3394,8 +3400,9 @@ NativeHandler._createElementNS = function(doc) {
     });
   
     return elem;
-  }
-}
+  };
+};
+
 // end of static singleton functions
 
 // methods that every NativeHandler instance has
@@ -3614,7 +3621,7 @@ extend(_DOMImplementation, {
 // nodes are turned into text nodes.
 function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler, 
                passThrough) {
-  if (nodeName == undefined && nodeType == undefined) {
+  if (nodeName === undefined && nodeType === undefined) {
     // prototype subclassing
     return;
   }
@@ -4068,7 +4075,7 @@ extend(_Node, {
     
     var parentXML = this._nodeXML.parentNode;
     // unattached nodes might have an XML document as their parentNode
-    if (parentXML == null || parentXML.nodeType == _Node.DOCUMENT_NODE) {
+    if (parentXML === null || parentXML.nodeType == _Node.DOCUMENT_NODE) {
       return null;
     }
     
@@ -4083,7 +4090,7 @@ extend(_Node, {
     }
     
     var childXML = this._nodeXML.firstChild;
-    if (childXML == null) {
+    if (childXML === null) {
       return null;
     }
     
@@ -4099,7 +4106,7 @@ extend(_Node, {
     }
     
     var childXML = this._nodeXML.lastChild;
-    if (childXML == null) {
+    if (childXML === null) {
       return null;
     }
     
@@ -4129,7 +4136,7 @@ extend(_Node, {
     var siblingXML = this._nodeXML.previousSibling;
     // unattached nodes will sometimes have an XML Processing Instruction
     // as their previous node (type=7)
-    if (siblingXML == null || siblingXML.nodeType == 7) {
+    if (siblingXML === null || siblingXML.nodeType == 7) {
       return null;
     }
     
@@ -4157,7 +4164,7 @@ extend(_Node, {
     }
     
     var siblingXML = this._nodeXML.nextSibling;
-    if (siblingXML == null) {
+    if (siblingXML === null) {
       return null;
     }
     
@@ -4212,7 +4219,7 @@ extend(_Node, {
     // is the only way we can do getter/setter magic on each indexed position
     // for Safari.
     this.__defineGetter__('childNodes', (function(self) {
-      return function() { return self._childNodes; }
+      return function() { return self._childNodes; };
     })(this));
     
     // We represent Text nodes internally using XML Element nodes in order
@@ -4236,31 +4243,31 @@ extend(_Node, {
     // read/write properties
     if (this.nodeType == _Node.TEXT_NODE) {
       this.__defineGetter__('data', (function(self) { 
-        return function() { return self._nodeValue; }
+        return function() { return self._nodeValue; };
       })(this));
       this.__defineSetter__('data', (function(self) {
-        return function(newValue) { return self._setNodeValue(newValue); }
+        return function(newValue) { return self._setNodeValue(newValue); };
       })(this));
       
       this.__defineGetter__('textContent', (function(self) {
-        return function() { return self._nodeValue; } 
+        return function() { return self._nodeValue; }; 
       })(this));
       this.__defineSetter__('textContent', (function(self) {
-        return function(newValue) { return self._setNodeValue(newValue); }
+        return function(newValue) { return self._setNodeValue(newValue); };
       })(this));
     } else { // ELEMENT and DOCUMENT nodes
       // Firefox and Safari return '' for textContent for non-text nodes;
       // mimic this behavior
       this.__defineGetter__('textContent', (function() {
-        return function() { return ''; }
+        return function() { return ''; };
       })());
     }
     
     this.__defineGetter__('nodeValue', (function(self) {
-      return function() { return self._nodeValue; }
+      return function() { return self._nodeValue; };
     })(this));
     this.__defineSetter__('nodeValue', (function(self) {
-      return function(newValue) { return self._setNodeValue(newValue); }
+      return function(newValue) { return self._setNodeValue(newValue); };
     })(this));
   },
   
@@ -4711,7 +4718,7 @@ extend(_Node, {
         } else {
           return this[index];
         }
-      }
+      };
     } else { // IE
       childNodes = createNodeList();
     }
@@ -4790,8 +4797,8 @@ extend(_Node, {
     element 'pass through' and cause changes in the Flash renderer. */                 
 function _Element(nodeName, prefix, namespaceURI, nodeXML, handler, 
                   passThrough) {
-  if (nodeName == undefined && namespaceURI == undefined 
-      && nodeXML == undefined && handler == undefined) {
+  if (nodeName === undefined && namespaceURI === undefined 
+      && nodeXML === undefined && handler === undefined) {
     // prototype subclassing
     return;
   }
@@ -4868,7 +4875,7 @@ extend(_Element, {
       }
     }
     
-    if (value == undefined || value == null || /^[ ]*$/.test(value)) {
+    if (value === undefined || value === null || /^[ ]*$/.test(value)) {
       return null;
     }
     
@@ -4928,7 +4935,7 @@ extend(_Element, {
        reattach them (!) */
     if (isSafari
         && localName == 'style'
-        && this._nodeXML.parentNode != null 
+        && this._nodeXML.parentNode !== null 
         && this._nodeXML.parentNode.nodeName == 'clipPath') {
       // save our XML position information for later re-inserting
       var addBeforeXML = this._nodeXML.nextSibling;
@@ -5082,7 +5089,7 @@ extend(_Element, {
   /** Extracts the unit value and trims off the measurement type. For example, 
       if you pass in 14px, this method will return 14. Null will return null. */
   _trimMeasurement: function(value) {
-    if (value != null) {
+    if (value !== null) {
       value = value.replace(/[a-z]/gi, '');
     }
     return value;
@@ -5401,7 +5408,7 @@ extend(_Style, {
   _fromStyleString: function() {
     var styleValue = this._element._nodeXML.getAttribute('style');
     
-    if (styleValue == null || styleValue == undefined) {
+    if (styleValue === null || styleValue === undefined) {
       return [];
     }
     
@@ -5880,7 +5887,7 @@ extend(_SVGObject, {
     // wouldn't incorrectly transform them)
     script = script.replace(/top\.DOCUMENT/g, 'top.document');
     script = script.replace(/top\.WINDOW/g, 'top.window');
-    
+        
     // Now create an iframe that we will use to 'silo' and execute our
     // code, which will act as a place for globals to be defined without
     // clobbering globals on the HTML document's window or from other
@@ -6764,7 +6771,7 @@ extend(_Document, {
     if (this._xml.getElementsByTagNameNS) { // non-IE browsers
       results = this._xml.getElementsByTagNameNS(ns, localName);
     } else { // IE
-      if (ns == null) {
+      if (ns === null) {
         // we can't just use getElementsByTagName() here, because IE
         // will incorrectly return tags that are in the default namespace
         results = xpath(this._xml, null, '//' + localName);
@@ -6777,11 +6784,11 @@ extend(_Document, {
           return createNodeList(); // empty []
         } else {
           var prefix = this._namespaces['_' + ns];
-          if (prefix == undefined) {
+          if (prefix === undefined) {
             return createNodeList(); // empty []
           }
           
-          if (prefix == undefined) {
+          if (prefix === undefined) {
             results = createNodeList();
           } else if (prefix == 'xmlns') {
             query = localName;
@@ -6863,7 +6870,7 @@ function createNodeList() {
 // a String object with the 'data' property patched in, since that is what
 // is most commonly accessed
 function createCharacterData(data) {
-  var results = (data != undefined) ? new String(data) : new String();
+  var results = (data !== undefined) ? new String(data) : new String();
   results.data = results.toString();
   return results;
 }
