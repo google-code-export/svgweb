@@ -307,10 +307,11 @@ package org.svgweb.core
                         this._parsedChildren = true;
                     }
 
-                    // sets x, y, rotate, and opacity
+                    // sets x, y, and rotate
                     this.setAttributes();
+                    // sets opacity
                     this.setStyles();
-                    
+
                     if (this.getStyleOrAttr('visibility') == 'hidden') {
                         // SVG spec says visibility='hidden' should fully draw
                         // the shape with full stroke widths, etc., 
@@ -1210,10 +1211,18 @@ package org.svgweb.core
         public function setStyle(name:String, value:String):void {
             //this.dbg('setStyle, name='+name+', value='+value);
             this._styles[name] = value;
-            updateStyle();
-            parseStyle();
+            this.updateStyle();
+            this.parseStyle();
             
             this.updateClones();
+
+            this.invalidateDisplay();
+            if (   (name == 'display' || name == 'visibility')
+                || (name == 'style' &&
+                        (   (value.indexOf('visibility') != -1 )
+                         || (value.indexOf('display') != -1 ) ) ) ) {
+                this.invalidateChildren();
+            }
         }
         
         /** Gets a style attribute from the style="" string. Note that this

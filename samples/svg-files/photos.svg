@@ -199,14 +199,17 @@
       }
 
       function onEnterImage(ev) {
+          top.console.log('onEnterImage, ev='+ev);
           var e = baseName(ev);
           if (!e)
               return;
+  
           document.getElementById(e + '-overlay').style.visibility = "visible";
           ev.preventDefault();
       }
 
       function onExitImage(ev) {
+          top.console.log('onExitImage, ev='+ev);
           var e = baseName(ev);
           if (!e)
               return;
