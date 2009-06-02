@@ -347,8 +347,9 @@ package org.svgweb
             
             try {
                 if (jsMsg.method == 'addEventListener') {
-                    // Get the parent node
+                    // Get the element to add the event listener to
                     element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
+
                     if (element) {
                         if (jsMsg.eventType == 'mouseup') {
                             element.addEventListener(MouseEvent.MOUSE_UP, handleAction);
@@ -452,7 +453,6 @@ package org.svgweb
  
                     if (jsMsg.applyToStyle) {
                         element.setStyle(attrName, attrValue);
-                        element.invalidateDisplay();
                     }
                     else if (jsMsg.attrNamespace != null) {
                         // namespaced attribute, such as xlink:href
@@ -545,7 +545,6 @@ package org.svgweb
         }
 
         protected function handleAction(event:Event):void {
-
             switch(event.type) {
                 case MouseEvent.CLICK:
                 case MouseEvent.MOUSE_DOWN:
@@ -568,8 +567,8 @@ package org.svgweb
                     ExternalInterface.call(this.js_handler + "onMessage",
                                              { type: 'event',
                                                uniqueId: this.js_uniqueId,
-                                               targetId: SVGNode(event.target).id,
-                                               currentTargetId: SVGNode(event.currentTarget).id,
+                                               targetGUID: SVGNode(event.target).guid,
+                                               currentTargetGUID: SVGNode(event.currentTarget).guid,
                                                eventType: event.type.toLowerCase(),
                                                clientX: event.localX,
                                                clientY: event.localY,

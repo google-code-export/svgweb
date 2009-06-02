@@ -2519,17 +2519,24 @@ extend(RenderConfig, {
       true or a URL query value with 'svg.render.forceflash' given. */
   _forceFlash: function() {
     var results = false;
-    
-    if (window.location.search.indexOf('svg.render.forceflash=true') != -1) {
-      results = true;
-    }
+    var hasMeta = false;
     
     var meta = document.getElementsByTagName('meta');
     for (var i = 0; i < meta.length; i++) {
       if (meta[i].name == 'svg.render.forceflash' &&
           meta[i].content.toLowerCase() == 'true') {
         results = true;
+        hasMeta = true;
       }
+    }
+    
+    if (window.location.search.indexOf('svg.render.forceflash=true') != -1) {
+      results = true;
+    } else if (hasMeta
+               && window.location.search.indexOf(
+                                        'svg.render.forceflash=false') != -1) {
+      // URL takes precedence
+      results = false;
     }
     
     return results;
@@ -3195,6 +3202,28 @@ extend(FlashHandler, {
     }
   },
   
+  _onMouseEvent: function(msg) {
+    //console.log('_onMouseEvent, msg='+this.debugMsg(msg));
+    var target = svgweb._guidLookup['_' + msg.targetGUID];
+    var currentTarget = svgweb._guidLookup['_' + msg.currentTargetGUID];
+
+    // TODO: FIXME: need to compute proper coordinates
+    var evt = { target: target,
+                currentTarget: currentTarget,
+                clientX: msg.screenX,
+                clientY: msg.screenY,
+                screenX: msg.screenX,
+                screenY: msg.screenY,
+                preventDefault: function() { this.returnValue=false; }
+              };
+              
+    var handlers = currentTarget._listeners[msg.eventType];
+    for (var i = 0; i < handlers.length; i++) {
+      var handler = handlers[i];
+      handler(evt);
+    }
+  },
+  
   /** Calls if the Flash encounters an error. */
   _onFlashError: function(msg) {
     this._onLog(msg);
@@ -3709,6 +3738,8 @@ function _Node(nodeName, nodeType, prefix, namespaceURI, nodeXML, handler,
   this.nodeName = nodeName;
   this._nodeXML = nodeXML;
   this._handler = handler;
+  this._listeners = {};
+  this._detachedListeners = [];
   this.fake = true;
   
   // determine whether we are attached
@@ -3829,6 +3860,29 @@ mixin(_Node, {
 });
 
 extend(_Node, {
+  /* Event listeners; this is an object hashtable that keys the event name,
+     such as 'mousedown', with an array of functions to execute when this 
+     event happens. This second level array is also used as an object
+     hashtable to associate the function + useCapture with the listener so
+     that we can implement removeListener at a later point. We only add to
+     this table if the node is attached to the DOM. Example:
+     
+     _listeners['mousedown'] --> array of listeners
+     _listeners['mousedown'][0] --> first mousedown listener, a function
+     _listeners['mousedown']['_' + someListener + ':' + useCapture] --> 
+                                  getting listener by function reference for
+                                  mouse down event 
+  */
+  _listeners: null,
+  
+  /* An array that we use to store addEventListener requests for detached nodes, 
+     where each array entry is an object literal with the following values:
+     
+     type - The type of the event
+     listener - The function object to execute
+     useCapture - Whether to use capturing or not. */
+  _detachedListeners: null,
+  
   insertBefore: function(newChild /* _Node */, refChild /* _Node */) {
     //console.log('insertBefore, newChild='+newChild.id+', refChild='+refChild.id);
     
@@ -4114,6 +4168,90 @@ extend(_Node, {
       return false;
     } else {
       return false;
+    }
+  },
+  
+  /*
+    DOM Level 2 EventTarget interface methods.
+  
+    Note: dispatchEvent not supported. Technically as well this interface
+    should not appear on SVG elements that don't have any event dispatching,
+    such as the SVG DESC element, but in our implementation they still appear.
+    We also don't support the useCapture feature for addEventListener and
+    removeEventListener.
+  */
+  
+  /* @param _adding Internal boolean flag used when we are adding this node
+     to a real DOM, so that we can replay and send our addEventListener 
+     request over to Flash. */
+  addEventListener: function(type, listener /* Function */, useCapture, 
+                             _adding /* Internal -- Boolean */) {
+    //console.log('addEventListener, type='+type+', listener='+listener+', useCapture='+useCapture+', _adding='+_adding);
+    // Note: capturing not supported
+    
+    if (!_adding && !this._attached) {
+      // add to a list of event listeners that will get truly registered when
+      // we get attached in _Node._processAppendedChildren()
+      this._detachedListeners.push({ type: type, listener: listener, 
+                                     useCapture: useCapture });
+      return;
+    }
+    
+    // add to our list of event listeners
+    if (this._listeners[type] === undefined) {
+      this._listeners[type] = [];
+    }
+    this._listeners[type].push(listener);
+    this._listeners[type]['_' + listener.toString() + ':' + useCapture]
+                                        = listener;
+            
+    if (type == 'keydown') {
+      // TODO: FIXME: do we want to be adding this listener to 'document'
+      // when dealing with SVG OBJECTs?
+      this._addEvent(document, type, 
+                        // prevent closure by using an inline method
+                        (function(listener) {
+                          return function(evt) {
+                            // shim in preventDefault function for IE
+                            if (!evt.preventDefault) {
+                              evt.preventDefault = function() {
+                                this.returnValue = false;
+                                evt = null;
+                              }
+                            }
+                          }
+                        })(listener));
+      return;
+    }
+    
+    this._handler.sendToFlash({ type: 'invoke', 
+                                method: 'addEventListener',
+                                elementGUID: this._guid,
+                                eventType: type });
+  },
+  
+  removeEventListener: function(type, listener /* Function */, useCapture) {
+    // Note: capturing not supported
+    // TODO: Implement
+  },
+  
+  /** Adds an event cross platform. 
+  
+      @param obj Obj to add event to.
+      @param type String type of event.
+      @param fn Function to execute when event happens. */
+  _addEvent: function(obj, type, fn) {
+    if (obj.addEventListener) {
+      obj.addEventListener(type, fn, false);
+    }
+    else if (obj.attachEvent) { // IE
+      obj['e'+type+fn] = fn;
+      // do a trick to prevent closure over ourselves, which can lead to
+      // IE memory leaks
+      obj[type+fn] = (function(obj, type, fn) { 
+        obj['e'+type+fn](window.event); 
+      })(obj, type, fn);
+      obj.attachEvent('on'+type, obj[type+fn]);
     }
   },
   
@@ -4505,9 +4643,22 @@ extend(_Node, {
   _processAppendedChildren: function(child, parent, attached, passThrough) {
     //console.log('processAppendedChildren, this.nodeName='+this.nodeName+', child.nodeName='+child.nodeName+', attached='+attached+', passThrough='+passThrough);
     start('processAppendedChildren', 'board');
+    
+    // serialize this node and all its children into an XML string and
+    // send that over to Flash
+    if (attached) {
+      start('sending appendChild flash', 'board');
+      var xmlString = FlashHandler._encodeFlashData(this._toXML(child));
+      this._handler.sendToFlash({ type: 'invoke', 
+                                  method: 'appendChild',
+                                  parentGUID: parent._guid, 
+                                  childXML: xmlString });
+      end('sending appendChild flash', 'board');
+    }
 
     // walk the DOM from the child using an iterative algorithm, which was 
-    // found to be faster than a recursive one
+    // found to be faster than a recursive one; for each node visited we will
+    // store some important reference information
     start('total walk', 'board');
     var current = child;
     while (current) {
@@ -4531,6 +4682,15 @@ extend(_Node, {
           current.ownerDocument = this._handler.document;
         }
       }
+      
+      // register and send over any event listeners that were added while
+      // this node was detached
+      for (var i = 0; attached && i < current._detachedListeners.length; i++) {
+        var addMe = current._detachedListeners[i];
+        current.addEventListener(addMe.type, addMe.listener, 
+                                 addMe.useCapture, true);
+      }
+      current._detachedListeners = [];
           
       // now continue visiting other nodes
       var lastVisited = current;
@@ -4576,18 +4736,6 @@ extend(_Node, {
       lastVisited._passThrough = passThrough;
     }
     end('total walk', 'board');
-
-    // now serialize this node and all its children into an XML string and
-    // send that over to Flash
-    if (attached) {
-      start('sending appendChild flash', 'board');
-      var xmlString = FlashHandler._encodeFlashData(this._toXML(child));
-      this._handler.sendToFlash({ type: 'invoke', 
-                                  method: 'appendChild',
-                                  parentGUID: parent._guid, 
-                                  childXML: xmlString });
-      end('sending appendChild flash', 'board');
-    }
 
     end('processAppendedChildren', 'board');
   },
@@ -4852,8 +5000,6 @@ extend(_Node, {
       this.getAttribute 
           = this.setAttribute 
           = this.setAttributeNS
-          = this.addEventListener
-          = this.removeEventListener
           = this._getId
           = this._setId
           = this._getX
@@ -5068,26 +5214,6 @@ extend(_Element, {
     Note: DOM Level 2 getAttributeNode, setAttributeNode, removeAttributeNode,
     getElementsByTagName, getAttributeNodeNS, setAttributeNodeNS not supported
   */
-  
-  /*
-    DOM Level 2 EventTarget interface methods.
-  
-    Note: dispatchEvent not supported. Technically as well this interface
-    should not appear on SVG elements that don't have any event dispatching,
-    such as the SVG DESC element, but in our implementation they still appear.
-    We also don't support the useCapture feature for addEventListener and
-    removeEventListener.
-  */
-  
-  addEventListener: function(type, listener /* Function */, useCapture) {
-    // Note: capturing not supported
-    // TODO: Implement
-  },
-  
-  removeEventListener: function(type, listener /* Function */, useCapture) {
-    // Note: capturing not supported
-    // TODO: Implement
-  },  
   
   // SVGStylable interface
   style: null, /** Note: technically should be read only; _Style instance */
