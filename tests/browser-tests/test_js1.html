@@ -9,9 +9,30 @@
     </script>
     <script src="test_js.js"></script>
     <script src="testUtil.js"></script>
-    
+
     <script>
-      svgweb.addOnLoad(function() { 
+      // subscribe to the page load event in different ways to make sure
+      // it works
+      if (window.addEventListener) { // Standards-compliant browsers
+        window.addEventListener('load', function() {
+          window._pageLoadedListeners.push('addEventListener, useCapture=false');
+        }, false);
+        window.addEventListener('load', function() {
+          window._pageLoadedListeners.push('addEventListener, useCapture=true');
+        }, true);
+      }
+      
+      if (window.attachEvent) { // IE
+        window.attachEvent('onload', function() {
+          window._pageLoadedListeners.push('attachEvent');
+        });
+      }
+      
+      window.onload = function() {
+        console.log('our window.onload listener!!!');
+        // indicate which onload listener fired for later testing
+        window._pageLoadedListeners.push('windowOnLoad');
+        
         // specify how each of our SVG images is embedded to help the unit
         // tests run correctly
         var embedTypes = {};
@@ -21,7 +42,7 @@
         
         // run the tests
         runTests(embedTypes);
-      });
+      };
     </script>
   </head>
 
