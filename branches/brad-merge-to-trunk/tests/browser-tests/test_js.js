@@ -78,6 +78,10 @@ window._topLevel = true;
 window._topWindow = window;
 window._topDocument = document;
 
+// a data structure that we use to test making sure that adding event listeners
+// for the onload event fires in the correct order
+window._pageLoadedListeners = [];
+
 var sodipodi_ns = 'http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd';
 var dc_ns = "http://purl.org/dc/elements/1.1/";
 var rdf_ns = "http://www.w3.org/1999/02/22-rdf-syntax-ns#";
@@ -305,6 +309,55 @@ function runTests(embedTypes) {
                         + '].document._nodeById["_undefined"] should be '
                         + 'undefined');
       }
+    }
+    
+    // make sure our window.onload listeners fired in the correct order
+    if (isIE && !_hasObjects) {
+      // window.onload and attachEvent
+      assertEquals('2 page onload handlers should have fired', 2,
+                   window._pageLoadedListeners.length);
+      assertEquals('1st page onload handler == windowOnLoad', 'windowOnLoad',
+                   window._pageLoadedListeners[0]);
+      assertEquals('2nd page onload handler == attachEvent', 'attachEvent',
+                   window._pageLoadedListeners[1]);
+    } else if (isIE && hasObjects) {
+      // bodyOnLoad and attachEvent
+      assertEquals('2 page onload handlers should have fired', 2,
+                   window._pageLoadedListeners.length);
+      assertEquals('1st page onload handler == bodyOnLoad', 'bodyOnLoad',
+                   window._pageLoadedListeners[0]);
+      assertEquals('2nd page onload handler == attachEvent', 'attachEvent',
+                   window._pageLoadedListeners[1]);
+    } else if (!_hasObjects) {
+      // window.onload, 'addEventListener, useCapture=false',
+      // and 'addEventListener, useCapture=true'
+      assertEquals('3 page onload handlers should have fired', 3,
+                   window._pageLoadedListeners.length);
+      assertEquals('1st page onload handler == '
+                   + '"addEventListener, useCapture=false"',
+                   'addEventListener, useCapture=false',
+                   window._pageLoadedListeners[0]);
+      assertEquals('2nd page onload handler == '
+                   + '"addEventListener, useCapture=true"',
+                   'addEventListener, useCapture=true',
+                   window._pageLoadedListeners[1]);
+      assertEquals('3rd page onload handler == windowOnLoad', 'windowOnLoad',
+                   window._pageLoadedListeners[2]);
+    } else if (_hasObjects) {
+      // bodyOnLoad, 'addEventListener, useCapture=false',
+      // and 'addEventListener, useCapture=true'
+      assertEquals('3 page onload handlers should have fired', 3,
+                   window._pageLoadedListeners.length);
+      assertEquals('1st page onload handler == '
+                   + '"addEventListener, useCapture=false"',
+                   'addEventListener, useCapture=false',
+                   window._pageLoadedListeners[0]);
+      assertEquals('2nd page onload handler == '
+                   + '"addEventListener, useCapture=true"',
+                   'addEventListener, useCapture=true',
+                   window._pageLoadedListeners[1]);
+      assertEquals('3rd page onload handler == bodyOnLoad', 'bodyOnLoad',
+                   window._pageLoadedListeners[2]);
     }
     
     // check for any Flash errors           

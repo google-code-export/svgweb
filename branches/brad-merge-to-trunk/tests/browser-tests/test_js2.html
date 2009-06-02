@@ -10,7 +10,10 @@
     <script src="testUtil.js"></script>
     
     <script>
-      svgweb.addOnLoad(function() {
+      function bodyOnLoad() {
+        // indicate which onload listener fired for later testing
+        window._pageLoadedListeners.push('bodyOnLoad');
+        
         // specify how each of our SVG images is embedded to help the unit
         // tests run correctly
         var embedTypes = {};
@@ -20,11 +23,28 @@
 
         // run the tests
         runTests(embedTypes);
-      });
+      }
+      
+      // subscribe to the page load event in different ways to make sure
+      // it works
+      if (window.addEventListener) { // Standards-compliant browsers
+        window.addEventListener('load', function() {
+          window._pageLoadedListeners.push('addEventListener, useCapture=false');
+        }, false);
+        window.addEventListener('load', function() {
+          window._pageLoadedListeners.push('addEventListener, useCapture=true');
+        }, true);
+      }
+      
+      if (window.attachEvent) { // IE
+        window.attachEvent('onload', function() {
+          window._pageLoadedListeners.push('attachEvent');
+        });
+      }
     </script>
   </head>
 
-  <body>
+  <body onload="bodyOnLoad()">
     <div id="test_container">
       <h1>Runs a suite of unit tests against our JavaScript SVG DOM
           on a normal text/html page using OBJECTs to embed the SVG</h1>
