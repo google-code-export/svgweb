@@ -320,7 +320,7 @@ function runTests(embedTypes) {
                    window._pageLoadedListeners[0]);
       assertEquals('2nd page onload handler == attachEvent', 'attachEvent',
                    window._pageLoadedListeners[1]);
-    } else if (isIE && hasObjects) {
+    } else if (isIE && _hasObjects) {
       // bodyOnLoad and attachEvent
       assertEquals('2 page onload handlers should have fired', 2,
                    window._pageLoadedListeners.length);
