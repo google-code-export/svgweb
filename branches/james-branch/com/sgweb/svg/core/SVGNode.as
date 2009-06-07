@@ -1103,6 +1103,11 @@ package com.sgweb.svg.core
         protected function _getAttribute(name:String, defaultValue:* = null,
                                          inherit:Boolean = true,
                                          applyAnimations:Boolean = true):* {
+                                         	
+            if (this._xml == null) {
+            	return defaultValue;
+            }
+            
             var value:String;
             
             // If we are rendering a mask, then use a simple black fill.
