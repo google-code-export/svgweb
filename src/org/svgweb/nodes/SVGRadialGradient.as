@@ -45,7 +45,6 @@ package org.svgweb.nodes
                 node.drawSprite.graphics.beginGradientFill(GradientType.RADIAL, stopData.colors, stopData.alphas, stopData.ratios,
                                                            matrix, spreadMethod, InterpolationMethod.RGB, this.focalLen);
             }
-
         }
 
         override public function lineGradientStyle(node:SVGNode, line_alpha:Number = 1):void {

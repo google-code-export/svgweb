@@ -45,6 +45,24 @@ package org.svgweb.core
         public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
                                                 'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
         
+        //Used for getStyleOrAttr
+        public static const ALL_STYLES:Object = {
+          'font':true, 'font-family':true, 'font-size':true, 'font-size-adjust':true, 
+          'font-stretch':true, 'font-style':true, 'font-variant':true, 
+          'font-weight':true, 'direction':true, 'letter-spacing':true, 
+          'text-decoration':true, 'unicode-bidi':true, 'word-spacing':true, 
+          'clip':true, 'color':true, 'cursor':true, 'display':true, 'overflow':true,
+          'visibility':true, 'clip-path':true, 'clip-rule':true, 'mask':true, 'opacity':true, 'enable-background':true,
+          'filter':true, 'flood-color':true, 'flood-opacity':true, 'lighting-color':true, 'stop-color':true,
+          'stop-opacity':true, 'pointer-events':true, 'color-interpolation':true,
+          'color-interpolation-filters':true, 'color-profile':true, 'color-rendering':true, 'fill':true,
+          'fill-opacity':true, 'fill-rule':true, 'image-rendering':true, 'marker':true, 'marker-end':true,
+          'marker-mid':true, 'marker-start':true, 'shape-rendering':true, 'stroke':true, 'stroke-dasharray':true,
+          'stroke-dashoffset':true, 'stroke-linecap':true, 'stroke-linejoin':true, 'stroke-miterlimit':true,
+          'stroke-opacity':true, 'stroke-width':true, 'text-rendering':true, 'alignment-baseline':true, 
+          'baseline-shift':true, 'dominant-baseline':true, 'glyph-orientation-horizontal':true,
+          'glyph-orientation-vertical':true, 'kerning':true, 'text-anchor':true,
+          'writing-mode':true };
         
         public namespace xlink = 'http://www.w3.org/1999/xlink';
         public namespace svg = 'http://www.w3.org/2000/svg';
@@ -338,12 +356,13 @@ package org.svgweb.core
         public function forceParse():void {
             if (this._xml != null && !this._parsedChildren) {
                 this.parseChildren();
-                for (var i:uint = 0; i < this.numChildren; i++) {
-                    var child = this.getChildAt(i);
+                for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
+                    var child = viewBoxSprite.getChildAt(i);
                     if (child is SVGNode) {
                         SVGNode(child).forceParse();
                     }
                 }
+                
                 this._parsedChildren = true;
             } 
         }
@@ -728,11 +747,7 @@ package org.svgweb.core
                     color_and_alpha = SVGColors.getColorAndAlpha(fill);
                     color_core = color_and_alpha[0];
                     color_alpha = color_and_alpha[1];
-                    if (this.getStyleOrAttr('fill-opacity') != null) {
-                        fill_alpha = SVGColors.cleanNumber( this.getStyleOrAttr('fill-opacity') ) * color_alpha;
-                    } else {
-                        fill_alpha = color_alpha;
-                    }
+                    fill_alpha = SVGColors.cleanNumber( this.getStyleOrAttr('fill-opacity') ) * color_alpha;
                     drawSprite.graphics.beginFill(color_core, fill_alpha);
                 }
             }
@@ -743,7 +758,7 @@ package org.svgweb.core
             var line_width:Number;
 
             var stroke:String = this.getStyleOrAttr('stroke');
-            if ( (stroke == 'none') || (stroke == '')) {
+            if ( (stroke == 'none') || (stroke == '') || (this.getStyleOrAttr('visibility') == 'hidden') ) {
                 line_alpha = 0;
                 line_color = 0;
                 line_width = 0;
@@ -787,7 +802,7 @@ package org.svgweb.core
             drawSprite.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
                                           capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
 
-            if ( (stroke != 'none') && (stroke != null)  && (this.getStyleOrAttr('visibility') != 'hidden') ) {
+            if ( (stroke != 'none') && (stroke != '')  && (this.getStyleOrAttr('visibility') != 'hidden') ) {
                 var strokeMatches:Array = stroke.match(/url\(#([^\)]+)\)/si);
                 if (strokeMatches != null && strokeMatches.length > 0) {
                     var strokeName:String = strokeMatches[1];
@@ -878,7 +893,8 @@ package org.svgweb.core
                 var viewHeight:Number;
                 if (viewBox != null) {
                     viewBox = viewBox.replace(/,/sg," "); //Replace commas with spaces
-                    var points:Array = viewBox.split(/\s+/); //Split by white space                    viewX = SVGColors.cleanNumber(points[0]);
+                    var points:Array = viewBox.split(/\s+/); //Split by white space 
+                    viewX = SVGColors.cleanNumber(points[0]);
                     viewY = SVGColors.cleanNumber(points[1]);
                     viewWidth = SVGColors.cleanNumber(points[2]);
                     viewHeight = SVGColors.cleanNumber(points[3]);
@@ -1051,32 +1067,32 @@ package org.svgweb.core
         protected function attachEventListeners():void {
             var action:String;
 
-            action = this.getAttribute("onclick");
+            action = this.getAttribute('onclick', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.CLICK, drawSprite);
             }
 
-            action = this.getAttribute("onmousedown");
+            action = this.getAttribute('onmousedown', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_DOWN, drawSprite);
             }
 
-            action = this.getAttribute("onmouseup");
+            action = this.getAttribute('onmouseup', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_UP, drawSprite);
             }
 
-            action = this.getAttribute("onmousemove");
+            action = this.getAttribute('onmousemove', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_MOVE, drawSprite);
             }
 
-            action = this.getAttribute("onmouseover");
+            action = this.getAttribute('onmouseover', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_OVER, drawSprite);
             }
 
-            action = this.getAttribute("onmouseout");
+            action = this.getAttribute('onmouseout', null, false);
             if (action) {
                 this.svgRoot.addActionListener(MouseEvent.MOUSE_OUT, drawSprite);
             }
@@ -1519,7 +1535,8 @@ package org.svgweb.core
          *  @return The style or XML attribute value, or null if it is 
          *  not present.
          **/
-        public function getStyleOrAttr(name:String, defaultValue:* = null, 
+        public function getStyleOrAttr(name:String, 
+                                       defaultValue:* = null, 
                                        inherit:Boolean = true,
                                        applyAnimations:Boolean = true):* {
             var value;
@@ -1536,10 +1553,13 @@ package org.svgweb.core
                 return value;
             }
             
-            // try non-inherited explicitly set styles
-            value = this.getStyle(name, null, false);
-            if (value != null) {
-                return value;
+            // see if this is a style before checking against styles
+            if (ALL_STYLES[name]) {
+                // try non-inherited explicitly set styles
+                value = this.getStyle(name, null, false);
+                if (value != null) {
+                    return value;
+                }
             }
             
             // otherwise see if there is an explicit XML attribute
@@ -1548,10 +1568,13 @@ package org.svgweb.core
                 return value;
             }
             
-            // finally see if there is an inherited style
-            value = this.getStyle(name);
-            if (value != null) {
-                return value;
+            // see if this is a style before checking against styles
+            if (ALL_STYLES[name]) {
+                // finally see if there is an inherited style
+                value = this.getStyle(name);
+                if (value != null) {
+                    return value;
+                }
             }
             
             return defaultValue;
