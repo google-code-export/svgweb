@@ -492,8 +492,7 @@ package org.svgweb
                 }
                 if (jsMsg.method == 'removeChild') {
                     // Removes the element
-                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);
-                    
+                    element = this.svgRoot.getNodeByGUID(jsMsg.elementGUID);                    
                     if (!element) {
                         this.error('removeChild: GUID not found: '
                                    + jsMsg.elementGUID);
@@ -528,7 +527,6 @@ package org.svgweb
 
                     // now insert the element
                     parent.insertSVGBefore(jsMsg.position, element, refChild);
-                    parent.invalidateDisplay();
                 }
                 if (jsMsg.method == 'setText') {
                     // Get the parent

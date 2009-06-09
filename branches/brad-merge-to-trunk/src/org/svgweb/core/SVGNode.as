@@ -1757,7 +1757,9 @@ package org.svgweb.core
             var child:DisplayObject;
             for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
                 child = viewBoxSprite.getChildAt(i);
-                this.removeChild(child);
+                if (child == node) {
+                    viewBoxSprite.removeChild(child);
+                }
             }
             
             // unregister the element
@@ -1796,7 +1798,7 @@ package org.svgweb.core
             }
     
             // update our Flash display list
-            addChildAt(newChild.viewBoxSprite, position);
+            viewBoxSprite.addChildAt(newChild, position);
             this.invalidateDisplay();
         }
         
