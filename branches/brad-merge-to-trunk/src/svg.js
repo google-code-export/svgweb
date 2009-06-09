@@ -4209,7 +4209,7 @@ extend(_Node, {
       // (g, rect, etc.) that might have focus
       // TODO: FIXME: do we want to be adding this listener to 'document'
       // when dealing with SVG OBJECTs?
-      this._addEvent(document, type, 
+      this._addEvent(document, type,
                         // prevent closure by using an inline method
                         (function(listener) {
                           return function(evt) {
@@ -4252,7 +4252,7 @@ extend(_Node, {
       // do a trick to prevent closure over ourselves, which can lead to
       // IE memory leaks
       obj[type+fn] = (function(obj, type, fn) { 
-        obj['e'+type+fn](window.event); 
+        return function(){ obj['e'+type+fn](window.event) }; 
       })(obj, type, fn);
       obj.attachEvent('on'+type, obj[type+fn]);
     }
