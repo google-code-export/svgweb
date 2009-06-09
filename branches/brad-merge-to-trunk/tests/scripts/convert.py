@@ -6,6 +6,8 @@ import re
 import sys
 
 for filename in glob.glob("../htmlObjectHarness/*.html"):
+    if filename == "../htmlObjectHarness/full-color-prof-01-f.html":
+        continue
     if filename == "../htmlObjectHarness/tiny-index.html":
         continue
     if filename == "../htmlObjectHarness/basic-index.html":
@@ -17,28 +19,14 @@ for filename in glob.glob("../htmlObjectHarness/*.html"):
     outfile = open (filename + ".new", "w")
     content = infile.read()
 
-    content = re.sub("../../html/svgviewer.js", "../../src/svg.js", content)
-    content = re.sub("<script", """<meta name="svg.render.forceflash" content="true" />\n    <script""", content)
-
     svgfilename = re.sub("\.html", ".svg", filename)
     svgfilename = re.sub("../htmlObjectHarness/full-", "", svgfilename)
     svgfilename = re.sub("../htmlObjectHarness/tiny-", "", svgfilename)
     svgfilename = re.sub("../htmlObjectHarness/basic-", "", svgfilename)
+    svgfilename = '../svggen/' + svgfilename
 
-    newobject= """
-    <!--[if IE]>
-    <object id="testSVG" src="../svg/""" + svgfilename + """" classid="image/svg+xml" width="460" height="380">
-    <![endif]-->
-    <!--[if !IE]>-->
-    <object data="../svg/""" + svgfilename + """" type="image/svg+xml" 
-            id="testSVG" width="460" height="380">
-    <!--<![endif]-->
-    <p>SVG fallback content</p>
-    </object>
-
-    """
-
-    content = re.sub("\n<object.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n", newobject, content)
+    content = re.sub('<script src="\.\./\.\./html/svgviewer\.js"', '<script src="../../html/svg.js" data-path="../../src/"', content)
+    content = re.sub("<object.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n", '<!--[if IE]>\n<object src="' + svgfilename + '" classid="image/svg+xml"\n\twidth="480" height="360">\n<![endif]-->\n<!--[if !IE]>-->\n<object data="' + svgfilename + '" type="image/svg+xml"\n\twidth="480" height="360">\n<!--<![endif]-->\n</object>\n', content)
 
     outfile.write(content)
     outfile.close()
