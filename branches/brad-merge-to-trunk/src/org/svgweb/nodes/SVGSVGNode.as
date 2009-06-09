@@ -178,13 +178,21 @@ package org.svgweb.nodes
         }
         
         public function registerNode(node:SVGNode):void {
-            registerID(node);
-            registerGUID(node);
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.registerNode(node);
+            } else {
+                registerID(node);
+                registerGUID(node);
+            }
         }
         
         public function unregisterNode(node:SVGNode):void {
-            unregisterID(node);
-            unregisterGUID(node);
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.unregisterNode(node);
+            } else {
+                unregisterID(node);
+                unregisterGUID(node);
+            }
         }
         
         public function registerID(node:SVGNode):void {

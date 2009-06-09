@@ -37,11 +37,9 @@ package org.svgweb.core
         }
 
         public function beginGradientFill(node:SVGNode):void {
-
         }
 
         public function lineGradientStyle(node:SVGNode, line_alpha:Number = 1):void {
-
         }
 
         public function getSpreadMethod():String {
@@ -87,11 +85,11 @@ package org.svgweb.core
             for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
                 child = viewBoxSprite.getChildAt(i);
                 if (child is SVGStopNode) {
-                    color = SVGStopNode(child).getAttribute('stop-color', 'black');
+                    color = SVGStopNode(child).getStyleOrAttr('stop-color', 'black');
                     if (color == 'currentColor') {
-                        color = this.getAttribute('color');
+                        color = this.getStyleOrAttr('color');
                     }
-                    ratio = SVGStopNode(child).getAttribute('offset', '0');
+                    ratio = SVGStopNode(child).getStyleOrAttr('offset', '0');
                     alpha = SVGStopNode(child).getStyleOrAttr('stop-opacity', 1);
 
                     match = ratio.match(/([^%]+)%/s);
@@ -136,12 +134,12 @@ package org.svgweb.core
 
             if (href && href != '') {
                 href = href.replace(/^#/,'');
-
                 var baseNode:SVGNode = this.svgRoot.getNode(href);
                 if (baseNode) {
                     // Return value from href base node, perhaps recursively.
                     // XXX possible circular reference problem.
-                    return baseNode.getAttribute(name, null, false, applyAnimations);
+                    //this.dbg('trying to get ' + name + '=' + baseNode.getAttribute(name, null, false, applyAnimations));
+                    return baseNode.getStyleOrAttr(name, null, false, applyAnimations);
                 }
                 else {
                     // Href is not (yet) parsed, just return value for this node

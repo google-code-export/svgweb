@@ -49,7 +49,7 @@ package org.svgweb.nodes
         private var _textField:TextField;
         private var _svgFont:SVGFontNode;
         
-        private var _text:String = null;
+        private var _text:String = '';
 
         var newGlyphs:Array = null;
         protected var newViewBoxSprite:Sprite = new Sprite();
