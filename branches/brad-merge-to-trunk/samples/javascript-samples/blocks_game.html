@@ -359,8 +359,7 @@
         lines = 0;
         show(currentShape, board);
         nextShape = new Shape([0,0]);
-        // UNCOMMENT!!!
-        //show(nextShape, preview);
+        show(nextShape, preview);
         unsuspendRedraw();
         gameState = "running";
         tickTime = 300;
@@ -373,8 +372,7 @@
         score = score+1;
         suspendRedraw();
         currentShape = nextShape;
-        //UNCOMMENT!!!
-        //hide(nextShape, preview);
+        hide(nextShape, preview);
         currentShape.move(3,0);
         if (!canPlace(currentShape, board)) {
           unsuspendRedraw();
@@ -382,8 +380,7 @@
         }
         show(currentShape, board);
         nextShape = new Shape([0,0]);
-        //UNCOMMENT!!!
-        //show(nextShape, preview);
+        show(nextShape, preview);
         unsuspendRedraw();
         return true;
       }
