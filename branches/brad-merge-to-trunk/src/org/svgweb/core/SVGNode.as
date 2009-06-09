@@ -45,25 +45,6 @@ package org.svgweb.core
         public static const ATTRIBUTES_NOT_INHERITED:Array = ['id', 'x', 'y', 'width', 'height', 'rotate', 'transform', 
                                                 'gradientTransform', 'opacity', 'mask', 'clip-path', 'href', 'target', 'viewBox'];
         
-        //Used for getStyleOrAttr
-        public static const ALL_STYLES:Object = {
-          'font':true, 'font-family':true, 'font-size':true, 'font-size-adjust':true, 
-          'font-stretch':true, 'font-style':true, 'font-variant':true, 
-          'font-weight':true, 'direction':true, 'letter-spacing':true, 
-          'text-decoration':true, 'unicode-bidi':true, 'word-spacing':true, 
-          'clip':true, 'color':true, 'cursor':true, 'display':true, 'overflow':true,
-          'visibility':true, 'clip-path':true, 'clip-rule':true, 'mask':true, 'opacity':true, 'enable-background':true,
-          'filter':true, 'flood-color':true, 'flood-opacity':true, 'lighting-color':true, 'stop-color':true,
-          'stop-opacity':true, 'pointer-events':true, 'color-interpolation':true,
-          'color-interpolation-filters':true, 'color-profile':true, 'color-rendering':true, 'fill':true,
-          'fill-opacity':true, 'fill-rule':true, 'image-rendering':true, 'marker':true, 'marker-end':true,
-          'marker-mid':true, 'marker-start':true, 'shape-rendering':true, 'stroke':true, 'stroke-dasharray':true,
-          'stroke-dashoffset':true, 'stroke-linecap':true, 'stroke-linejoin':true, 'stroke-miterlimit':true,
-          'stroke-opacity':true, 'stroke-width':true, 'text-rendering':true, 'alignment-baseline':true, 
-          'baseline-shift':true, 'dominant-baseline':true, 'glyph-orientation-horizontal':true,
-          'glyph-orientation-vertical':true, 'kerning':true, 'text-anchor':true,
-          'writing-mode':true };
-        
         public namespace xlink = 'http://www.w3.org/1999/xlink';
         public namespace svg = 'http://www.w3.org/2000/svg';
         public namespace aaa = 'http://www.w3.org/XML/1998/namespace';
@@ -1553,13 +1534,10 @@ package org.svgweb.core
                 return value;
             }
             
-            // see if this is a style before checking against styles
-            if (ALL_STYLES[name]) {
-                // try non-inherited explicitly set styles
-                value = this.getStyle(name, null, false);
-                if (value != null) {
-                    return value;
-                }
+            // try non-inherited explicitly set styles
+            value = this.getStyle(name, null, false);
+            if (value != null) {
+                return value;
             }
             
             // otherwise see if there is an explicit XML attribute
@@ -1568,13 +1546,10 @@ package org.svgweb.core
                 return value;
             }
             
-            // see if this is a style before checking against styles
-            if (ALL_STYLES[name]) {
-                // finally see if there is an inherited style
-                value = this.getStyle(name);
-                if (value != null) {
-                    return value;
-                }
+            // finally see if there is an inherited style
+            value = this.getStyle(name);
+            if (value != null) {
+                return value;
             }
             
             return defaultValue;
