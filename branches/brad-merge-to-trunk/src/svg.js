@@ -6784,9 +6784,10 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
 _SVGSVGElement.prototype = new _Element;
 
 extend(_SVGSVGElement, {
-  // Miscelaneous SVGSVGElement properties and methods
+  // SVGSVGElement
   
-  // Note: there are many not defined or implemented here; see
+  // NOTE: there are properties and methods from SVGSVGElement not defined 
+  // or implemented here; see
   // http://www.w3.org/TR/SVG/struct.html#InterfaceSVGSVGElement
   // for full list
   
@@ -6799,7 +6800,7 @@ extend(_SVGSVGElement, {
   unsuspendRedrawAll: function() /* void */ {},
   forceRedraw: function() /* void */ {},
   
-  // End miscelaneous SVGSVGElement properties and methods
+  // end SVGSVGElement
   
   // SVGLocatable
   
