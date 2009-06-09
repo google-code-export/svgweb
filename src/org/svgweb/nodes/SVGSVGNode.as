@@ -171,7 +171,7 @@ package org.svgweb.nodes
                         this.firedOnLoad = true;
                     }
                 }
-                if (this._pendingRenderCount < 0) {
+                if (this._pendingRenderCount < 0 && !this.firedOnLoad) {
                     this.dbg("error: pendingRenderCount count negative: " + this._pendingRenderCount);
                 }
             }
