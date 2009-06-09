@@ -6784,6 +6784,23 @@ function _SVGSVGElement(nodeXML, svgString, scriptNode, handler) {
 _SVGSVGElement.prototype = new _Element;
 
 extend(_SVGSVGElement, {
+  // Miscelaneous SVGSVGElement properties and methods
+  
+  // Note: there are many not defined or implemented here; see
+  // http://www.w3.org/TR/SVG/struct.html#InterfaceSVGSVGElement
+  // for full list
+  
+  // TODO: Implement the functions below
+  
+  suspendRedraw: function(max_wait_milliseconds /* unsigned long */) 
+                                                        /* unsigned long */ {},
+  unsuspendRedraw: function(suspend_handle_id /* unsigned long */) /* void */
+                                                /* throws DOMException */ {},
+  unsuspendRedrawAll: function() /* void */ {},
+  forceRedraw: function() /* void */ {},
+  
+  // End miscelaneous SVGSVGElement properties and methods
+  
   // SVGLocatable
   
   // TODO: Implement the following properties
