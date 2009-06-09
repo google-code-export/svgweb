@@ -41,7 +41,7 @@ package org.svgweb.nodes
 
                 if (this._xml != null) {
                     if (!this._parsedChildren) {
-                        this.parse();
+                        this.parseChildren();
                         this._parsedChildren = true;
                     }
                 }

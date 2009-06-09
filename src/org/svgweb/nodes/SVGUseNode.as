@@ -31,17 +31,49 @@ package org.svgweb.nodes
         }
 
         override protected function drawNode(event:Event = null):void {
-            this.removeEventListener(Event.ENTER_FRAME, drawNode);
-            this._invalidDisplay = false;
+            if ( (this.parent != null) && (this._invalidDisplay) ) {
+                this._invalidDisplay = false;
+                if (this._xml != null) {
+                    drawSprite.graphics.clear();
 
-            var name:String = this.getAttribute('href');
-            if (name) {
-                name = name.substr(1);
-                var node:SVGNode = this.svgRoot.getNode(name);
-                if (node) {
-                    node = node.clone();
-                    this.addChild(node);
+                    var name:String = this.getAttribute('href');
+                    if (name) {
+                        name = name.substr(1);
+                        var node:SVGNode = this.svgRoot.getNode(name);
+                        if (node) {
+                            if (!this._parsedChildren) {
+                                this.parseChildren();
+                                this._parsedChildren = true;
+                                node = node.clone();
+                                viewBoxSprite.addChild(node);
+                                this.svgRoot.renderPending();
+                                this.svgRoot.deleteReference(this, name);
+                            }
+                        }
+                        else {
+                            this.svgRoot.addReference(this, name);
+                        }
+                    }
+
+                    // sets x, y, rotate, and opacity
+                    this.setAttributes();
+
+                    if (this.getAttribute('display') == 'none') {
+                        this.visible = false;
+                    }
+                    else {
+                        this.generateGraphicsCommands();
+                        this.transformNode();
+                        this.draw();
+
+                        this.applyClipPathMask();
+                        this.applyViewBox();
+                        this.setupFilters();
+                    }
+    
                 }
+
+                this.removeEventListener(Event.ENTER_FRAME, drawNode);
             }
             if (!this._initialRenderDone && this.parent) {
                 this._initialRenderDone = true;

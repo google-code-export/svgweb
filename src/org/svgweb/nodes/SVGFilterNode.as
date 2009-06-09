@@ -35,7 +35,7 @@ package org.svgweb.nodes
             super(svgRoot, xml, original);
         }
         
-        override protected function parse():void {
+        override protected function parseChildren():void {
                 
         }
         
@@ -46,33 +46,46 @@ package org.svgweb.nodes
             var nodeFilters:Array = new Array();
             var list:XMLList = this._xml.svg::feGaussianBlur;
 
-            var svgNode:SVGNode = objectToFilter;
-            var concatMatrix:Matrix = new Matrix();
-            var oldMatrix:Matrix;
-
-            while (svgNode) {
-                if (svgNode.getAttribute('transform') != null) {
-                    oldMatrix = this.parseTransform(svgNode.getAttribute('transform'));
-                    oldMatrix.concat(concatMatrix);
-                    concatMatrix = oldMatrix;
-                }
-                if (svgNode is SVGSVGNode) {
-                    break;
-                }
-                svgNode = SVGNode(svgNode.parent);
-            }
-
             if (list.length()) {
+                var svgNode:SVGNode = objectToFilter;
+                var concatMatrix:Matrix = new Matrix();
+                var oldMatrix:Matrix;
+
+                while (svgNode) {
+                    if (svgNode.getAttribute('transform') != null) {
+                        oldMatrix = this.parseTransform(svgNode.getAttribute('transform'));
+                        oldMatrix.concat(concatMatrix);
+                        concatMatrix = oldMatrix;
+                    }
+                    if (svgNode is SVGSVGNode) {
+                        break;
+                    }
+                    svgNode = SVGNode(svgNode.getSVGParent());
+                }
+
                 var stdDeviation:String = this._xml.svg::feGaussianBlur.@stdDeviation.toString();
+                var stdDeviationX:String;
+                var stdDeviationY:String;
+
                 if (stdDeviation == null) {
-                    stdDeviation = '4';
+                    stdDeviationX = stdDeviationY = '4';
                 }
-                var blurAmount:Number = SVGColors.cleanNumber(stdDeviation);
-                blurAmount = blurAmount * concatMatrix.a;
-                if (objectToFilter.getMaskAncestor() != null) {
-                    blurAmount = blurAmount * .25;
+                else {
+                    var values:Array = stdDeviation.split(/\s+/);
+                    if (values.length > 1) {
+                        stdDeviationX = values[0];
+                        stdDeviationY = values[1];
+                    }
+                    else {
+                        stdDeviationX = stdDeviationY = values[0];
+                    }
                 }
-                nodeFilters.push(new BlurFilter(blurAmount*1.4, blurAmount*1.4, 3));
+                var blurAmountX:Number = SVGColors.cleanNumber(stdDeviationX);
+                var blurAmountY:Number = SVGColors.cleanNumber(stdDeviationY);
+                blurAmountX = blurAmountX * concatMatrix.a;
+                blurAmountY = blurAmountY * concatMatrix.a;
+
+                nodeFilters.push(new BlurFilter(blurAmountX*1.5, blurAmountY*1.5, 8));                
             }    
             
             return nodeFilters;

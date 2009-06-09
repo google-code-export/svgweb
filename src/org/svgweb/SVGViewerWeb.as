@@ -31,14 +31,15 @@
 
 
 package org.svgweb
-{
-    
+{    
     import org.svgweb.core.SVGNode;
     import org.svgweb.core.SVGViewer;
     import org.svgweb.nodes.SVGSVGNode;
     import org.svgweb.nodes.SVGGroupNode;
     import org.svgweb.nodes.SVGDOMTextNode;
+    import org.svgweb.events.SVGEvent;
     
+    import flash.display.DisplayObject;
     import flash.display.Sprite;
     import flash.display.StageScaleMode;
     import flash.display.StageAlign;
@@ -50,13 +51,11 @@ package org.svgweb
     import flash.external.ExternalInterface;
     import flash.net.URLLoader;
     import flash.net.URLRequest;
+    import flash.utils.setTimeout;
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
 
-    import mx.core.Singleton;
-    import flash.system.ApplicationDomain;
-
-    [SWF(frameRate="24", width="2048", height="1024")]
+    [SWF(frameRate="40", width="2048", height="1024")]
     /**
      * Web container for the SVG Renderer
      **/
@@ -87,7 +86,6 @@ package org.svgweb
 
             this.processHTMLParameters();
         }
-
 
         /**
          * process html <object> parameters
@@ -162,7 +160,6 @@ package org.svgweb
             }
         }
 
-
         /**
          * Load methods.
          **/
@@ -208,15 +205,19 @@ package org.svgweb
         }
 
         protected function setSVGString(xmlString:String) {
-            this.renderStartTime =  (new Date()).valueOf();
+            this.renderStartTime = (new Date()).valueOf();
             var dataXML:XML = new XML(SVGViewerWeb.expandEntities(xmlString));
             while(this.numChildren) {
                 this.removeChildAt(0);
             }
             svgRoot = new SVGSVGNode(null, dataXML);
+            if (   (xmlString.indexOf("<animate") != -1)
+                || (xmlString.indexOf("<set") != -1) ) {
+                svgRoot.visible = false;
+            }
+            this.addActionListener(SVGEvent.SVGLoad, svgRoot);
             this.addChild(svgRoot);
         }
-
 
         public static function expandEntities(xmlString:String):String {
             var entityMap:Object = {};
@@ -229,7 +230,6 @@ package org.svgweb
             }
             return xmlString;
         }
-
 
         /**
          * JavaScript interface setup
@@ -284,8 +284,27 @@ package org.svgweb
         /**
          * Event handlers from SVG Nodes
          **/
-        override public function handleOnLoad():void {
-            this.debug("render time for " + this.js_uniqueId + ": " + ( (new Date()).valueOf()  - this.renderStartTime) + "ms");
+        protected function handleRootSVGLoad():void {
+            this.debug("render time for " + this.js_uniqueId + ": " + ( (new Date()).valueOf()  - this.renderStartTime) + "ms");           
+
+            // FIXME: Hack. If we are hidden due to the presence of animations,
+            // then we do not unhide until 200ms into the document time. This
+            // provides enough time for the first frame of rendering caused
+            // by animations to occur. Currently, the entire tree is first
+            // parsed and progressively rendered, without animation effects,
+            // because animations may not be parsed yet. Once animations are
+            // parsed, they cause new frames to be rendered. These frames
+            // should be rendered before anything is visible. Since it is
+            // difficult to determine exactly when these  frames have rendered,
+            // we just wait a "long time".
+            // A better solution than the 200ms delay is to figure out all the
+            // elements that should be rendered with animation effects at frame
+            // zero, and unhide exactly when all of these elements have
+            // completed rendering initially with animation effects.
+            // We would start that tracking here, because the SVGLoad event
+            // signals the end of parsing.
+            setTimeout(function () { svgRoot.visible = true }, 200); 
+     
             var onLoadHandler:String = '';
             if (this.svgRoot.xml.@onload) {
                 onLoadHandler = this.svgRoot.xml.@onload;
@@ -342,7 +361,7 @@ package org.svgweb
         }
 
         public function js_handleInvoke(jsMsg:Object):Object {
-            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element, parent;
             
             try {
@@ -387,7 +406,7 @@ package org.svgweb
                     element.forceParse();
                     
                     // now actually append the element to our display
-                    parent.appendChild(element);
+                    parent.appendSVGChild(element);
                 }
                 if (jsMsg.method == 'addChildAt') {
                     // Get the parent
@@ -404,7 +423,7 @@ package org.svgweb
                     element.forceParse();
                     
                     // append things now
-                    parent.addChildAt(element, jsMsg.position);
+                    parent.addSVGChildAt(element, jsMsg.position);
                     parent.invalidateDisplay();
                 }
                 if (jsMsg.method == 'getAttribute') {
@@ -415,21 +434,27 @@ package org.svgweb
                                    + jsMsg.elementGUID);
                     }
                     
+                    var applyAnimations:Boolean = false;
+                    if (jsMsg.applyAnimations !== undefined) {
+                        applyAnimations = jsMsg.applyAnimations;
+                    }
+                    
                     var attrValue = element.xml.@[jsMsg.attrName]; 
                     if (typeof(attrValue) != 'undefined' && attrValue != null) {
                         if (jsMsg.getFromStyle) {
+                            jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
+                            
                             // Firefox and Safari both return '' for
                             // default inherited styles (i.e. if I check
                             // someNode.style.display, I get an empty string
                             // rather than 'inline'), so only get 
                             // explicitly set styles on this node
-                            jsMsg.attrValue = element.getStyle(jsMsg.attrName, null, false);
                             if (jsMsg.attrValue == null) {
                                 jsMsg.attrValue = '';
                             }
                         }
                         else {
-                            jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false);
+                            jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false, applyAnimations);
                         }
                     }
                     else {
@@ -475,7 +500,7 @@ package org.svgweb
                                    + jsMsg.elementGUID);
                     }
                     
-                    element.parent.removeChild(element);
+                    element.getSVGParent().removeSVGChild(element);
                 }
                 if (jsMsg.method == 'insertBefore') {
                     // Inserts newChild before refChild
@@ -503,7 +528,7 @@ package org.svgweb
                     element.forceParse();
 
                     // now insert the element
-                    parent.insertBefore(jsMsg.position, element, refChild);
+                    parent.insertSVGBefore(jsMsg.position, element, refChild);
                     parent.invalidateDisplay();
                 }
                 if (jsMsg.method == 'setText') {
@@ -536,16 +561,19 @@ package org.svgweb
             return jsMsg;
         }
 
-        override public function addActionListener(eventType:String, target:SVGNode):void {
+        override public function addActionListener(eventType:String, target:Sprite):void {
             target.addEventListener(eventType, handleAction);
         } 
 
-        override public function removeActionListener(eventType:String, target:SVGNode):void {
+        override public function removeActionListener(eventType:String, target:Sprite):void {
             target.removeEventListener(eventType, handleAction);
         }
 
         protected function handleAction(event:Event):void {
             switch(event.type) {
+                case SVGEvent.SVGLoad:
+                    handleRootSVGLoad();
+                    break;
                 case MouseEvent.CLICK:
                 case MouseEvent.MOUSE_DOWN:
                 case MouseEvent.MOUSE_MOVE:
@@ -563,18 +591,21 @@ package org.svgweb
         // xxx requires id on targets
         public function js_sendMouseEvent(event:MouseEvent):void {
             try {
-                if (event.target is SVGNode && event.currentTarget is SVGNode) {
+                if (   ( event.target is DisplayObject ) 
+                    && ( event.currentTarget is DisplayObject ) 
+                    && ( SVGNode.targetToSVGNode(DisplayObject(event.target)) != null)
+                    && ( SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)) != null) ) {                    
                     ExternalInterface.call(this.js_handler + "onMessage",
-                                             { type: 'event',
-                                               uniqueId: this.js_uniqueId,
-                                               targetGUID: SVGNode(event.target).guid,
-                                               currentTargetGUID: SVGNode(event.currentTarget).guid,
-                                               eventType: event.type.toLowerCase(),
-                                               clientX: event.localX,
-                                               clientY: event.localY,
-                                               screenX: event.stageX,
-                                               screenY: event.stageY
-                                             } );
+                       { type: 'event',
+                         uniqueId: this.js_uniqueId,
+                         targetGUID: SVGNode.targetToSVGNode(DisplayObject(event.target)).guid,
+                         currentTargetId: SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)).id,
+                         eventType: event.type.toLowerCase(),
+                         clientX: event.localX,
+                         clientY: event.localY,
+                         screenX: event.stageX,
+                         screenY: event.stageY
+                       } );
                 }
             }
             catch(error:SecurityError) {

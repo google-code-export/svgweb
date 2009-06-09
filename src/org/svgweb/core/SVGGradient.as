@@ -84,11 +84,14 @@ package org.svgweb.core
             var child:DisplayObject;
             var currentRatio:Number;
 
-            for (var i:uint = 0; i < this.numChildren; i++) {
-                child = this.getChildAt(i);
+            for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
+                child = viewBoxSprite.getChildAt(i);
                 if (child is SVGStopNode) {
-                    color = SVGStopNode(child).getStyleOrAttr('stop-color');
-                    ratio = SVGStopNode(child).getAttribute('offset');
+                    color = SVGStopNode(child).getAttribute('stop-color', 'black');
+                    if (color == 'currentColor') {
+                        color = this.getAttribute('color');
+                    }
+                    ratio = SVGStopNode(child).getAttribute('offset', '0');
                     alpha = SVGStopNode(child).getStyleOrAttr('stop-opacity', 1);
 
                     match = ratio.match(/([^%]+)%/s);
@@ -117,8 +120,11 @@ package org.svgweb.core
          * This method supports href inheritence of attributes from base nodes of the same type.
          *
          **/
-        override protected function _getAttribute(name:String):String {
-            var value:String = super._getAttribute(name);
+        override protected function _getAttribute(name:String, defaultValue:* = null,
+                                                  inherit:Boolean = true,
+                                                  applyAnimations:Boolean = true):* {
+            var value:String = super._getAttribute(name, defaultValue,
+                                                   inherit, applyAnimations);
             if (value) {
                 return value;
             }
@@ -135,7 +141,7 @@ package org.svgweb.core
                 if (baseNode) {
                     // Return value from href base node, perhaps recursively.
                     // XXX possible circular reference problem.
-                    return baseNode.getAttribute(name);
+                    return baseNode.getAttribute(name, null, false, applyAnimations);
                 }
                 else {
                     // Href is not (yet) parsed, just return value for this node

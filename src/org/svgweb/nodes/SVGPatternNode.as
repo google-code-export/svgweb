@@ -40,7 +40,7 @@ package org.svgweb.nodes {
 
                 if (this._xml != null) {
                     if (!this._parsedChildren) {
-                        this.parse();
+                        this.parseChildren();
                         this._parsedChildren = true;
                     }
                 }
@@ -55,8 +55,8 @@ package org.svgweb.nodes {
         }
 
         public function beginPatternFill(node:SVGNode):void {
-            var patternWidth:Number = this.width;
-            var patternHeight:Number = this.height;
+            var patternWidth:int = this.width;
+            var patternHeight:int = this.height;
 
             var tmp:String = this.getAttribute('width');
             if (tmp) {
@@ -80,9 +80,9 @@ package org.svgweb.nodes {
                 matrix = new Matrix();
             }
 
-            matrix.concat(this.transform.concatenatedMatrix);
+            matrix.concat(drawSprite.transform.concatenatedMatrix);
 
-            var nodeMatrix:Matrix = node.transform.concatenatedMatrix;
+            var nodeMatrix:Matrix = node.drawSprite.transform.concatenatedMatrix;
             nodeMatrix.invert();
 
             matrix.concat(nodeMatrix);
@@ -92,7 +92,7 @@ package org.svgweb.nodes {
             if ( (patternWidth > 0) && (patternHeight > 0) ) {
                 var bitmapData:BitmapData = new BitmapData(patternWidth, patternHeight);
                 bitmapData.draw(this.targetPattern());
-                node.graphics.beginBitmapFill(bitmapData, matrix); 
+                node.drawSprite.graphics.beginBitmapFill(bitmapData, matrix); 
             }
 
             this.svgRoot.addReference(node, this.targetPattern().id);

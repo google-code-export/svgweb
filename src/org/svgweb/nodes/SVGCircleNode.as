@@ -32,7 +32,6 @@ package org.svgweb.nodes
          * Generate graphics commands to draw a circle
          **/
         protected override function generateGraphicsCommands():void {
-            
             this._graphicsCommands = new  Array();
             
             var cx:Number = this.getAttribute('cx',0);
@@ -45,7 +44,9 @@ package org.svgweb.nodes
             this.setYMinMax(cy - r);
             this.setYMinMax(cy + r);
 
-            this._graphicsCommands.push(['CIRCLE', cx, cy, r]);
+            if (r != 0) {
+                this._graphicsCommands.push(['CIRCLE', cx, cy, r]);
+            }
         }
         
     }

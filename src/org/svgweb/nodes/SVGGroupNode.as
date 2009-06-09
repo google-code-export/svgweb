@@ -20,6 +20,8 @@
 package org.svgweb.nodes
 {
     import org.svgweb.core.SVGNode;
+    import flash.display.BlendMode;
+
 
     /**
      * Acts as a container for other nodes
@@ -28,6 +30,21 @@ package org.svgweb.nodes
     {
         public function SVGGroupNode(svgRoot:SVGSVGNode, xml:XML, original:SVGNode = null):void {
             super(svgRoot, xml, original);
+            this.blendMode = BlendMode.LAYER;
+        }  
+
+        // The <g> node does not use the x and y attributes.  (However, it does honor the transform attribute.)
+        // However, if the <g> node is being referenced by a <use> node, then x and y are transferred to <g> as
+        // an equivalent transform.
+        override protected function loadAttribute(name:String, field:String = null,
+                                                  useStyle:Boolean = false):void {
+            if ( (name == 'x' || name == 'y') && !(this.getSVGParent() is SVGUseNode) ) {
+                return;
+            }
+            else {
+                super.loadAttribute(name, field, useStyle);
+            }
         }
+
     }
 }
