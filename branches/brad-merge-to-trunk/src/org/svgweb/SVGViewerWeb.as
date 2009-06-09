@@ -585,18 +585,17 @@ package org.svgweb
             }
         }
 
-        // xxx requires id on targets
         public function js_sendMouseEvent(event:MouseEvent):void {
             try {
                 if (   ( event.target is DisplayObject ) 
                     && ( event.currentTarget is DisplayObject ) 
                     && ( SVGNode.targetToSVGNode(DisplayObject(event.target)) != null)
-                    && ( SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)) != null) ) {                    
+                    && ( SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)) != null) ) { 
                     ExternalInterface.call(this.js_handler + "onMessage",
                        { type: 'event',
                          uniqueId: this.js_uniqueId,
                          targetGUID: SVGNode.targetToSVGNode(DisplayObject(event.target)).guid,
-                         currentTargetId: SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)).id,
+                         currentTargetGUID: SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)).guid,
                          eventType: event.type.toLowerCase(),
                          clientX: event.localX,
                          clientY: event.localY,

@@ -3182,6 +3182,7 @@ extend(FlashHandler, {
   },
   
   _onEvent: function(msg) {
+    //console.log('onEvent, msg='+this.debugMsg(msg));
     if (msg.eventType.substr(0, 5) == 'mouse') {
       this._onMouseEvent(msg);
       return;
