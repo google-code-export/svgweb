@@ -357,7 +357,7 @@ package org.svgweb.core
                 this._invalidDisplay = false;
                 if (this._xml != null) {
                     drawSprite.graphics.clear();
-                    
+
                     if (!this._parsedChildren) {
                         this.parseChildren();
                         this._parsedChildren = true;
@@ -1801,7 +1801,7 @@ package org.svgweb.core
         }
         
         public function addSVGChildAt(child:SVGNode, index:int):SVGNode {
-            addChildAt(child.viewBoxSprite, index);
+            viewBoxSprite.addChildAt(child, index);
             
             if (child is SVGDOMTextNode) {
                 if (this.hasText()) {

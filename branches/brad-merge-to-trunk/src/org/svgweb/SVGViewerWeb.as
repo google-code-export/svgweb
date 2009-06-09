@@ -361,7 +361,7 @@ package org.svgweb
         }
 
         public function js_handleInvoke(jsMsg:Object):Object {
-            this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
+            //this.debug('js_handleInvoke, jsMsg='+this.debugMsg(jsMsg));
             var element, parent;
             
             try {
@@ -394,7 +394,6 @@ package org.svgweb
                 if (jsMsg.method == 'appendChild') {
                     // Get the parent node
                     parent = this.svgRoot.getNodeByGUID(jsMsg.parentGUID);
-                    
                     if (!parent) {
                         this.error('appendChild: parent with GUID '
                                    + jsMsg.parentGUID + ' not found');
