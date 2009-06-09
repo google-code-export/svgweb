@@ -260,7 +260,7 @@
         this._node.setAttribute("style", style);
         this._node.setAttribute("x", position[0]);
         this._node.setAttribute("y", position[1]);
-        this._node.appendChild(document.createTextNode(txt));
+        this._node.appendChild(document.createTextNode(txt, true));
       }
 
       Message.prototype = {
