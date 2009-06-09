@@ -37,6 +37,8 @@ Third-Party Licenses, Versions, and Build Information:
 
 * src/svg.htc - Flash embedding code adapted from Dojo Flash (Dojo 1.1.0); Brad Neuberg created Dojo Flash and owns the copyright so can freely relicense it (it's under the standard Dojo license anyway)
 
+* org/svgweb/smil/SplineInterpolator.as, org/svgweb/smil/LengthItem.as - Taken from Batik project and ported from Java to ActionScript by Rick Masters, Copyright 2006 Sun Microsystems - CLA needed!
+
 * samples/svg-files/blocks_game.svg - Alex Fritze (http://www.croczilla.com/) - Permission given by email to freely use code under any license needed.
 
 * samples/svg-files/photos.svg - Vladimir Vukićević (http://blog.vlad1.com/) - Permission given by email to freely use code under any license needed.

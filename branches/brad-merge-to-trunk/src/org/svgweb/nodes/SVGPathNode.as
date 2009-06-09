@@ -41,18 +41,15 @@ package org.svgweb.nodes
          * Place a comma between each element and number
          * for easy data.split(',');
          */
-         
         public function normalizeSVGData(data:String):String {
+            // TODO: needs performance analysis
             data = StringUtil.trim(data);
-            
-            /* M & Z moved to main regular expression to support multiple occurances */
-            //data = data.replace(/^(M)/sig,"$1,");
-            //data = data.replace(/(Z)/sig,",$1"); 
-            
                         
             data = data.replace(/([MACSLHVQTZ])/sig,",$1,");    
             
+            data = data.replace(/e-/sg,"eneg"); // "-" dashes can be an exponent
             data = data.replace(/-/sg,",-"); // "-" dashes denote a negative number, not a separator        
+            data = data.replace(/eneg/sg,"e-"); // "-" dashes can be an exponent
             data = data.replace(/\s+/sg,","); //Replace spaces with a comma
             data = data.replace(/,{2,}/sg,","); // Remove any extra commas
             data = data.replace(/^,/, ''); //Remove leading comma
@@ -182,6 +179,9 @@ package org.svgweb.nodes
             this._graphicsCommands.push(['M', x, y]);
             this.currentX = x;
             this.currentY = y;
+            
+            this.lastCurveControlX = this.currentX;
+            this.lastCurveControlY = this.currentY;
 
             this.setXMinMax(x);
             this.setYMinMax(y);
@@ -214,7 +214,10 @@ package org.svgweb.nodes
                 this.currentX += x;
                 this.currentY += y;                
             }            
-            this._graphicsCommands.push(['L', this.currentX, this.currentY]);            
+            this._graphicsCommands.push(['L', this.currentX, this.currentY]);
+
+            this.lastCurveControlX = this.currentX;
+            this.lastCurveControlY = this.currentY;        
 
             this.setXMinMax(x);
             this.setYMinMax(y);
@@ -232,6 +235,9 @@ package org.svgweb.nodes
             
             this.currentX = x;
             this.currentY = y;
+            
+            this.lastCurveControlX = this.currentX;
+            this.lastCurveControlY = this.currentY;
             
             this.setXMinMax(rx);
             this.setYMinMax(ry);

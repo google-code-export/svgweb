@@ -22,18 +22,25 @@ package org.svgweb.nodes
 {
     import org.svgweb.core.SVGNode;
     import org.svgweb.core.SVGViewer;
+    import org.svgweb.events.SVGEvent;
     import flash.geom.Matrix;
+    import flash.display.Sprite;
+    import flash.events.Event;
+    import flash.utils.getTimer;
 
     public class SVGSVGNode extends SVGNode
     {
         protected var parentSVGRoot:SVGSVGNode = null;
         private var _pendingRenderCount:int;
         protected var firedOnLoad:Boolean = false;
+        protected var loadTime:int = -1; // milliseconds
         protected var scaleModeParam:String = 'svg_all';
 
         private var _idLookup:Object;
         private var _guidLookup:Object;
         protected var _referersById:Object;
+        protected var _fonts:Object;
+        protected var fontListeners:Array = new Array();
 
         public var title:String;
         
@@ -48,7 +55,8 @@ package org.svgweb.nodes
             default xml namespace = svg;        
             this._idLookup = new Object();
             this._guidLookup = new Object();
-            this._referersById = new Object();    
+            this._referersById = new Object();
+            this._fonts = new Object();    
             super.xml = value;
 
             // If this is the top SVG element, then start the render tracking process.
@@ -60,6 +68,52 @@ package org.svgweb.nodes
                     this._guidLookup[this.xml.@__guid] = this;
                 }
                 this._pendingRenderCount = 1;
+            }
+        }
+        
+        protected override function onAddedToStage(event:Event):void {
+            super.onAddedToStage(event);
+            addEventListener(Event.ENTER_FRAME, updateAnimations);
+        }
+
+        protected override function onRemovedFromStage(event:Event):void {
+            removeEventListener(Event.ENTER_FRAME, updateAnimations);
+            super.onRemovedFromStage(event);
+        }
+
+        public function getDocTime():Number {
+            if (this.parentSVGRoot) {
+                return this.parentSVGRoot.getDocTime();
+            }
+            else {
+                return (getTimer() - this.loadTime) / 1000.0;
+            }
+        }
+
+        protected function updateAnimations(event:Event):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.updateAnimations(event);
+            }
+            else {
+                // Nothing to do while the document is loading
+                if (this.loadTime == -1) {
+                    return;
+                }
+                var svgEvent:SVGEvent = new SVGEvent(SVGEvent._SVGDocTimeUpdate);
+                svgEvent.setDocTime( (getTimer() - this.loadTime) / 1000.0 );
+                this.dispatchEvent(svgEvent);
+            }
+        }
+
+        public function seekToDocTime(docTime:Number):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.seekToDocTime(docTime);
+            }
+            else {
+                this.loadTime = getTimer() - docTime*1000.0;
+                var svgEvent:SVGEvent = new SVGEvent(SVGEvent._SVGDocTimeSeek);
+                svgEvent.setDocTime(docTime);
+                this.dispatchEvent(svgEvent);
             }
         }
 
@@ -132,7 +186,7 @@ package org.svgweb.nodes
             unregisterID(node);
             unregisterGUID(node);
         }
-       
+        
         public function registerID(node:SVGNode):void {
             if (node.id) {
                 _idLookup[node.id] = node;
@@ -181,27 +235,52 @@ package org.svgweb.nodes
          * 
          **/
         public function addReference(node:SVGNode, referencedId:String):void {
-            if (!this._referersById[referencedId]) {
-                 this._referersById[referencedId]= new Array();
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.addReference(node, referencedId);
             }
-            if (this._referersById[referencedId].lastIndexOf(node) == -1) {
-                this._referersById[referencedId].push(node);
+            else {
+
+                if (!this._referersById[referencedId]) {
+                     this._referersById[referencedId]= new Array();
+                }
+                if (this._referersById[referencedId].lastIndexOf(node) == -1) {
+                    this._referersById[referencedId].push(node);
+                }
+            }
+        }  
+
+        public function deleteReference(node:SVGNode, referencedId:String):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.deleteReference(node, referencedId);
+            }
+            else {
+                if (this._referersById[referencedId]) {
+                    if (this._referersById[referencedId].lastIndexOf(node) != -1) {
+                        delete this._referersById[referencedId][this._referersById[referencedId].lastIndexOf(node)];
+                    }
+                }
             }
         }
-
         
         public function invalidateReferers(id:String):void {
-            //this.svgRoot.debug("Invalidating referers to "  + id);
-            if (this._referersById[id]) {
-                var referers:Array = this._referersById[id];
-                for (var refererIdx:String in referers) {
-                    referers[refererIdx].invalidateDisplay();
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.invalidateReferers(id);
+            }
+            else {
+                //this.svgRoot.debug("Invalidating referers to "  + id);
+                if (this._referersById[id]) {
+                    var referers:Array = this._referersById[id];
+                    for (var refererIdx:String in referers) {
+                        referers[refererIdx].invalidateDisplay();
+                    }
                 }
             }
         }
 
         public function getNode(name:String):SVGNode {
-            if (_idLookup.hasOwnProperty(name)) {
+            if (this.parentSVGRoot) {
+                return this.parentSVGRoot.getNode(name);
+            } else if (_idLookup.hasOwnProperty(name)) {
                 return _idLookup[name];
             }
             return null;
@@ -213,6 +292,63 @@ package org.svgweb.nodes
             }
             return null;
         }
+        
+        /**
+         * 
+         * Fonts
+         *
+         **/
+        public function registerFont(font:SVGFontNode):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.registerFont(font);
+             }
+            else {
+                _fonts[font.getFontFaceName()] = font;
+            }
+
+            for each(var node:SVGNode in fontListeners) {
+                node.onRegisterFont(font.getFontFaceName());
+            }
+         }
+         
+        public function unregisterFont(font:SVGFontNode):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.unregisterFont(font);
+            }
+            else {
+                delete _fonts[font.getFontFaceName()];
+            }
+        }
+
+        public function getFont(fontFace:String):SVGFontNode {
+            if (this.parentSVGRoot) {
+                return this.parentSVGRoot.getFont(fontFace);
+             }
+            else {
+                return _fonts[fontFace];
+            }
+         }
+ 
+        public function registerFontListener(node:SVGNode):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.registerFontListener(node);
+            }
+            else {
+                fontListeners.push(node);
+            }
+        }
+
+        public function unregisterFontListener(node:SVGNode):void {
+            if (this.parentSVGRoot) {
+                this.parentSVGRoot.unregisterFontListener(node);
+            }
+            else {
+                if (fontListeners.lastIndexOf(node) != -1) {
+                    delete fontListeners[fontListeners.lastIndexOf(node)];
+                }
+            }
+        }
+
 
         public function handleScript(script:String):void {
             if (this.parentSVGRoot) {
@@ -227,12 +363,14 @@ package org.svgweb.nodes
             if (this.parentSVGRoot) {
                 this.parentSVGRoot.handleOnLoad();
             }
-            else if (this.parent is SVGViewer) {
-                SVGViewer(this.parent).handleOnLoad();
+            else {
+                this.loadTime = getTimer();
+                var svgEvent:SVGEvent = new SVGEvent(SVGEvent.SVGLoad);
+                this.dispatchEvent(svgEvent);
             }
         }
 
-        public function addActionListener(eventType:String, target:SVGNode):void {
+        public function addActionListener(eventType:String, target:Sprite):void {
             if (this.parentSVGRoot) {
                 this.parentSVGRoot.addActionListener(eventType, target);
             }
@@ -241,7 +379,7 @@ package org.svgweb.nodes
             }
         }
 
-        public function removeActionListener(eventType:String, target:SVGNode):void {
+        public function removeActionListener(eventType:String, target:Sprite):void {
             if (this.parentSVGRoot) {
                 this.parentSVGRoot.removeActionListener(eventType, target);
             }

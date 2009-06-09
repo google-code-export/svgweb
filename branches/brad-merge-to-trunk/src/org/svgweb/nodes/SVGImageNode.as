@@ -48,16 +48,25 @@ package org.svgweb.nodes
         }
 
         override protected function drawNode(event:Event=null):void {
-            this.removeEventListener(Event.ENTER_FRAME, drawNode);
-
-            this.setAttributes();
-            this.setStyles();
-            this.transformNode();
-            this.generateGraphicsCommands();
-            this.draw();
+            if ( (this.parent != null) && (this._invalidDisplay) ) {
+                this._invalidDisplay = false;
+                this.removeEventListener(Event.ENTER_FRAME, drawNode);
+                if (!this._parsedChildren) {
+                    this.parseChildren();
+                    this._parsedChildren = true;
+                }
+    
+                this.setAttributes();
+                this.transformNode();
+                //this.generateGraphicsCommands();
+                if (this.bitmap == null && urlLoader == null) {
+                    this.loadImage();
+                }
+            }
         }
 
         private function finishDrawNode():void {
+            this.applyClipPathMask();
             this.applyViewBox();
             this.applyDefaultMask();
 
@@ -70,11 +79,15 @@ package org.svgweb.nodes
 
         }
 
-        protected override function draw():void {
+        protected function loadImage():void {
             var imageHref:String = this.getAttribute('href');
 
             if (!imageHref) {
                 return;
+            }
+            var xmlBase:String = this.getAttribute('base');
+            if (xmlBase && xmlBase != '') {
+                imageHref = xmlBase + imageHref;
             }
 
             // For data: href, decode the base 64 image and load it
@@ -240,7 +253,7 @@ package org.svgweb.nodes
 
             bitmap = new Bitmap( bitmapData );
             bitmap.opaqueBackground = null;
-            this.addChild(bitmap);
+            drawSprite.addChild(bitmap);
 
             this.finishDrawNode();
             

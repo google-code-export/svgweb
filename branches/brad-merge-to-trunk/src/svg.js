@@ -1762,7 +1762,7 @@ extend(SVGWeb, {
   
   /** Fires when the DOM content of the page is ready to be worked with. */
   _onDOMContentLoaded: function() {
-    //console.log('onDOMContentLoaded');
+    console.log('onDOMContentLoaded');
     
     // quit if this function has already been called
     if (arguments.callee.done) {
@@ -6825,7 +6825,7 @@ extend(_SVGSVGElement, {
       sent the SVG to the Flash file for rendering yet. */
   _onFlashLoaded: function(msg) {
     // the Flash object is done loading
-    //console.log('_onFlashLoaded');
+    console.log('_onFlashLoaded');
     
     // store a reference to the Flash object so we can send it messages
     if (isIE) {
@@ -6845,14 +6845,15 @@ extend(_SVGSVGElement, {
     }
     
     // send the SVG over to Flash now
-    this._handler.sendToFlash({ type: 'load', sourceType: 'string',
+    this._handler.sendToFlash({ type: 'load', 
+                                sourceType: 'string',
                                 svgString: this._svgString,
                                 ignoreWhiteSpace: true });
   },
   
   /** The Flash is finished rendering. */
   _onRenderingFinished: function(msg) {
-    //console.log('onRenderingFinished');
+    console.log('onRenderingFinished');
     
     if (!isIE && this._handler.type == 'script') {
       // expose the root SVG element as 'documentElement' on the EMBED tag

@@ -21,17 +21,17 @@ endif
 build/:
 	mkdir -p build/ build/samples build/tests build/src
 
-build/src/svg.swf: src/org/svgweb/SVGViewerWeb.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as
+build/src/svg.swf: src/org/svgweb/SVGViewerWeb.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as src/org/svgweb/smil/*.as
 	@echo Building svg.swf file...
 	(cd src/org/svgweb;mxmlc -output ../../../build/src/svg.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../ -- SVGViewerWeb.as)
 	cp build/src/svg.swf src/
 
-build/src/svgflash.swf: src/org/svgweb/SVGViewerFlash.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as
+build/src/svgflash.swf: src/org/svgweb/SVGViewerFlash.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as src/org/svgweb/smil/*.as
 	@echo Building svgflash.swf file...
 	(cd src/org/svgweb;mxmlc -output ../../../build/src/svgflash.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../ -- SVGViewerFlash.as)
 	cp build/src/svgflash.swf src/
 
-build/src/svgflex.swf: src/org/svgweb/SVGViewerFlex.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as
+build/src/svgflex.swf: src/org/svgweb/SVGViewerFlex.as src/org/svgweb/core/*.as src/org/svgweb/nodes/*.as src/org/svgweb/utils/*.as src/org/svgweb/smil/*.as
 	@echo Building svgflex.swf file...
 	(cd src/org/svgweb;mxmlc -output ../../../build/svgflex.swf -use-network=false -warnings=false -compiler.strict=true -compiler.optimize=true -compiler.debug=false -compiler.source-path ../../ -- SVGViewerFlex.as)
 	cp build/svgflex.swf src/

@@ -43,8 +43,8 @@ package org.svgweb.nodes
          * Get any child text (not text inside child nodes). Also parse
          * unknown child nodes.
          **/
-        override protected function parse():void {
-            super.parse();
+        override protected function parseChildren():void {
+            super.parseChildren();
         }
         
         override protected function draw():void {

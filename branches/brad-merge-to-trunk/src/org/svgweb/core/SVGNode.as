@@ -48,7 +48,8 @@ package org.svgweb.core
         
         public namespace xlink = 'http://www.w3.org/1999/xlink';
         public namespace svg = 'http://www.w3.org/2000/svg';
-        
+        public namespace aaa = 'http://www.w3.org/XML/1998/namespace';
+       
         public var svgRoot:SVGSVGNode = null;
         public var isMask:Boolean = false;
 
@@ -73,7 +74,39 @@ package org.svgweb.core
         protected var original:SVGNode;
         protected var _isClone:Boolean = false;
         protected var _clones:Array = new Array();
-
+        
+        protected var animations:Array = new Array();
+        /**
+         *
+         * To handle certain flash quirks, and to support certain SVG features,
+         * the implementation of one SVG node is split into one to four
+         * Sprites which perform the functions of transforming, clipping, and drawing.
+         * Here are the specific functions performed by each sprite:
+         *
+         *
+         * transformSprite:
+         *      * handles the transform attribute
+         *      * is the parent of the clip-path mask
+         *      * has mask set to 'default' mask (top level bounding box)
+         *
+         * clipSprite:
+         *      * has mask set to 'clip-path' mask
+         *
+         * drawSprite:
+         *      * handles all graphics access
+         *      * handles x,y,rotate,opacity attributes
+         *      * eventListeners added here
+         *      * filters added here
+         *
+         * viewBoxSprite:
+         *      * handles viewBox transform
+         *      * parent of SVG children
+         *
+         */
+        public var transformSprite:Sprite;
+        public var clipSprite:Sprite;
+        public var drawSprite:Sprite;
+        public var viewBoxSprite:Sprite;
 
         /**
          * Constructor
@@ -84,13 +117,49 @@ package org.svgweb.core
          */
         public function SVGNode(svgRoot:SVGSVGNode, xml:XML = null, original:SVGNode = null):void {
             this.svgRoot = svgRoot;
+
+            transformSprite = this;
+
+            // This handle strange gradient bugs with negative transforms
+            // by separating the transform from the drawing object
+            if (xml && xml.@['transform'] != "") {
+                clipSprite = new Sprite();
+                transformSprite.addChild(clipSprite);
+            }
+            else {
+                clipSprite = this;
+            }
+
+            // If the object has a gaussian filter, flash will blur the object mask,
+            // even if the mask is not drawn with a blur. This is not correct rendering.
+            // So, we use a stub parent object to hold the mask, in order to isolate the
+            // mask from the filter. A child is created for drawing and the
+            // filter is applied to the child.
+            if (xml && xml.@['clip-path'] != "") {
+                drawSprite = new Sprite();
+                clipSprite.addChild(drawSprite);
+            }
+            else {
+                drawSprite = clipSprite;
+            }
+
+            // If the object has a viewBox, the resulting transform should only apply
+            // to the children of the object, so create a child sprite to hold the transform.
+            if (xml && xml.@['viewBox'] != "") {
+                viewBoxSprite = new Sprite();
+                drawSprite.addChild(viewBoxSprite);
+            }
+            else {
+                viewBoxSprite = drawSprite;
+            }
+
             this.xml = xml;
             if (original) {
                 this.original = original;
                 this._isClone = true;
             }
 
-            this.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
+            drawSprite.addEventListener(Event.ADDED_TO_STAGE, onAddedToStage);
             this.addEventListener(Event.REMOVED_FROM_STAGE, onRemovedFromStage);
         }
 
@@ -98,7 +167,7 @@ package org.svgweb.core
          * Parse the SVG XML.
          * This handles creation of child nodes.
          **/
-        protected function parse():void {
+        protected function parseChildren():void {
             for each (var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'element') {
                     // If we support text values then set them
@@ -116,52 +185,21 @@ package org.svgweb.core
                             this.setText(this._xml.text().toString());
                         }
                     }
-                    
-                    // This handles strange gradient bugs with negative transforms
-                    // by separating the transform from every object
-                    if (String(childXML.@['transform']) != "") {
-                        var newChildXML:XML = childXML.copy();
-                        var stubGroupXML:XML = <g></g>;
-                        stubGroupXML.@['transform'] = newChildXML.@['transform'];
-                        delete newChildXML.@['transform'];
-                        stubGroupXML.appendChild(newChildXML.toXMLString());
-                        newChildNode = new SVGGroupNode(this.svgRoot, stubGroupXML);
-                        this.addChild(newChildNode);
-                        continue;
-                    }
-
-                    // If the object has a gaussian filter, flash will blur the object mask, even
-                    // if the mask is not drawn with a blur. This is not correct rendering.
-                    // So, we use a stub parent object to hold the mask, in order to isolate
-                    // the mask from the filter. A child is created for the original object,
-                    // and the filter is applied to the child.
-                    if (String(childXML.@['clip-path']) != "") {
-                        var newChildXML:XML = childXML.copy();
-                        var stubGroupXML:XML = <g></g>;
-                        stubGroupXML.@['clip-path'] = newChildXML.@['clip-path'];
-                        delete newChildXML.@['clip-path'];
-                        stubGroupXML.appendChild(newChildXML.toXMLString());
-                        newChildNode = new SVGGroupNode(this.svgRoot, stubGroupXML);
-                        this.addChild(newChildNode);
-                        continue;
-                    }
 
                     var newChildNode:SVGNode = this.parseNode(childXML);
                     if (!newChildNode) {
                         this.dbg("did not add object!:" + childXML.localName());
                         continue;
                     }
-                    this.addChild(newChildNode);
+                    SVGNode.addSVGChild(viewBoxSprite, newChildNode);
                 }
             }
         }
-
 
         public function parseNode(childXML:XML):SVGNode {
             var childNode:SVGNode = null;
             var nodeName:String = childXML.localName();                    
             nodeName = nodeName.toLowerCase();
-
             switch(nodeName) {
                 case "a":
                     childNode = new SVGANode(this.svgRoot, childXML);
@@ -178,6 +216,9 @@ package org.svgweb.core
                 case "animatetransform":
                     childNode = new SVGAnimateTransformNode(this.svgRoot, childXML);
                     break;    
+                case "audio":
+                    childNode = new SVGAudioNode(this.svgRoot, childXML);
+                    break;
                 case "circle":
                     childNode = new SVGCircleNode(this.svgRoot, childXML);
                     break;        
@@ -196,8 +237,17 @@ package org.svgweb.core
                 case "filter":
                     childNode = new SVGFilterNode(this.svgRoot, childXML);
                     break;
+                case "font":
+                    childNode = new SVGFontNode(this.svgRoot, childXML);
+                    break;
+                case "font-face":
+                    childNode = new SVGFontFaceNode(this.svgRoot, childXML);
+                    break;
                 case "g":                        
                     childNode = new SVGGroupNode(this.svgRoot, childXML);
+                    break;
+                case "glyph":                        
+                    childNode = new SVGGlyphNode(this.svgRoot, childXML);
                     break;
                 case "image":                        
                     childNode = new SVGImageNode(this.svgRoot, childXML);
@@ -213,6 +263,9 @@ package org.svgweb.core
                     break;                        
                 case "metadata":
                     childNode = new SVGMetadataNode(this.svgRoot, childXML);
+                    break;
+                case "missing-glyph":                        
+                    childNode = new SVGMissingGlyphNode(this.svgRoot, childXML);
                     break;
                 case "pattern":
                     childNode = new SVGPatternNode(this.svgRoot, childXML);
@@ -259,6 +312,9 @@ package org.svgweb.core
                 case "use":
                     childNode = new SVGUseNode(this.svgRoot, childXML);
                     break;
+                case "video":
+                    childNode = new SVGVideoNode(this.svgRoot, childXML);
+                    break;
                 case "__text":
                     /** These are fake text nodes necessary for integration
                         with the browser through JavaScript. */
@@ -281,7 +337,7 @@ package org.svgweb.core
          */
         public function forceParse():void {
             if (this._xml != null && !this._parsedChildren) {
-                this.parse();
+                this.parseChildren();
                 for (var i:uint = 0; i < this.numChildren; i++) {
                     var child = this.getChildAt(i);
                     if (child is SVGNode) {
@@ -300,17 +356,15 @@ package org.svgweb.core
             if ( (this.parent != null) && (this._invalidDisplay) ) {
                 this._invalidDisplay = false;
                 if (this._xml != null) {
-                    this.graphics.clear();
+                    drawSprite.graphics.clear();
                     
                     if (!this._parsedChildren) {
-                        this.parse();
+                        this.parseChildren();
                         this._parsedChildren = true;
                     }
 
-                    // sets x, y, and rotate
+                    // sets x, y, rotate, and opacity
                     this.setAttributes();
-                    // sets opacity
-                    this.setStyles();
 
                     if (this.getStyleOrAttr('visibility') == 'hidden') {
                         // SVG spec says visibility='hidden' should fully draw
@@ -329,6 +383,7 @@ package org.svgweb.core
                         if (this is SVGSVGNode) {
                             this.applyDefaultMask();
                         }
+
                         this.generateGraphicsCommands();
                         this.transformNode();
                         this.draw();
@@ -348,8 +403,8 @@ package org.svgweb.core
                 if (getPatternAncestor() != null) {
                     this.svgRoot.invalidateReferers(getPatternAncestor().id);
                 }
-
             }
+            
             if (!this._initialRenderDone && this.parent) {
                 this.attachEventListeners();
                 this._initialRenderDone = true;
@@ -361,26 +416,7 @@ package org.svgweb.core
             this.loadAttribute('x');
             this.loadAttribute('y');
             this.loadAttribute('rotate','rotation');
-        }
-        
-        protected function setStyles():void {
-            this.loadStyle('opacity', 'alpha');
-        }
-        
-        /**
-         * Load an SVG style into the current node
-         * 
-         * @param name Name of the SVG style to load
-         * @param field Name of the node field to set. If null, the value of name will be used as the field attribute.
-         **/ 
-        protected function loadStyle(name:String, field:String = null):void {
-            if (field == null) {
-                field = name;
-            }
-            var tmp:String = this.getStyle(name);
-            if (tmp != null) {
-                this[field] = tmp;
-            }
+            this.loadAttribute('opacity', 'alpha', true);
         }
 
         /**
@@ -388,22 +424,36 @@ package org.svgweb.core
          * 
          * @param name Name of the XML attribute to load
          * @param field Name of the node field to set. If null, the name attribute will be used as the field attribute.
-         **/ 
-        protected function loadAttribute(name:String, field:String = null):void {
+         * @param useStyle Boolean Optional parameter that controls whether we
+         * will look in this node's style value if the given name is not in
+         * the node's attribute list. Defaults to false.
+         **/
+        protected function loadAttribute(name:String, field:String = null,
+                                         useStyle:Boolean = false):void {
             if (field == null) {
                 field = name;
             }
-            var tmp:String = this.getAttribute(name);
+            var tmp;
+            if (useStyle) {
+                tmp = this.getStyleOrAttr(name);
+            } else {
+                tmp = this.getAttribute(name);
+            }
             if (tmp != null) {
-                if (name == 'x') {
-                    this[field] = SVGColors.cleanNumber2(tmp, this.getWidth());
-                    return;
+                switch (name) {
+                    case 'x':
+                        drawSprite[field] = SVGColors.cleanNumber2(tmp, this.getWidth());
+                        break;
+                    case 'y':
+                        drawSprite[field] = SVGColors.cleanNumber2(tmp, this.getHeight());
+                        break;
+                    case 'rotate':
+                        drawSprite[field] = SVGColors.cleanNumber(tmp);
+                        break;
+                    case 'opacity':
+                        drawSprite[field] = SVGColors.cleanNumber(tmp);
+                        break;
                 }
-                if (name == 'y') {
-                    this[field] = SVGColors.cleanNumber2(tmp, this.getHeight());
-                    return;
-                }
-                this[field] = SVGColors.cleanNumber(tmp);
             }
         } 
 
@@ -421,16 +471,16 @@ package org.svgweb.core
             if (this.getStyleOrAttr('visibility') == null 
                 || recursive == false) {
                 if (visible == 'visible') {
-                    this.alpha = 1;
+                    drawSprite.alpha = 1;
                 } else {
-                    this.alpha = 0;
+                    drawSprite.alpha = 0;
                 }
             }
             
             // set on all our children
             var child:DisplayObject;
-            for (var i:uint = 0; i < this.numChildren; i++) {
-                child = this.getChildAt(i);
+            for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
+                child = viewBoxSprite.getChildAt(i);
                 if (child is SVGNode) {
                     SVGNode(child).setVisibility(visible, true);
                 }
@@ -441,16 +491,16 @@ package org.svgweb.core
         public function applyDefaultMask():void {
             if (   (this.getStyleOrAttr('width') != null)
                 && (this.getStyleOrAttr('height') != null) ) {
-                if (this.mask == null) {
+                if (transformSprite.mask == null) {
                     var myMask:Shape = new Shape();
-                    this.parent.addChild(myMask);
-                    this.mask = myMask;
+                    transformSprite.parent.addChild(myMask);
+                    transformSprite.mask = myMask;
                 }
-                if (this.mask is Shape) {
-                    Shape(this.mask).graphics.clear();
-                    Shape(this.mask).graphics.beginFill(0x000000);
-                    Shape(this.mask).graphics.drawRect(this.x, this.y, this.getWidth(), this.getHeight());
-                    Shape(this.mask).graphics.endFill();
+                if (transformSprite.mask is Shape) {
+                    Shape(transformSprite.mask).graphics.clear();
+                    Shape(transformSprite.mask).graphics.beginFill(0x000000);
+                    Shape(transformSprite.mask).graphics.drawRect(drawSprite.x, drawSprite.y, this.getWidth(), this.getHeight());
+                    Shape(transformSprite.mask).graphics.endFill();
                 }
             }
         }
@@ -466,8 +516,7 @@ package org.svgweb.core
          * Perform transformations defined by the transform attribute 
          **/
         public function transformNode():void {
-
-            this.transform.matrix = new Matrix();
+            transformSprite.transform.matrix = new Matrix();
             this.loadAttribute('x');    
             this.loadAttribute('y');
 
@@ -488,8 +537,17 @@ package org.svgweb.core
             // Apply transform attribute 
             var trans:String = this.getAttribute('transform');
             if (trans) {
-                this.transform.matrix = this.parseTransform(trans, this.transform.matrix.clone());
+                transformSprite.transform.matrix = this.parseTransform(trans,
+                                                            transformSprite.transform.matrix.clone());
             }
+            
+            var animMatrix:Matrix = this.getAllAnimsTransform();
+            if (animMatrix != null) {
+                var newMatrix = transformSprite.transform.matrix.clone();
+                newMatrix.concat(animMatrix);
+                transformSprite.transform.matrix = newMatrix;
+            }
+
 
         }
 
@@ -578,10 +636,7 @@ package org.svgweb.core
             return baseMatrix;
         }
 
-        
         protected function draw():void {
-            this.graphics.clear();            
-
             var firstX:Number = 0;
             var firstY:Number = 0;
 
@@ -594,43 +649,43 @@ package org.svgweb.core
                         this.nodeEndFill();
                         break;
                     case "M":
-                        this.graphics.moveTo(command[1], command[2]);
+                        drawSprite.graphics.moveTo(command[1], command[2]);
                         firstX = command[1];
                         firstY = command[2];
                         break;
                     case "L":
-                        this.graphics.lineTo(command[1], command[2]);
+                        drawSprite.graphics.lineTo(command[1], command[2]);
                         break;
                     case "C":
-                        this.graphics.curveTo(command[1], command[2],command[3], command[4]);
+                        drawSprite.graphics.curveTo(command[1], command[2],command[3], command[4]);
                         break;
                     case "Z":
-                        this.graphics.lineTo(firstX, firstY);
+                        drawSprite.graphics.lineTo(firstX, firstY);
                         break;
                     case "LINE":
                         this.nodeBeginFill();
-                        this.graphics.moveTo(command[1], command[2]);
-                        this.graphics.lineTo(command[3], command[4]);
+                        drawSprite.graphics.moveTo(command[1], command[2]);
+                        drawSprite.graphics.lineTo(command[3], command[4]);
                         this.nodeEndFill();                
                         break;
                     case "RECT":
                         this.nodeBeginFill();
                         if (command.length == 5) {
-                            this.graphics.drawRect(command[1], command[2],command[3], command[4]);
+                            drawSprite.graphics.drawRect(command[1], command[2],command[3], command[4]);
                         }
                         else {
-                            this.graphics.drawRoundRect(command[1], command[2],command[3], command[4], command[5], command[6]);
+                            drawSprite.graphics.drawRoundRect(command[1], command[2],command[3], command[4], command[5], command[6]);
                         }
                         this.nodeEndFill();                
                         break;        
                     case "CIRCLE":
                         this.nodeBeginFill();
-                        this.graphics.drawCircle(command[1], command[2], command[3]);
+                        drawSprite.graphics.drawCircle(command[1], command[2], command[3]);
                         this.nodeEndFill();
                         break;
                     case "ELLIPSE":
                         this.nodeBeginFill();                        
-                        this.graphics.drawEllipse(command[1], command[2],command[3], command[4]);
+                        drawSprite.graphics.drawEllipse(command[1], command[2],command[3], command[4]);
                         this.nodeEndFill();
                         break;
                 }
@@ -667,6 +722,9 @@ package org.svgweb.core
                     }
                 }
                 else {
+                    if (fill == 'currentColor') {
+                        fill = this.getStyleOrAttr('color');
+                    }
                     color_and_alpha = SVGColors.getColorAndAlpha(fill);
                     color_core = color_and_alpha[0];
                     color_alpha = color_and_alpha[1];
@@ -675,7 +733,7 @@ package org.svgweb.core
                     } else {
                         fill_alpha = color_alpha;
                     }
-                    this.graphics.beginFill(color_core, fill_alpha);
+                    drawSprite.graphics.beginFill(color_core, fill_alpha);
                 }
             }
 
@@ -691,6 +749,9 @@ package org.svgweb.core
                 line_width = 0;
             }
             else {
+                if (stroke == 'currentColor') {
+                    stroke = this.getStyleOrAttr('color');
+                }
                 line_color = SVGColors.cleanNumber(SVGColors.getColor(stroke));
                 line_alpha = SVGColors.cleanNumber(this.getStyleOrAttr('stroke-opacity'));
                 line_width = SVGColors.cleanNumber(this.getStyleOrAttr('stroke-width'));
@@ -723,8 +784,8 @@ package org.svgweb.core
                 miterLimit = '4';
             }
             
-            this.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
-                                    capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
+            drawSprite.graphics.lineStyle(line_width, line_color, line_alpha, false, LineScaleMode.NORMAL,
+                                          capsStyle, jointStyle, SVGColors.cleanNumber(miterLimit));
 
             if ( (stroke != 'none') && (stroke != null)  && (this.getStyleOrAttr('visibility') != 'hidden') ) {
                 var strokeMatches:Array = stroke.match(/url\(#([^\)]+)\)/si);
@@ -747,7 +808,7 @@ package org.svgweb.core
          * Called at the end of drawing an SVG element
          **/
         protected function nodeEndFill():void {
-            this.graphics.endFill();
+            drawSprite.graphics.endFill();
         }
 
         /**
@@ -791,13 +852,12 @@ package org.svgweb.core
         }
 
         public function applyViewBox():void {
-            var newMatrix:Matrix = this.transform.matrix.clone();
-
             // Apply viewbox transform
             var viewBox:String = this.getAttribute('viewBox');
             var preserveAspectRatio:String = this.getAttribute('preserveAspectRatio');
 
             if ( (viewBox != null) || (preserveAspectRatio != null) ) {
+                var newMatrix:Matrix = new Matrix();
 
                 if (preserveAspectRatio == null) {
                     preserveAspectRatio = 'xMidYMid meet';
@@ -817,8 +877,8 @@ package org.svgweb.core
                 var viewWidth:Number;
                 var viewHeight:Number;
                 if (viewBox != null) {
-                    var points:Array = viewBox.split(/\s+/);
-                    viewX = SVGColors.cleanNumber(points[0]);
+                    viewBox = viewBox.replace(/,/sg," "); //Replace commas with spaces
+                    var points:Array = viewBox.split(/\s+/); //Split by white space                    viewX = SVGColors.cleanNumber(points[0]);
                     viewY = SVGColors.cleanNumber(points[1]);
                     viewWidth = SVGColors.cleanNumber(points[2]);
                     viewHeight = SVGColors.cleanNumber(points[3]);
@@ -923,19 +983,15 @@ package org.svgweb.core
                     }
                     newMatrix.translate(translateX, translateY);
                 }
+                viewBoxSprite.transform.matrix = newMatrix;
             }
-
-            this.transform.matrix = newMatrix;
-
         }
-
 
         protected function applyClipPathMask():void {
             var attr:String;
             var match:Array;
             var node:SVGNode;
             var matrix:Matrix;
-            var isMask:Boolean = true;
 
             attr = this.getAttribute('mask');
             if (!attr) {
@@ -948,29 +1004,26 @@ package org.svgweb.core
                    attr = match[1];
                    node = this.svgRoot.getNode(attr);
                    if (node) {
-                       if (this.parent is SVGNode) {
+                       this.removeMask();
 
-                           this.removeMask();
+                       var newMask:SVGNode = node.clone();
+                       newMask.isMask = true;
 
-                           var newMask:SVGNode = node.clone();
-                           this.parent.addChild(newMask);
+                       addSVGChild(transformSprite, newMask);
+                       clipSprite.mask = newMask;
 
-                           this.mask = newMask;
-
-                           newMask.visible = true;
-                           this.cacheAsBitmap = true;
-                           newMask.cacheAsBitmap = true;
-
-                       }
+                       newMask.visible = true;
+                       clipSprite.cacheAsBitmap = true;
+                       newMask.cacheAsBitmap = true;
                    }
                }
             }
         }
 
         protected function removeMask():void {
-            if (this.mask) {
-                this.mask.parent.removeChild(this.mask);
-                this.mask = null;
+            if (clipSprite.mask) {
+                clipSprite.mask.parent.removeChild(clipSprite.mask);
+                clipSprite.mask = null;
             }
         }
 
@@ -979,14 +1032,13 @@ package org.svgweb.core
          **/
         protected function setupFilters():void {
             var filterName:String = this.getStyleOrAttr('filter');
-            if ((filterName != null)
-                && (filterName != null)) {
+            if ( (filterName != null) && (filterName != '') && (filterName != 'none') ) {
                 var matches:Array = filterName.match(/url\(#([^\)]+)\)/si);
                 if (matches.length > 0) {
                     filterName = matches[1];
                     var filterNode:SVGNode = this.svgRoot.getNode(filterName);
                     if (filterNode) {
-                        this.filters = SVGFilterNode(filterNode).getFilters(this);
+                        drawSprite.filters = SVGFilterNode(filterNode).getFilters(this);
                     }
                     else {
                         //this.dbg("filter " + filterName + " not (yet?) available for " + this.xml.@id);
@@ -1000,29 +1052,34 @@ package org.svgweb.core
             var action:String;
 
             action = this.getAttribute("onclick");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.CLICK, this);
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.CLICK, drawSprite);
+            }
 
             action = this.getAttribute("onmousedown");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.MOUSE_DOWN, this);
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_DOWN, drawSprite);
+            }
 
             action = this.getAttribute("onmouseup");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.MOUSE_UP, this);
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_UP, drawSprite);
+            }
 
             action = this.getAttribute("onmousemove");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.MOUSE_MOVE, this);
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_MOVE, drawSprite);
+            }
 
             action = this.getAttribute("onmouseover");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.MOUSE_OVER, this);
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_OVER, drawSprite);
+            }
 
             action = this.getAttribute("onmouseout");
-            if (action)
-                this.svgRoot.addActionListener(MouseEvent.MOUSE_OUT, this);
-
+            if (action) {
+                this.svgRoot.addActionListener(MouseEvent.MOUSE_OUT, drawSprite);
+            }
         }
                 
 
@@ -1088,27 +1145,36 @@ package org.svgweb.core
          * not defined. Defaults to null.
          * @param inherit Whether to look up the inheritance chain if this
          * property is inherited. Defaults to true.
+         * @param applyAnimations Boolean, optional, defaults to true. Controls
+         * whether we apply any SMIL animations that might be in flight to the
+         * attribute. If false, then we return the base actual set value on
+         * this node without reference to any animation changes.
          * 
          * @return Returns the XML attribute value, or the defaultValue.
          **/
-        public function getAttribute(name:String, defaultValue:* = null, inherit:Boolean = true):* {            
-            var value:String = this._getAttribute(name);
+        public function getAttribute(name:String, defaultValue:* = null,
+                                     inherit:Boolean = true,
+                                     applyAnimations:Boolean = true):* {
+            var value:String = this._getAttribute(name, defaultValue,
+                                                  inherit, applyAnimations);
+            
+            if (value == "inherit") {
+                value = null;
+            }
             
             if (value) {
                 return value;
             }
             
-            if (inherit) {
-                if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
-                    return defaultValue;        
-                }
-
-                if ((this.parent is SVGNode)) {
-                    return SVGNode(this.parent).getAttribute(name, defaultValue);
-                }
+            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
+                return defaultValue;        
             }
             
-            return defaultValue;         
+            if (inherit && (this.getSVGParent() != null)) {
+                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, true, applyAnimations);
+            }
+            
+            return defaultValue;       
         }
         
         /**
@@ -1117,7 +1183,9 @@ package org.svgweb.core
          * used as a helper for getAttribute, which has css parent inheritance logic.
          *
          **/
-        protected function _getAttribute(name:String):String {
+        protected function _getAttribute(name:String, defaultValue:* = null,
+                                         inherit:Boolean = true,
+                                         applyAnimations:Boolean = true):* {
             var value:String;
             
             // If we are rendering a mask, then use a simple black fill.
@@ -1138,7 +1206,14 @@ package org.svgweb.core
                 }
 
                 if (name == 'filter') {
-                    return null;
+                    return 'none';
+                }
+            }
+
+            if (applyAnimations) {
+                value = getAnimAttribute(name, defaultValue, inherit);
+                if (value) {
+                    return value;
                 }
             }
            
@@ -1150,11 +1225,9 @@ package org.svgweb.core
                 }
             }
 
-            if (this.original && (this.parent is SVGUseNode)) {
-                //Node is the top level of a clone
-                //Check for an override value from the parent
-                value = SVGNode(this.parent).getAttribute(name);
-                if (value) {
+            if (name == "base") {
+                value = this._xml.@aaa::base;                             
+                if (value && (value != "")) {
                     return value;
                 }
             }
@@ -1166,7 +1239,124 @@ package org.svgweb.core
             }
  
             return null;
-        }  
+        }
+        
+        // process all animations
+        public function getAnimAttribute(name:String, defaultValue:* = null,
+                                         inherit:Boolean = true):String {
+            // transform is handled by getAllAnimTransforms
+            if (name == "transform")
+                return null;
+ 
+            var foundAnimation:Boolean = false;
+            for each(var animation:SVGAnimateNode in animations) {
+                if (animation.getAttributeName() == name) {
+                    foundAnimation = true;
+                }
+            }
+            if (!foundAnimation)
+                return null;
+ 
+            var isAdditive:Boolean = true;
+
+            // Start with base value
+            var baseVal:String = getAttribute(name, defaultValue, inherit, false);
+
+            var animVal:Number;
+            if (baseVal) {
+                animVal = SVGUnits.cleanNumber(baseVal);
+            }
+            else {
+                animVal= 0;
+            }
+             
+            // Handle discrete string values
+            var discreteStringVal:String;
+            // XXX This should sort by priority (activation order) 
+            // Add or replace with animations
+            for each(var animation:SVGAnimateNode in animations) {
+                if (   animation.getAttributeName() == name
+                    && animation.isEffective() ) {
+                    if (animation.isAdditive()) {
+                        animVal = animVal + SVGUnits.cleanNumber(animation.getAnimValue());
+                    }
+                    else {
+                        animVal = SVGUnits.cleanNumber(animation.getAnimValue());
+                        discreteStringVal = animation.getAnimValue();
+                    }
+                }
+            }
+            return String(animVal);
+        }
+
+        // process all transform animations
+        // xxx not fully implemented
+        public function getAllAnimsTransform():Matrix {
+
+            var rotateTransform:Matrix= new Matrix();
+            var scaleTransform:Matrix= new Matrix();
+            var skewXTransform:Matrix= new Matrix();
+            var skewYTransform:Matrix= new Matrix();
+            var translateTransform:Matrix= new Matrix();
+
+            // XXX This should sort by priority (activation order) 
+            for each(var animation:SVGAnimateNode in animations) {
+                if (animation is SVGAnimateTransformNode
+                    && animation.isEffective()) {
+
+                    if (animation.isAdditive()) {
+                        switch (SVGAnimateTransformNode(animation).getTransformType() ) {
+                            case "rotate":
+                                rotateTransform.concat(SVGAnimateTransformNode(animation).getAnimTransform());
+                                break;
+                            case "scale":
+                                scaleTransform.concat(SVGAnimateTransformNode(animation).getAnimTransform());
+                                break;
+                            case "skewX":
+                                skewXTransform.concat(SVGAnimateTransformNode(animation).getAnimTransform());
+                                break;
+                            case "skewY":
+                                skewYTransform.concat(SVGAnimateTransformNode(animation).getAnimTransform());
+                                break;
+                            case "translate":
+                                translateTransform.concat(SVGAnimateTransformNode(animation).getAnimTransform());
+                                break;
+                        }
+                    }
+                    else {
+                        rotateTransform = new Matrix();
+                        scaleTransform = new Matrix();
+                        skewXTransform = new Matrix();
+                        skewYTransform = new Matrix();
+                        translateTransform = new Matrix();
+                        switch (SVGAnimateTransformNode(animation).getTransformType() ) {
+                            case "rotate":
+                                rotateTransform = SVGAnimateTransformNode(animation).getAnimTransform();
+                                break;
+                            case "scale":
+                                scaleTransform = SVGAnimateTransformNode(animation).getAnimTransform();
+                                break;
+                            case "skewX":
+                                skewXTransform = SVGAnimateTransformNode(animation).getAnimTransform();
+                                break;
+                            case "skewY":
+                                skewYTransform = SVGAnimateTransformNode(animation).getAnimTransform();
+                                break;
+                            case "translate":
+                                translateTransform = SVGAnimateTransformNode(animation).getAnimTransform();
+                                break;
+                        }
+                    }
+                }
+            }
+            var animTransform:Matrix= new Matrix();
+            animTransform.concat(rotateTransform);
+            animTransform.concat(scaleTransform);
+            animTransform.concat(skewXTransform);
+            animTransform.concat(skewYTransform);
+            animTransform.concat(translateTransform);
+            return animTransform;
+        }
 
         public function setAttribute(name:String, value:String):void {
             if (name == "style") {
@@ -1228,7 +1418,10 @@ package org.svgweb.core
         /** Gets a style attribute from the style="" string. Note that this
          *  leaves XML attributes alone. For examle, if you set 
          *  the fill style to 'red', the XML fill attribute will remain with
-         *  its old value. 
+         *  its old value. Note that style values do not reflect changes
+         *  that might apply due to SMIL animations; use getAttribute to
+         *  an attribute that might have come into existence as part of a 
+         *  SMIL animation.
          *
          *  @param name The style name, such as fill or stroke-width. Dashed
          *  style names will automatically be converted into camel case.
@@ -1239,7 +1432,8 @@ package org.svgweb.core
          *
          *  @return The style value, or null if it is not present.
          **/
-        public function getStyle(name:String, defaultValue:* = null, inherit:Boolean = true):* {
+        public function getStyle(name:String, defaultValue:* = null, 
+                                 inherit:Boolean = true):* {
             var value = this._getStyle(name);
             if (value != null) {
                 return value;
@@ -1257,8 +1451,8 @@ package org.svgweb.core
                 return value;
             }
             
-            if (inherit && (this.parent is SVGNode)) {
-                return SVGNode(this.parent).getStyle(name, defaultValue);
+            if (inherit && this.getSVGParent()) {
+                return this.getSVGParent().getStyle(name, defaultValue, inherit);
             }
             
             return defaultValue;
@@ -1292,10 +1486,10 @@ package org.svgweb.core
                 }
             }
             
-            if (this.original && (this.parent is SVGUseNode)) {
+            if (this.original && (this.getSVGParent() is SVGUseNode)) {
                 //Node is the top level of a clone
                 //Check for an override value from the parent
-                value = SVGNode(this.parent).getStyle(name, null, false);
+                value = SVGNode(this.getSVGParent()).getStyle(name, null, false);
                 if (value != null) {
                     return value;
                 }
@@ -1317,22 +1511,39 @@ package org.svgweb.core
          *  Defaults to null.
          *  @param inherit Whether to look up the inheritance chain if this
          *  property is inherited. Defaults to true.
+         *  @param applyAnimations Boolean, optional, defaults to true. Controls
+         *  whether we apply any SMIL animations that might be in flight to the
+         *  attribute. If false, then we return the base actual set value on
+         *  this node without reference to any animation changes.
          *
          *  @return The style or XML attribute value, or null if it is 
          *  not present.
          **/
-        public function getStyleOrAttr(name:String, defaultValue:* = null, inherit:Boolean = true):* {
+        public function getStyleOrAttr(name:String, defaultValue:* = null, 
+                                       inherit:Boolean = true,
+                                       applyAnimations:Boolean = true):* {
+            var value;
+            
             // Firefox and Safari gives style="" values precedence over XML
             // values
             
-            // start with non-inherited explicitly set styles
-            var value = this.getStyle(name, null, false);
+            // are we in the middle of an animation? if so, return 
+            // the attribute value with the animation applied if requested
+            // FIXME: is this the correct way to detect whether an animation
+            // is in progress?
+            if (applyAnimations && animations.length > 0) {
+                value = this.getAttribute(name, null, true, true);
+                return value;
+            }
+            
+            // try non-inherited explicitly set styles
+            value = this.getStyle(name, null, false);
             if (value != null) {
                 return value;
             }
             
             // otherwise see if there is an explicit XML attribute
-            value = this.getAttribute(name);
+            value = this.getAttribute(name, null, true, applyAnimations);
             if (value != null) {
                 return value;
             }
@@ -1411,6 +1622,9 @@ package org.svgweb.core
             // subclasses should implement this if they want to have text
             throw new Error("Unimplemented");
         }
+        
+        public function onRegisterFont(fontFamily:String) {
+        }
 
         /**
          * Force a redraw of a node
@@ -1424,8 +1638,8 @@ package org.svgweb.core
 
         public function invalidateChildren():void {
             var child:DisplayObject;
-            for (var i:uint = 0; i < this.numChildren; i++) {
-                child = this.getChildAt(i);
+            for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
+                child = viewBoxSprite.getChildAt(i);
                 if (child is SVGNode) {
                     SVGNode(child).invalidateDisplay();
                     SVGNode(child).invalidateChildren();
@@ -1468,99 +1682,34 @@ package org.svgweb.core
         public function get isClone():Boolean {
             return this._isClone;
         }
+        
+        /*
+         * Animations
+         */
+
+        public function addAnimation(animation:SVGAnimateNode):void {
+            if (animations.indexOf(animation) == -1) {
+                animations.push(animation);
+            }
+        }
+
+        public function removeAnimation(animation:SVGAnimateNode):void {
+            if (animations.indexOf(animation) != -1) {
+                animations.splice(animations.indexOf(animation), 1);
+            }
+        }
 
         /*
          * Misc Functions
          */
-         
-        /** Appends an SVGNode both to our display list as well as to our
-          * XML.
-          **/
-        public function appendChild(child:SVGNode):SVGNode {
-            this._xml.appendChild(child._xml);
-            this.addChild(child);
-            this.invalidateDisplay();
-
-            return child;
-        }
-
-        /**
-         *
-         **/
-        override public function addChild(child:DisplayObject):DisplayObject {
-            if (child is SVGNode) {
-                this.svgRoot.renderPending();
-            }
-            super.addChild(child);
-            return child;
-        }
 
         /**
          * Remove all child nodes
          **/        
-        protected function clearChildren():void {
-            while(this.numChildren) {
-                this.removeChildAt(0);
+        protected function clearSVGChildren():void {
+            while(viewBoxSprite.numChildren) {
+                viewBoxSprite.removeChildAt(0);
             }
-        }
-        
-        override public function removeChild(child:DisplayObject):DisplayObject {
-            super.removeChild(child);
-            if (child is SVGNode) {
-                var node:SVGNode = child as SVGNode;
-                
-                // unregister the element
-                this.svgRoot.unregisterNode(node);
-                
-                // if we are dealing with a fake text node, change our
-                // text node contents
-                if (node is SVGDOMTextNode && this.hasText()) {
-                    this.setText(null);
-                }
-                
-                // remove from our XML children
-                for (var i = 0; i < this._xml.children().length(); i++) {
-                    if (this._xml.children()[i].@__guid == node._xml.@__guid) {
-                        delete this._xml.children()[i];
-                        break;
-                    }
-                }
-                
-                this.invalidateDisplay();
-            }
-            
-            return child;
-        }
-        
-        /**
-         * Adds newChild before refChild. Position is the position of refChild
-         * to add newChild before.
-         */
-        public function insertBefore(position:int, newChild:SVGNode, refChild:SVGNode) {
-            //this.dbg('insertBefore, position='+position+', newChild='+newChild+', refChild='+refChild);
-            // update our XML
-            if (position == 0) {
-                this._xml.*[0] = newChild + this._xml.*[0];
-            } else {
-                this._xml.*[position - 1] += newChild;
-            }
-    
-            // update our Flash display list
-            super.addChildAt(newChild, position);
-            this.invalidateDisplay();
-        }
-        
-        override public function addChildAt(child:DisplayObject, index:int):DisplayObject {
-            super.addChildAt(child, index);
-            
-            if (child is SVGDOMTextNode) {
-                var node:SVGNode = child as SVGNode;
-                if (this.hasText()) {
-                    this.setText(node.xml.text());
-                }
-            }
-            
-            return child;
         }
 
         public function getWidth():Number {
@@ -1568,8 +1717,8 @@ package org.svgweb.core
             if (this.parent is SVGViewer) {
                 parentWidth=SVGViewer(this.parent).getWidth();
             }
-            if (this.parent is SVGNode) {
-                parentWidth=SVGNode(this.parent).getWidth();
+            if (this.getSVGParent() != null) {
+                parentWidth=SVGNode(this.getSVGParent()).getWidth();
             }
             if (this.getStyleOrAttr('width') != null) {
                 return SVGColors.cleanNumber2(this.getStyleOrAttr('width'), parentWidth);
@@ -1584,8 +1733,8 @@ package org.svgweb.core
             if (this.parent is SVGViewer) {
                 parentHeight=SVGViewer(this.parent).getHeight();
             }
-            if (this.parent is SVGNode) {
-                parentHeight=SVGNode(this.parent).getHeight();
+            if (this.getSVGParent() is SVGNode) {
+                parentHeight=SVGNode(this.getSVGParent()).getHeight();
             }
             if (this.getStyleOrAttr('height') != null) {
                 return SVGColors.cleanNumber2(this.getStyleOrAttr('height'), parentHeight);
@@ -1593,6 +1742,76 @@ package org.svgweb.core
 
             // defaults to 100%
             return parentHeight;
+        }
+        
+        /** Appends an SVGNode both to our display list as well as to our
+          * XML.
+          **/
+        public function appendSVGChild(child:SVGNode):SVGNode {
+            this._xml.appendChild(child._xml);
+            this.addSVGChildAt(child, viewBoxSprite.numChildren);
+            this.invalidateDisplay();
+
+            return child;
+        }
+        
+        public function removeSVGChild(node:SVGNode):SVGNode {
+            var child:DisplayObject;
+            for (var i:uint = 0; i < viewBoxSprite.numChildren; i++) {
+                child = viewBoxSprite.getChildAt(i);
+                this.removeChild(child);
+            }
+            
+            // unregister the element
+            this.svgRoot.unregisterNode(node);
+            
+            // if we are dealing with a fake text node, change our
+            // text node contents
+            if (node is SVGDOMTextNode && this.hasText()) {
+                this.setText(null);
+            }
+            
+            // remove from our XML children
+            for (var i = 0; i < this._xml.children().length(); i++) {
+                if (this._xml.children()[i].@__guid == node._xml.@__guid) {
+                    delete this._xml.children()[i];
+                    break;
+                }
+            }
+            
+            this.invalidateDisplay();
+            
+            return node;
+        }
+        
+        /**
+         * Adds newChild before refChild. Position is the position of refChild
+         * to add newChild before.
+         */
+        public function insertSVGBefore(position:int, newChild:SVGNode, refChild:SVGNode) {
+            //this.dbg('insertSVGBefore, position='+position+', newChild='+newChild+', refChild='+refChild);
+            // update our XML
+            if (position == 0) {
+                this._xml.*[0] = newChild + this._xml.*[0];
+            } else {
+                this._xml.*[position - 1] += newChild;
+            }
+    
+            // update our Flash display list
+            addChildAt(newChild.viewBoxSprite, position);
+            this.invalidateDisplay();
+        }
+        
+        public function addSVGChildAt(child:SVGNode, index:int):SVGNode {
+            addChildAt(child.viewBoxSprite, index);
+            
+            if (child is SVGDOMTextNode) {
+                if (this.hasText()) {
+                    this.setText(child.xml.text());
+                }
+            }
+            
+            return child;
         }
 
         public function getMaskAncestor():SVGNode {
@@ -1608,11 +1827,39 @@ package org.svgweb.core
         }
 
         public function getPatternAncestor():SVGPatternNode {
-            var node:SVGNode = this;
+            var node:DisplayObject = this;
             while (node && !(node is SVGSVGNode)) {
-                node=SVGNode(node.parent);
+                node=node.parent;
                 if (node is SVGPatternNode)
                     return SVGPatternNode(node);
+            }
+            return null;
+        }
+        
+        public function getSVGParent():SVGNode {
+            var node:DisplayObject = this;
+            while (node) {
+                node=node.parent;
+                if (node is SVGNode) {
+                    return SVGNode(node);
+                }
+            }
+            return null;
+        }
+        
+        public static function addSVGChild(parentSprite:Sprite, child:SVGNode) {
+            parentSprite.addChild(child);
+            child.svgRoot.renderPending();
+        }
+        
+        public static function targetToSVGNode(node:DisplayObject):SVGNode {
+            if (node is SVGNode)
+                return SVGNode(node);
+            node=node.parent;
+            while (node) {
+                if (node is SVGNode)
+                    return SVGNode(node);
+                node=node.parent;
             }
             return null;
         }
@@ -1623,7 +1870,7 @@ package org.svgweb.core
         public function set xml(xml:XML):void {
             _xml = xml;
 
-            this.clearChildren();
+            this.clearSVGChildren();
 
             if (_xml) {
                 this._parsedChildren = false;
