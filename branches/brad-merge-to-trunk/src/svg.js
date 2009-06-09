@@ -4202,10 +4202,11 @@ extend(_Node, {
       this._listeners[type] = [];
     }
     this._listeners[type].push(listener);
-    this._listeners[type]['_' + listener.toString() + ':' + useCapture]
-                                        = listener;
-            
+    this._listeners[type]['_' + listener.toString() + ':' + useCapture] = listener;
+                                        
     if (type == 'keydown') {
+      // TODO: Be able to handle key events on individual SVG graphics 
+      // (g, rect, etc.) that might have focus
       // TODO: FIXME: do we want to be adding this listener to 'document'
       // when dealing with SVG OBJECTs?
       this._addEvent(document, type, 
@@ -4219,6 +4220,8 @@ extend(_Node, {
                                 evt = null;
                               }
                             }
+                            // call the developer's listener now
+                            listener(evt);
                           }
                         })(listener));
       return;
