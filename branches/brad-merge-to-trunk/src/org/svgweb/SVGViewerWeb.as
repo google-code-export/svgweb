@@ -540,6 +540,7 @@ package org.svgweb
                     if (!element) {
                         this.error("error:setText: element with GUID not found: " + jsMsg.elementGUID);
                     }
+                    
                     var textNode:SVGDOMTextNode = element as SVGDOMTextNode;
                     textNode.nodeValue = jsMsg.text;
                     
