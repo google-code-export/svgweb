@@ -6574,7 +6574,19 @@ extend(FlashInserter, {
   /** Determines a width and height for the parsed SVG XML. Returns an
       object literal with two values, width and height. */
   _determineSize: function() {
-    var width = '100%', height = '100%';
+    var width, height;
+    
+    // sizing information on an SVG OBJECT overrides everything else
+    if (this._embedType == 'object' && this._replaceMe.getAttribute('width')) {
+      width = this._replaceMe.getAttribute('width');
+    } else {
+      width = '100%';
+    }
+    if (this._embedType == 'object' && this._replaceMe.getAttribute('height')) {
+      height = this._replaceMe.getAttribute('height');
+    } else {
+      height = '100%';
+    }
     
     // explicit width and height set
     if (this._nodeXML.getAttribute('width')) {
