@@ -4240,7 +4240,7 @@ extend(_Node, {
                         })(listener));
       return;
     }
-    
+
     this._handler.sendToFlash({ type: 'invoke', 
                                 method: 'addEventListener',
                                 elementGUID: this._guid,
@@ -4699,15 +4699,17 @@ extend(_Node, {
           current.ownerDocument = this._handler.document;
         }
       }
-      
-      // register and send over any event listeners that were added while
-      // this node was detached
-      for (var i = 0; attached && i < current._detachedListeners.length; i++) {
-        var addMe = current._detachedListeners[i];
-        current.addEventListener(addMe.type, addMe.listener, 
-                                 addMe.useCapture, true);
+    
+      if (attached) {
+        // register and send over any event listeners that were added while
+        // this node was detached
+        for (var i = 0; i < current._detachedListeners.length; i++) {
+          var addMe = current._detachedListeners[i];
+          current.addEventListener(addMe.type, addMe.listener, 
+                                   addMe.useCapture, true);
+        }
+        current._detachedListeners = [];
       }
-      current._detachedListeners = [];
           
       // now continue visiting other nodes
       var lastVisited = current;

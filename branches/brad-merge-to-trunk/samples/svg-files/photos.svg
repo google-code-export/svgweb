@@ -49,7 +49,7 @@
                           "file:///c:/Windows/Web/Wallpaper/img10.jpg"];
             }
           } catch (e) {
-            images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg",
+            images = [ "http://farm1.static.flickr.com/234/535566372_33c1025c7b_o.jpg" ,
                        "http://farm2.static.flickr.com/1159/534271166_db0f114a5d_o.jpg",
                        "http://farm1.static.flickr.com/120/313853602_d759910c1e_b.jpg",
                        "http://farm1.static.flickr.com/122/313940834_8bf97d364e_b.jpg" ];

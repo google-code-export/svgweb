@@ -591,6 +591,7 @@ package org.svgweb
                     && ( event.currentTarget is DisplayObject ) 
                     && ( SVGNode.targetToSVGNode(DisplayObject(event.target)) != null)
                     && ( SVGNode.targetToSVGNode(DisplayObject(event.currentTarget)) != null) ) { 
+                    
                     ExternalInterface.call(this.js_handler + "onMessage",
                        { type: 'event',
                          uniqueId: this.js_uniqueId,
