@@ -4048,15 +4048,7 @@ extend(_Node, {
     //svgweb._guidLookup['_' + child._guid] = undefined;
     
     // persist event listeners if this node is later reattached
-    for (var eventType in child._listeners) {
-      for (var i = 0; i < child._listeners[eventType].length; i++) {
-        var l = child._listeners[eventType][i];
-        child._detachedListeners.push({ type: l.type, 
-                                        listener: l.listener, 
-                                        useCapture: l.useCapture });
-      }
-    }
-    child._listeners = [];
+    child._persistEventListeners();
     
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
@@ -5026,6 +5018,28 @@ extend(_Node, {
           = this._getWidth
           = this._getHeight
           = function() { return undefined; };
+    }
+  },
+  
+  /** When a node is removed from the DOM, we make sure that all of its 
+      event listener information (and all of the event info for its children)
+      is persisted if it is later reattached to the DOM. */
+  _persistEventListeners: function() {
+    // persist all the listeners for ourselves
+    for (var eventType in this._listeners) {
+      for (var i = 0; i < this._listeners[eventType].length; i++) {
+        var l = this._listeners[eventType][i];
+        this._detachedListeners.push({ type: l.type, 
+                                       listener: l.listener, 
+                                       useCapture: l.useCapture });
+      }
+    }
+    this._listeners = [];
+    
+    // visit each of our children
+    var children = this._getChildNodes();
+    for (var i = 0; i < children.length; i++) {
+      children[i]._persistEventListeners();
     }
   }
 });
