@@ -2031,13 +2031,34 @@ extend(SVGWeb, {
     // in errors most of the time! tiger.svg was throwing this issue. 
     // Just strip out the SVG DTD for now.
     // FIXME: Will this cause issues for custom DTD overrides, which we don't
-    // support anyway for now? (Note thought that the Flash side supports
-    // custom entity expansion which this might break)
+    // support anyway for now? (Note though that the Flash side supports
+    // custom entity expansion which this will break)
     svg = svg.replace(/<!DOCTYPE[^>]*>/m, '');
     
     // transform text nodes into 'fake' elements so that we can track them
     // with a GUID
     if (this.renderer == FlashHandler) {
+      // strip out <!-- --> style comments; these cause a variety of problems:
+      // 1) We don't parse comments into our DOM, 2) when we add our
+      // <__text> sections below they can get incorrectly nested into multi
+      // line comments; stripping them out is a simple solution for now.
+      var commentRE = /<!\-\-/g;
+      RegExp.lastIndex = 0; // reset global exec()
+      var match = commentRE.exec(svg);
+      var i = 0;
+      while (match && RegExp.lastMatch) {
+        // get the text of the comment
+        var endIndx = RegExp.rightContext.indexOf('-->') + 3;
+        var comment = '<!--' + RegExp.rightContext.substring(0, endIndx);
+        
+        // now strip it out
+        svg = svg.replace(comment, '');
+        
+        // find next match
+        match = commentRE.exec(svg);
+        i++;
+      }
+      
       // break SVG string into pieces so that we don't incorrectly add our
       // <__text> fake text nodes outside the SVG root tag
       var separator = svg.match(/<[a-zA-Z_-]*:?svg/)[0];
@@ -2047,9 +2068,9 @@ extend(SVGWeb, {
       // adding double <__text> blocks
       RegExp.lastIndex = 0; // reset global exec()
       var cdataRE = /<\!\[CDATA\[/g;
-      var match = cdataRE.exec(pieces[1]);
+      match = cdataRE.exec(pieces[1]);
       var cdataBlocks = [];
-      var i = 0;
+      i = 0;
       while (match && RegExp.rightContext) {
         var startIdx = cdataRE.lastIndex - '<![CDATA['.length;
         var context = RegExp.rightContext;
@@ -2085,7 +2106,7 @@ extend(SVGWeb, {
         svg = svg + pieces[i];
       }
     }
-    
+        
     // handle Flash encoding issues
     if (this.renderer == FlashHandler) {
       svg = FlashHandler._encodeFlashData(svg);

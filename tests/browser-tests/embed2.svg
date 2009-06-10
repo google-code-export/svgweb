@@ -4413,6 +4413,16 @@
        style="fill:#30451d;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 174.68526,269.69286 C 180.49598,270.5181 181.32904,273.5209 181.63576,274.74779 C 181.7109,275.0483 176.49825,270.87401 181.00391,275.37966 C 184.44833,278.82411 187.14741,279.17085 181.00391,279.17085 C 178.54765,279.17085 176.65024,276.85342 174.68526,275.37966 C 172.87045,274.01858 174.3585,281.14813 172.15776,281.69831 C 169.50144,282.36239 171.49369,276.1404 172.15776,273.48406 C 172.52615,272.0106 174.12117,271.10304 174.68526,269.69286 z "
        id="path5812" />
+       
+     <!-- Added so that we can test incorrect processing for comment sections;
+          we used to get incorrectly setup __text nodes inside multiline
+          comments. -->
+     <!--<rect id="rectToAnimateAtStart" x="50" y="50" width="50" height="50" fill="#0f5" stroke="#085" stroke-width="4">
+            <animate id="animAtStart" attributeName="x" calcMode="linear" additive="replace" accumulate="none"
+                           from="50" to="100" begin="2s; 5s" dur="2s" fill="remove"/>
+         </rect>
+         <text x="30" y="120" fill="navy">begins at "2s; 5s"</text>-->
+         
     <path
        style="fill:#30451d;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 188.1296,294.79233 C 188.69263,292.33965 196.65451,292.53943 191.53598,293.81907 C 191.18411,293.90703 190.88714,294.14348 190.56273,294.30569 C 187.32399,295.92505 194.11025,296.04416 196.88887,296.73883 C 199.60544,297.41797 191.41637,298.19869 188.61622,298.19869 C 186.29375,298.19869 193.08438,299.72498 194.94237,301.11847 C 195.11467,301.24769 190.33545,303.55161 186.1831,303.55161 C 185.71369,303.55161 190.11373,296.96333 184.72321,299.65859 C 182.95224,300.54407 186.58349,296.0292 188.1296,294.79233 z "
