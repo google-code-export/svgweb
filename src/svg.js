@@ -2981,6 +2981,7 @@ FlashHandler._createElement = function(nodeName, forSVG) {
     (function(_obj, _addEventListener){
       _obj.addEventListener = function(type, listener, useCapture) {
         // handle onloads special
+        // NOTE: 'this' == our SVG OBJECT
         if (type == 'load') {
           this._listeners.push(listener);
         } else if (!addEventListener) { // IE
@@ -3221,7 +3222,8 @@ extend(FlashHandler, {
     var handlers = currentTarget._listeners[msg.eventType];
     for (var i = 0; i < handlers.length; i++) {
       var handler = handlers[i];
-      handler(evt);
+      var listener = handler.listener;
+      listener(evt);
     }
   },
   
@@ -4045,6 +4047,17 @@ extend(_Node, {
     // we had before.    
     //svgweb._guidLookup['_' + child._guid] = undefined;
     
+    // persist event listeners if this node is later reattached
+    for (var eventType in child._listeners) {
+      for (var i = 0; i < child._listeners[eventType].length; i++) {
+        var l = child._listeners[eventType][i];
+        child._detachedListeners.push({ type: l.type, 
+                                        listener: l.listener, 
+                                        useCapture: l.useCapture });
+      }
+    }
+    child._listeners = [];
+    
     // remove the getter/setter for this childNode for non-IE browsers
     if (!isIE) {
       // just remove the last getter/setter, since they all resolve
@@ -4201,7 +4214,8 @@ extend(_Node, {
     if (this._listeners[type] === undefined) {
       this._listeners[type] = [];
     }
-    this._listeners[type].push(listener);
+    this._listeners[type].push({ type: type, listener: listener, 
+                                 useCapture: useCapture });
     this._listeners[type]['_' + listener.toString() + ':' + useCapture] = listener;
                                         
     if (type == 'keydown') {
