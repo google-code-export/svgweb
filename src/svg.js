@@ -4550,7 +4550,7 @@ extend(_Node, {
       for (var i = 0; i < this._nodeXML.childNodes.length; i++) {
         var childXML = this._nodeXML.childNodes[i];
         var node = FlashHandler._getNode(childXML, this._handler);
-        node._passThrough = this._passThrough;
+        node._fakeNode._passThrough = this._passThrough;
         results.push(node);
       }
       
@@ -4599,7 +4599,6 @@ extend(_Node, {
   
   _setNodeValue: function(newValue) {
     //console.log('setNodeValue, newValue='+newValue);
-    
     if (this.nodeType != _Node.TEXT_NODE) {
       // FIXME: Is this correct? Can other kinds of nodes other than
       // text nodes have a nodeValue?
@@ -4607,6 +4606,7 @@ extend(_Node, {
     }
     
     this._nodeValue = newValue;
+    
     // we store the real text value as a child of our fake text node,
     // which is actually a DOM Element so that we can do tracking
     this._nodeXML.firstChild.nodeValue = newValue;
@@ -7011,7 +7011,6 @@ extend(_Document, {
     nodeXML.appendChild(doc.createTextNode(data));
     var textNode = new _Node('#text', _Node.TEXT_NODE, null, null, nodeXML,
                              this._handler);
-
     textNode._nodeValue = data;
     textNode.ownerDocument = this;
     
