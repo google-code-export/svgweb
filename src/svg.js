@@ -5039,7 +5039,11 @@ extend(_Node, {
     // visit each of our children
     var children = this._getChildNodes();
     for (var i = 0; i < children.length; i++) {
-      children[i]._persistEventListeners();
+      var c = children[i];
+      if (c._fakeNode) { // IE
+        c = c._fakeNode;
+      }
+      c._persistEventListeners();
     }
   }
 });
