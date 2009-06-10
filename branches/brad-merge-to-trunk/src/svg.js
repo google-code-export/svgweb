@@ -2033,7 +2033,7 @@ extend(SVGWeb, {
     // FIXME: Will this cause issues for custom DTD overrides, which we don't
     // support anyway for now? (Note thought that the Flash side supports
     // custom entity expansion which this might break)
-    svg = svg.replace(/<!DOCTYPE svg PUBLIC "\-\/\/W3C\/\/DTD SVG 1\.1\/\/EN"\s*"http:\/\/www\.w3\.org\/Graphics\/SVG\/1\.1\/DTD\/svg11\.dtd"\>\s*/m, '');
+    svg = svg.replace(/<!DOCTYPE[^>]*>/m, '');
     
     // transform text nodes into 'fake' elements so that we can track them
     // with a GUID
