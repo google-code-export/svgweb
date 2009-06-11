@@ -1,7 +1,7 @@
 # To use the examples, copy the html, swf, and svg files to your web server directory.
 
 # Location to rsync entire package to
-SVGSRV='codinginparadise.org:~/codinginparadise.org/html/projects/svg-web/'
+SVGSRV='codinginparadise.org:~/codinginparadise.org/html/projects/svgweb/'
 
 # Whether to compress JavaScript
 COMPRESS=1
