@@ -30,7 +30,7 @@ package com.sgweb.svg.nodes
     
     public class SVGRadialGradient extends SVGGradient
     {                
-        var focalLen:Number=0;
+        private var focalLen:Number=0;
 
         public function SVGRadialGradient(svgRoot:SVGSVGNode, xml:XML, original:SVGNode = null):void {
             super(svgRoot, xml, original);
@@ -60,6 +60,10 @@ package com.sgweb.svg.nodes
         }
 
         public function getMatrix(node:SVGNode):Matrix {
+        	var dx:Number;
+            var dy:Number;
+            var angle:Number;
+                
             var matrGrTr:Matrix = this.parseTransform(this.getAttribute('gradientTransform'));
             var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox', false);
 
@@ -91,9 +95,9 @@ package com.sgweb.svg.nodes
                 var sx:Number = r*2 / 1638.4;
                 var sy:Number = r*2 / 1638.4;
 
-                var dx:Number = fx - cx;
-                var dy:Number = fy - cy;
-                var angle:Number = Math.atan2(dy, dx);
+                dx = fx - cx;
+                dy = fy - cy;
+                angle = Math.atan2(dy, dx);
 
                 this.focalLen = Math.sqrt(dx*dx + dy*dy) / r;
 
@@ -150,9 +154,9 @@ package com.sgweb.svg.nodes
                 matr.scale(.5/819.2, .5/819.2);
 
                 // Rotate to the angle of the SVG vector in boundingBox units
-                var dx:Number = fx - cx;
-                var dy:Number = fy - cy;
-                var angle:Number = Math.atan2(dy, dx);
+                dx = fx - cx;
+                dy = fy - cy;
+                angle = Math.atan2(dy, dx);
                 matr.rotate(angle);
                 this.focalLen = Math.sqrt(dx*dx + dy*dy) / r;
 

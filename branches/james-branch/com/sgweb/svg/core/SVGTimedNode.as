@@ -160,11 +160,14 @@ package com.sgweb.svg.core
             lastDocTime = SVGEvent(event).docTime;
             var nextCurrentTimeSpec:TimeSpec;
             var nextCurrentTimeInterval:TimeInterval;
+            var timeSpec:TimeSpec;
+            var intervals:Array;
+            var interval:TimeInterval;
 
             // Process skipped intervals
-            for each(var timeSpec:TimeSpec in beginTimeSpecs) {
-                var intervals:Array = timeSpec.getIntervals();
-                for each (var interval:TimeInterval in intervals) {
+            for each(timeSpec in beginTimeSpecs) {
+                intervals = timeSpec.getIntervals();
+                for each (interval in intervals) {
                     if ( interval.endsBeforeTime(lastDocTime, this) && !interval.hasFiredStartEvent() ) {
                         interval.startInterval();
                         timeIntervalStarted();
@@ -175,9 +178,9 @@ package com.sgweb.svg.core
             }
 
             // Determine current/next active interval
-            for each(var timeSpec:TimeSpec in beginTimeSpecs) {
-                var intervals:Array = timeSpec.getIntervals();
-                for each (var interval:TimeInterval in intervals) {
+            for each(timeSpec in beginTimeSpecs) {
+                intervals = timeSpec.getIntervals();
+                for each (interval in intervals) {
                     if ( interval.hasTime(lastDocTime, this) ) {
                         nextCurrentTimeSpec=timeSpec;
                         nextCurrentTimeInterval=interval;
@@ -308,7 +311,8 @@ package com.sgweb.svg.core
         }
 
         protected function handleEvent(event:Event):void {
-            for each(var timeSpec:TimeSpec in beginTimeSpecs) {
+        	var timeSpec:TimeSpec;
+            for each(timeSpec in beginTimeSpecs) {
                 if (   timeSpec is EventTimeSpec
                     && EventTimeSpec(timeSpec).eventType == event.type) {
                     var newInterval:TimeInterval =
@@ -326,7 +330,7 @@ package com.sgweb.svg.core
                 }
             }
             // XXX not implemented yet
-            for each(var timeSpec:TimeSpec in endTimeSpecs) {
+            for each(timeSpec in endTimeSpecs) {
             }
         }
 

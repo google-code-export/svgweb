@@ -23,7 +23,7 @@ package com.sgweb.svg.smil
         protected var timeSpecString:String;
         protected var offset:Number;
 
-        public function OffsetTimeSpec(timeSpecString, offset:Number):void {
+        public function OffsetTimeSpec(timeSpecString:String, offset:Number):void {
             this.timeSpecString = timeSpecString;
             this.offset = offset;
         }

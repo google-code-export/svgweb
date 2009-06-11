@@ -15,7 +15,7 @@ package com.sgweb.svg.events
             super(type, bubbles, cancelable);
         }
         
-        public function setDocTime(docTime:Number) {
+        public function setDocTime(docTime:Number):void {
             this.docTime = docTime;
         }
 

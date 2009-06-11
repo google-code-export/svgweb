@@ -356,7 +356,7 @@ package com.sgweb.svg.utils
             return Number(numString);
         }
 
-        static public function isColor(colorString:String) {
+        static public function isColor(colorString:String):Boolean {
             if (  colorString.match(/^#/)
                 || (colorString.indexOf("rgb") != -1)
                 || (colors.hasOwnProperty(colorString)) ) {

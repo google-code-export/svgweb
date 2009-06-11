@@ -19,17 +19,15 @@
 package com.sgweb.svg.smil
 {
 
-    import flash.events.Event;
-    import com.sgweb.svg.utils.SVGUnits;
-    import com.sgweb.svg.smil.TimeInterval;
     import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
 
     public class TimeSpec
     {
 
         protected var intervals:Array = new Array();
 
-        public function addInterval(interval:TimeInterval) {
+        public function addInterval(interval:TimeInterval):void {
             this.intervals.push(interval);
         }
 
@@ -57,7 +55,7 @@ package com.sgweb.svg.smil
             return new WallclockTimeSpec(timeSpecString);
         }
 
-        static public function parseEventTimeSpec(timeSpecString, node:SVGNode):EventTimeSpec {
+        static public function parseEventTimeSpec(timeSpecString:String, node:SVGNode):EventTimeSpec {
             var parts:Array = timeSpecString.split(".");
 
             // If event spec had a decimal offset, don't split that off
@@ -98,7 +96,7 @@ package com.sgweb.svg.smil
             }
         }
     
-        static public function parseOffsetTimeSpec(timeSpecString) {
+        static public function parseOffsetTimeSpec(timeSpecString:String):OffsetTimeSpec {
             return new OffsetTimeSpec(timeSpecString, SVGUnits.parseTimeVal(timeSpecString));
         }
     }

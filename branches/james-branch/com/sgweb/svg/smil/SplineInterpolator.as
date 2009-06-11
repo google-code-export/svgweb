@@ -32,9 +32,10 @@
     
 package com.sgweb.svg.smil {
     
-    import flash.geom.Point;
-    import com.sgweb.svg.utils.SVGUnits;
     import com.sgweb.svg.core.SVGNode;
+    import com.sgweb.svg.utils.SVGUnits;
+    
+    import flash.geom.Point;
     
     /**
      * This class interpolates fractional values using Bezier splines.  The anchor
@@ -60,9 +61,9 @@ package com.sgweb.svg.smil {
         private var x1:Number, y1:Number, x2:Number, y2:Number;
         private var lengths:Array = new Array();
 
-        static protected var cachedSplines = new Object();
+        static protected var cachedSplines:Object = new Object();
 
-        static public function getSplineInterpolator(keySpline:String, node:SVGNode) {
+        static public function getSplineInterpolator(keySpline:String, node:SVGNode):Object {
 
             keySpline = keySpline.replace(/,/sg," "); //Replace commas with spaces
             if (cachedSplines[keySpline] is SplineInterpolator) {
@@ -90,7 +91,8 @@ package com.sgweb.svg.smil {
          */
         public function SplineInterpolator(x1:Number,y1:Number,
                                            x2:Number,y2:Number,node:SVGNode) {
- 
+            var lengthItem:LengthItem;
+            
             this.x1 = x1;
             this.y1 = y1;
             this.x2 = x2;
@@ -105,7 +107,7 @@ package com.sgweb.svg.smil {
                 var length:Number = prevLength + 
                         Math.sqrt( (xy.x - prevX) * (xy.x - prevX) + 
                                    (xy.y - prevY) * (xy.y - prevY));
-                var lengthItem:LengthItem = new LengthItem(length, t);
+                lengthItem = new LengthItem(length, t);
                 lengths.push(lengthItem);
                 prevLength = length;
                 prevX = xy.x;
@@ -115,7 +117,7 @@ package com.sgweb.svg.smil {
             // array with values in [0,1].  prevLength now holds the total
             // length of the spline.
             for (var i:Number = 0; i < lengths.length; ++i) {
-                var lengthItem:LengthItem = lengths[i];
+                lengthItem = lengths[i];
                 lengthItem.setFraction(prevLength);
             }
         }

@@ -20,14 +20,13 @@
 package com.sgweb.svg.nodes
 {
     
-    import com.sgweb.svg.utils.SVGUnits;
-    import com.sgweb.svg.utils.SVGColors;
     import com.sgweb.svg.core.SVGNode;
     import com.sgweb.svg.core.SVGTimedNode;
+    import com.sgweb.svg.smil.SplineInterpolator;
     import com.sgweb.svg.smil.TimeInterval;
     import com.sgweb.svg.smil.TimeSpec;
-    import com.sgweb.svg.smil.SplineInterpolator;
-    import com.sgweb.svg.events.SVGEvent;
+    import com.sgweb.svg.utils.SVGColors;
+    import com.sgweb.svg.utils.SVGUnits;
     
     import flash.events.Event;
     
@@ -103,6 +102,8 @@ package com.sgweb.svg.nodes
         
 
         public function getAnimValue():String {
+        	var previousCount:int;
+        	
             var interval:TimeInterval = getEffectiveInterval();
             if (interval) {
                 var repeatFraction:Number = interval.getRepeatIntervalFraction(lastDocTime, this);
@@ -133,7 +134,7 @@ package com.sgweb.svg.nodes
                         if (accumulateParameter == "sum") {
                             fromVal = SVGColors.cleanNumber(fromParameter);
                             toVal = SVGColors.cleanNumber(toParameter);
-                            var previousCount:int =  interval.getRepeatIndex(lastDocTime, this);
+                            previousCount =  interval.getRepeatIndex(lastDocTime, this);
                             if (previousCount > 0) {
                                 fromVal += toVal * previousCount;
                                 toVal   += toVal * previousCount;
@@ -168,7 +169,7 @@ package com.sgweb.svg.nodes
 
                 if (accumulateParameter == "sum") {
 
-                    var previousCount:int =  interval.getRepeatIndex(lastDocTime, this);
+                    previousCount =  interval.getRepeatIndex(lastDocTime, this);
                     if (previousCount > 0) {
                         // XXX For "values", should use the last value, not to
                         fromVal += toVal * previousCount;
@@ -347,7 +348,7 @@ package com.sgweb.svg.nodes
 
         protected function splineInterpolate(fraction:Number, keySpline:String):Number {
 
-            var interpolator= SplineInterpolator.getSplineInterpolator(keySpline, this);
+            var interpolator:Object = SplineInterpolator.getSplineInterpolator(keySpline, this);
             return interpolator.interpolate(fraction, this);
         }
 

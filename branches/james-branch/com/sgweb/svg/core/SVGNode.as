@@ -19,10 +19,9 @@
 
 package com.sgweb.svg.core
 {
-    import com.sgweb.svg.core.SVGViewer;
+    import com.sgweb.svg.nodes.*;
     import com.sgweb.svg.utils.SVGColors;
     import com.sgweb.svg.utils.SVGUnits;
-    import com.sgweb.svg.nodes.*;
     
     import flash.display.CapsStyle;
     import flash.display.DisplayObject;
@@ -33,7 +32,6 @@ package com.sgweb.svg.core
     import flash.events.Event;
     import flash.events.MouseEvent;
     import flash.geom.Matrix;
-    import flash.geom.Point;
     import flash.utils.getDefinitionByName;
     import flash.utils.getQualifiedClassName;
 
@@ -468,7 +466,7 @@ package com.sgweb.svg.core
 
             var animMatrix:Matrix = this.getAllAnimsTransform();
             if (animMatrix != null) {
-                var newMatrix = transformSprite.transform.matrix.clone();
+                var newMatrix:Matrix = transformSprite.transform.matrix.clone();
                 newMatrix.concat(animMatrix);
                 transformSprite.transform.matrix = newMatrix;
             }
@@ -1169,13 +1167,15 @@ package com.sgweb.svg.core
 
         // process all animations
         public function getAnimAttribute(name:String, defaultValue:* = null,
-                                         inherit:Boolean = true):String {
+                                         inherit:Boolean = true):String {                                         	
+            var animation:SVGAnimateNode;
+            
             // transform is handled by getAllAnimTransforms
             if (name == "transform")
                 return null;
 
             var foundAnimation:Boolean = false;
-            for each(var animation:SVGAnimateNode in animations) {
+            for each(animation in animations) {
                 if (animation.getAttributeName() == name) {
                     foundAnimation = true;
                 }
@@ -1200,7 +1200,7 @@ package com.sgweb.svg.core
             var discreteStringVal:String;
             // XXX This should sort by priority (activation order) 
             // Add or replace with animations
-            for each(var animation:SVGAnimateNode in animations) {
+            for each(animation in animations) {
                 if (   animation.getAttributeName() == name
                     && animation.isEffective() ) {
                     if (animation.isAdditive()) {
@@ -1362,7 +1362,7 @@ package com.sgweb.svg.core
             this._xml.@style = newStyleString;
         }
 
-        public function onRegisterFont(fontFamily:String) {
+        public function onRegisterFont(fontFamily:String):void {
         }
 
         /**
@@ -1517,7 +1517,7 @@ package com.sgweb.svg.core
             return null;
         }
 
-        public static function addSVGChild(parentSprite:Sprite, child:SVGNode) {
+        public static function addSVGChild(parentSprite:Sprite, child:SVGNode):void {
             parentSprite.addChild(child);
             child.svgRoot.renderPending();
         }

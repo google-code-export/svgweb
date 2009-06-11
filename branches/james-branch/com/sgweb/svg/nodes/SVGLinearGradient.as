@@ -19,13 +19,13 @@
 
 package com.sgweb.svg.nodes
 {
-    import com.sgweb.svg.core.SVGNode;
     import com.sgweb.svg.core.SVGGradient;
+    import com.sgweb.svg.core.SVGNode;
     import com.sgweb.svg.utils.SVGColors;
-    import flash.events.Event;
-    import flash.geom.Matrix;
+    
     import flash.display.GradientType;
     import flash.display.InterpolationMethod;
+    import flash.geom.Matrix;
     
     public class SVGLinearGradient extends SVGGradient
     {                
@@ -42,7 +42,7 @@ package com.sgweb.svg.nodes
 
             var stopData:Object = this.getStopData();
             var spreadMethod:String = this.getSpreadMethod();
-            var matrix = this.getMatrix(node);
+            var matrix:Matrix = this.getMatrix(node);
 
             if (stopData.colors.length == 1) { //Solid color fill
                 node.drawSprite.graphics.beginFill(stopData.colors[stopData.colors.length-1], stopData.alphas[stopData.colors.length-1]);
@@ -56,7 +56,7 @@ package com.sgweb.svg.nodes
         override public function lineGradientStyle(node:SVGNode, line_alpha:Number = 1):void {
             var stopData:Object = this.getStopData(line_alpha);
             var spreadMethod:String = this.getSpreadMethod();
-            var matrix = this.getMatrix(node);
+            var matrix:Matrix = this.getMatrix(node);
 
             if (stopData.colors.length == 1) { //Solid color fill
                 node.drawSprite.graphics.lineStyle(node.getAttribute('stroke-width'), stopData.colors[stopData.colors.length-1], stopData.alphas[stopData.colors.length-1]);
@@ -68,6 +68,10 @@ package com.sgweb.svg.nodes
         }
 
         protected function getMatrix(node:SVGNode):Matrix {
+        	var dx:Number;
+            var dy:Number;
+            var angle:Number;
+            
             var matrGrTr:Matrix = this.parseTransform(this.getAttribute('gradientTransform'));
             var gradientUnits:String = this.getAttribute('gradientUnits', 'objectBoundingBox', false);
             var xString:Number = node.getAttribute('x', '0', false);
@@ -141,9 +145,9 @@ package com.sgweb.svg.nodes
                 matr.scale(sx, sy);
 
                 // Now compute the angle of the SVG vector and rotate to that angle
-                var dx:Number = x2 - x1;
-                var dy:Number = y2 - y1;
-                var angle:Number = Math.atan2(dy, dx);
+                dx = x2 - x1;
+                dy = y2 - y1;
+                angle = Math.atan2(dy, dx);
                 matr.rotate(angle);
 
                 // Now we have the correct length and orientation, now move the
@@ -205,12 +209,12 @@ package com.sgweb.svg.nodes
                 matr.translate(.5, .5);
 
                 // Scale the vector to the size of the SVG vector in boundingBox units
-                var dx:Number = x2 - x1;
-                var dy:Number = y2 - y1;
+                dx = x2 - x1;
+                dy = y2 - y1;
                 matr.scale(Math.sqrt(dx*dx + dy*dy), 1);
 
                 // Rotate to the angle of the SVG vector in boundingBox units
-                var angle:Number = Math.atan2(dy, dx);
+                angle = Math.atan2(dy, dx);
                 matr.rotate(angle);
 
                 // Scale from objectBoundingBox units to user space
