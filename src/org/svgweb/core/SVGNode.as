@@ -489,8 +489,8 @@ package org.svgweb.core
 
         // <svg> and <image> nodes get an implicit mask of their height and width
         public function applyDefaultMask():void {
-            if (   (this.getStyleOrAttr('width') != null)
-                && (this.getStyleOrAttr('height') != null) ) {
+            if (   (this.getAttribute('width') != null)
+                && (this.getAttribute('height') != null) ) {
                 if (transformSprite.mask == null) {
                     var myMask:Shape = new Shape();
                     transformSprite.parent.addChild(myMask);
@@ -990,7 +990,7 @@ package org.svgweb.core
             var node:SVGNode;
             var matrix:Matrix;
 
-            attr = this.getAttribute('mask');
+            attr = this.getStyleOrAttr('mask');
             if (!attr) {
                 attr = this.getAttribute('clip-path');
             }
@@ -1527,8 +1527,6 @@ package org.svgweb.core
             
             // are we in the middle of an animation? if so, return 
             // the attribute value with the animation applied if requested
-            // FIXME: is this the correct way to detect whether an animation
-            // is in progress?
             if (applyAnimations && animations.length > 0) {
                 value = this.getAttribute(name, null, true, true);
                 return value;
@@ -1718,8 +1716,8 @@ package org.svgweb.core
             if (this.getSVGParent() != null) {
                 parentWidth=SVGNode(this.getSVGParent()).getWidth();
             }
-            if (this.getStyleOrAttr('width') != null) {
-                return SVGColors.cleanNumber2(this.getStyleOrAttr('width'), parentWidth);
+            if (this.getAttribute('width') != null) {
+                return SVGColors.cleanNumber2(this.getAttribute('width'), parentWidth);
             }
 
             // defaults to 100%
@@ -1734,8 +1732,8 @@ package org.svgweb.core
             if (this.getSVGParent() is SVGNode) {
                 parentHeight=SVGNode(this.getSVGParent()).getHeight();
             }
-            if (this.getStyleOrAttr('height') != null) {
-                return SVGColors.cleanNumber2(this.getStyleOrAttr('height'), parentHeight);
+            if (this.getAttribute('height') != null) {
+                return SVGColors.cleanNumber2(this.getAttribute('height'), parentHeight);
             }
 
             // defaults to 100%

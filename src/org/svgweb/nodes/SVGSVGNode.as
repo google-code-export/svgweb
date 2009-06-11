@@ -117,10 +117,44 @@ package org.svgweb.nodes
             }
         }
 
-        public override function getStyle(name:String, defaultValue:* = null, inherit:Boolean = false):* {
+        override public function getStyle(name:String, defaultValue:* = null, inherit:Boolean = false):* {
             var value:String = super.getStyle(name, null, false);
             if (value) {
                 return value;
+            }
+
+            if ((name == 'opacity') 
+                || (name == 'fill-opacity')
+                || (name == 'stroke-opacity')
+                || (name == 'stroke-width')) {
+                return '1';
+            }
+
+            if (name == 'fill') {
+                return 'black';
+            }
+
+            if (name == 'stroke') {
+                return 'none';
+            }
+
+            return defaultValue;
+        }
+        
+        override public function getAttribute(name:String, defaultValue:* = null,
+                                              inherit:Boolean = true,
+                                              applyAnimations:Boolean = true):* {
+            var value:String = this._getAttribute(name, defaultValue, inherit, applyAnimations);
+            if (value) {
+                return value;
+            }
+
+            if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {
+                return defaultValue;
+            }
+
+            if (inherit && (this.getSVGParent() != null))  {
+                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, inherit, applyAnimations);
             }
 
             if ((name == 'opacity') 

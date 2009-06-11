@@ -1116,6 +1116,9 @@ You can, however, read the values off this object and they will correctly
 represent the URL of the object as given in the data or src attribute of the
 OBJECT. You could use this to pass parameters into your SVG file, for example.
 
+* XML Comments (such as <!-- Hello World -->) will not show up in the DOM
+when using the Flash handler.
+
 */
 
 // TODO!!! Remove timing functions when done with Issue 96
