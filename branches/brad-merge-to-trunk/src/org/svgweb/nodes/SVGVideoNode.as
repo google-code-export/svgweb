@@ -85,7 +85,14 @@ package org.svgweb.nodes
             var xmlBase:String = this.getAttribute('base');
             if (xmlBase && xmlBase != '') {
                 videoHref = xmlBase + videoHref;
+            } else if (this.svgRoot.relativeTo 
+                        && videoHref.length > 0
+                        && videoHref.charAt(0) != '/') {
+                // If no xml:base, expand the URL relative to the location of
+                // the SVG file itself
+                videoHref = this.svgRoot.relativeTo + videoHref;
             }
+            
             if (netStream) {
                 netStream.play(videoHref);
             }

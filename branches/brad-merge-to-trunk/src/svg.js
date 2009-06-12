@@ -6015,8 +6015,10 @@ extend(_SVGObject, {
     
     // if not IE, send the SVG string over to Flash
     if (!isIE) {
-      this._handler.sendToFlash({ type: 'load', sourceType: 'string',
+      this._handler.sendToFlash({ type: 'load', 
+                                  sourceType: 'string',
                                   svgString: this._svgString,
+                                  relativeTo: this._getRelativeTo(),
                                   ignoreWhiteSpace: false });
     } else {
       // if IE, force the HTC file to asynchronously load with a dummy element;
@@ -6059,8 +6061,10 @@ extend(_SVGObject, {
     head = null;
     
     // send the SVG string over to Flash
-    this._handler.sendToFlash({ type: 'load', sourceType: 'string',
+    this._handler.sendToFlash({ type: 'load', 
+                                sourceType: 'string',
                                 svgString: this._svgString,
+                                relativeTo: this._getRelativeTo(),
                                 ignoreWhiteSpace: false });
   },
   
@@ -6124,6 +6128,22 @@ extend(_SVGObject, {
     // indicate that we are done
     this._handler._loaded = true;
     this._handler.fireOnLoad(this._handler.id, 'object');
+  },
+  
+  /** Relative URLs inside of SVG need to expand against something (i.e.
+      such as having an SVG Audio tag with a relative URL). This method
+      figures out what that relative URL should be. We send this over to
+      Flash when rendering things so Flash knows what to expand against. */
+  _getRelativeTo: function() {
+    var results = '';
+    // strip off scheme and hostname, then match just path portion
+    var pathname = this.url.replace(/[^:]*:\/\/[^\/]*/).match(/\/?[^\?\#]*/)[0];
+    if (pathname && pathname.length > 0 && pathname.indexOf('/') != -1) {
+      // snip off any filename after a final slash
+      results = pathname.replace(/\/([^/]*)$/, '/');
+    }
+
+    return results;
   },
   
   /** Executes a SCRIPT block inside of an SVG file. We essentially rewrite
@@ -6939,6 +6959,7 @@ extend(_SVGSVGElement, {
     this._handler.sendToFlash({ type: 'load', 
                                 sourceType: 'string',
                                 svgString: this._svgString,
+                                relativeTo: this._getRelativeTo(),
                                 ignoreWhiteSpace: true });
   },
   
@@ -6973,6 +6994,21 @@ extend(_SVGSVGElement, {
                     "<invoke name=\"sendToFlash\" returntype=\"javascript\">" 
                     + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
     };
+  },
+  
+  /** Relative URLs inside of SVG need to expand against something (i.e.
+      such as having an SVG Audio tag with a relative URL). This method
+      figures out what that relative URL should be. We send this over to
+      Flash when rendering things so Flash knows what to expand against. */
+  _getRelativeTo: function() {
+    var results = '';
+    var pathname = window.location.pathname.toString();
+    if (pathname && pathname.length > 0 && pathname.indexOf('/') != -1) {
+      // snip off any filename after a final slash
+      results = pathname.replace(/\/([^/]*)$/, '/');
+    }
+    
+    return results;
   }
 });
 
