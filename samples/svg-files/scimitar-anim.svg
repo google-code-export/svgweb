@@ -10,7 +10,7 @@
    height="265.35126"
    id="svg11242">
 
-  <audio xlink:href="sounds/poker_music.mp3" type="audio/mpeg"
+  <audio xlink:href="poker_music.mp3" type="audio/mpeg"
          begin="3s" dur="5s" repeatCount="2" end="10s" />
 
   <defs

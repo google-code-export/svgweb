@@ -45,6 +45,8 @@ Third-Party Licenses, Versions, and Build Information:
 
 TODO: There are alot of third party SVG files in samples/svg-files. Document where these came from, who the copyright holder is, and ensure we have a CLA on file for them.
 
+TODO: Figure out copyright information on the *.flv and *.mp3 files that we use in our samples in samples/svg-files
+
 TODO: Review the Flash code and identify any code that was either taken from other Flash libraries, blog posts, or tutorials. Document this and ensure we have appropriate CLAs from third-party code contributors.
 
 TODO: If you borrowed any code while creating your Flash ActionScript document it here, where it came from, version, etc. This is good open source hygiene :)

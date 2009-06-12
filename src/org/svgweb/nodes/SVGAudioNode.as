@@ -49,6 +49,12 @@ package org.svgweb.nodes
             var xmlBase:String = this.getAttribute('base');
             if (xmlBase && xmlBase != '') {
                 audioHref = xmlBase + audioHref;
+            } else if (this.svgRoot.relativeTo 
+                        && audioHref.length > 0
+                        && audioHref.charAt(0) != '/') {
+                // If no xml:base, expand the URL relative to the location of
+                // the SVG file itself
+                audioHref = this.svgRoot.relativeTo + audioHref;
             }
 
             // Load the sound
