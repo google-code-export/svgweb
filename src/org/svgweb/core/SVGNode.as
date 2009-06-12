@@ -1148,6 +1148,9 @@ package org.svgweb.core
          * whether we apply any SMIL animations that might be in flight to the
          * attribute. If false, then we return the base actual set value on
          * this node without reference to any animation changes.
+         * @param returnDefault Boolean, optional, defaults to true. Controls
+         * whether we return a default value if one is available for certain
+         * attribute types.
          * 
          * @return Returns the XML attribute value, or the defaultValue.
          **/
@@ -1529,8 +1532,10 @@ package org.svgweb.core
             // are we in the middle of an animation? if so, return 
             // the attribute value with the animation applied if requested
             if (applyAnimations && animations.length > 0) {
-                value = this.getAttribute(name, null, true, true);
-                return value;
+                value = this.getAttribute(name, null, false, true);
+                if (value !== null) {
+                    return value;
+                }
             }
             
             // try non-inherited explicitly set styles
@@ -1545,12 +1550,20 @@ package org.svgweb.core
                 return value;
             }
             
+            // see if there is an inherited animated attribute
+            if (applyAnimations && animations.length > 0) {
+                value = this.getAttribute(name, null, true, true);
+                if (value !== null) {
+                    return value;
+                }
+            }
+            
             // finally see if there is an inherited or default style
             value = this.getStyle(name);
             if (value != null) {
                 return value;
             }
-            
+
             return defaultValue;
         }
 
