@@ -47,6 +47,8 @@ TODO: There are alot of third party SVG files in samples/svg-files. Document whe
 
 TODO: Figure out copyright information on the *.flv and *.mp3 files that we use in our samples in samples/svg-files
 
+TODO: There are the Droid*.svg files with SVG Fonts; were these converted from TTF fonts? What is the license on this font?
+
 TODO: Review the Flash code and identify any code that was either taken from other Flash libraries, blog posts, or tutorials. Document this and ensure we have appropriate CLAs from third-party code contributors.
 
 TODO: If you borrowed any code while creating your Flash ActionScript document it here, where it came from, version, etc. This is good open source hygiene :)
