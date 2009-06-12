@@ -49,12 +49,12 @@ package org.svgweb.nodes
             var xmlBase:String = this.getAttribute('base');
             if (xmlBase && xmlBase != '') {
                 audioHref = xmlBase + audioHref;
-            } else if (this.svgRoot.relativeTo 
+            } else if (this.svgRoot.objectURL 
                         && audioHref.length > 0
                         && audioHref.charAt(0) != '/') {
                 // If no xml:base, expand the URL relative to the location of
                 // the SVG file itself
-                audioHref = this.svgRoot.relativeTo + audioHref;
+                audioHref = this.svgRoot.objectURL + audioHref;
             }
 
             // Load the sound
@@ -62,9 +62,7 @@ package org.svgweb.nodes
             sound = new Sound();
             sound.addEventListener(ProgressEvent.PROGRESS, progressHandler);
             sound.load(mySoundReq);
-
         }
-
 
         protected function progressHandler():void {
             if (this.eachRepeatDuration ==  INDEFINITE) {
@@ -81,7 +79,5 @@ package org.svgweb.nodes
             super.repeatIntervalEnded();
             channel.stop();
         }
-
-
     }
 }

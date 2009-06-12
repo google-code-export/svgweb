@@ -6018,7 +6018,8 @@ extend(_SVGObject, {
       this._handler.sendToFlash({ type: 'load', 
                                   sourceType: 'string',
                                   svgString: this._svgString,
-                                  relativeTo: this._getRelativeTo(),
+                                  objectURL: this._getRelativeTo('object'),
+                                  pageURL: this._getRelativeTo('page'),
                                   ignoreWhiteSpace: false });
     } else {
       // if IE, force the HTC file to asynchronously load with a dummy element;
@@ -6064,7 +6065,8 @@ extend(_SVGObject, {
     this._handler.sendToFlash({ type: 'load', 
                                 sourceType: 'string',
                                 svgString: this._svgString,
-                                relativeTo: this._getRelativeTo(),
+                                objectURL: this._getRelativeTo('object'),
+                                pageURL: this._getRelativeTo('page'),
                                 ignoreWhiteSpace: false });
   },
   
@@ -6133,14 +6135,26 @@ extend(_SVGObject, {
   /** Relative URLs inside of SVG need to expand against something (i.e.
       such as having an SVG Audio tag with a relative URL). This method
       figures out what that relative URL should be. We send this over to
-      Flash when rendering things so Flash knows what to expand against. */
-  _getRelativeTo: function() {
+      Flash when rendering things so Flash knows what to expand against. 
+      
+      @param toWhat - String that controls what we use for the relative URL.
+      If "object" given, we use the URL to the SVG OBJECT; if "page" given,
+      we determine things relative to the page itself. */
+  _getRelativeTo: function(toWhat) {
     var results = '';
-    // strip off scheme and hostname, then match just path portion
-    var pathname = this.url.replace(/[^:]*:\/\/[^\/]*/).match(/\/?[^\?\#]*/)[0];
-    if (pathname && pathname.length > 0 && pathname.indexOf('/') != -1) {
-      // snip off any filename after a final slash
-      results = pathname.replace(/\/([^/]*)$/, '/');
+    if (toWhat == 'object') {
+      // strip off scheme and hostname, then match just path portion
+      var pathname = this.url.replace(/[^:]*:\/\/[^\/]*/).match(/\/?[^\?\#]*/)[0];
+      if (pathname && pathname.length > 0 && pathname.indexOf('/') != -1) {
+        // snip off any filename after a final slash
+        results = pathname.replace(/\/([^/]*)$/, '/');
+      }
+    } else {
+      var pathname = window.location.pathname.toString();
+      if (pathname && pathname.length > 0 && pathname.indexOf('/') != -1) {
+        // snip off any filename after a final slash
+        results = pathname.replace(/\/([^/]*)$/, '/');
+      }
     }
 
     return results;
@@ -6959,7 +6973,8 @@ extend(_SVGSVGElement, {
     this._handler.sendToFlash({ type: 'load', 
                                 sourceType: 'string',
                                 svgString: this._svgString,
-                                relativeTo: this._getRelativeTo(),
+                                objectURL: this._getRelativeTo(),
+                                pageURL: this._getRelativeTo(),
                                 ignoreWhiteSpace: true });
   },
   

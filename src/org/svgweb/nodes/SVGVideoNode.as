@@ -31,6 +31,7 @@ package org.svgweb.nodes
     public class SVGVideoNode extends SVGTimedNode {
         protected var video:Video;
         protected var netStream:NetStream;
+        protected var videoHref:String;
 
         public function SVGVideoNode(svgRoot:SVGSVGNode, xml:XML, original:SVGNode = null):void {
             super(svgRoot, xml, original);
@@ -57,7 +58,10 @@ package org.svgweb.nodes
         }
 
         protected function handleNetEvent(status:NetStatusEvent):void {
-            //this.dbg("netstat: " + status.info.code);
+            //this.dbg("netevent: " + status.info.code);
+            if (status.info.level == 'error') {
+                this.err("Video error for " + videoHref + ": " + status.info.code);
+            }
         }
 
         protected function onMetaData(meta:Object):void {
@@ -76,7 +80,7 @@ package org.svgweb.nodes
             super.repeatIntervalStarted();
 
             // Get the video location
-            var videoHref:String = this.getAttribute('href');
+            videoHref = this.getAttribute('href');
             if (!videoHref) {
                 return;
             }
@@ -85,12 +89,13 @@ package org.svgweb.nodes
             var xmlBase:String = this.getAttribute('base');
             if (xmlBase && xmlBase != '') {
                 videoHref = xmlBase + videoHref;
-            } else if (this.svgRoot.relativeTo 
+            } else if (this.svgRoot.pageURL 
                         && videoHref.length > 0
                         && videoHref.charAt(0) != '/') {
                 // If no xml:base, expand the URL relative to the location of
-                // the SVG file itself
-                videoHref = this.svgRoot.relativeTo + videoHref;
+                // the containing HTML page; NetStream resolves everything
+                // relative to the SWF file itself
+                videoHref = this.svgRoot.pageURL + this.svgRoot.objectURL + videoHref;
             }
             
             if (netStream) {
