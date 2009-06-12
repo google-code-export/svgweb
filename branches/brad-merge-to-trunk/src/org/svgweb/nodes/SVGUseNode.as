@@ -58,7 +58,7 @@ package org.svgweb.nodes
                     // sets x, y, rotate, and opacity
                     this.setAttributes();
 
-                    if (this.getAttribute('display') == 'none') {
+                    if (this.getStyleOrAttr('display') == 'none') {
                         this.visible = false;
                     }
                     else {

@@ -138,7 +138,6 @@ package org.svgweb.core
                 if (baseNode) {
                     // Return value from href base node, perhaps recursively.
                     // XXX possible circular reference problem.
-                    //this.dbg('trying to get ' + name + '=' + baseNode.getAttribute(name, null, false, applyAnimations));
                     return baseNode.getStyleOrAttr(name, null, false, applyAnimations);
                 }
                 else {

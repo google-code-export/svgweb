@@ -1491,7 +1491,7 @@ package org.svgweb.core
                     return value;
                 }
             }
-                     
+
             if (_styles.hasOwnProperty(name)) {
                 return (_styles[name]);
             }
@@ -1544,7 +1544,7 @@ package org.svgweb.core
                 return value;
             }
             
-            // finally see if there is an inherited style
+            // finally see if there is an inherited or default style
             value = this.getStyle(name);
             if (value != null) {
                 return value;

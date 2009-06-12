@@ -5111,6 +5111,10 @@ function testBugFixes() {
   matches = getDoc('svg2').getElementsByTagNameNS(rdf_ns, 'RDF');
   assertEquals('rdf matches.length == 1', 1, matches.length);
   svg.removeChild(metadata);
+  
+  // TODO: Have entities in my SVG source (i.e. &amp;). Also have entities
+  // in <text> node values, and fetch them from Flash to ensure that they
+  // don't get munged
 }
 
 function testUnload() {
