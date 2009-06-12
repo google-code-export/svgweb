@@ -19,7 +19,6 @@
 
 package org.svgweb.core
 {
-
     import org.svgweb.core.SVGNode;
     import org.svgweb.nodes.SVGSVGNode;
     import org.svgweb.utils.SVGUnits;

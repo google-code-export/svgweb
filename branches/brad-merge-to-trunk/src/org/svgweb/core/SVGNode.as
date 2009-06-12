@@ -20,7 +20,6 @@
 
 package org.svgweb.core
 {
-    import org.svgweb.SVGViewerWeb;
     import org.svgweb.core.SVGViewer;
     import org.svgweb.utils.SVGColors;
     import org.svgweb.utils.SVGUnits;
@@ -75,13 +74,13 @@ package org.svgweb.core
         protected var _clones:Array = new Array();
         
         protected var animations:Array = new Array();
+        
         /**
          *
          * To handle certain flash quirks, and to support certain SVG features,
          * the implementation of one SVG node is split into one to four
          * Sprites which perform the functions of transforming, clipping, and drawing.
          * Here are the specific functions performed by each sprite:
-         *
          *
          * transformSprite:
          *      * handles the transform attribute
@@ -167,21 +166,19 @@ package org.svgweb.core
          * This handles creation of child nodes.
          **/
         protected function parseChildren():void {
+            var text:String = '';
             for each (var childXML:XML in this._xml.children()) {
                 if (childXML.nodeKind() == 'element') {
                     // If we support text values then set them
                     if (this.hasText()) {
-                        if (this.svgRoot.parent is SVGViewerWeb
-                              && this._xml.children().length() > 0 
-                              && this._xml.children()[0].text()) {
+                        if (childXML.localName() == '__text'
+                            && childXML.children().length() > 0) {
                             // for the SVGViewerWeb we use a nested
                             // SVGDOMTextNode to store the actual value; this
                             // class is necessary so that we can do text
                             // node detection in the browser and have a unique
                             // GUID per DOM text node
-                            this.setText(this._xml.children()[0].text().toString());
-                        } else {
-                            this.setText(this._xml.text().toString());
+                            text += childXML.children().toString();
                         }
                     }
 
@@ -191,7 +188,14 @@ package org.svgweb.core
                         continue;
                     }
                     SVGNode.addSVGChild(viewBoxSprite, newChildNode);
-                }
+                } else if (childXML.nodeKind() == 'text'
+                           && this.hasText()) {
+                    text = this._xml.text().toString();
+                }  
+            }
+            
+            if (this.hasText()) {
+                this.setText(text);
             }
         }
 
@@ -547,8 +551,6 @@ package org.svgweb.core
                 newMatrix.concat(animMatrix);
                 transformSprite.transform.matrix = newMatrix;
             }
-
-
         }
 
         public function parseTransform(trans:String, baseMatrix:Matrix = null):Matrix {
@@ -1289,12 +1291,11 @@ package org.svgweb.core
         // process all transform animations
         // xxx not fully implemented
         public function getAllAnimsTransform():Matrix {
-
-            var rotateTransform:Matrix= new Matrix();
-            var scaleTransform:Matrix= new Matrix();
-            var skewXTransform:Matrix= new Matrix();
-            var skewYTransform:Matrix= new Matrix();
-            var translateTransform:Matrix= new Matrix();
+            var rotateTransform:Matrix = new Matrix();
+            var scaleTransform:Matrix = new Matrix();
+            var skewXTransform:Matrix = new Matrix();
+            var skewYTransform:Matrix = new Matrix();
+            var translateTransform:Matrix = new Matrix();
 
             // XXX This should sort by priority (activation order) 
             for each(var animation:SVGAnimateNode in animations) {
