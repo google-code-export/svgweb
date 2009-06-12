@@ -3111,11 +3111,13 @@ FlashHandler._encodeFlashData = function(str) {
   // cause an 'Illegal Character' error. For example, if I have a SCRIPT
   // inside my SVG OBJECT as follows: var temp = "\"\"" then I will get
   // this exception. To handle this we double encode back slashes.
-  if (typeof str == 'string') {
-    return str.replace(/\\/g, '\\\\');
-  } else {
-    return str;
-  }
+  str = str.toString().replace(/\\/g, '\\\\');
+  
+  // Flash barfs on entities, such as &quot;. To get around this, tokenize
+  // our & characters which we will then replace on the other side.
+  str = str.replace(/&/g, '__SVG__AMPERSAND');
+  
+  return str;
 };
 
 // end static singleton functions

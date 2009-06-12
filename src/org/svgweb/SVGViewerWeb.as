@@ -352,7 +352,14 @@ package org.svgweb
         public function js_handleLoad(jsMsg:Object):Object {
             //this.debug('js_handleLoad, msg='+this.debugMsg(jsMsg));
             if (jsMsg.sourceType == 'string') {
-                this.setSVGString(jsMsg.svgString, jsMsg.objectURL, jsMsg.pageURL);
+                // Flash has a bug over the Flash/JS boundry where ampersands
+                // get corrupted, such as in entities like &quot; 
+                // As a workaround we turned ampersands into the temporary
+                // token __SVG__AMPERSAND before sending it over to Flash
+                var svgString:String = jsMsg.svgString;
+                svgString = svgString.replace(/__SVG__AMPERSAND/g, '&');
+                
+                this.setSVGString(svgString, jsMsg.objectURL, jsMsg.pageURL);
             }
             if (jsMsg.sourceType == 'url_svg') {
                 this.loadURL(jsMsg.svgURL);

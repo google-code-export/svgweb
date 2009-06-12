@@ -70,7 +70,7 @@ package org.svgweb.nodes
         }
 
         override public function onRegisterFont(fontFamily:String) {
-            if (fontFamily == this.getAttribute('font-family')) {
+            if (fontFamily == this.getStyleOrAttr('font-family')) {
                 invalidateDisplay();
             }
         }
@@ -100,9 +100,9 @@ package org.svgweb.nodes
          **/
         override protected function parseChildren():void {
             super.parseChildren();
-            
+
             //Check for SVGFont
-            var fontFamily:String = this.getAttribute('font-family');
+            var fontFamily:String = this.getStyleOrAttr('font-family');
             this._svgFont = this.svgRoot.getFont(fontFamily);
             var glyph:SVGGlyphNode;
             if (this._svgFont != null) {
@@ -110,7 +110,7 @@ package org.svgweb.nodes
                     this._textField.parent.removeChild(this._textField);
                     this._textField = null;
                 }
-                var fontSize:String = this.getAttribute('font-size');
+                var fontSize:String = this.getStyleOrAttr('font-size');
                 var fontSizeNum:Number = SVGUnits.cleanNumber(fontSize);
                 var glyphXOffsets:Array = new Array();
                 var xString:String = super.getAttribute('x', '0');
@@ -127,12 +127,12 @@ package org.svgweb.nodes
                 var textWidth:Number;
 
                 // Handle text-anchor attribute
-                var textAnchor:String = this.getAttribute('text-anchor');
+                var textAnchor:String = this.getStyleOrAttr('text-anchor');
                 var currentNode:SVGNode = this;
                 while (textAnchor == 'inherit') {
                     if (currentNode.getSVGParent() != null) {
                         currentNode = currentNode.getSVGParent();
-                        textAnchor = currentNode.getAttribute('text-anchor');
+                        textAnchor = currentNode.getStyleOrAttr('text-anchor');
                     }
                     else {
                         textAnchor = null;
@@ -168,6 +168,9 @@ package org.svgweb.nodes
                     var glyphChar:String = this._text.charAt(i);
                     glyph = this._svgFont.getGlyph(glyphChar);
                     var glyphClone:SVGNode = glyph.clone();
+                    if (this.getStyleOrAttr('fill')) {
+                        glyphClone.setAttribute('fill', this.getStyleOrAttr('fill'));
+                    }
                     glyphClone.setAttribute('transform',
                               'scale(' + (fontSizeNum / 2048) + ') scale(1,-1)');
                     /* XXX gylph offsets are being transformed by the glyph
@@ -220,12 +223,12 @@ package org.svgweb.nodes
                                               applyAnimations:Boolean = true):* {
             if (name == 'stroke-width' && this._textField == null) {
                 // Relevant to SVG Fonts only
-                var fontSize:String = this.getAttribute('font-size');
+                var fontSize:String = this.getStyleOrAttr('font-size');
                 var fontSizeNum:Number = SVGUnits.cleanNumber(fontSize);
                 var strokeWidthStr:String = super.getAttribute(name, defaultValue, inherit);
                 var strokeWidth:Number = SVGUnits.cleanNumber(strokeWidthStr);
                 strokeWidth = strokeWidth * (1024 / fontSizeNum);
-                return String(strokeWidth);
+                return String(strokeWidth);  
             } else if ( (name == "x" || name == "y") ) {
                 // If there is more than one value, then apply them to
                 // individual glyphs, not the text node
@@ -255,7 +258,6 @@ package org.svgweb.nodes
          **/
         override protected function setAttributes():void {
             super.setAttributes();
-            
             if (this._textField != null) {
                 var fontFamily:String = this.getStyleOrAttr('font-family');                
                 var fontSize:String = this.getStyleOrAttr('font-size');
