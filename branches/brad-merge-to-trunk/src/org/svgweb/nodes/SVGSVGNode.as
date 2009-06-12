@@ -45,12 +45,19 @@ package org.svgweb.nodes
         public var title:String;
         
         /** If this file was loaded from a URL, such as samples/scimitar.svg,
-            then relativeTo points to the relative path from which it was
+            then objectURL points to the relative path from which it was
             fetched, such as 'samples/' */
-        public var relativeTo:String = '';
+        public var objectURL:String = '';
         
-        public function SVGSVGNode(svgRoot:SVGSVGNode = null, xml:XML = null, original:SVGNode = null, relativeTo:String = ''):void {
-            this.relativeTo = relativeTo;
+        /** Same as objectURL, but the relative path from the containing HTML
+            page. */
+        public var pageURL:String = '';
+        
+        public function SVGSVGNode(svgRoot:SVGSVGNode = null, xml:XML = null, 
+                                   original:SVGNode = null, objectURL:String = '',
+                                   pageURL:String = ''):void {
+            this.objectURL = objectURL;
+            this.pageURL = pageURL;
             if (svgRoot) {
                 this.parentSVGRoot = svgRoot;
             }

@@ -204,13 +204,13 @@ package org.svgweb
             this.setSVGString(svgString);
         }
 
-        protected function setSVGString(xmlString:String, relativeTo:String = '') {
+        protected function setSVGString(xmlString:String, objectURL:String = '', pageURL:String = '') {
             this.renderStartTime = (new Date()).valueOf();
             var dataXML:XML = new XML(SVGViewerWeb.expandEntities(xmlString));
             while(this.numChildren) {
                 this.removeChildAt(0);
             }
-            svgRoot = new SVGSVGNode(null, dataXML, null, relativeTo);
+            svgRoot = new SVGSVGNode(null, dataXML, null, objectURL, pageURL);
             if (   (xmlString.indexOf("<animate") != -1)
                 || (xmlString.indexOf("<set") != -1) ) {
                 svgRoot.visible = false;
@@ -352,7 +352,7 @@ package org.svgweb
         public function js_handleLoad(jsMsg:Object):Object {
             //this.debug('js_handleLoad, msg='+this.debugMsg(jsMsg));
             if (jsMsg.sourceType == 'string') {
-                this.setSVGString(jsMsg.svgString, jsMsg.relativeTo);
+                this.setSVGString(jsMsg.svgString, jsMsg.objectURL, jsMsg.pageURL);
             }
             if (jsMsg.sourceType == 'url_svg') {
                 this.loadURL(jsMsg.svgURL);
