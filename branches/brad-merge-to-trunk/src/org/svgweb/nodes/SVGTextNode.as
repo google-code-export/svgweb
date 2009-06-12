@@ -100,15 +100,11 @@ package org.svgweb.nodes
          **/
         override protected function parseChildren():void {
             super.parseChildren();
-            this.dbg('parseChildren, this='+this.xml.localName()+', text='+this.getText()+', guid='+this.guid);
             
             //Check for SVGFont
             var fontFamily:String = this.getStyleOrAttr('font-family');
-            this.dbg('fontFamily='+fontFamily);
-            this.dbg('using getAttribute, family='+this.getAttribute('font-family'));
             this._svgFont = this.svgRoot.getFont(fontFamily);
             var glyph:SVGGlyphNode;
-            this.dbg('svgFont='+this._svgFont);
             if (this._svgFont != null) {
                 if (this._textField) {
                     this._textField.parent.removeChild(this._textField);
@@ -198,9 +194,7 @@ package org.svgweb.nodes
                 }
             }
             else {
-                this.dbg('bad inside1');
                 if (this._textField == null) {
-                    this.dbg('bad inside2');
                     //If this is not an SVGFont, use a TextField
                     this._textField = new TextField();
                 }
