@@ -2049,18 +2049,20 @@ extend(SVGWeb, {
       RegExp.lastIndex = 0; // reset global exec()
       var match = commentRE.exec(svg);
       var i = 0;
+      var strippedSVG = svg;
       while (match && RegExp.lastMatch) {
         // get the text of the comment
         var endIndx = RegExp.rightContext.indexOf('-->') + 3;
         var comment = '<!--' + RegExp.rightContext.substring(0, endIndx);
         
         // now strip it out
-        svg = svg.replace(comment, '');
+        strippedSVG = strippedSVG.replace(comment, '');
         
         // find next match
         match = commentRE.exec(svg);
         i++;
       }
+      svg = strippedSVG;
       
       // break SVG string into pieces so that we don't incorrectly add our
       // <__text> fake text nodes outside the SVG root tag
