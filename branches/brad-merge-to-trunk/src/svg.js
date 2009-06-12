@@ -6142,7 +6142,6 @@ extend(_SVGObject, {
       // snip off any filename after a final slash
       results = pathname.replace(/\/([^/]*)$/, '/');
     }
-    console.log('results='+results);
 
     return results;
   },
