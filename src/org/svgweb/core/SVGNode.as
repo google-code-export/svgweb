@@ -428,21 +428,16 @@ package org.svgweb.core
          * 
          * @param name Name of the XML attribute to load
          * @param field Name of the node field to set. If null, the name attribute will be used as the field attribute.
-         * @param useStyle Boolean Optional parameter that controls whether we
+         * @param applyStyle Boolean Optional parameter that controls whether we
          * will look in this node's style value if the given name is not in
          * the node's attribute list. Defaults to false.
          **/
         protected function loadAttribute(name:String, field:String = null,
-                                         useStyle:Boolean = false):void {
+                                         applyStyle:Boolean = false):void {
             if (field == null) {
                 field = name;
             }
-            var tmp;
-            if (useStyle) {
-                tmp = this.getStyleOrAttr(name);
-            } else {
-                tmp = this.getAttribute(name);
-            }
+            var tmp:String = this.getStyleOrAttr(name);
             if (tmp != null) {
                 switch (name) {
                     case 'x':
@@ -1148,24 +1143,28 @@ package org.svgweb.core
          * whether we apply any SMIL animations that might be in flight to the
          * attribute. If false, then we return the base actual set value on
          * this node without reference to any animation changes.
-         * @param returnDefault Boolean, optional, defaults to true. Controls
-         * whether we return a default value if one is available for certain
-         * attribute types.
+         * @param applyStyle Boolean, optional, defaults to false. Controls whether
+         * we get and set values from this node's style values as well as its
+         * attribute values. If false, then we don't check or set a given
+         * attribute name against the style value.
          * 
          * @return Returns the XML attribute value, or the defaultValue.
          **/
-        public function getAttribute(name:String, defaultValue:* = null,
+        public function getAttribute(name:String, 
+                                     defaultValue:* = null,
                                      inherit:Boolean = true,
-                                     applyAnimations:Boolean = true):* {
+                                     applyAnimations:Boolean = true,
+                                     applyStyle:Boolean = false):* {
             var value:String = this._getAttribute(name, defaultValue,
-                                                  inherit, applyAnimations);
+                                                  inherit, applyAnimations,
+                                                  applyStyle);
+            
+            if (value !== null && value != 'inherit') {
+                return value;
+            }
             
             if (value == "inherit") {
                 value = null;
-            }
-            
-            if (value) {
-                return value;
             }
             
             if (ATTRIBUTES_NOT_INHERITED.indexOf(name) != -1) {            
@@ -1173,7 +1172,8 @@ package org.svgweb.core
             }
             
             if (inherit && (this.getSVGParent() != null)) {
-                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, true, applyAnimations);
+                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, true, 
+                                                                 applyAnimations, applyStyle);
             }
             
             return defaultValue;       
@@ -1187,7 +1187,8 @@ package org.svgweb.core
          **/
         protected function _getAttribute(name:String, defaultValue:* = null,
                                          inherit:Boolean = true,
-                                         applyAnimations:Boolean = true):* {
+                                         applyAnimations:Boolean = true,
+                                         applyStyle:Boolean = false):* {
             var value:String;
             
             // If we are rendering a mask, then use a simple black fill.
@@ -1213,8 +1214,9 @@ package org.svgweb.core
             }
 
             if (applyAnimations) {
-                value = getAnimAttribute(name, defaultValue, inherit);
-                if (value) {
+                value = getAnimAttribute(name, defaultValue, inherit,
+                                         applyStyle);
+                if (value !== null) {
                     return value;
                 }
             }
@@ -1222,16 +1224,20 @@ package org.svgweb.core
             if (name == "href") {
                 //this._xml@href handled normally
                 value = this._xml.@xlink::href;                             
-                if (value && (value != "")) {
+                if (value !== null && (value != "")) {
                     return value;
                 }
             }
 
             if (name == "base") {
                 value = this._xml.@aaa::base;                             
-                if (value && (value != "")) {
+                if (value !== null && (value != "")) {
                     return value;
                 }
+            }
+            
+            if (applyStyle && _styles.hasOwnProperty(name)) {
+                return (_styles[name]);
             }
            
             var xmlList:XMLList = this._xml.attribute(name);
@@ -1243,9 +1249,16 @@ package org.svgweb.core
             return null;
         }
         
+        public function getStyleOrAttr(name:String, defaultValue:* = null,
+                                       inherit:Boolean = true,
+                                       applyAnimations:Boolean = true):* {
+            return getAttribute(name, defaultValue, true, inherit, applyAnimations);
+        }
+        
         // process all animations
         public function getAnimAttribute(name:String, defaultValue:* = null,
-                                         inherit:Boolean = true):String {
+                                         inherit:Boolean = true,
+                                         useStyle:Boolean = false):String {
             // transform is handled by getAllAnimTransforms
             if (name == "transform")
                 return null;
@@ -1262,7 +1275,8 @@ package org.svgweb.core
             var isAdditive:Boolean = true;
 
             // Start with base value
-            var baseVal:String = getAttribute(name, defaultValue, inherit, false);
+            var baseVal:String = getAttribute(name, defaultValue, inherit, false,
+                                              useStyle);
 
             var animVal:Number;
             if (baseVal) {
@@ -1436,7 +1450,7 @@ package org.svgweb.core
         public function getStyle(name:String, defaultValue:* = null, 
                                  inherit:Boolean = true):* {
             var value = this._getStyle(name);
-            if (value != null) {
+            if (value !== null) {
                 return value;
             }
                      
@@ -1448,7 +1462,7 @@ package org.svgweb.core
                 value = null;
             }
             
-            if (value != null) {
+            if (value !== null) {
                 return value;
             }
             
@@ -1491,7 +1505,7 @@ package org.svgweb.core
                 //Node is the top level of a clone
                 //Check for an override value from the parent
                 value = SVGNode(this.getSVGParent()).getStyle(name, null, false);
-                if (value != null) {
+                if (value !== null) {
                     return value;
                 }
             }
@@ -1501,70 +1515,6 @@ package org.svgweb.core
             }
  
             return null;
-        }
-        
-        /** Retrieves a property from either the style or attribute values,
-         *  determine the correct one to use. 
-         *
-         *  @param name The style or XML attribute name, such as fill or 
-         *  stroke-width.
-         *  @param defaultValue The default value to return if none is present.
-         *  Defaults to null.
-         *  @param inherit Whether to look up the inheritance chain if this
-         *  property is inherited. Defaults to true.
-         *  @param applyAnimations Boolean, optional, defaults to true. Controls
-         *  whether we apply any SMIL animations that might be in flight to the
-         *  attribute. If false, then we return the base actual set value on
-         *  this node without reference to any animation changes.
-         *
-         *  @return The style or XML attribute value, or null if it is 
-         *  not present.
-         **/
-        public function getStyleOrAttr(name:String, 
-                                       defaultValue:* = null, 
-                                       inherit:Boolean = true,
-                                       applyAnimations:Boolean = true):* {
-            var value;
-            
-            // Firefox and Safari gives style="" values precedence over XML
-            // values
-            
-            // are we in the middle of an animation? if so, return 
-            // the attribute value with the animation applied if requested
-            if (applyAnimations && animations.length > 0) {
-                value = this.getAttribute(name, null, false, true);
-                if (value !== null) {
-                    return value;
-                }
-            }
-            
-            // try non-inherited explicitly set styles
-            value = this.getStyle(name, null, false);
-            if (value != null) {
-                return value;
-            }
-            
-            // otherwise see if there is an explicit XML attribute
-            value = this.getAttribute(name, null, true, applyAnimations);
-            if (value != null) {
-                return value;
-            }
-            
-            // see if there is an inherited animated attribute
-            if (applyAnimations && animations.length > 0) {
-                value = this.getAttribute(name, null, true, true);
-                if (value !== null) {
-                    return value;
-                }
-            }
-            
-            // finally see if there is an inherited or default style
-            value = this.getStyle(name);
-            if (value != null) {
-                return value;
-            }
-
-            return defaultValue;
         }
 
         private function parseStyle():void {

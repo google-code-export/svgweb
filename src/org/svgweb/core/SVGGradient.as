@@ -120,19 +120,21 @@ package org.svgweb.core
          **/
         override protected function _getAttribute(name:String, defaultValue:* = null,
                                                   inherit:Boolean = true,
-                                                  applyAnimations:Boolean = true):* {
+                                                  applyAnimations:Boolean = true,
+                                                  useStyle:Boolean = false):* {
             var value:String = super._getAttribute(name, defaultValue,
-                                                   inherit, applyAnimations);
-            if (value) {
+                                                   inherit, applyAnimations,
+                                                   useStyle);
+            if (value !== null) {
                 return value;
             }
 
             var href:String = this._xml.@xlink::href;
-            if (!href || href=='') {
+            if (!href || href == '') {
                 href = this._xml.@href;
             }
 
-            if (href && href != '') {
+            if (href && href !== '') {
                 href = href.replace(/^#/,'');
                 var baseNode:SVGNode = this.svgRoot.getNode(href);
                 if (baseNode) {
