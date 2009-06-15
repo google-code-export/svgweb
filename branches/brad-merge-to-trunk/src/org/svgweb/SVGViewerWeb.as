@@ -460,7 +460,8 @@ package org.svgweb
                             }
                         }
                         else {
-                            jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, false, applyAnimations);
+                            jsMsg.attrValue = element.getAttribute(jsMsg.attrName, null, 
+                                                                   false, applyAnimations, false);
                         }
                     }
                     else {

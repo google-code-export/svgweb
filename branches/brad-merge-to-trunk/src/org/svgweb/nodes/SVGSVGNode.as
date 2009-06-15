@@ -156,9 +156,10 @@ package org.svgweb.nodes
         
         override public function getAttribute(name:String, defaultValue:* = null,
                                               inherit:Boolean = true,
-                                              applyAnimations:Boolean = true):* {
-            var value:String = this._getAttribute(name, defaultValue, inherit, applyAnimations);
-            if (value) {
+                                              applyAnimations:Boolean = true,
+                                              useStyle:Boolean = false):* {
+            var value:String = this._getAttribute(name, defaultValue, inherit, applyAnimations, useStyle);
+            if (value !== null) {
                 return value;
             }
 
@@ -167,7 +168,8 @@ package org.svgweb.nodes
             }
 
             if (inherit && (this.getSVGParent() != null))  {
-                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, inherit, applyAnimations);
+                return SVGNode(this.getSVGParent()).getAttribute(name, defaultValue, inherit, applyAnimations,
+                                                                 useStyle);
             }
 
             if ((name == 'opacity') 

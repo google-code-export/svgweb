@@ -221,19 +221,20 @@ package org.svgweb.nodes
 
         override public function getAttribute(name:String, defaultValue:* = null,
                                               inherit:Boolean = true,
-                                              applyAnimations:Boolean = true):* {
+                                              applyAnimations:Boolean = true,
+                                              useStyle:Boolean = false):* {
             if (name == 'stroke-width' && this._textField == null) {
                 // Relevant to SVG Fonts only
                 var fontSize:String = this.getStyleOrAttr('font-size');
                 var fontSizeNum:Number = SVGUnits.cleanNumber(fontSize);
-                var strokeWidthStr:String = super.getAttribute(name, defaultValue, inherit);
+                var strokeWidthStr:String = super.getAttribute(name, defaultValue, inherit, true, true);
                 var strokeWidth:Number = SVGUnits.cleanNumber(strokeWidthStr);
                 strokeWidth = strokeWidth * (1024 / fontSizeNum);
                 return String(strokeWidth);  
             } else if ( (name == "x" || name == "y") ) {
                 // If there is more than one value, then apply them to
                 // individual glyphs, not the text node
-                var xString:String = super.getAttribute(name, defaultValue, inherit, applyAnimations);
+                var xString:String = super.getAttribute(name, defaultValue, inherit, applyAnimations, false);
                 if (xString != null) {
                     xString = xString.replace(/,/sg," "); //Replace commas with spaces
                     if (xString.split(/\s+/).length >= 2) {
@@ -248,7 +249,7 @@ package org.svgweb.nodes
                 }
             }
             else {
-                return super.getAttribute(name, defaultValue, inherit, applyAnimations);
+                return super.getAttribute(name, defaultValue, inherit, applyAnimations, useStyle);
             }
         }
         

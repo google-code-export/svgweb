@@ -4423,6 +4423,12 @@
          </rect>
          <text x="30" y="120" fill="navy">begins at "2s; 5s"</text>-->
          
+    <!-- from="-500 0" to="0 0" -->
+  <!--<animateTransform attributeName="transform" type="translate" from="-500 0" to="-500 0" begin="0" dur="1ms" fill="freeze" />
+  <animateTransform attributeName="transform" type="translate" values="-500 0;-200 0;0 0" keyTimes="0;0.75;1.0" begin="1s" dur="350ms" fill="freeze" />-->
+  
+    <text x="100" y="100" style="font-size: 24pt;">You should see a quote, ampersand, lesser than, and greater than symbol from an entity: &quot;&amp;&lt;&gt;</text>
+         
     <path
        style="fill:#30451d;fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="M 188.1296,294.79233 C 188.69263,292.33965 196.65451,292.53943 191.53598,293.81907 C 191.18411,293.90703 190.88714,294.14348 190.56273,294.30569 C 187.32399,295.92505 194.11025,296.04416 196.88887,296.73883 C 199.60544,297.41797 191.41637,298.19869 188.61622,298.19869 C 186.29375,298.19869 193.08438,299.72498 194.94237,301.11847 C 195.11467,301.24769 190.33545,303.55161 186.1831,303.55161 C 185.71369,303.55161 190.11373,296.96333 184.72321,299.65859 C 182.95224,300.54407 186.58349,296.0292 188.1296,294.79233 z "

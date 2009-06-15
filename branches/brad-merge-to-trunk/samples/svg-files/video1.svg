@@ -25,7 +25,6 @@
                          fill="freeze"/>
     </video>
 
-
     <rect id="test-frame" x="1" y="1" width="478" height="358"
           fill="none" stroke="#000000"/>
 
