@@ -377,6 +377,8 @@ package org.svgweb.core
                         // all children should be invisible _unless_ they
                         // explicitly have a visibility set to 'visible'.
                         this.setVisibility('hidden');
+                    } else {
+                        this.setVisibility('visible');
                     }
                     
                     if (this.getStyleOrAttr('display') == 'none') {
@@ -465,6 +467,9 @@ package org.svgweb.core
             @param recursive - Internal variable. Should not set. */
         protected function setVisibility(visible:String, 
                                          recursive:Boolean = false):void {
+            // FIXME: Turn this into an iterative rather than a recursive
+            // method
+            //this.dbg('setVisibility, this='+this.xml.localName()+', visible='+visible+', recursive='+recursive);
             // ignore if we have our own visibility value and we are a recursive
             // call
             if (this.getStyleOrAttr('visibility') == null 
@@ -1394,10 +1399,9 @@ package org.svgweb.core
 
                 default:
                     this.invalidateDisplay();
-                    if (   (name == 'display' || name == 'visibility')
-                        || (name == 'style' &&
-                                (   (value.indexOf('visibility') != -1 )
-                                 || (value.indexOf('display') != -1 ) ) ) ) {
+                    if (name == 'style' &&
+                            ( value.indexOf('visibility') != -1
+                            || value.indexOf('display') != -1 )) {
                         this.invalidateChildren();
                     }
                     break;
@@ -1537,8 +1541,7 @@ package org.svgweb.core
                     var styleSet:Array = style.split(':');
                     if (styleSet.length == 2) {
                         var attrName = SVGColors.trim(styleSet[0]);
-                        var attrValue = SVGColors.trim(styleSet[1]);
-                        
+                        var attrValue = SVGColors.trim(styleSet[1]);                        
                         this._styles[attrName] = attrValue;
                     }
                 }
