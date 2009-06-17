@@ -2264,6 +2264,8 @@ extend(SVGWeb, {
     // earlier we turned nested <svg> elements into a temporary token; restore
     // them
     svg = svg.replace(/<(svg:)?NESTEDSVG/g, '<$1svg');
+    
+    console.log('svg='+svg);
             
     // handle Flash encoding issues
     if (this.renderer == FlashHandler) {
