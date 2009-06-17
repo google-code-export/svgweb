@@ -1180,6 +1180,11 @@
       if (window.location.search.indexOf('svgIndex') != -1) {
         svgIndex = window.location.search.match(/svgIndex=([0-9]+)/)[1];
       }
+      
+      // see if the native renderer was forced
+      if (window.location.search.indexOf('svg.render.forceflash=false') != -1) {
+        document.getElementById('selectRenderer').value = 'native';
+      }
         
       showSVG(svgIndex);
     }
