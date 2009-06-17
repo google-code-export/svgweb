@@ -222,7 +222,8 @@ native support can ease QA and deployment, as well as make it possible to
 use SVG features such as SMIL and SVG Video that might not be widely deployed 
 yet. Note that forcing Flash support will do nothing on the iPhone, as that
 platform does not support Flash; on the iPhone the Native Renderer will always
-be used.
+be used (TODO: Confirm that this is true for the iPhone if the Flash renderer
+is being forced).
 
 SVG Scripting Support
 ---------------------
@@ -771,8 +772,8 @@ Note that the getSVGDocument() method, introduced by the Adobe ASV plugin, is
 not currently supported due to technical limitations (it is impossible to
 support on Firefox); you should use contentDocument instead.
 
-Dynamically Creating SVG OBJECTs and SVG Roots
-----------------------------------------------
+Dynamically Creating and Removing SVG OBJECTs and SVG Roots
+-----------------------------------------------------------
 
 If you want to dynamically create a new SVG OBJECT on your page, you must
 do the following. First, when you create your object, you must pass in the
@@ -813,7 +814,7 @@ Note that our svgweb.appendChild method is a divergence from the standard
 necessary for SVG Web to do its magic.
 
 Dynamically creating an SVG Root element is similar for direct embedding into
-a web page (note that this is just documented here but is not yet implemented). 
+a web page (NOTE: this is just documented here but is not yet implemented). 
 You don't have to create a SCRIPT tag like you would if you were direct
 embedding the SVG on page load:
 
@@ -840,6 +841,25 @@ svgweb.appendChild(svg, document.body); // note that we call svgweb.appendChild
 The parent that you attach either your SVG OBJECT or SVG root must 
 already be attached to the real DOM on your page (i.e. it can't be disconnected
 from the page).
+
+To remove an SVG OBJECT, you must similarly call a special method on svgweb:
+
+svgweb.removeChild(mySVGObject, parentNode);
+
+This method is not yet supported for SVG Roots embedded into an HTML document,
+only for SVG OBJECTS. The first argument to svgweb.removeChild is the SVG
+OBJECT to remove from the page, while the second is the parent node of
+this object. Note that you must directly remove an SVG OBJECT using the
+above method; if you remove a parent node that might have an SVG OBJECT
+as a distant descendant than resources might not be cleaned up correctly.
+For example, if you have a container DIV that then has an SVG OBJECT, the
+following might have the SVG OBJECT disappear from the page but resources
+will not get cleaned up correctly, and memory will get wasted over time:
+
+containerDiv = ''; // bad!!
+// or
+containerDiv.parentNode.removeChild(mySVGObject); // bad!!
+
 
 Known Issues and Errata
 -----------------------
@@ -1651,8 +1671,9 @@ extend(SVGWeb, {
   },
   
   /** Appends a dynamically created SVG OBJECT or SVG root to the page.
-      See the section "Dynamically Creating SVG OBJECTs and SVG Roots"
-      for details.
+      See the section "Dynamically Creating and Removing SVG OBJECTs and 
+      SVG Roots" for details. NOTE: Only appending SVG OBJECTs is supported
+      for now.
       
       @node Either an 'object' created with 
       document.createElement('object', true) or an SVG root created with
@@ -1689,6 +1710,123 @@ extend(SVGWeb, {
         
         // now handle this SVG OBJECT
         this._processSVGObject(div);
+      }
+    }
+  },
+  
+  /** Removes a dynamically created SVG OBJECT or SVG root to the page.
+      See the section "Dynamically Creating and Removing SVG OBJECTs and 
+      SVG Roots" for details. NOTE: Only removing SVG OBJECTs is supported
+      for now.
+      
+      @node OBJECT or EMBED tag for the SVG OBJECT to remove.
+      @parent The parent of the node to remove. */
+  removeChild: function(node, parent) {
+    if (this.getHandlerType() == 'native') {
+      return parent.removeChild(node); // just pass through
+    } else { // Flash handler
+      if ( (node.nodeName.toLowerCase() == 'object' 
+            || node.nodeName.toLowerCase() == 'embed') 
+              && node.className.indexOf('embedssvg') != -1) {
+        this.totalSVG--;
+        
+        // remove from our list of handlers
+        var objID = node.getAttribute('id');
+        var objHandler = this.handlers[objID];
+        var newHandlers = [];
+        for (var i = 0; i < this.handlers.length; i++) {
+          var currentHandler = this.handlers[i];
+          if (currentHandler != objHandler) {
+            newHandlers[currentHandler.id] = currentHandler;
+            newHandlers.push(currentHandler);
+          } 
+        }
+        this.handlers = newHandlers;
+        
+        // remove any setTimeout or setInterval functions that might have
+        // been registered inside this object; see _SVGWindow.setTimeout
+        // for details
+        var iframeWin = objHandler.document.defaultView;
+        for (var i = 0; i < iframeWin._intervalIDs.length; i++) {
+          iframeWin.clearInterval(iframeWin._intervalIDs[i]);
+        }
+        for (var i = 0; i < iframeWin._timeoutIDs.length; i++) {
+          iframeWin.clearTimeout(iframeWin._timeoutIDs[i]);
+        }
+        
+        // remove keyboard event handlers; we added a record of these for
+        // exactly this reason in _Node.addEventListener()
+        for (var i = 0; i < objHandler._keyboardListeners.length; i++) {
+          var l = objHandler._keyboardListeners[i];
+          if (isIE) {
+            document.detachEvent('onkeydown', l);
+          } else {
+            // we aren't sure whether the event listener is a useCapture or
+            // not; just try to remove both
+            document.removeEventListener('keydown', l, true);
+            document.removeEventListener('keydown', l, false);
+          }
+        }
+                
+        // remove from the page
+        node.parentNode.removeChild(node);
+        
+        // delete the HTC container and all HTC nodes that belong to this
+        // SVG OBJECT
+        var container = document.getElementById('__htc_container');
+        if (container) {
+          for (var i = 0; i < container.childNodes.length; i++) {
+            var child = container.childNodes[i];
+            if (typeof child.ownerDocument != 'undefined'
+                && child.ownerDocument === objHandler._svgObject.document) {
+              if (typeof child._fakeNode != 'undefined'
+                  && typeof child._fakeNode._htcNode != 'undefined') {
+                child._fakeNode._htcNode = null;
+              }
+              child._fakeNode = null;
+              child._handler = null;
+            }
+          }
+        }
+        
+        // clear out the guidLookup table for nodes that belong to this
+        // SVG OBJECT
+        for (var guid in svgweb._guidLookup) {
+          var child = svgweb._guidLookup[guid];
+          if (child._fake && child.ownerDocument === objHandler.document) {
+            delete svgweb._guidLookup[guid];
+          }
+        }
+        
+        // remove various properties to prevent IE memory leaks
+        objHandler._finishedCallback = null;
+        objHandler.flash.contentDocument = null;
+        objHandler.flash = null;
+        objHandler._xml = null;
+        objHandler.window._scope = null;
+        objHandler.window = null;
+        
+        var svgObj = objHandler._svgObject;
+        var svgDoc = svgObj.document;
+        svgDoc._nodeById = null;
+        svgDoc._xml = null;
+        svgDoc.defaultView = null;
+        svgDoc.documentElement = null;
+        svgDoc.rootElement = null;
+        svgDoc.defaultView = null;
+        svgDoc = null;  
+        svgObj._svgNode = null;
+        svgObj._handler = null;
+        
+        iframeWin._setTimeout = null;
+        iframeWin.setTimeout = null;
+        iframeWin._setInterval = null;
+        iframeWin.setInterval = null;
+        
+        objHandler._svgObject = null;
+        svgObj = null;
+        objHandler = null;
+        iframeWin = null;
       }
     }
   },
@@ -2747,6 +2885,12 @@ FlashInfo.prototype = {
 function FlashHandler(args) {
   this.type = args.type;
   this._finishedCallback = args.finishedCallback;
+  
+  // we keep a record of all keyboard listeners added by any of our nodes;
+  // this is necessary so that if the containing SVG document is removed from
+  // the DOM we can clean up keyboard listeners, which are actually registered
+  // on the document object
+  this._keyboardListeners = [];
   
   if (this.type == 'script') {
     this.id = args.svgID;
@@ -4243,21 +4387,27 @@ extend(_Node, {
       // (g, rect, etc.) that might have focus
       // TODO: FIXME: do we want to be adding this listener to 'document'
       // when dealing with SVG OBJECTs?
-      this._addEvent(document, type,
-                        // prevent closure by using an inline method
-                        (function(listener) {
-                          return function(evt) {
-                            // shim in preventDefault function for IE
-                            if (!evt.preventDefault) {
-                              evt.preventDefault = function() {
-                                this.returnValue = false;
-                                evt = null;
-                              }
-                            }
-                            // call the developer's listener now
-                            listener(evt);
-                          }
-                        })(listener));
+      
+      // prevent closure by using an inline method
+      var wrappedListener = (function(listener) {
+                                return function(evt) {
+                                  // shim in preventDefault function for IE
+                                  if (!evt.preventDefault) {
+                                    evt.preventDefault = function() {
+                                      this.returnValue = false;
+                                      evt = null;
+                                    }
+                                  }
+                                  // call the developer's listener now
+                                  listener(evt);
+                                }
+                              })(listener);
+      // save keyboard listeners for later so we can clean them up
+      // later if the parent SVG document is removed from the DOM
+      this._handler._keyboardListeners.push(wrappedListener);
+      
+      // now actually subscribe to the event
+      this._addEvent(document, type, wrappedListener);
       return;
     }
 
@@ -6171,20 +6321,48 @@ extend(_SVGObject, {
       
       @param script String with script to execute. */
   _executeScript: function(script) {
-    // expose the handler as a global object at the top of the script; also
-    // expose the svgns and xlinkns variables
-    script = 'var __svgHandler = top.svgweb.handlers["' 
-                  + this._handler.id + '"];\n' 
+    // expose the handler as a global object at the top of the script; 
+    // expose the svgns and xlinkns variables; and override the setTimeout
+    // and setInterval functions for the iframe where we will execute things
+    // so we can clear out all timing functions if the SVG OBJECT is later
+    // removed with a call to svgweb.removeChild
+    var addToTop = 'var __svgHandler = top.svgweb.handlers["' 
+                  + this._handler.id + '"];\n'
                   + 'window.svgns = "' + svgns + '";\n'
-                  + 'window.xlinkns = "' + xlinkns + '";\n\n'
-                  + script;
+                  + 'window.xlinkns = "' + xlinkns + '";\n';
+                  
+    var timeoutOverride = 
+                    'window._timeoutIDs = [];\n'
+                  + 'window._setTimeout = window.setTimeout;\n'
+                  + 'window.setTimeout = \n'
+                  + '       (function() {\n'
+                  + '          return function(f, ms) {\n'
+                  + '            var timeID = window._setTimeout(f, ms);\n'
+                  + '            window._timeoutIDs.push(timeID);\n'
+                  + '            return timeID;\n'
+                  + '          };\n'
+                  + '        })();\n'; 
+                  
+    var intervalOverride = 
+                    'window._intervalIDs = [];\n'
+                  + 'window._setInterval = window.setInterval;\n'
+                  + 'window.setInterval = \n'
+                  + '       (function() {\n'
+                  + '          return function(f, ms) {\n'
+                  + '            var timeID = window._setInterval(f, ms);\n'
+                  + '            window._intervalIDs.push(timeID);\n'
+                  + '            return timeID;\n'
+                  + '          };\n'
+                  + '        })();\n';
+                  
+    script = addToTop + timeoutOverride + intervalOverride  + '\n\n' + script;
     
     // change any calls to top.document or top.window, to a temporary different 
     // string to avoid collisions when we transform next
     script = script.replace(/top\.document/g, 'top.DOCUMENT');
     script = script.replace(/top\.window/g, 'top.WINDOW');
     
-    // intercept any calls to document. or window. inside of a string;
+    // intercept any calls to 'document.' or 'window.' inside of a string;
     // transform to this to a different temporary token so we can handle
     // it differently (i.e. we will put backslashes around certain portions:
     // top.svgweb.handlers[\"svg2\"].document for example)
@@ -6205,7 +6383,7 @@ extend(_SVGObject, {
     // wouldn't incorrectly transform them)
     script = script.replace(/top\.DOCUMENT/g, 'top.document');
     script = script.replace(/top\.WINDOW/g, 'top.window');
-        
+                
     // Now create an iframe that we will use to 'silo' and execute our
     // code, which will act as a place for globals to be defined without
     // clobbering globals on the HTML document's window or from other
@@ -7013,6 +7191,16 @@ extend(_SVGSVGElement, {
                     "<invoke name=\"sendToFlash\" returntype=\"javascript\">" 
                     + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
     };
+    
+    // patch the __flash__removeCallback method or else we will sometimes
+    // get an exception on page unload for IE:
+    // http://bugs.adobe.com/jira/browse/FP-529
+    window.__flash__removeCallback = (function() {
+      return function(instance, name) {
+        // Flash's native version doesn't check for existence of 'instance'!
+        if (instance) instance[name] = null;
+      }
+    })(); // closure magic to prevent IE memory leak
   },
   
   /** Relative URLs inside of SVG need to expand against something (i.e.

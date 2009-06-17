@@ -1083,7 +1083,6 @@
         }
         if (currentSVGIndex != svgIndex || force) {
             var newSVG = SVGFiles[svgIndex];
-            console.log('creating object!');
             currentSVGObject = document.createElement('object', true);
             currentSVGObject.setAttribute('type', 'image/svg+xml');
             currentSVGObject.setAttribute('data', 'svg-files/' + newSVG.svgURL);
@@ -1099,8 +1098,18 @@
               svgOnLoad();
             }, false);
             
+            // remove any old SVG OBJECTs that might be around
             var container = document.getElementById('mySVGDiv');
-            container.innerHTML = '';
+
+            for (var i = 0; i < container.childNodes.length; i++) {
+              var child = container.childNodes[i];
+              if (child.nodeType == 1 
+                  && child.className.indexOf('embedssvg') != -1) {
+                svgweb.removeChild(child, container);
+              }
+            }
+
+            // append new SVG object
             currentSVGObject = svgweb.appendChild(currentSVGObject, container);
 
             currentSVGIndex = svgIndex;

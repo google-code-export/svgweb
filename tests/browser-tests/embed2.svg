@@ -1322,6 +1322,15 @@
           }
         }, 50);
       timingFuncsCalled['intervalFunc6'] = closureTimerID;
+      
+      // TODO: Add tests where we have a bunch of setTimeout and setInterval
+      // methods, and then remove the SVG object they are attached to to
+      // ensure that we properly dispatch of interval timers after a 
+      // call to svgweb.removeChild
+      
+      // TODO: Add interval timing functions to top.window; this should work,
+      // and these should also persist once the SVG OBJECT is removed from
+      // the page
     } 
     
     function testGetElementById() {
