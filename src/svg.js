@@ -6829,18 +6829,18 @@ extend(FlashInserter, {
   /** Determines a width and height for the parsed SVG XML. Returns an
       object literal with two values, width and height. */
   _determineSize: function() {
-    var width, height;
+    var width = '100%', height = '100%';
     
     // sizing information on an SVG OBJECT overrides everything else
     if (this._embedType == 'object' && this._replaceMe.getAttribute('width')) {
       width = this._replaceMe.getAttribute('width');
-    } else {
-      width = '100%';
     }
     if (this._embedType == 'object' && this._replaceMe.getAttribute('height')) {
       height = this._replaceMe.getAttribute('height');
-    } else {
-      height = '100%';
+    }
+    
+    if (width && width != '100%' && height && height != '100%') {
+      return {width: width, height: height};
     }
     
     var xmlWidth = this._nodeXML.getAttribute('width');
