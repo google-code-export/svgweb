@@ -2264,9 +2264,7 @@ extend(SVGWeb, {
     // earlier we turned nested <svg> elements into a temporary token; restore
     // them
     svg = svg.replace(/<(svg:)?NESTEDSVG/g, '<$1svg');
-    
-    console.log('svg='+svg);
-            
+                
     // handle Flash encoding issues
     if (this.renderer == FlashHandler) {
       svg = FlashHandler._encodeFlashData(svg);
@@ -6845,18 +6843,21 @@ extend(FlashInserter, {
       height = '100%';
     }
     
+    var xmlWidth = this._nodeXML.getAttribute('width');
+    var xmlHeight = this._nodeXML.getAttribute('height');
+    
     // explicit width and height set
-    if (this._nodeXML.getAttribute('width')) {
-      width = this._nodeXML.getAttribute('width');
+    if (xmlWidth) {
+      width = xmlWidth;
     }
     
-    if (this._nodeXML.getAttribute('height')) {
-      height = this._nodeXML.getAttribute('height');
+    if (xmlHeight) {
+      height = xmlHeight;
     }
     
     // both explicit width and height set; we are done
-    if (this._nodeXML.getAttribute('width') 
-        && this._nodeXML.getAttribute('height')) {
+    if (xmlWidth && xmlWidth.indexOf('%') == -1
+        && xmlHeight && xmlHeight.indexOf('%') == -1) {
       return {width: width, height: height};
     }
     
@@ -6870,7 +6871,7 @@ extend(FlashInserter, {
       width = boxWidth - boxX;
       height = boxHeight - boxY;
     }
-    
+
     return {width: width, height: height};      
   },
   
