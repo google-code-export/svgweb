@@ -1139,6 +1139,9 @@ OBJECT. You could use this to pass parameters into your SVG file, for example.
 * XML Comments (such as <!-- Hello World -->) will not show up in the DOM
 when using the Flash handler.
 
+* If you have nested SVG elements (i.e. having an <svg> element nested in 
+your document), these don't currently show up in the DOM correctly.
+
 */
 
 // TODO!!! Remove timing functions when done with Issue 96
@@ -2143,7 +2146,7 @@ extend(SVGWeb, {
     // remove any leading whitespace from beginning and end of SVG doc
     svg = svg.replace(/^\s*/, '');
     svg = svg.replace(/\s*$/, '');
-    
+        
     if (addMissing) {
       // add any missing things (XML declaration, SVG namespace, etc.)
       if (/\<\?xml/m.test(svg) == false) { // XML declaration
@@ -2202,6 +2205,14 @@ extend(SVGWeb, {
       }
       svg = strippedSVG;
       
+      // We might have nested <svg> elements; we want to make sure we don't
+      // incorrectly think these are SVG root elements. To do this, temporarily
+      // rename the SVG root element, then rename nested <svg> root elements
+      // to a temporary token that we will restore at the end of this method
+      svg = svg.replace(/<(svg:)?svg/, '<$1SVGROOT'); // root <svg> element
+      svg = svg.replace(/<(svg:)?svg/g, '<$1NESTEDSVG'); // nested <svg>
+      svg = svg.replace(/<(svg:)?SVGROOT/, '<$1svg');
+      
       // break SVG string into pieces so that we don't incorrectly add our
       // <__text> fake text nodes outside the SVG root tag
       var separator = svg.match(/<[a-zA-Z_-]*:?svg/)[0];
@@ -2249,7 +2260,11 @@ extend(SVGWeb, {
         svg = svg + pieces[i];
       }
     }
-        
+    
+    // earlier we turned nested <svg> elements into a temporary token; restore
+    // them
+    svg = svg.replace(/<(svg:)?NESTEDSVG/g, '<$1svg');
+            
     // handle Flash encoding issues
     if (this.renderer == FlashHandler) {
       svg = FlashHandler._encodeFlashData(svg);
