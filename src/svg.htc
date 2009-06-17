@@ -138,6 +138,21 @@ The 'lightWeight' attribute below is important for two reasons:
   function _getY() { return this._fakeNode._getY(); }  
   function _getWidth() { return this._fakeNode._getWidth(); }
   function _getHeight() { return this._fakeNode._getHeight(); }
+  
+  // Patch the __flash__removeCallback method or else we will sometimes
+  // get an exception on page unload for IE:
+  // http://bugs.adobe.com/jira/browse/FP-529
+  // Patching this method in exactly this way was the only manner I could find
+  // to override __flash__removeCallback. TODO: See if we can extract this code
+  // from the HTC; I was not able to get it to work.
+  if (window.__flash__removeCallback) {
+    window.__flash__removeCallback =
+      (function() {
+        return function(instance, name) {
+          if (instance) instance[name] = null;
+        }
+      })();
+  }
 </script>
 
 <!-- IE has a bug where if a JScript portion is greater than 512 bytes,
