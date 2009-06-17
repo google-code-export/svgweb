@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <meta name="svg.render.forceflash" content="true" />
-  <script src="../src/svg.js" data-path="../src" data-debug="true"></script>
+  <script src="../src/svg.js" data-path="../src" data-debug="false"></script>
 </head>
 <body><h1 style="margin:2px">Welcome to the SVGViewer Demo!
          <span style="font-size: 10pt">
@@ -1075,12 +1075,15 @@
     }
 
     function showSVG(force) {
+        // see if an SVG file is specified in the URL
         var svgIndex;
         if (window.location.search.indexOf('svgIndex') != -1) {
           svgIndex = window.location.search.match(/svgIndex=([0-9]+)/)[1];
         } else {
-          svgIndex=document.getElementById('selectSVG').selectedIndex;
+          svgIndex = document.getElementById('selectSVG').selectedIndex;
         }
+        
+        // now render new SVG file
         if (currentSVGIndex != svgIndex || force) {
             var newSVG = SVGFiles[svgIndex];
             currentSVGObject = document.createElement('object', true);
@@ -1108,7 +1111,7 @@
                 svgweb.removeChild(child, container);
               }
             }
-
+            
             // append new SVG object
             currentSVGObject = svgweb.appendChild(currentSVGObject, container);
 
@@ -1134,29 +1137,19 @@
     }
 
     function modVB(modfunc) {
-        var width = currentSVGObject.getAttribute('width');
-        var height = currentSVGObject.getAttribute('height');
-        /*if (width.toString().indexOf('%') == -1) {
-          width = Math.round(width);
-        } else {
-          if (window.getComputedStyle) { // W3C
-            width = window.getComputedStyle(currentSVGObject, null).getPropertyValue('width');
-            width = width.replace('px', '');
-          } else { // IE
-            width = currentSVGObject.offsetWidth;
-          }
-        } 
-        if (height.toString().indexOf('%') == -1) {
-          height = Math.round(height);
-        } else {
-          if (window.getComputedStyle) { // W3C
-            height = window.getComputedStyle(currentSVGObject, null).getPropertyValue('height');
-            height = height.replace('px', '');
-          } else { // IE
-            height = currentSVGObject.offsetHeight;
-          }
-        }*/
-
+        var viewBox = currentSVGObject.contentDocument.documentElement.getAttribute('viewBox');
+        if (typeof(viewBox) != "string" || !viewBox.match(/\s*\S+\s*\S+\s*\S+\s*\S+\s*/)) {
+            var width = currentSVGObject.getAttribute('width');
+            var height = currentSVGObject.getAttribute('height');
+            viewBox = "0 0 " + Math.round(width) + ' ' + Math.round(height);
+        }
+        viewBox=viewBox.replace(/^\s+/, '');
+        var vbvals = viewBox.split(/\s+/);
+        modfunc(vbvals);
+        viewBox = Math.round(vbvals[0]) + ' ' + Math.round(vbvals[1]) + ' ' + 
+                  Math.round(vbvals[2]) + ' ' + Math.round(vbvals[3]);
+        currentSVGObject.contentDocument.rootElement.setAttribute('viewBox', viewBox);
+        document.getElementById('inputViewBox').value = viewBox;
     }
     
     function setViewBox() {
