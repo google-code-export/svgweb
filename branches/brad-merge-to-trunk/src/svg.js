@@ -2533,6 +2533,10 @@ extend(SVGWeb, {
     for (var i = 0; i < svgweb.handlers.length; i++) {
       var root = svgweb.handlers[i].document.documentElement;
       
+      if (svgweb.handlers[i].type == 'script') {
+        root = root._htcNode;
+      }
+      
       // remove anything we added to the HTC's style object as well as our
       // property change listener
       root.detachEvent('onpropertychange', root._fakeNode.style._changeListener);
@@ -7250,21 +7254,13 @@ extend(_SVGSVGElement, {
     // tricks from Dojo Flash. More details on these
     // hidden Flash methods here:
     // http://codinginparadise.org/weblog/2006/02/how-to-speed-up-flash-8s.html
-    flash.sendToFlash = function() {
-      return eval(this.CallFunction(
-                    "<invoke name=\"sendToFlash\" returntype=\"javascript\">" 
-                    + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
-    };
-    
-    // patch the __flash__removeCallback method or else we will sometimes
-    // get an exception on page unload for IE:
-    // http://bugs.adobe.com/jira/browse/FP-529
-    window.__flash__removeCallback = (function() {
-      return function(instance, name) {
-        // Flash's native version doesn't check for existence of 'instance'!
-        if (instance) instance[name] = null;
-      }
-    })(); // closure magic to prevent IE memory leak
+    flash.sendToFlash = (function() {
+      return function() {
+        return eval(this.CallFunction(
+                      "<invoke name=\"sendToFlash\" returntype=\"javascript\">" 
+                      + __flash__argumentsToXML(arguments, 0) + "</invoke>"));
+      };
+    })(); // IE memory leaks
   },
   
   /** Relative URLs inside of SVG need to expand against something (i.e.
