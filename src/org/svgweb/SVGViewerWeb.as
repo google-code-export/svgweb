@@ -38,6 +38,7 @@ package org.svgweb
     import org.svgweb.nodes.SVGGroupNode;
     import org.svgweb.nodes.SVGDOMTextNode;
     import org.svgweb.events.SVGEvent;
+    import org.svgweb.utils.SVGUnits;
     
     import flash.display.DisplayObject;
     import flash.display.Sprite;
@@ -70,6 +71,9 @@ package org.svgweb
 
         protected var renderStartTime:Number;
         protected var debugEnabled:Boolean = true;
+        
+        protected var objectWidth:Number;
+        protected var objectHeight:Number;
 
         public function SVGViewerWeb():void {
             this.setupJavaScriptInterface();
@@ -352,6 +356,16 @@ package org.svgweb
         public function js_handleLoad(jsMsg:Object):Object {
             //this.debug('js_handleLoad, msg='+this.debugMsg(jsMsg));
             if (jsMsg.sourceType == 'string') {
+                // see if an explicit width and height were set external
+                // to us on an SVG OBJECT; this helps us with viewBox
+                // calculations
+                if (jsMsg.objectWidth) {
+                    this.objectWidth = SVGUnits.cleanNumber(jsMsg.objectWidth);
+                }
+                if (jsMsg.objectHeight) {
+                    this.objectHeight = SVGUnits.cleanNumber(jsMsg.objectHeight);
+                }
+                
                 // Flash has a bug over the Flash/JS boundry where ampersands
                 // get corrupted, such as in entities like &quot; 
                 // As a workaround we turned ampersands into the temporary
@@ -626,16 +640,24 @@ package org.svgweb
            is the size of the flash object.
         */
         override public function getWidth():Number {
-            if (this.scaleModeParam == "showAll_svg") {
+            // an explicit width was passed in
+            if (this.objectWidth) {
+                return this.objectWidth;
+            }
+            else if (this.scaleModeParam == "showAll_svg") {
                 return this.stage.stageWidth;
             }
             else {
-                return 2048.0
+                return 2048.0;
             }
         }
 
         override public function getHeight():Number {
-            if (this.scaleModeParam == "showAll_svg") {
+            // an explicit height was passed in
+            if (this.objectHeight) {
+                return this.objectHeight;
+            }
+            else if (this.scaleModeParam == "showAll_svg") {
                 return this.stage.stageHeight;
             }
             else {

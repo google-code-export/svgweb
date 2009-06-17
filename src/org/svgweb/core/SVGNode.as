@@ -866,6 +866,8 @@ package org.svgweb.core
                  **/
                 var canvasWidth:Number = this.getWidth();
                 var canvasHeight:Number = this.getHeight();
+                this.dbg('canvasWidth='+canvasWidth);
+                this.dbg('canvasHeight='+canvasHeight)
 
                 /**
                  * Viewbox
@@ -1678,10 +1680,10 @@ package org.svgweb.core
         public function getWidth():Number {
             var parentWidth:Number=0;
             if (this.parent is SVGViewer) {
-                parentWidth=SVGViewer(this.parent).getWidth();
+                parentWidth = SVGViewer(this.parent).getWidth();
             }
             if (this.getSVGParent() != null) {
-                parentWidth=SVGNode(this.getSVGParent()).getWidth();
+                parentWidth = SVGNode(this.getSVGParent()).getWidth();
             }
             if (this.getAttribute('width') != null) {
                 return SVGColors.cleanNumber2(this.getAttribute('width'), parentWidth);

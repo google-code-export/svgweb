@@ -3318,6 +3318,13 @@ extend(FlashHandler, {
   
   /** The Flash object; set by _SVGSVGElement. */
   flash: null,
+  
+  /** If we this handler is in charge of an SVG OBJECT and that object
+      has explicit width and height settings on itself, we store these
+      here to later pass to Flash to help with viewBox calculations. These
+      are set by FlashInserter._determineSize(). */
+  _explicitWidth: null,
+  _explicitHeight: null,
 
   /**
     Stringifies the msg object sent back from the Flash SVG renderer or 
@@ -6217,6 +6224,8 @@ extend(_SVGObject, {
                                   svgString: this._svgString,
                                   objectURL: this._getRelativeTo('object'),
                                   pageURL: this._getRelativeTo('page'),
+                                  objectWidth: this._handler._explicitWidth,
+                                  objectHeight: this._handler._explicitHeight,
                                   ignoreWhiteSpace: false });
     } else {
       // if IE, force the HTC file to asynchronously load with a dummy element;
@@ -6264,6 +6273,8 @@ extend(_SVGObject, {
                                 svgString: this._svgString,
                                 objectURL: this._getRelativeTo('object'),
                                 pageURL: this._getRelativeTo('page'),
+                                objectWidth: this._handler._explicitWidth,
+                                objectHeight: this._handler._explicitHeight,
                                 ignoreWhiteSpace: false });
   },
   
@@ -6859,12 +6870,18 @@ extend(FlashInserter, {
   _determineSize: function() {
     var width = '100%', height = '100%';
     
-    // sizing information on an SVG OBJECT overrides everything else
+    // explicit sizing information on an SVG OBJECT overrides everything else
     if (this._embedType == 'object' && this._replaceMe.getAttribute('width')) {
       width = this._replaceMe.getAttribute('width');
+      // store the explicit width to pass to Flash later to help with viewBox
+      // sizing
+      this._handler._explicitWidth = width;
     }
     if (this._embedType == 'object' && this._replaceMe.getAttribute('height')) {
       height = this._replaceMe.getAttribute('height');
+      // store the explicit height to pass to Flash later to help with viewBox
+      // sizing
+      this._handler._explicitHeight = height;
     }
     
     if (width && width != '100%' && height && height != '100%') {
