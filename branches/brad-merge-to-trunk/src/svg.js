@@ -2528,6 +2528,35 @@ extend(SVGWeb, {
     if (!isIE) { // helps with unit testing
       return;
     }
+
+    // clean up svg:svg root tags
+    for (var i = 0; i < svgweb.handlers.length; i++) {
+      var root = svgweb.handlers[i].document.documentElement;
+      
+      // remove anything we added to the HTC's style object as well as our
+      // property change listener
+      root.detachEvent('onpropertychange', root._fakeNode.style._changeListener);
+      root.style.item = null;
+      root.style.setProperty = null;
+      root.style.getPropertyValue = null;
+      
+      // clean up our hidden HTML DOM and our Flash object
+      var flashObj = svgweb.handlers[i].flash;
+      flashObj.sendToFlash = null;
+      flashObj.parentNode.removeChild(flashObj);
+      var html = root._getHTCDocument().getElementsByTagName('html')[0];
+      html.parentNode.removeChild(html);
+        
+      // delete object references
+      root._fakeNode._htcNode = null;
+      root._fakeNode = null;
+      root._realParentNode = null;
+      root._realPreviousSibling = null;
+      root._realNextSibling = null;
+      root._handler = null;
+      
+      root = null;
+    }
     
     // delete the HTC container and all HTC nodes
     var container = document.getElementById('__htc_container');
@@ -2540,34 +2569,6 @@ extend(SVGWeb, {
       }
       container.parentNode.removeChild(container);
       container = null;
-    }
-
-    // clean up svg:svg root tags
-    for (var i = 0; i < svgweb.handlers.length; i++) {
-      var root = svgweb.handlers[i].document.documentElement._htcNode;
-      
-      // remove anything we added to the HTC's style object
-      root.style.item = null;
-      root.style.setProperty = null;
-      root.style.getPropertyValue = null;
-      
-      // clean up our hidden HTML DOM and our Flash object
-      var flashObj = root._getFlashObj();
-      flashObj.sendToFlash = null;
-      flashObj.parentNode.removeChild(flashObj);
-      var html = root._doc.getElementsByTagName('html')[0];
-      html.parentNode.removeChild(html);
-      root._doc = null;
-        
-      // delete object references
-      root._fakeNode._htcNode = null;
-      root._fakeNode = null;
-      root._realParentNode = null;
-      root._realPreviousSibling = null;
-      root._realNextSibling = null;
-      root._handler = null;
-      
-      root = null;
     }
 
     // for all the handlers, remove their reference to the Flash object
