@@ -1080,17 +1080,16 @@
         }
     }
 
-    function showSVG(force) {
-        // see if an SVG file is specified in the URL
+    function showSVG(forceIndex) {
         var svgIndex;
-        if (window.location.search.indexOf('svgIndex') != -1) {
-          svgIndex = window.location.search.match(/svgIndex=([0-9]+)/)[1];
+        if (forceIndex !== undefined) {
+          svgIndex = forceIndex;
         } else {
           svgIndex = document.getElementById('selectSVG').selectedIndex;
         }
         
         // now render new SVG file
-        if (currentSVGIndex != svgIndex || force) {
+        if (currentSVGIndex != svgIndex) {
             var newSVG = SVGFiles[svgIndex];
             currentSVGObject = document.createElement('object', true);
             currentSVGObject.setAttribute('type', 'image/svg+xml');
@@ -1135,10 +1134,14 @@
     function changeRenderer(newRenderer) {
       if (newRenderer != svgweb.getHandlerType()) {
         var url = window.location.toString();
+        // strip off any existing query string
         url = url.replace(/\?.*$/, '');
-        url = '?svgIndex='+svgIndex;
+        // build up our new query string
+        url = '?svgIndex='+currentSVGIndex;
         if (newRenderer == 'flash') {
           url += '&svg.render.forceflash=true';
+        } else {
+          url += '&svg.render.forceflash=false';
         }
         
         window.location = url;
@@ -1170,9 +1173,15 @@
         document.getElementById('selectRenderer').disabled='true';
     }
     
-    svgweb.addOnLoad(function() {
-      showSVG(true);
-    });
+    window.onload = function() {
+      // see if an SVG file is specified in the URL
+      var svgIndex;
+      if (window.location.search.indexOf('svgIndex') != -1) {
+        svgIndex = window.location.search.match(/svgIndex=([0-9]+)/)[1];
+      }
+        
+      showSVG(svgIndex);
+    }
     </script>
 </body>
 </html>
