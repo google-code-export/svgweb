@@ -5117,6 +5117,10 @@ function testBugFixes() {
   // TODO: Have entities in my SVG source (i.e. &amp;). Also have entities
   // in <text> node values, and fetch them from Flash to ensure that they
   // don't get munged
+  
+  // TODO: Have nested SVG elements in an document, and get them by ID
+  // and by tag name and make sure they show up correctly in DOM (gaussian2.svg
+  // for example)
 }
 
 function testUnload() {
