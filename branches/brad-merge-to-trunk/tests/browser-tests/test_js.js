@@ -165,6 +165,8 @@ function runTests(embedTypes) {
   
   // TODO: Test setAttributeNS, hasChildNodes, removeAttribute
   
+  // TODO: Create tests for svgweb.removeChild for removing SVG OBJECTs
+  
   // TODO: Test dynamically creating an SVG root
   
   // TODO: Test having a dynamically created SVG root that is nested
