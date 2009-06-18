@@ -1481,6 +1481,10 @@ function parseXML(xml, preserveWhiteSpace) {
     
     try {
       xmlDoc.preserveWhiteSpace = preserveWhiteSpace;
+      // IE will attempt to resolve external DTDs (i.e. the SVG DTD) unless 
+      // we add the following two flags
+      xmlDoc.resolveExternals = false;
+      xmlDoc.validateOnParse = false;
       xmlDoc.async = 'false';
       var successful = xmlDoc.loadXML(xml);
       
@@ -2192,14 +2196,6 @@ extend(SVGWeb, {
       // and other browsers
       svg = svg.replace(/\>\s+\</gm, '><');
     }
-    
-    // Surprisingly, MSXML will fetch and parse external DTDs, resulting 
-    // in errors most of the time! tiger.svg was throwing this issue. 
-    // Just strip out the SVG DTD for now.
-    // FIXME: Will this cause issues for custom DTD overrides, which we don't
-    // support anyway for now? (Note though that the Flash side supports
-    // custom entity expansion which this will break)
-    svg = svg.replace(/<!DOCTYPE[^>]*>/m, '');
     
     // transform text nodes into 'fake' elements so that we can track them
     // with a GUID

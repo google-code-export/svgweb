@@ -255,6 +255,12 @@ function runTests(embedTypes) {
   // inheritance using 'inherit' keyword. Make sure things show up
   // visually correctly
   
+  // TODO: Have a test where we 'open' the DTD inside of an SVG file, like
+  // in preserveAspectRatio.svg, and have custom entities that are actually
+  // SVG markup. Then, make sure these actually show up in the DOM across
+  // browsers and can be fetched with getElementById, childNodes,
+  // getElementsByTagNameNS, etc.
+  
   testUnload();
   
   // our SVG OBJECTs located in the page source itself should have loaded by now
