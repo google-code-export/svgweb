@@ -475,7 +475,11 @@ package org.svgweb.core
             if (this.getStyleOrAttr('visibility') == null 
                 || recursive == false) {
                 if (visible == 'visible') {
-                    drawSprite.alpha = 1;
+                    if (getStyleOrAttr('opacity') !== null) {
+                        drawSprite.alpha = SVGColors.cleanNumber(this.getStyleOrAttr('opacity'));
+                    } else {
+                        drawSprite.alpha = 1;
+                    }
                 } else {
                     drawSprite.alpha = 0;
                 }
@@ -1257,7 +1261,7 @@ package org.svgweb.core
         public function getStyleOrAttr(name:String, defaultValue:* = null,
                                        inherit:Boolean = true,
                                        applyAnimations:Boolean = true):* {
-            return getAttribute(name, defaultValue, true, inherit, applyAnimations);
+            return getAttribute(name, defaultValue, inherit, applyAnimations, true);
         }
         
         // process all animations

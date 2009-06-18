@@ -19,14 +19,12 @@
 */
 
 /*
-
  SVGViewer is a flash sprite which is the parent for a tree of SVGNodes
  which are sprites initialized from XML. The top most SVGNode is an SVGSVGNode.
  
  The xml is parsed and xml children are walked when the object is rendered.
  Child SVGNodes are added and when they are rendered, their xml is walked
  and so on.
-
 */
 
 

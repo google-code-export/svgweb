@@ -6187,7 +6187,6 @@ extend(_SVGObject, {
     //console.log('_SVGObject, onFlashLoaded, msg='+this._handler.debugMsg(msg));
     
     // store a reference to our Flash object
-    
     // for IE we unfortunately have to do a workaround for an issue related 
     // to the ID of our SVG OBJECT and the ID of our Flash object not colliding; 
     // see FlashHandler._insertFlashIE() for details
