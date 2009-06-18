@@ -1155,7 +1155,6 @@
 
     function modVB(modfunc) {
         var viewBox = currentSVGObject.contentDocument.documentElement.getAttribute('viewBox');
-        console.log('viewBox='+viewBox);
         if (typeof(viewBox) != "string" || !viewBox.match(/\s*\S+\s*\S+\s*\S+\s*\S+\s*/)) {
             var width = currentSVGObject.getAttribute('width');
             var height = currentSVGObject.getAttribute('height');
@@ -1166,7 +1165,6 @@
         modfunc(vbvals);
         viewBox = Math.round(vbvals[0]) + ' ' + Math.round(vbvals[1]) + ' ' + 
                   Math.round(vbvals[2]) + ' ' + Math.round(vbvals[3]);
-                  console.log('viewBox='+viewBox);
         currentSVGObject.contentDocument.rootElement.setAttribute('viewBox', viewBox);
         document.getElementById('inputViewBox').value = viewBox;
     }

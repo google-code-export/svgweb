@@ -866,8 +866,6 @@ package org.svgweb.core
                  **/
                 var canvasWidth:Number = this.getWidth();
                 var canvasHeight:Number = this.getHeight();
-                this.dbg('canvasWidth='+canvasWidth);
-                this.dbg('canvasHeight='+canvasHeight)
 
                 /**
                  * Viewbox
