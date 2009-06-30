@@ -25,8 +25,8 @@ for filename in glob.glob("../htmlObjectHarness/*.html"):
     svgfilename = re.sub("../htmlObjectHarness/basic-", "", svgfilename)
     svgfilename = '../svggen/' + svgfilename
 
-    content = re.sub('<script src="\.\./\.\./html/svgviewer\.js"', '<script src="../../html/svg.js" data-path="../../src/"', content)
-    content = re.sub("<object.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n", '<!--[if IE]>\n<object src="' + svgfilename + '" classid="image/svg+xml"\n\twidth="480" height="360">\n<![endif]-->\n<!--[if !IE]>-->\n<object data="' + svgfilename + '" type="image/svg+xml"\n\twidth="480" height="360">\n<!--<![endif]-->\n</object>\n', content)
+    #content = re.sub('src="\.\.\/\.\.\/html\/svg\.js"', 'src="../../src/svg.js"', content)
+    #content = re.sub("<object.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n", '<!--[if IE]>\n<object src="' + svgfilename + '" classid="image/svg+xml"\n\twidth="480" height="360">\n<![endif]-->\n<!--[if !IE]>-->\n<object data="' + svgfilename + '" type="image/svg+xml"\n\twidth="480" height="360">\n<!--<![endif]-->\n</object>\n', content)
 
     outfile.write(content)
     outfile.close()
