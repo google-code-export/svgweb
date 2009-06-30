@@ -43,11 +43,11 @@ Third-Party Licenses, Versions, and Build Information:
 
 * samples/svg-files/photos.svg - Vladimir Vukićević (http://blog.vlad1.com/) - Permission given by email to freely use code under any license needed.
 
+* samples/svg-files/Droid*.svg - Droid fonts from the Android project - http://android.git.kernel.org/?p=platform/frameworks/base.git;a=tree;f=data/fonts - made available under Apache 2 license.
+
 TODO: There are alot of third party SVG files in samples/svg-files. Document where these came from, who the copyright holder is, and ensure we have a CLA on file for them.
 
 TODO: Figure out copyright information on the *.flv and *.mp3 files that we use in our samples in samples/svg-files
-
-TODO: There are the Droid*.svg files with SVG Fonts; were these converted from TTF fonts? What is the license on this font?
 
 TODO: Review the Flash code and identify any code that was either taken from other Flash libraries, blog posts, or tutorials. Document this and ensure we have appropriate CLAs from third-party code contributors.
 
