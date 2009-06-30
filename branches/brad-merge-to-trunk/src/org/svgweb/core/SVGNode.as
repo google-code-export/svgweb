@@ -652,12 +652,15 @@ package org.svgweb.core
                         this.nodeBeginFill();
                         break;
                     case "EF":
+                        drawSprite.graphics.lineStyle(0, 0, 0);
                         this.nodeEndFill();
                         break;
                     case "M":
+                        drawSprite.graphics.lineStyle(0, 0, 0);
                         drawSprite.graphics.moveTo(command[1], command[2]);
                         firstX = command[1];
                         firstY = command[2];
+                        this.nodeBeginStroke();
                         break;
                     case "L":
                         drawSprite.graphics.lineTo(command[1], command[2]);
@@ -738,7 +741,10 @@ package org.svgweb.core
                     drawSprite.graphics.beginFill(color_core, fill_alpha);
                 }
             }
+            nodeBeginStroke();
+        }
 
+        protected function nodeBeginStroke():void {
             //Stroke
             var line_color:Number;
             var line_alpha:Number;
