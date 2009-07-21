@@ -9,3 +9,9 @@ Please feel free to edit this page and add your project if you are using SVG Web
 = Details =
 
    * *Browser Based !AutoCad DXF Viewer*: An open source web-based application that can view !AutoCad DXF files. Also uses the open source [http://kabeja.sourceforge.net/ Kabeja project], a Java application that runs on the server, to convert the DXF to SVG. [http://www.desenhe.com/node/15 Blog post in Brazilian Portuguese].
+
+= In Development =
+
+Feel free to add a link if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
+
+   * Your project here!
