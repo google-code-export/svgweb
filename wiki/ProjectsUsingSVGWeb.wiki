@@ -12,6 +12,6 @@ Please feel free to edit this page and add your project if you are using SVG Web
 
 = In Development =
 
-Feel free to add a link if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
+Feel free to add a link below if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
 
    * Your project here!
