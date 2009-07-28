@@ -23,8 +23,8 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 ==In Development==
 
 ==svgweb-2009-07-28.zip (r650)==
-   * Issue 141: "Get our docs in order" (Quick Start guide and starting examples)
    * Issue 168: "text-anchor jumps back and forth on dynamically changed text"
+   * Issue 141: "Get our docs in order" ([http://codinginparadise.org/projects/svgweb/docs/QuickStart.html Quick Start guide] and starting examples)
    * Issue 187: "firstChild, lastChild, nextSibling, and previousSibling not passing through changes to Flash for IE"
    * Issue 183: "getElementsByTagNameNS on IE has issues with certain versions of MSXML"
    * Issue 114: "Duplicate variable definition warnings, Missing type declarations"
