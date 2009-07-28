@@ -1,0 +1,42 @@
+#summary Provides release notes for new versions of SVG Web
+#labels Featured
+
+= Introduction =
+
+This page provides release notes for release of SVG Web
+
+== Instructions for Updating This Page ==
+
+At the top of this list is the entry 'In Development'. This will track the head of the repository with each issue that is fixed. As you fix issues just update this bullet list, where each bullet list should be in the form:
+
+Issue X: "Title of Issue"
+
+When we are ready to do a release, we can simply change the 'In Development' title to the release name, which will just be the date (svgweb-YEAR-MONTH-DAY.zip), followed by the final Subversion release number that the release was built from. For example, if we create a release on July 28th, 2009 from Subversion release r650, we would show:
+
+svgweb-2009-07-28.zip (r650)
+   * Issue 10: "Some Issue Title"
+
+Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download ZIP] for that particular release.
+
+= Releases =
+
+==In Development==
+
+==svgweb-2009-07-28.zip (r650)==
+   * Issue 141: "Get our docs in order" (in progress)
+   * Issue 168: "text-anchor jumps back and forth on dynamically changed text"
+   * Issue 187: "firstChild, lastChild, nextSibling, and previousSibling not passing through changes to Flash for IE"
+   * Issue 183: "getElementsByTagNameNS on IE has issues with certain versions of MSXML"
+   * Issue 114: "Duplicate variable definition warnings, Missing type declarations"
+   * Issue 179: "Errors when running demo"
+   * Issue 178: "Element.style.* access doesn't work for Firefox Native under some conditions"
+   * Issue 182: "Regression where unit test for getElementsByTagNameNS for SVG OBJECTs with Flash handler fails"
+   * Issue 180: "SVG Spec defaults for overflow and display CSS properties incorrectly applied to OBJECT tags"
+   * Issue 128: "Sprites created by SVGNode to solve certain issues not created in scripting scenario"
+   * Issue 174: "Create a config.html file that helps with MIME settings"
+   * Issue 173: "Make COMPRESS=0 the default in Makefile"
+   * Issue 164: "Firefox gets scroll bars on SVG OBJECTs sometimes"
+   * Issue 159: "Bundle a small web server (Jetty) to make getting started quicker"
+   * Issue 157: "Create utility files (PHP, ASP, JSP) for those in situations where they can't set MIME type"
+   * Issue 113: "null check for _xml in _getAttribute"
+
