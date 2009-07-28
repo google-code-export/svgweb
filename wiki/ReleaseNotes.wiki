@@ -9,7 +9,7 @@ This page provides release notes for release of SVG Web
 
 At the top of this list is the entry 'In Development'. This will track the head of the repository with each issue that is fixed. As you fix issues just update this bullet list, where each bullet list should be in the form:
 
-Issue X: "Title of Issue"
+   * Issue X: "Title of Issue"
 
 When we are ready to do a release, we can simply change the 'In Development' title to the release name, which will just be the date (svgweb-YEAR-MONTH-DAY.zip), followed by the final Subversion release number that the release was built from. For example, if we create a release on July 28th, 2009 from Subversion release r650, we would show:
 
@@ -39,4 +39,3 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 159: "Bundle a small web server (Jetty) to make getting started quicker"
    * Issue 157: "Create utility files (PHP, ASP, JSP) for those in situations where they can't set MIME type"
    * Issue 113: "null check for _xml in _getAttribute"
-
