@@ -21,7 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
-   * Issue 194: Missing height and width of <svg> element causes failure to render (flash/flex only)
+   * Issue 194: Missing height and width of {{{<svg>}}} element causes failure to render (flash/flex only)
    * Issue 197: pointer-events="none" is not respected when rendered with Flash
    * Issue 188: Support Mouse Click Event (using addEventListener)
    * Issue 195: addEventListener example: evt.target.id "undefined" in ie7 & ie8
