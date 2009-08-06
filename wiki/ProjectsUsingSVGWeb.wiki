@@ -14,4 +14,6 @@ Please feel free to edit this page and add your project if you are using SVG Web
 
 Feel free to add a link below if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
 
-   * Your project here!
+   * *[http://staratlas.com/?svg.render.forceflash=true Star Atlas]*: Determines your geographic position and then dynamically draws a star chart based on the stars in the sky.
+   * *[http://vis.uell.net/gsvg/poppyr.html?svg.render.forceflash=true Population Pyramid]: Displays population statistics using SVG; can dynamically change the language of the SVG image, as well as animate based on population growth.
+   * Wikipedia is working on an [http://techblog.wikimedia.org/2009/07/svg-for-all-with-flash/ SVG zoom tool] in conjunction with SVG Web.
