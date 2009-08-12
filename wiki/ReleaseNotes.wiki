@@ -37,7 +37,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 183: "getElementsByTagNameNS on IE has issues with certain versions of MSXML"
    * Issue 114: "Duplicate variable definition warnings, Missing type declarations"
    * Issue 179: "Errors when running demo"
-   * Issue 178: "Element.style.* access doesn't work for Firefox Native under some conditions"
+   * Issue 178: "Element.style.{{{*}}} access doesn't work for Firefox Native under some conditions"
    * Issue 182: "Regression where unit test for getElementsByTagNameNS for SVG OBJECTs with Flash handler fails"
    * Issue 180: "SVG Spec defaults for overflow and display CSS properties incorrectly applied to OBJECT tags"
    * Issue 128: "Sprites created by SVGNode to solve certain issues not created in scripting scenario"
