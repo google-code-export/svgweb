@@ -21,7 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
-   * Issue 223: Remove _DOMException and _SVGException classes from JS
+   * Issue 223: Remove {{{_}}}DOMException and {{{_}}}SVGException classes from JS
 
 ==svgweb-2009-08-11.zip (r696)==
    * Issue 110: Implement suspendRedraw/unsuspendRedraw
