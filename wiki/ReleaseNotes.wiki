@@ -21,6 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+   * Issue 215: Implement {{{DocumentFragment}}} API
    * Issue 223: Remove {{{_}}}DOMException and {{{_}}}SVGException classes from JS
    * Issue 206: support booleans altKey, shiftKey, and ctrlKey on mouse event
    * Issue 220: Error in parsing Path data Z,z commands do not update current postion
