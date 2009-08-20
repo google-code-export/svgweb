@@ -21,6 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+   * Issue 219: body.onload not fired for SVG OBJECT
    * Issue 228: onload attribute on an SVG root tag with direct embedded SVG does not fire
    * Issue 215: Implement !DocumentFragment API
    * Issue 223: Remove {{{_}}}DOMException and {{{_}}}SVGException classes from JS
