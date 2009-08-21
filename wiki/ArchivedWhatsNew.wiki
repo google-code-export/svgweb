@@ -1,0 +1,5 @@
+#summary Older What's New entries from the main page.
+
+= Introduction =
+
+When the number of entries in the What's New section on the main home page gets too long, copy the older ones here and delete them from the main home page.
