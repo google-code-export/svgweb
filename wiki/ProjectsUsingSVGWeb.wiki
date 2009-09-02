@@ -6,14 +6,9 @@
 Please feel free to edit this page and add your project if you are using SVG Web!
 
 
-= Details =
+= Projects Using SVG Web Either Deployed or In Development =
 
    * *Browser Based !AutoCad DXF Viewer*: An open source web-based application that can view !AutoCad DXF files. Also uses the open source [http://kabeja.sourceforge.net/ Kabeja project], a Java application that runs on the server, to convert the DXF to SVG. [http://www.desenhe.com/node/15 Blog post in Brazilian Portuguese].
-
-= In Development =
-
-Feel free to add a link below if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
-
    * *[http://staratlas.com/ Star Atlas]*: Determines your geographic position and then dynamically draws a star chart based on the stars in the sky.
    * *[http://vis.uell.net/gsvg/poppyr.html Population Pyramid]*: Displays population statistics using SVG; can dynamically change the language of the SVG image, as well as animate based on population growth.
    * Wikipedia is working on an [http://techblog.wikimedia.org/2009/07/svg-for-all-with-flash/ SVG zoom tool] in conjunction with SVG Web.
