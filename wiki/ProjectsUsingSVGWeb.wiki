@@ -14,6 +14,10 @@ Please feel free to edit this page and add your project if you are using SVG Web
 
 Feel free to add a link below if you are currently evaluating SVG Web or starting to use it in your project, but might not be finished yet:
 
-   * *[http://staratlas.com/?svg.render.forceflash=true Star Atlas]*: Determines your geographic position and then dynamically draws a star chart based on the stars in the sky.
+   * *[http://staratlas.com/ Star Atlas]*: Determines your geographic position and then dynamically draws a star chart based on the stars in the sky.
    * *[http://vis.uell.net/gsvg/poppyr.html Population Pyramid]*: Displays population statistics using SVG; can dynamically change the language of the SVG image, as well as animate based on population growth.
    * Wikipedia is working on an [http://techblog.wikimedia.org/2009/07/svg-for-all-with-flash/ SVG zoom tool] in conjunction with SVG Web.
+   * [http://vis.uell.net/gsvg/poppyr.html Animated Population Pyramid]: This is an adaptation of the animated population pyramids, that are available at national statistical offices from the !UK and Germany. This graph shows the age distribution for men and women for each year from 1950 to 2050, which is a graphical representation of 20k datapoints. Animating through this time series illustrates how population projections can build a lot on the demographic data already available. Thanks to the SVG Web project this data-driven graph can now be made available to many more people. You can play with this diagram in the following languages: en/de/fr/es/ru.
+   * See Flex SVG Explorer with sample SVG graphics from this project and clipart.org: http://www.randomfractals.com/lab/FlexSVGExplorer/FlexSVGExplorer.html Flex SVG Explorer uses SVG Web library to load SVG graphics in Flash and preview SVG markup. This app is open source and could be a good starting point for the demo or testing of SVG Web !ActionScript api.
+   * MoinMoin: Wiki Engine in Python. It is currently being built in moin/2.0-storage repo.
+   * [http://github.com/imanel/svg_web/tree/master Plugin for Ruby on Rails] based on SVG Web.
