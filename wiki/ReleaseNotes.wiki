@@ -24,6 +24,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 88: View source from the flash context menu.
    * Issue 242: Tspans do not offset from their parent. 
    * Issue 225: Implement getScreenCTM, matrix inversion, createSVGPoint, SVGPoint.matrixTransform. 
+   * Issue 245: Not working in Firefox 1.0 [WONTFIX]
 
 ==svgweb-2009-08-20.zip (r746)==
    * Issue 218: The way SVG Web bootstraps directly embedded SVG in HTML into the page is very slow on FF/Native  
