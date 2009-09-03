@@ -27,7 +27,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 245: Not working in Firefox 1.0 [WONTFIX]
    * Issue 124: Install and QA on Firefox 3.5
    * Issue 131: Copy uncompressed source files over during build process to aid debugging
-   * Issue 177: Fix the javascript-samples/{{{*}}}_dynamic.html samples
+   * Issue 177: Fix the javascript-samples/{{{*_}}}dynamic.html samples
    * Issue 258: Separate SWF from HTC
    * Issue 229: Speedup page load time of MichaelN's static map page on IE
    * Issue 216: Have svg.swf load up earlier in the page load process
