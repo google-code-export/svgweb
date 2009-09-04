@@ -33,6 +33,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 216: Have svg.swf load up earlier in the page load process
    * Issue 190: Speed up age population sample
    * Issue 257: SVG files with no XML declaration should work
+   * Issue 104: Purple Circle in Third SVG Image in Tests Not Transparent
 
 ==svgweb-2009-08-20.zip (r746)==
    * Issue 218: The way SVG Web bootstraps directly embedded SVG in HTML into the page is very slow on FF/Native  
