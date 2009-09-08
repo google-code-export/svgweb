@@ -21,6 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+   * Issue 134: Fix demo.html glitches
    * Issue 88: View source from the flash context menu.
    * Issue 242: Tspans do not offset from their parent. 
    * Issue 225: Implement getScreenCTM, matrix inversion, createSVGPoint, SVGPoint.matrixTransform. 
