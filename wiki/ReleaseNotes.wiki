@@ -1,4 +1,5 @@
 ﻿#summary Provides release notes for new versions of SVG Web
+#labels Featured
 
 = Introduction =
 
