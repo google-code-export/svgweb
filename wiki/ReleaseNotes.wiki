@@ -21,6 +21,9 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+   * Issue 268: Unload errors on IE 6
+   * Issue 262: Remove onWindowResize handlers when page unloaded and when object removed from page
+   * Issue 261: HTC Nodes not removed when SVG Objects removed from the page
    * Issue 134: Fix demo.html glitches
    * Issue 88: View source from the flash context menu.
    * Issue 242: Tspans do not offset from their parent. 
