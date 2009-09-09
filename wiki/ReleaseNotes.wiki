@@ -21,6 +21,10 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+
+==svgweb-2009-09-09-Owlbear.zip (r798)==
+Release Name: [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] - "Terrifying: the body of a bear... the head of an owl"
+
    * Issue 268: Unload errors on IE 6
    * Issue 262: Remove onWindowResize handlers when page unloaded and when object removed from page
    * Issue 261: HTC Nodes not removed when SVG Objects removed from the page
