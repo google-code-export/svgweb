@@ -22,7 +22,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 
 ==In Development==
 
-   * Issue 272: Fetching contentDocument on SVG OBJECT does not work in IE 8/Standards Mode [INVALID]
+   * Issue 272: Fetching contentDocument on SVG OBJECT does not work in IE 8/Standards Mode {{{[INVALID]}}}
    * Issue 249: flash renderer svgobj.contentDocument breaks if svg contains DOCTYPE declaration
 
 ==svgweb-2009-09-09-Owlbear.zip (r798)==
