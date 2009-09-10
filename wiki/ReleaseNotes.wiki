@@ -24,6 +24,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 
    * Issue 272: Fetching contentDocument on SVG OBJECT does not work in IE 8/Standards Mode {{{[INVALID]}}}
    * Issue 249: flash renderer svgobj.contentDocument breaks if svg contains DOCTYPE declaration
+   * Issue 148: QA in IE 8 with standards mode on
 
 ==svgweb-2009-09-09-Owlbear.zip (r798)==
 Release Name: [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] - "Terrifying: the body of a bear... the head of an owl"
