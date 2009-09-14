@@ -21,7 +21,8 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
-
+   * Issue 285: For Wikipedia: Be able to host bulk of SVG Web on a different domain
+   * Issue 271: When using uncompressed-svg.js the data-path attribute on the script element is ignored
    * Issue 140: SVG OBJECT.contentDocument does not work when DOCTYPE specified inside of HTML file itself
    * Issue 272: Fetching contentDocument on SVG OBJECT does not work in IE 8/Standards Mode {{{[INVALID]}}}
    * Issue 249: flash renderer svgobj.contentDocument breaks if svg contains DOCTYPE declaration
