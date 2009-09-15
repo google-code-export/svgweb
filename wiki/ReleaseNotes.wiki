@@ -21,6 +21,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 = Releases =
 
 ==In Development==
+   * Issue 292: For Wikipedia: Fix SVG OBJECT creation bugs discovered
    * Issue 285: For Wikipedia: Be able to host bulk of SVG Web on a different domain
    * Issue 271: When using uncompressed-svg.js the data-path attribute on the script element is ignored
    * Issue 140: SVG OBJECT.contentDocument does not work when DOCTYPE specified inside of HTML file itself
