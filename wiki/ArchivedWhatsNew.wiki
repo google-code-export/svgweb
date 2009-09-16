@@ -4,5 +4,10 @@
 
 When the number of entries in the What's New section on the main home page gets too long, copy the older ones here and delete them from the main home page.
 
+===*August 11th, 2009: New Release!*===
+[http://svgweb.googlecode.com/files/svgweb-2009-08-11-C.zip svgweb-2009-08-11-C.zip] - The focus of this release is performance and bug fixes. [http://codinginparadise.org/projects/svgweb/docs/QuickStart.html#tip_suspendRedraw suspendRedraw is now implemented], Flash/JS communication is faster, and there are some great bug fixes on the Flash side mostly related to event handling. See the [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-08-11.zip_(_) full Release Notes] for details.
+
+---
+
 ===*July 28th, 2009: New Release!*===
 [http://svgweb.googlecode.com/files/svgweb-2009-07-28.zip svgweb-2009-07-28.zip] - Big changes include a new [http://codinginparadise.org/projects/svgweb/docs/QuickStart.html Quick Start guide] to get going fast; [http://code.google.com/p/svgweb/issues/detail?id=159 a small embedded web server] (Jetty) to make development easier; [http://code.google.com/p/svgweb/issues/detail?id=157 simple utilities] for setting the MIME types necessary for SVG Web if you don't have admin access; a [http://code.google.com/p/svgweb/issues/detail?id=174 config.html utility] to make QAing installation issues easier; and lots of bug fixes (16 issues closed)! See the [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-07-28.zip_(_) full Release Notes] for this release for details. [http://svgweb.googlecode.com/files/svgweb-2009-07-28.zip Download] it now. Please keep in mind SVG Web is still in alpha, so expect to help us by [http://code.google.com/p/svgweb/issues/list filing bugs] :)
