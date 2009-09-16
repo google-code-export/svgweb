@@ -29,6 +29,20 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 249: flash renderer svgobj.contentDocument breaks if svg contains DOCTYPE declaration
    * Issue 148: QA in IE 8 with standards mode on
    * Issue 186: test_js2.html has issues on some IE 8 instances with compatibility mode on
+   * Issue 135: Help functionality on blocks_game.html issue
+   * Issue 236: wrong URL encoding for UTF-8 Chinese characters
+   * Issue 250: svgweb init fails in internet explorer 8 when using object embedding
+   * Issue 260: The full-color-prof-01-f.html in the test suite 1.1 is broken
+   * Issue 262: Remove onWindowResize handlers when page unloaded and when object removed from page
+   * Issue 263: Click on root svg element does not work in IE8
+   * Issue 276: Fix resize issues with Shelley's Burning Bird site
+   * Issue 277: Disappearing text
+   * Issue 279: Define evt variable in onload="" handler script code
+   * Issue 283: getScreenCTM needs to include object position and ignore browser zoom
+   * Issue 286: 100% w/h SVG Root in 100% w/h Object in a DIV given in px – Flash size wrong
+   * Issue 290: Referencing an "svg" object with "use" causes flash error
+   * Issue 294: Support getCTM, currentScale, currentTranslate for drag and drop
+   * Issue 53: Support on* style event handlers directly in markup {{{[for OBJECT tag only]}}}
 
 ==svgweb-2009-09-09-Owlbear.zip (r798)==
 Release Name: [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] - "Terrifying: the body of a bear... the head of an owl"
