@@ -22,9 +22,10 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
 
 ==In Development==
 
-==svgweb-2009-09-16-Umberhulk.zip (r855)==
+==svgweb-2009-09-16-Umberhulk.zip (r857)==
 Release Name: [http://codinginparadise.org/monsters/umberhulk.jpg Umber Hulk] - "A human-shaped creature with gaping maws flanked by pairs of exceedingly sharp mandibles. Despite their bestial appearance, umber hulks possess a significant intelligence and language of their own."
 
+   * Issue 299: Tip of subversion (r855) throws error for demo.html on IE 7
    * Issue 292: For Wikipedia: Fix SVG OBJECT creation bugs discovered
    * Issue 285: For Wikipedia: Be able to host bulk of SVG Web on a different domain
    * Issue 271: When using uncompressed-svg.js the data-path attribute on the script element is ignored
