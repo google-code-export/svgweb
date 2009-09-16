@@ -42,7 +42,7 @@ Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download 
    * Issue 286: 100% w/h SVG Root in 100% w/h Object in a DIV given in px – Flash size wrong
    * Issue 290: Referencing an "svg" object with "use" causes flash error
    * Issue 294: Support getCTM, currentScale, currentTranslate for drag and drop
-   * Issue 53: Support on* style event handlers directly in markup {{{[for OBJECT tag only]}}}
+   * Issue 53: Support on{{{*}}} style event handlers directly in markup {{{[for OBJECT tag only]}}}
 
 ==svgweb-2009-09-09-Owlbear.zip (r798)==
 Release Name: [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] - "Terrifying: the body of a bear... the head of an owl"
