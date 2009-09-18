@@ -16,3 +16,4 @@ Please feel free to edit this page and add your project if you are using SVG Web
    * See Flex SVG Explorer with sample SVG graphics from this project and clipart.org: http://www.randomfractals.com/lab/FlexSVGExplorer/FlexSVGExplorer.html Flex SVG Explorer uses SVG Web library to load SVG graphics in Flash and preview SVG markup. This app is open source and could be a good starting point for the demo or testing of SVG Web !ActionScript api.
    * !MoinMoin: Wiki Engine in Python. It is currently being built in moin/2.0-storage repo.
    * [http://github.com/imanel/svg_web/tree/master Plugin for Ruby on Rails] based on SVG Web.
+   * [http://automatist.org/poc/svg/spin.html SVG Spinning] - Spins all the paths in an SVG file as a cool effect.
