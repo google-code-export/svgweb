@@ -25,7 +25,7 @@ The 'Breaking Changes' section should contain a bullet sections of any breaking 
    * Issue 308: Implement currentTranslate and currentScale and have it be a fast path
 
 Breaking changes:
-   * None so far
+   * None
 
 ==svgweb-2009-09-16-Umberhulk-B.zip (r857)==
 Release Name: [http://codinginparadise.org/monsters/umberhulk.jpg Umber Hulk] - "A human-shaped creature with gaping maws flanked by pairs of exceedingly sharp mandibles. Despite their bestial appearance, umber hulks possess a significant intelligence and language of their own."
