@@ -23,6 +23,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 ==In Development==
    * Issue 307: Window resize handler can sometimes throw exceptions on IE if Flash not ready
    * Issue 308: Implement currentTranslate and currentScale and have it be a fast path
+   * Issue 312: For Shelley Powers: Odd error when using within XHTML document: works with Firefox, does not work with any other browser
 
 Breaking changes:
    * None
