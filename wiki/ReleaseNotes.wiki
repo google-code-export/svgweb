@@ -16,13 +16,16 @@ When we are ready to do a release, we can simply change the 'In Development' tit
 svgweb-2009-07-28.zip (r650)
    * Issue 10: "Some Issue Title"
 
-Be sure to link to the [http://code.google.com/p/svgweb/downloads/list download ZIP] for that particular release.
+The 'Breaking Changes' section should contain a bullet sections of any breaking changes this release might introduce to those upgrading their installations.
 
 = Releases =
 
 ==In Development==
    * Issue 307: Window resize handler can sometimes throw exceptions on IE if Flash not ready
    * Issue 308: Implement currentTranslate and currentScale and have it be a fast path
+
+Breaking changes:
+   * None so far
 
 ==svgweb-2009-09-16-Umberhulk-B.zip (r857)==
 Release Name: [http://codinginparadise.org/monsters/umberhulk.jpg Umber Hulk] - "A human-shaped creature with gaping maws flanked by pairs of exceedingly sharp mandibles. Despite their bestial appearance, umber hulks possess a significant intelligence and language of their own."
