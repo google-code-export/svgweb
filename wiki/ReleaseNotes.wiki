@@ -16,7 +16,7 @@ When we are ready to do a release, we can simply change the 'In Development' tit
 svgweb-2009-07-28.zip (r650)
    * Issue 10: "Some Issue Title"
 
-The 'Breaking Changes' section should contain a bullet sections of any breaking changes this release might introduce to those upgrading their installations.
+The 'Breaking Changes' section should contain a bullet list of any breaking changes this release might introduce to those upgrading their installations.
 
 = Releases =
 
