@@ -13,6 +13,7 @@ Apache 1.0 and 2.0
 {{{
 AddType text/x-component htc
 AddType application/x-shockwave-flash swf
+AddType image/svg+xml svg
 }}}
 
    * You can modify the full Apache configuration, generally at /etc/httpd/mime.types or /etc/mime.types. Add the following two lines and then restart your web server:
@@ -20,4 +21,5 @@ AddType application/x-shockwave-flash swf
 {{{
 text/x-component htc
 application/x-shockwave-flash swf
+image/svg+xml svg
 }}}
