@@ -27,6 +27,21 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 307: Window resize handler can sometimes throw exceptions on IE if Flash not ready
    * Issue 308: Implement currentTranslate and currentScale and have it be a fast path
    * Issue 312: For Shelley Powers: Odd error when using within XHTML document: works with Firefox, does not work with any other browser
+   * Issue 176: Document Makefile dependencies
+   * Issue 233: [regression] inconsistent size, spacing, flow of rendering
+   * Issue 304: tspan-tag ignore s coordinates of upper text-tag
+   * Issue 305: Changing shapes and paths from 'hidden' to 'visible' does not work.
+   * Issue 306: Regression in test_js1.html: Text that should be hidden is not
+   * Issue 311: Summation of transform causes shaking and invalid transformations.
+   * Issue 254: Lamb Animation Sample Doesn't Look Correct
+   * Issue 315: Reduce the number of Sprites created per Node to increase performance
+   * Issue 321: Support for animating path "d" attribute (except interpolation)
+   * Issue 325: Support data: URL scheme for object tag
+   * Issue 329: in flash renderer, images get cropped if they are moved programmatically
+   * Issue 330: in flash renderer, fill with image pattern does not work (programmatically)
+   * Issue 293: Position of image differs in native vs flash
+   * Issue 207: Doing transform on image dynamically throws exception
+
 
 Breaking changes:
    * None
