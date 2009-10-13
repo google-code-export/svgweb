@@ -4,6 +4,13 @@
 
 When the number of entries in the What's New section on the main home page gets too long, copy the older ones here and delete them from the main home page.
 
+===*August 20th, 2009: New Release!*===
+[http://svgweb.googlecode.com/files/svgweb-2009-08-20-B.zip svgweb-2009-08-20.zip] - Another release with performance improvements and important bug fixes. The [http://codinginparadise.org/projects/svgweb/docs/QuickStart.html#document_fragment DocumentFragment] API is now implemented; page load time is faster; important bug fixes for path and entity handling are present; and several page onload bugs have been knocked out. See the [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-08-20.zip_(_) full Release Notes] for this release for details.
+
+See [ArchivedWhatsNew older news].
+
+----
+
 ===*August 11th, 2009: New Release!*===
 [http://svgweb.googlecode.com/files/svgweb-2009-08-11-C.zip svgweb-2009-08-11-C.zip] - The focus of this release is performance and bug fixes. [http://codinginparadise.org/projects/svgweb/docs/QuickStart.html#tip_suspendRedraw suspendRedraw is now implemented], Flash/JS communication is faster, and there are some great bug fixes on the Flash side mostly related to event handling. See the [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-08-11.zip_(_) full Release Notes] for details.
 
