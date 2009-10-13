@@ -41,7 +41,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 330: in flash renderer, fill with image pattern does not work (programmatically)
    * Issue 293: Position of image differs in native vs flash
    * Issue 207: Doing transform on image dynamically throws exception
-   * Issue 343: Support on* events in SVG "use" element.
+   * Issue 343: Support on{{{*}}} events in SVG "use" element.
    * Issue 344: Cache image requests for same file
 
 Breaking changes:
