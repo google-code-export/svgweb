@@ -22,7 +22,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 
 ==In Development==
 
-==r924==
+==svgweb-2009-10-12.zip (r924)==
    * Issue 327: Patching currentTranslate in causes error in Wikipedia Pan and Zoom tool
    * Issue 326: Update config.html tool to test for SVG MIME type
    * Issue 316: Background SVG is not being re-drawn on secondary pages for some browsers
