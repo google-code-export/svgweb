@@ -21,6 +21,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+
+==r924==
    * Issue 327: Patching currentTranslate in causes error in Wikipedia Pan and Zoom tool
    * Issue 326: Update config.html tool to test for SVG MIME type
    * Issue 316: Background SVG is not being re-drawn on secondary pages for some browsers
@@ -43,9 +45,6 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 207: Doing transform on image dynamically throws exception
    * Issue 343: Support on{{{*}}} events in SVG "use" element.
    * Issue 344: Cache image requests for same file
-
-Breaking changes:
-   * None
 
 ==svgweb-2009-09-16-Umberhulk-B.zip (r857)==
 Release Name: [http://codinginparadise.org/monsters/umberhulk.jpg Umber Hulk] - "A human-shaped creature with gaping maws flanked by pairs of exceedingly sharp mandibles. Despite their bestial appearance, umber hulks possess a significant intelligence and language of their own."
