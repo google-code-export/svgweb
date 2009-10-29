@@ -19,6 +19,7 @@ svgweb-2009-07-28.zip (r650)
 The 'Breaking Changes' section should contain a bullet list of any breaking changes this release might introduce to those upgrading their installations.
 
 = Releases =
+   * Issue 202: Programmatically Creating the <svg> node
 
 ==In Development==
 
