@@ -20,6 +20,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 
 = Releases =
    * Issue 202: Programmatically Creating the SVG node
+   * Issue 383: QA on Firefox 3.6 Beta
 
 ==In Development==
 
