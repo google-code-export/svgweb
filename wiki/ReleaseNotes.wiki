@@ -19,10 +19,23 @@ svgweb-2009-07-28.zip (r650)
 The 'Breaking Changes' section should contain a bullet list of any breaking changes this release might introduce to those upgrading their installations.
 
 = Releases =
-   * Issue 202: Programmatically Creating the SVG node
-   * Issue 383: QA on Firefox 3.6 Beta
 
 ==In Development==
+   * Issue 202: Programmatically Creating the SVG node
+   * Issue 383: QA on Firefox 3.6 Beta
+   * Issue 335: Specific SVG file crashes browser when used with SVG Web
+   * Issue 364: onload event does not fire when image url is a security error
+   * Issue 362: dynamically applied color should cascade
+   * Issue 349: gradients with bounding box cooordinates are positioned wrongly on circles
+   * Issue 371: Linear gradients incorrectly start at left of screen rather than each circle
+   * Issue 367: Flash blend mode used for groups is a performance problem and can be avoided generally
+   * Issue 331: Animations based on events not implemented; problems with transform animations
+   * Issue 275: Add View Dynamic Source to context menu
+   * Issue 297: Aspect resolution of viewBox not honored on resize of browser
+   * Issue 238: SVGImageNode.as should absorb exceptions due to invalid image URL
+   * Issue 337: https generates insecure warning with IE6 (FIXED for IE7 and IE8)
+   * Issue 344: Cache image requests for same file
+   * Issue 343: Support on{{{*}}} events in SVG "use" element.
 
 ==svgweb-2009-10-12-Beholder.zip (r924)==
    * Issue 327: Patching currentTranslate in causes error in Wikipedia Pan and Zoom tool
