@@ -34,6 +34,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 297: Aspect resolution of viewBox not honored on resize of browser
    * Issue 238: SVGImageNode.as should absorb exceptions due to invalid image URL
    * Issue 337: https generates insecure warning with IE6 (FIXED for IE7 and IE8)
+   * Issue 388: Cannot Add USE elements dynamically
 
 ==svgweb-2009-10-12-Beholder.zip (r924)==
    * Issue 327: Patching currentTranslate in causes error in Wikipedia Pan and Zoom tool
