@@ -21,6 +21,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+   * Issue 413: Implement node.getElementsByTagNameNS scoped by container node
    * Issue 401: currentTranslate.setXY does translate the svg, but doesn't affect currentTranslate.getX or getY
    * Issue 201: Support cloneNode
    * Issue 385: Implement getAttributeNS
