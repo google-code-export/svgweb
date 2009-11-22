@@ -21,6 +21,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+
+==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
    * Issue 413: Implement node.getElementsByTagNameNS scoped by container node
    * Issue 401: currentTranslate.setXY does translate the svg, but doesn't affect currentTranslate.getX or getY
