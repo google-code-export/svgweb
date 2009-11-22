@@ -4,10 +4,28 @@
 
 When the number of entries in the What's New section on the main home page gets too long, copy the older ones here and delete them from the main home page.
 
+===September 9th, 2009: New Release!===
+
+Hi everyone, the SVG Web team has another release packed with lots of goodness. 
+
+Starting now we are giving releases not only a date stamp but also simple names, taken from the classic [http://en.wikipedia.org/wiki/Fiend_Folio Fiend Folio] D&D monster manual. Why? Because the world needs more cheesy release names.
+
+Notable highlights of the svgweb-2009-09-09 release, also known as the [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] release ("Terrifying: the body of a bear... the head of an owl"):
+      * View source - You can now right click on an Flash SVG image and view the SVG source
+      * Huge improvements to the resizing code - the size of SVG objects on the page now change based on the zoom factor, resizing the window, etc.
+      * Performance improvements
+      * The demo.html file is much more robust now  
+      * getScreenCTM, matrix inversions, createSVGPoint, and SVGPoint.matrixTransform are now implemented
+      * The internal !JavaScript architecture has been cleaned up and simplified for Internet Explorer
+
+Learn more:
+      * [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-09-09-Owlbear.zip_(_) Full release note details]
+      * [http://svgweb.googlecode.com/files/svgweb-2009-09-09-Owlbear.zip svgweb-2009-09-09-Owlbear.zip Download]
+
+----
+
 ===*August 20th, 2009: New Release!*===
 [http://svgweb.googlecode.com/files/svgweb-2009-08-20-B.zip svgweb-2009-08-20.zip] - Another release with performance improvements and important bug fixes. The [http://codinginparadise.org/projects/svgweb/docs/QuickStart.html#document_fragment DocumentFragment] API is now implemented; page load time is faster; important bug fixes for path and entity handling are present; and several page onload bugs have been knocked out. See the [http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-08-20.zip_(_) full Release Notes] for this release for details.
-
-See [ArchivedWhatsNew older news].
 
 ----
 
