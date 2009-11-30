@@ -21,6 +21,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+   * Issue 431: unsuspendRedrawAll not wired to several methods
    * Issue 428: setAttribute gives error for undefined or null attribute value (Flash renderer)
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
