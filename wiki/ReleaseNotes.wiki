@@ -21,7 +21,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
-   * Issue 421: Reuse XML ActiveX object on Internet Explorer
+   * Issue 421: Reuse XML ActiveX object on Internet Explorer (Thank You Li Yang!)
    * Issue 431: unsuspendRedrawAll not wired to several methods
    * Issue 428: setAttribute gives error for undefined or null attribute value (Flash renderer)
 
