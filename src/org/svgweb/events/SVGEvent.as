@@ -5,7 +5,7 @@ package org.svgweb.events
     public class SVGEvent extends Event
     {
         // "standard" events
-        public static const SVGLoad:String = "SVGLoad";
+        public static const SVGLoad:String = "svgLoad";
         // internal nonstandard events
         public static const _SVGAnimBegin:String = "begin";
         public static const _SVGAnimEnd:String = "end";
@@ -23,6 +23,13 @@ package org.svgweb.events
         
         public function setDocTime(docTime:Number):void {
             this.docTime = docTime;
+        }
+        
+        override public function clone():Event {
+            var event:SVGEvent = new SVGEvent(this.type, this.bubbles, this.cancelable);
+            event.docTime = docTime;
+            
+            return event;
         }
 
     }

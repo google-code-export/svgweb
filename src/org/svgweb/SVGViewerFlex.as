@@ -20,19 +20,55 @@
 package org.svgweb
 {
 
-    import org.svgweb.nodes.SVGSVGNode;
-
+    import flash.events.Event;
+    import flash.events.IOErrorEvent;
+    import flash.events.ProgressEvent;
+    import flash.events.SecurityErrorEvent;
+    
     import mx.core.UIComponent;
+    import mx.events.ResizeEvent;
+    
+    import org.svgweb.events.SVGEvent;
 
-    public class SVGViewerFlex extends UIComponent
-    {
-        public var viewer:SVGViewerFlash;
-        public function SVGViewerFlex()
-        {
+    [Event(name="svgLoaded", type="org.svgweb.events.SVGEvent")]
+    [Event(name="progress", type="flash.events.ProgressEvent")]
+    [Event(name="complete", type="flash.events.Event")]
+    [Event(name="ioError", type="flash.events.IOErrorEvent")]
+    [Event(name="securityError", type="flash.events.SecurityErrorEvent")]    
+
+    public class SVGViewerFlex extends UIComponent {
+    	
+        public var svgViewerFlash:SVGViewerFlash;
+        
+        public function SVGViewerFlex() {
             super();
-            viewer = new SVGViewerFlash();
-            this.addChild(viewer);
+            svgViewerFlash = new SVGViewerFlash();
+            this.addChild(svgViewerFlash);
+            
+            this.addEventListener(ResizeEvent.RESIZE, onResize);
+            svgViewerFlash.addEventListener(SVGEvent.SVGLoad, eventRelay);
+            svgViewerFlash.addEventListener(ProgressEvent.PROGRESS, eventRelay);
+            svgViewerFlash.addEventListener(Event.COMPLETE, eventRelay);
+            svgViewerFlash.addEventListener(IOErrorEvent.IO_ERROR, eventRelay);
+            svgViewerFlash.addEventListener(SecurityErrorEvent.SECURITY_ERROR, eventRelay);
+        }        
+        
+        private function onResize(event:Event):void {
+            svgViewerFlash.width = this.width;
+            svgViewerFlash.height = this.height;
         }
         
-    }
+        private function eventRelay(event:Event):void {
+        	this.dispatchEvent(event.clone());
+        }
+        
+        public function set source(value:*):void { 
+        	svgViewerFlash.source = value;
+        }
+        
+        public function get source():* {
+        	return svgViewerFlash.source;
+        } 
+        
+    }        
 }
