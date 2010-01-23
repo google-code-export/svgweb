@@ -30,7 +30,7 @@ package org.svgweb
     
     import org.svgweb.events.SVGEvent;
 
-    [Event(name="svgLoaded", type="org.svgweb.events.SVGEvent")]
+    [Event(name="svgLoad", type="org.svgweb.events.SVGEvent")]
     [Event(name="progress", type="flash.events.ProgressEvent")]
     [Event(name="complete", type="flash.events.Event")]
     [Event(name="ioError", type="flash.events.IOErrorEvent")]
