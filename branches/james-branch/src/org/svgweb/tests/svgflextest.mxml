@@ -11,13 +11,17 @@
     <![CDATA[
     private function myInit():void {               
         // The FlashVars
-        var obj:Object = Application.application.parameters;
+        /*var obj:Object = Application.application.parameters;
         var item:String;
 
         for (item in obj) {
             if (item == "loadURL") {
                  svgflex.viewer.loadURL(obj[item]);
             }
+        }*/
+        
+        if (Application.application.parameters.hasOwnProperty('loadURL')) {
+        	svgflex.source = Application.application.parameters['loadURL'];
         }
 
         // An alternative to the above is to set the xml directly:
