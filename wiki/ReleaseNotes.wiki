@@ -26,6 +26,11 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 421: Reuse XML ActiveX object on Internet Explorer (Thanks Li Yang!)
    * Issue 431: unsuspendRedrawAll not wired to several methods
    * Issue 428: setAttribute gives error for undefined or null attribute value (Flash renderer)
+   * Issue 264: Text with fractional font-size not displayed
+   * Issue 405: Support x,y lists on tspan for positioning native font glyphs
+   * Issue 440: Text with large font-size displays smaller
+   * Issue 447: Text placement changes with different viewboxes
+
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
