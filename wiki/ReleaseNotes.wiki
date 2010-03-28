@@ -30,6 +30,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 405: Support x,y lists on tspan for positioning native font glyphs
    * Issue 440: Text with large font-size displays smaller
    * Issue 447: Text placement changes with different viewboxes
+   * Issue 296: appendChild of existing child should move it to the end
 
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
