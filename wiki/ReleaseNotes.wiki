@@ -35,6 +35,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 415: Dynamic change of HREF on {{{<use>}}} to different local definition does not work (setAttributeNS())
    * Issue 456: xlink:href attribute on images does not properly change with the Flash renderer
    * Issue 460: Event type is not passed through when mouse events are raised.
+   * Issue 465: Stretched images have no smoothing
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
