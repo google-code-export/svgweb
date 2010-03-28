@@ -32,6 +32,9 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 447: Text placement changes with different viewboxes
    * Issue 296: appendChild of existing child should move it to the end
    * Issue 462: clipPath outside of def tag renders and blacks out the image
+   * Issue 415: Dynamic change of HREF on <use> to different local definition does not work (setAttributeNS())
+   * Issue 456: xlink:href attribute on images does not properly change with the Flash renderer
+
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
