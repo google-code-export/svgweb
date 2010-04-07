@@ -37,7 +37,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 460: Event type is not passed through when mouse events are raised.
    * Issue 465: Stretched images have no smoothing
    * Issue 375: Problem with using svgweb and jquery together
-   * Issue 402: Make sure SVG Web and MooTools work together
+   * Issue 402: Make sure SVG Web and {{{MooTools}}} work together
    * Issue 403: Make sure SVG Web and Prototype.js work together
    * Issue 404: Make sure SVG Web and Ext.js work together
 
