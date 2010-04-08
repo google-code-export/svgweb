@@ -48,7 +48,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 468: SVG Image regression in test_browser1.html
    * Issue 287: Get large SVG file with lots of PATH nodes where PATH node data has lots of new lines in it faster
    * Issue 466: Semi-legal regex is used in the code.
-   * Issue 424: getElementsByTagNameNS(svgns, 'svg')[0] fails in IE7
+   * Issue 424: {{{getElementsByTagNameNS(svgns, 'svg')[0]}}} fails in IE7
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
