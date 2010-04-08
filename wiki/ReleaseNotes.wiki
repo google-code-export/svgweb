@@ -42,6 +42,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 404: Make sure SVG Web and Ext.js work together
    * Issue 438: Support SVG '`RenderingProperties`' CSS Values for Performance Vs. Quality Tradeoffs
    * Issue 437: Slow rendering with mitered corners
+   * Issue 452: Parsing complicated long path statements extremely slow
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
