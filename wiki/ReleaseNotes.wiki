@@ -40,6 +40,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 402: Make sure SVG Web and Mootools work together
    * Issue 403: Make sure SVG Web and Prototype.js work together
    * Issue 404: Make sure SVG Web and Ext.js work together
+   * Issue 438: Support SVG 'RenderingProperties' CSS Values for Performance Vs. Quality Tradeoffs
+   * Issue 437: Slow rendering with mitered corners
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
