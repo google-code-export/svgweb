@@ -4,10 +4,47 @@
 
 When the number of entries in the What's New section on the main home page gets too long, copy the older ones here and delete them from the main home page.
 
+===September 16th, 2009: New Release!===
+
+Hear ye! Hear ye! The SVG Web team has pushed out another [http://svgweb.googlecode.com/files/svgweb-2009-09-16-Umberhulk-B.zip release], code named Umber Hulk.
+
+[http://codinginparadise.org/monsters/umberhulk.jpg Umber Hulk]: "_A human-shaped creature with gaping maws flanked by pairs of exceedingly sharp mandibles. Despite their bestial appearance, umber hulks possess a significant intelligence and language of their own._"
+
+Notable highlights of this release:
+
+    * Having Chinese characters in SVG filenames now works
+    * getCTM, currentScale, and currentTranslate are now supported, making dragging easier
+    * Inline on{{{*}}} style events (onclick, etc.) handlers directly in markup is now supported for SVG OBJECTs
+    * Several fixes for IE 8
+    * Several fixes when the DOCTYPE is specified
+    * Lots of fixes around resizing an SVG image based on resizing the browser and it's container
+    * Fixes to help Shelley Power's Burning Bird site
+    * Fixes to help the Wikipedia SVG Zoom and Pan too
+    * Fixes to help Michael Neutzes' German Atlas work
+    * Fixes to help other developers in the community
+
+and much much more. Special thanks to the many people who helped with this one:
+
+    * Rick Masters
+    * Jeff Schiller
+    * Michael Neutze
+    * Shelley Powers
+    * Ciaranj
+    * Felix Buenemann
+    * Le Roux Bernard
+    * Glen Bremner Stokes
+    * Bradbury.e
+    * Richbk
+    * Fangqq
+
+Please keep in mind SVG Web is still in alpha.
+
+[http://code.google.com/p/svgweb/wiki/ReleaseNotes#svgweb-2009-09-16-Umberhulk-B.zip_(_) Read the full release notes] or [http://svgweb.googlecode.com/files/svgweb-2009-09-16-Umberhulk-B.zip download the release].
+
 ===September 9th, 2009: New Release!===
 
 Hi everyone, the SVG Web team has another release packed with lots of goodness. 
-
+
 Starting now we are giving releases not only a date stamp but also simple names, taken from the classic [http://en.wikipedia.org/wiki/Fiend_Folio Fiend Folio] D&D monster manual. Why? Because the world needs more cheesy release names.
 
 Notable highlights of the svgweb-2009-09-09 release, also known as the [http://codinginparadise.org/monsters/owlbear.jpg Owlbear] release ("Terrifying: the body of a bear... the head of an owl"):
