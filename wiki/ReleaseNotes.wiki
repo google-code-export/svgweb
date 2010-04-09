@@ -53,6 +53,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 354: Speed up rxt360's mapping example
    * Issue 409: `CurrentScale` does not function properly for dynamically created SVG
    * Issue 445: Scripted SVG File Causes Stack Overflow in svgweb
+   * Issue 217: replaceChild + setAttribute can lead to display glitches for Flash viewer
+   * Issue 181: insertBefore adds object twice which can cause strange display errors
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
