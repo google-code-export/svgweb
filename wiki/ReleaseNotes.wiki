@@ -51,7 +51,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 424: {{{getElementsByTagNameNS(svgns, 'svg')[0]}}} fails in IE7
    * Issue 111: Implement removeEventListener
    * Issue 354: Speed up rxt360's mapping example
-   * Issue 409: CurrentScale does not function properly for dynamically created SVG
+   * Issue 409: `CurrentScale` does not function properly for dynamically created SVG
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
