@@ -50,6 +50,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 466: Semi-legal regex is used in the code.
    * Issue 424: {{{getElementsByTagNameNS(svgns, 'svg')[0]}}} fails in IE7
    * Issue 111: Implement removeEventListener
+   * Issue 354: Speed up rxt360's mapping example
 
 ==svgweb-2009-11-23-Gelatinous-Cube.zip (r998)==
    * Issue 358: Opera throws exception on patch to currentTranslate
