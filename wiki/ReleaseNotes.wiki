@@ -21,6 +21,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+
+==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
    * Issue 435: Regression: test_js1.html and test_js2.html fail
    * Issue 421: Reuse XML ActiveX object on Internet Explorer 
