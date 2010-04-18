@@ -23,6 +23,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 ==In Development==
    * Issue 471: Radial gradient different between Flash and Native renders
    * Issue 349: gradients with bounding box cooordinates are positioned wrongly on circles
+   * Issue 475: 'this' not getting set correctly in SVG element event callback
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
