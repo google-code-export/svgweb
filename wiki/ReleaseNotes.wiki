@@ -24,6 +24,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 471: Radial gradient different between Flash and Native renders
    * Issue 349: gradients with bounding box cooordinates are positioned wrongly on circles
    * Issue 475: 'this' not getting set correctly in SVG element event callback
+   * Issue 477: The change in the size of the ClipPath area is not reflected by Flash Renderer. 
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
