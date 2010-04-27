@@ -25,6 +25,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 349: gradients with bounding box cooordinates are positioned wrongly on circles
    * Issue 475: 'this' not getting set correctly in SVG element event callback
    * Issue 477: The change in the size of the ClipPath area is not reflected by Flash Renderer. 
+   * Issue 483: Changing gradient stop does not trigger redraw of referencing elements
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
