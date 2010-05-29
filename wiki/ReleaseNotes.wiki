@@ -29,6 +29,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 484: Dynamic clip-path attribute changes are not reflected.
    * Issue 476: {{{<set>}}} Element Problems and numerous SMIL issues
    * Issue 489: Support beginElement() for animation elements
+   * Issue 494: SVGTextNode.onDrawGlyph not removing glyph clones
+   * Issue 495: Support units-per-em on SVG fonts
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
