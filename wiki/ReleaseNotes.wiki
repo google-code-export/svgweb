@@ -32,6 +32,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 494: SVGTextNode.onDrawGlyph not removing glyph clones
    * Issue 495: Support units-per-em on SVG fonts
    * Issue 492: 'button' property missing in mouse event object
+   * Issue 472: get svg.js even more compressed with Google's closure compiler (30K reduction)
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
