@@ -31,6 +31,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 489: Support beginElement() for animation elements
    * Issue 494: SVGTextNode.onDrawGlyph not removing glyph clones
    * Issue 495: Support units-per-em on SVG fonts
+   * Issue 492: 'button' property missing in mouse event object
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
