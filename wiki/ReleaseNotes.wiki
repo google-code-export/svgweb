@@ -33,6 +33,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 495: Support units-per-em on SVG fonts
    * Issue 492: 'button' property missing in mouse event object
    * Issue 472: get svg.js even more compressed with Google's closure compiler (30K reduction)
+   * Issue 499: Object loaded svg with scripts not firing window load or SVGLoad event
+   * Issue 488: Updating styles via Javascript does not visibly update child nodes in IE/Flash
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
