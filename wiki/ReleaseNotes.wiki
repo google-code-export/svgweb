@@ -36,6 +36,9 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 499: Object loaded svg with scripts not firing window load or SVGLoad event
    * Issue 488: Updating styles via Javascript does not visibly update child nodes in IE/Flash
    * Issue 496: Support exponents in path values
+   * Issue 502: Radial Gradient userSpaceOnUse Matrix calculated incorrectly
+   * Issue 503: Radial Gradient focalLen not used for stroke
+   * Issue 504: Radial Gradient userSpaceOnUse Matrix calculated incorrectly for SVGCircle and SVGEllipse nodes
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
