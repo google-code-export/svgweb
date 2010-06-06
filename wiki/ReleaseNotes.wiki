@@ -40,6 +40,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 503: Radial Gradient focalLen not used for stroke
    * Issue 504: Radial Gradient userSpaceOnUse Matrix calculated incorrectly for SVGCircle and SVGEllipse nodes
    * Issue 497: bad 'target' when click on text node
+   * Issue 342: Event handler fires only after second mouse click.
+   * Issue 507: Namespaced elements not allowed until svg element added to page
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
