@@ -42,6 +42,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 497: bad 'target' when click on text node
    * Issue 342: Event handler fires only after second mouse click.
    * Issue 507: Namespaced elements not allowed until svg element added to page
+   * Issue 158: Rotated text not rendering for native fonts (Mostly Fixed)
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
