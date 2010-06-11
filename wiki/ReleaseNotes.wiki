@@ -43,6 +43,9 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 342: Event handler fires only after second mouse click.
    * Issue 507: Namespaced elements not allowed until svg element added to page
    * Issue 158: Rotated text not rendering for native fonts (Mostly Fixed)
+   * Issue 467: Namespace exception loading video example in IE8
+   * Issue 510: Font Family not used when surrounded by single quotes in Flash 10.1
+  
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
