@@ -45,7 +45,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 158: Rotated text not rendering for native fonts (Mostly Fixed)
    * Issue 467: Namespace exception loading video example in IE8
    * Issue 510: Font Family not used when surrounded by single quotes in Flash 10.1
-  
+   * Issue 57: SVG default fill-rule 'nonzero' not supported by flash 9
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
