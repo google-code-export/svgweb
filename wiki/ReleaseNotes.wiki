@@ -47,6 +47,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 510: Font Family not used when surrounded by single quotes in Flash 10.1
    * Issue 57: SVG default fill-rule 'nonzero' not supported by flash 9
    * Issue 123: Nested {{{<svg>}}} elements don't show up in the DOM correctly
+   * Issue 145: dynamically creating SMIL elements and attributes
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
