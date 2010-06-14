@@ -49,6 +49,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 123: Nested {{{<svg>}}} elements don't show up in the DOM correctly
    * Issue 145: dynamically creating SMIL elements and attributes
    * Issue 356: Show SVG Web Release Name and Revision in Right Click Menu
+   * Issue 513: getElementsByTagNameNS returning text nodes
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
