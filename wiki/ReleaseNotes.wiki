@@ -54,6 +54,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 517: Elements with fill set to 'none' should produce mouse events but do not
    * Issue 518: Avoid redraw on change to pointer-events attribute
    * Issue 523: Event listener from object element may be applied to svg element erroneously
+   * Issue 522: Need way to create element with self declared namespace
+
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
    * Issue 435: Regression: test_js1.html and test_js2.html fail
