@@ -55,6 +55,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 518: Avoid redraw on change to pointer-events attribute
    * Issue 523: Event listener from object element may be applied to svg element erroneously
    * Issue 522: Need way to create element with self declared namespace
+   * Issue 525: Image element not respecting display='none'
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
