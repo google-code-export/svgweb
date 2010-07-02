@@ -58,6 +58,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 525: Image element not respecting display='none'
    * Issue 524: Jquery $(window).scroll event will not fire 
    * Issue 527: Excessive messages for detached event listeners
+   * Issue 528: Exception if remove event listener from detached element, then add to document
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
