@@ -60,6 +60,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 527: Excessive messages for detached event listeners
    * Issue 528: Exception if remove event listener from detached element, then add to document
    * Issue 321: Support for animating path 'd' attribute (and interpolate between values)
+   * Issue 514: clip-path not used when part of style attribute value
+   * Issue 526: Object using clip path cannot have its opacity animated
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
