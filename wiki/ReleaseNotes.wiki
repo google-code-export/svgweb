@@ -64,6 +64,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 526: Object using clip path cannot have its opacity animated
    * Issue 535: Nested svg disappears when animated
    * Issue 536: Problems tracking whether elements attached to document or not
+   * Issue 537: Animation added in onload listener does not initialize
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
