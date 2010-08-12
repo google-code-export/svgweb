@@ -68,6 +68,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 538: Node removed while invalid causes endless frame listening
    * Issue 539: Animation with invalid or forward href causes exception
    * Issue 540: script stack space quota is exhausted by large svg file
+   * Issue 511: Keyboard events are not supported properly  
 
 ==svgweb-2010-04-09-Dracolisk.zip (r1115)==
    * Issue 378: Undefined variable in svg.js source code
