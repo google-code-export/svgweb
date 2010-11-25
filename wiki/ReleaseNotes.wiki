@@ -28,6 +28,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 579: Old text still displayed after clearing text node content
    * Issue 239: Implement mpath: motion along a path
    * Issue 541: Support animateMotion
+   * Issue 548: offset lineargradient works for rect and circle, but not for polygon, ellipse and path
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
