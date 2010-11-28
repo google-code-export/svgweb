@@ -30,6 +30,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 541: Support animateMotion
    * Issue 548: offset lineargradient works for rect and circle, but not for polygon, ellipse and path
    * Issue 580: document firstChild reverts attached status on root element
+   * Issue 583: Elements returned from getElementsByTagName emit no _handler errors (regression from Issue 536,r1214)
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
