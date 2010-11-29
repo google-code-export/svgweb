@@ -34,6 +34,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 368: Make sure SVG Web works in iframes
    * Issue 567: Fails to display anything for Illustrator-generated SVG files
    * Issue 574: Flash version 10 requirements need update
+   * Issue 565: Default to src path when no data-path
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
