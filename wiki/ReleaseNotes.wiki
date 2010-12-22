@@ -37,6 +37,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 565: Default to src path when no data-path
    * Issue 146: svgweb.removeChild of object on page unload causes exception, getAttribute fails
    * Issue 592: getBBox throws exception if called before flash loaded
+   * Issue 591: Round coordinates in mouse event
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
