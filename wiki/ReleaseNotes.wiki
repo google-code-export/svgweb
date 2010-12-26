@@ -40,6 +40,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 591: Round coordinates in mouse event
    * Issue 594: Excessive resizing of flash - prior to load of content
    * Issue 596: adjacent Rectangles lead to striped artifacts (Flash renderer) (regression from Issue 514,r1209)
+   * Issue 360: Rewrite examples and docs to do object detection for SVG Web so it can be later removed
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
