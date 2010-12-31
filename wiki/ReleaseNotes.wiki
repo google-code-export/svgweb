@@ -43,6 +43,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 360: Rewrite examples and docs to do object detection for SVG Web so it can be later removed
    * Issue 273: Make browser unit tests that specify Standards Compliant Doctype/HTML 5 Doctype at the top
    * Issue 573: Support IE 9
+   * Issue 597: removeEventListener not working fully; Two slider instances should behave independently
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
