@@ -46,6 +46,7 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
    * Issue 597: removeEventListener not working fully; Two slider instances should behave independently
    * Issue 599: onsvgload event not fired on Opera native mode with clear cache
    * Issue 357: Enhancement: Replace demo viewBox manipulation with true zoom and pan
+   * Issue 427: Setting size of the root element does not cause the flash object to resize
 
 ==svgweb-2010-08-30-Owlephant.zip (r1232)==
    * Issue 471: Radial gradient different between Flash and Native renders
