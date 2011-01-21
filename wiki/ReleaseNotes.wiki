@@ -21,6 +21,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+
+==svgweb-2011-01-20-Lurker-Above-RC1.zip (r1329)==
    * Issue 576: animation of rotate attribute causes redraw
    * Issue 577: Start animations in order and respect activation priority
    * Issue 578: Duplicate event listeners added for animation events
