@@ -23,7 +23,6 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 ==In Development==
 
 ==svgweb-2011-02-03-Lurker-Above (r1332)==
-   * Issue 597: removeEventListener not working fully; Two slider instances should behave independently
    * Issue 576: animation of rotate attribute causes redraw
    * Issue 577: Start animations in order and respect activation priority
    * Issue 578: Duplicate event listeners added for animation events
