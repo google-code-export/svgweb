@@ -21,6 +21,8 @@ The 'Breaking Changes' section should contain a bullet list of any breaking chan
 = Releases =
 
 ==In Development==
+   * Issue 605: script src="svg.js" does not work without data-path="./"
+
 
 ==svgweb-2011-02-03-Lurker-Above (r1332)==
    * Issue 576: animation of rotate attribute causes redraw
